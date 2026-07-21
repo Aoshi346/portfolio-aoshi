@@ -14,7 +14,7 @@ if (!app) {
   throw new Error("Missing #app root element");
 }
 
-const main = el("main", "relative min-h-screen bg-ink text-paper", [
+const main = el("main", "relative min-h-screen text-paper", [
   createHero(),
   createAbout(),
   createCaseStudies(),
@@ -23,6 +23,11 @@ const main = el("main", "relative min-h-screen bg-ink text-paper", [
   createContact(),
 ]);
 
-app.append(createNav(), main, createFooter());
+const atmosphere = el("div", "bg-atmosphere", []);
+atmosphere.setAttribute("aria-hidden", "true");
+const noise = el("div", "bg-noise", []);
+noise.setAttribute("aria-hidden", "true");
+
+app.append(atmosphere, noise, createNav(), main, createFooter());
 
 void import("./utils/reveal").then(({ initScrollReveal }) => initScrollReveal(main));
