@@ -28,6 +28,12 @@ export const identity: Identity = {
   githubAvatar: "https://avatars.githubusercontent.com/u/137179835?v=4",
 };
 
+export const aboutCopy: string[] = [
+  "Desarrollador full stack enfocado en Python, React, Django y TypeScript: llevar datos reales a interfaces que la gente usa todos los días.",
+  "Cursa noveno semestre de Ingeniería de Sistemas en la Universidad Santa María, en Caracas, mientras trabaja como pasante en Telefónica Venezuela.",
+  "La mayoría de sus repositorios son privados. Este portfolio reúne los públicos que mejor muestran cómo piensa y qué construye.",
+];
+
 export interface Education {
   degree: string;
   institution: string;
