@@ -103,13 +103,12 @@ export function mountHeroScene(container: HTMLElement): HeroSceneHandle {
 
     timer.update(timestamp);
     const delta = timer.getDelta();
-    const elapsed = timer.getElapsed();
 
-    targetRotation.x += (pointer.y * 0.4 - targetRotation.x) * 0.04;
-    targetRotation.y += (pointer.x * 0.4 - targetRotation.y) * 0.04;
+    targetRotation.x += (pointer.y * 0.25 - targetRotation.x) * 0.04;
+    targetRotation.y += (pointer.x * 0.25 - targetRotation.y) * 0.04;
 
-    group.rotation.x = targetRotation.x + Math.sin(elapsed * 0.3) * 0.1;
-    group.rotation.y += delta * 0.15 + (targetRotation.y - group.rotation.y) * 0.02;
+    group.rotation.x = targetRotation.x;
+    group.rotation.y += delta * 0.06 + (targetRotation.y - group.rotation.y) * 0.02;
 
     renderer.render(scene, camera);
   }

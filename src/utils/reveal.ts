@@ -42,18 +42,5 @@ export async function initScrollReveal(root: HTMLElement): Promise<void> {
     });
   });
 
-  root.querySelectorAll<HTMLElement>("[data-reveal='ordinal']").forEach((target) => {
-    gsap.to(target, {
-      yPercent: -18,
-      ease: "none",
-      scrollTrigger: {
-        trigger: target.closest("section") ?? target,
-        start: "top bottom",
-        end: "bottom top",
-        scrub: true,
-      },
-    });
-  });
-
   ScrollTrigger.refresh();
 }
