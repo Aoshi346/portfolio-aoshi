@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0a0a0f" />
+  <text x="80" y="300" font-family="Arial, sans-serif" font-size="72" font-weight="700" fill="#f4f2ec">Aoshi Blanco Sanz</text>
+  <text x="80" y="370" font-family="Arial, sans-serif" font-size="34" fill="#ff5a3c">Desarrollador Full Stack</text>
+  <text x="80" y="420" font-family="Arial, sans-serif" font-size="28" fill="#f4f2ec" opacity="0.7">Python · React · Django · TypeScript</text>
+</svg>
