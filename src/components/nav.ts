@@ -2,7 +2,7 @@ import { identity } from "../data/content";
 import { el } from "../utils/dom";
 
 export function createNav(): HTMLElement {
-  const initials = el("span", "font-display text-sm tracking-widest text-paper/80", ["AB"]);
+  const initials = el("span", "font-mono text-sm tracking-widest text-paper/80", ["AB"]);
 
   const githubLink = el("a", "text-sm text-paper/70 transition-colors hover:text-accent", [
     "GitHub",

@@ -3,7 +3,7 @@ import { el } from "../utils/dom";
 
 function createExperienceItem(item: (typeof experience)[number]): HTMLElement {
   return el("div", "flex flex-col gap-1 border-l border-paper/15 pl-6", [
-    el("p", "text-xs uppercase tracking-[0.2em] text-paper/40", [item.period]),
+    el("p", "font-mono text-xs uppercase tracking-[0.2em] text-paper/40", [item.period]),
     el("h3", "font-display text-xl font-bold md:text-2xl", [item.role]),
     el("p", "text-sm text-paper/60", [item.organization]),
     el("p", "mt-1 max-w-md text-base text-paper/70", [item.description]),
@@ -12,7 +12,7 @@ function createExperienceItem(item: (typeof experience)[number]): HTMLElement {
 
 function createEducationItem(item: (typeof education)[number]): HTMLElement {
   return el("div", "flex flex-col gap-1 border-l border-paper/15 pl-6", [
-    el("p", "text-xs uppercase tracking-[0.2em] text-paper/40", [item.period]),
+    el("p", "font-mono text-xs uppercase tracking-[0.2em] text-paper/40", [item.period]),
     el("h3", "font-display text-xl font-bold md:text-2xl", [item.degree]),
     el("p", "text-sm text-paper/60", [item.institution]),
   ]);
@@ -20,7 +20,7 @@ function createEducationItem(item: (typeof education)[number]): HTMLElement {
 
 export function createExperience(): HTMLElement {
   const heading = el("div", "mx-auto max-w-3xl px-6 pb-12 md:px-0", [
-    el("p", "font-display text-sm uppercase tracking-[0.3em] text-accent", [
+    el("p", "font-mono text-sm uppercase tracking-[0.3em] text-accent", [
       "Experiencia y educación",
     ]),
   ]);

@@ -25,7 +25,7 @@ export function createAbout(): HTMLElement {
         el("p", "text-sm text-paper/40", [identity.location]),
       ]),
       el("div", "flex flex-col gap-6", [
-        el("p", "font-display text-sm uppercase tracking-[0.3em] text-accent", ["Quién es"]),
+        el("p", "font-mono text-sm uppercase tracking-[0.3em] text-accent", ["Quién es"]),
         paragraphs,
       ]),
     ],

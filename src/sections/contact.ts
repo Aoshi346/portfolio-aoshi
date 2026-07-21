@@ -22,7 +22,7 @@ export function createContact(): HTMLElement {
     "section",
     "flex min-h-[70vh] flex-col items-start justify-center gap-8 border-t border-paper/10 px-6 py-32 md:px-0",
     [
-      el("p", "mx-auto w-full max-w-3xl font-display text-sm uppercase tracking-[0.3em] text-accent", [
+      el("p", "mx-auto w-full max-w-3xl font-mono text-sm uppercase tracking-[0.3em] text-accent", [
         "Contacto",
       ]),
       el("div", "mx-auto flex w-full max-w-3xl flex-col gap-6", [

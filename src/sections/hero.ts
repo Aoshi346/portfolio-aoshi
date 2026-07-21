@@ -14,7 +14,7 @@ export function createHero(): HTMLElement {
     "relative flex min-h-screen flex-col justify-center overflow-hidden px-6 md:px-12",
     [
       canvasHost,
-      el("p", "font-display text-sm uppercase tracking-[0.3em] text-accent", [identity.role]),
+      el("p", "font-mono text-sm uppercase tracking-[0.3em] text-accent", [identity.role]),
       el(
         "h1",
         "mt-6 max-w-4xl text-balance font-display text-6xl font-bold leading-[0.95] md:text-8xl",
