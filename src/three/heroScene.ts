@@ -1,4 +1,18 @@
-import * as THREE from "three";
+import {
+  AmbientLight,
+  DirectionalLight,
+  EdgesGeometry,
+  Group,
+  IcosahedronGeometry,
+  LineBasicMaterial,
+  LineSegments,
+  Mesh,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  Scene,
+  Timer,
+  WebGLRenderer,
+} from "three";
 
 export interface HeroSceneHandle {
   destroy: () => void;
@@ -9,12 +23,12 @@ export interface HeroSceneHandle {
  * sin assets GLTF que pesen el bundle inicial.
  */
 export function mountHeroScene(container: HTMLElement): HeroSceneHandle {
-  const scene = new THREE.Scene();
+  const scene = new Scene();
 
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  const camera = new PerspectiveCamera(45, 1, 0.1, 100);
   camera.position.set(0, 0, 5.2);
 
-  const renderer = new THREE.WebGLRenderer({
+  const renderer = new WebGLRenderer({
     antialias: true,
     alpha: true,
     powerPreference: "high-performance",
@@ -23,30 +37,30 @@ export function mountHeroScene(container: HTMLElement): HeroSceneHandle {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   container.appendChild(renderer.domElement);
 
-  const geometry = new THREE.IcosahedronGeometry(1.4, 1);
-  const material = new THREE.MeshStandardMaterial({
+  const geometry = new IcosahedronGeometry(1.4, 1);
+  const material = new MeshStandardMaterial({
     color: 0xff5a3c,
     roughness: 0.25,
     metalness: 0.15,
     flatShading: true,
   });
-  const core = new THREE.Mesh(geometry, material);
+  const core = new Mesh(geometry, material);
 
-  const edges = new THREE.EdgesGeometry(geometry);
-  const wireframeMaterial = new THREE.LineBasicMaterial({
+  const edges = new EdgesGeometry(geometry);
+  const wireframeMaterial = new LineBasicMaterial({
     color: 0xf4f2ec,
     transparent: true,
     opacity: 0.35,
   });
-  const wireframe = new THREE.LineSegments(edges, wireframeMaterial);
+  const wireframe = new LineSegments(edges, wireframeMaterial);
   wireframe.scale.setScalar(1.01);
 
-  const group = new THREE.Group();
+  const group = new Group();
   group.add(core, wireframe);
   scene.add(group);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-  const key = new THREE.DirectionalLight(0xffffff, 1.4);
+  const ambient = new AmbientLight(0xffffff, 0.6);
+  const key = new DirectionalLight(0xffffff, 1.4);
   key.position.set(3, 2, 4);
   scene.add(ambient, key);
 
@@ -81,7 +95,7 @@ export function mountHeroScene(container: HTMLElement): HeroSceneHandle {
   intersectionObserver.observe(container);
 
   let frameId = 0;
-  const timer = new THREE.Timer();
+  const timer = new Timer();
 
   function animate(timestamp: number) {
     frameId = requestAnimationFrame(animate);

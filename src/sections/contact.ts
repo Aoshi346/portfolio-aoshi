@@ -2,9 +2,11 @@ import { identity } from "../data/content";
 import { el } from "../utils/dom";
 
 export function createContact(): HTMLElement {
-  const emailLink = el("a", "font-display text-4xl font-bold text-paper hover:text-accent md:text-7xl", [
-    identity.email,
-  ]) as HTMLAnchorElement;
+  const emailLink = el(
+    "a",
+    "break-words font-display text-2xl font-bold text-paper hover:text-accent sm:text-4xl md:text-7xl",
+    [identity.email],
+  ) as HTMLAnchorElement;
   emailLink.href = `mailto:${identity.email}`;
 
   const githubLink = el(
