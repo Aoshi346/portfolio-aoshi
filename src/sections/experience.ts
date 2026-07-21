@@ -2,20 +2,32 @@ import { education, experience } from "../data/content";
 import { el } from "../utils/dom";
 
 function createExperienceItem(item: (typeof experience)[number]): HTMLElement {
-  return el("div", "flex flex-col gap-1 border-l border-paper/15 pl-6", [
-    el("p", "font-mono text-xs uppercase tracking-[0.2em] text-paper/40", [item.period]),
-    el("h3", "font-display text-xl font-bold md:text-2xl", [item.role]),
-    el("p", "text-sm text-paper/60", [item.organization]),
-    el("p", "mt-1 max-w-md text-base text-paper/70", [item.description]),
-  ]);
+  const node = el(
+    "div",
+    "flex flex-col gap-1 border-l border-paper/15 pl-6 transition-colors duration-300 ease-out hover:border-accent/50",
+    [
+      el("p", "font-mono text-xs uppercase tracking-[0.2em] text-paper/40", [item.period]),
+      el("h3", "font-display text-xl font-bold md:text-2xl", [item.role]),
+      el("p", "text-sm text-paper/60", [item.organization]),
+      el("p", "mt-1 max-w-md text-base text-paper/70", [item.description]),
+    ],
+  );
+  node.setAttribute("data-stagger-item", "");
+  return node;
 }
 
 function createEducationItem(item: (typeof education)[number]): HTMLElement {
-  return el("div", "flex flex-col gap-1 border-l border-paper/15 pl-6", [
-    el("p", "font-mono text-xs uppercase tracking-[0.2em] text-paper/40", [item.period]),
-    el("h3", "font-display text-xl font-bold md:text-2xl", [item.degree]),
-    el("p", "text-sm text-paper/60", [item.institution]),
-  ]);
+  const node = el(
+    "div",
+    "flex flex-col gap-1 border-l border-paper/15 pl-6 transition-colors duration-300 ease-out hover:border-accent/50",
+    [
+      el("p", "font-mono text-xs uppercase tracking-[0.2em] text-paper/40", [item.period]),
+      el("h3", "font-display text-xl font-bold md:text-2xl", [item.degree]),
+      el("p", "text-sm text-paper/60", [item.institution]),
+    ],
+  );
+  node.setAttribute("data-stagger-item", "");
+  return node;
 }
 
 export function createExperience(): HTMLElement {

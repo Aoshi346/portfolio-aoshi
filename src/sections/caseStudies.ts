@@ -9,7 +9,7 @@ export function createCaseStudies(): HTMLElement {
       "Problemas reales, no ejercicios de portfolio.",
     ]),
   ]);
-  heading.setAttribute("data-reveal", "fade-up");
+  heading.setAttribute("data-reveal", "clip");
 
   return el("section", "relative border-t border-paper/10", [
     heading,

@@ -74,12 +74,15 @@ export function mountHeroScene(container: HTMLElement): HeroSceneHandle {
   }
   window.addEventListener("pointermove", onPointerMove, { passive: true });
 
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   function resize() {
     const { clientWidth, clientHeight } = container;
     if (clientWidth === 0 || clientHeight === 0) return;
     camera.aspect = clientWidth / clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(clientWidth, clientHeight);
+    if (prefersReducedMotion) renderer.render(scene, camera);
   }
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(container);
@@ -103,16 +106,25 @@ export function mountHeroScene(container: HTMLElement): HeroSceneHandle {
 
     timer.update(timestamp);
     const delta = timer.getDelta();
+    const elapsed = timer.getElapsed();
 
-    targetRotation.x += (pointer.y * 0.25 - targetRotation.x) * 0.04;
-    targetRotation.y += (pointer.x * 0.25 - targetRotation.y) * 0.04;
+    targetRotation.x += (pointer.y * 0.3 - targetRotation.x) * 0.04;
+    targetRotation.y += (pointer.x * 0.3 - targetRotation.y) * 0.04;
 
-    group.rotation.x = targetRotation.x;
-    group.rotation.y += delta * 0.06 + (targetRotation.y - group.rotation.y) * 0.02;
+    // Bamboleo senoidal sutil: amplitud baja y frecuencia lenta para que se
+    // lea como movimiento controlado (respiración), no como ruido.
+    group.rotation.x = targetRotation.x + Math.sin(elapsed * 0.22) * 0.045;
+    group.rotation.y += delta * 0.09 + (targetRotation.y - group.rotation.y) * 0.02;
 
     renderer.render(scene, camera);
   }
-  frameId = requestAnimationFrame(animate);
+
+  if (prefersReducedMotion) {
+    // Una sola pasada estática: nada de rotación continua ni bamboleo.
+    renderer.render(scene, camera);
+  } else {
+    frameId = requestAnimationFrame(animate);
+  }
 
   return {
     destroy() {

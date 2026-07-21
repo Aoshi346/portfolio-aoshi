@@ -5,21 +5,38 @@ export function createCaseStudyPanel(caseStudy: CaseStudy, index: number): HTMLE
   const ordinal = el("span", "pointer-events-none absolute -top-10 right-0 font-mono text-[13rem] font-bold leading-none text-paper/5 md:text-[18rem]", [
     String(index + 1).padStart(2, "0"),
   ]);
+  ordinal.setAttribute("data-reveal", "ordinal");
   ordinal.setAttribute("aria-hidden", "true");
 
   const stackList = el(
     "ul",
     "flex flex-wrap gap-2",
-    caseStudy.stack.map((tech) =>
-      el("li", "rounded-full border border-paper/15 px-3 py-1 text-xs text-paper/60", [tech]),
-    ),
+    caseStudy.stack.map((tech) => {
+      const chip = el(
+        "li",
+        "rounded-full border border-paper/15 px-3 py-1 text-xs text-paper/60 transition-colors duration-300 ease-out hover:border-accent/50 hover:text-paper/90",
+        [tech],
+      );
+      chip.setAttribute("data-stagger-item", "");
+      return chip;
+    }),
   );
+  stackList.setAttribute("data-reveal", "stagger");
 
   const footer: (Node | string)[] = [stackList];
   if (caseStudy.link) {
-    const link = el("a", "text-sm font-medium text-accent underline-offset-4 hover:underline", [
-      `${caseStudy.link.label} →`,
-    ]) as HTMLAnchorElement;
+    const link = el(
+      "a",
+      "group/link inline-flex items-center gap-1.5 text-sm font-medium text-accent",
+      [
+        caseStudy.link.label,
+        el(
+          "span",
+          "inline-block transition-transform duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover/link:translate-x-1",
+          ["→"],
+        ),
+      ],
+    ) as HTMLAnchorElement;
     link.href = caseStudy.link.href;
     link.target = "_blank";
     link.rel = "noreferrer";

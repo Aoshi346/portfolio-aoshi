@@ -4,15 +4,22 @@ import { el } from "../utils/dom";
 export function createContact(): HTMLElement {
   const emailLink = el(
     "a",
-    "break-words font-display text-2xl font-bold text-paper hover:text-accent sm:text-4xl md:text-7xl",
+    "break-words font-display text-2xl font-bold text-paper transition-[color,letter-spacing] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:text-accent hover:tracking-wide sm:text-4xl md:text-7xl",
     [identity.email],
   ) as HTMLAnchorElement;
   emailLink.href = `mailto:${identity.email}`;
 
   const githubLink = el(
     "a",
-    "text-lg text-paper/70 underline-offset-4 hover:text-accent hover:underline",
-    ["Ver perfil de GitHub →"],
+    "group/gh inline-flex items-center gap-1.5 text-lg text-paper/70 underline-offset-4 transition-colors duration-300 ease-out hover:text-accent hover:underline",
+    [
+      "Ver perfil de GitHub",
+      el(
+        "span",
+        "inline-block transition-transform duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover/gh:translate-x-1",
+        ["→"],
+      ),
+    ],
   ) as HTMLAnchorElement;
   githubLink.href = identity.github;
   githubLink.target = "_blank";

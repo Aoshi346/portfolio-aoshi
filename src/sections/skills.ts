@@ -3,7 +3,10 @@ import { el, elFromMarkup } from "../utils/dom";
 import { getIconMarkup } from "../utils/icons";
 
 function createSkillCard(item: SkillItem): HTMLElement {
-  const icon = elFromMarkup("tech-icon h-8 w-8 shrink-0 text-paper/80", getIconMarkup(item.slug));
+  const icon = elFromMarkup(
+    "tech-icon h-8 w-8 shrink-0 text-paper/80 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-110 group-hover:-translate-y-0.5",
+    getIconMarkup(item.slug),
+  );
 
   const detail = el(
     "p",
@@ -13,7 +16,7 @@ function createSkillCard(item: SkillItem): HTMLElement {
 
   const card = el(
     "div",
-    "group flex flex-col gap-3 rounded-2xl border border-paper/10 bg-paper/[0.03] p-5 transition-colors duration-300 hover:border-accent/40 focus-within:border-accent/40",
+    "group flex flex-col gap-3 rounded-2xl border border-paper/10 bg-paper/[0.03] p-5 transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-accent/40 hover:bg-paper/[0.05] focus-within:border-accent/40",
     [
       el("div", "flex items-center gap-3", [
         icon,
@@ -23,33 +26,42 @@ function createSkillCard(item: SkillItem): HTMLElement {
     ],
   );
   card.tabIndex = 0;
+  card.setAttribute("data-stagger-item", "");
 
   return card;
 }
 
 function createSkillGroup(group: (typeof skillGroups)[number]): HTMLElement {
+  const cards = el(
+    "div",
+    "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4",
+    group.items.map(createSkillCard),
+  );
+  cards.setAttribute("data-reveal", "stagger");
+
   return el("div", "flex flex-col gap-5", [
     el("h3", "font-mono text-xs uppercase tracking-[0.3em] text-paper/40", [group.label]),
-    el(
-      "div",
-      "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4",
-      group.items.map(createSkillCard),
-    ),
+    cards,
   ]);
 }
 
 function createSecondarySkills(): HTMLElement {
-  return el("div", "flex flex-col gap-4", [
-    el("h3", "font-mono text-xs uppercase tracking-[0.3em] text-paper/40", ["Otras herramientas"]),
-    el(
-      "div",
-      "flex flex-wrap gap-2",
-      secondarySkills.map((item) =>
-        el("span", "rounded-full border border-paper/15 px-4 py-1.5 text-sm text-paper/70", [
-          item.name,
-        ]),
+  const chips = el(
+    "div",
+    "flex flex-wrap gap-2",
+    secondarySkills.map((item) =>
+      el(
+        "span",
+        "rounded-full border border-paper/15 px-4 py-1.5 text-sm text-paper/70 transition-colors duration-300 ease-out hover:border-accent/50 hover:text-paper",
+        [item.name],
       ),
     ),
+  );
+  chips.setAttribute("data-reveal", "stagger");
+
+  return el("div", "flex flex-col gap-4", [
+    el("h3", "font-mono text-xs uppercase tracking-[0.3em] text-paper/40", ["Otras herramientas"]),
+    chips,
   ]);
 }
 
@@ -60,7 +72,7 @@ export function createSkills(): HTMLElement {
       "Lo que uso según el peso del problema.",
     ]),
   ]);
-  heading.setAttribute("data-reveal", "fade-up");
+  heading.setAttribute("data-reveal", "clip");
 
   const groups = el(
     "div",

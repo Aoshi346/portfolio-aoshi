@@ -8,6 +8,8 @@ export function createHero(): HTMLElement {
     "pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-1000",
   );
   canvasHost.setAttribute("aria-hidden", "true");
+  canvasHost.setAttribute("data-parallax", "");
+  canvasHost.dataset.parallaxSpeed = "0.4";
 
   const section = el(
     "section",
