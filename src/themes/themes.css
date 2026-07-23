@@ -9,6 +9,8 @@
  * el canvas del shader se monta encima, pero el tema nunca queda en negro.
  */
 
+/* ---------------------------------------------------------------- Vice City */
+
 :root[data-theme="vice"] {
   --color-ink: #150726;
   --color-paper: #fbeff5;
@@ -21,9 +23,38 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --radius-card: 0px;
-  --display-tracking: 0.01em;
+  --display-tracking: 0.005em;
+  /* Anton solo existe en 400 y ya es ultra-condensada: pedir 900 la falsea. */
+  --display-weight: 400;
+  --display-transform: uppercase;
+  --display-leading: 0.82;
   --bg-fallback: linear-gradient(180deg, #150726 0%, #4b1146 55%, #ff5c3d 100%);
 }
+
+/* Cartel centrado: el nombre manda y luego se atraviesa al hacer scroll. */
+:root[data-theme="vice"] .hero-inner {
+  text-align: center;
+}
+
+:root[data-theme="vice"] .hero-surface {
+  margin-inline: auto;
+  max-width: 74rem;
+}
+
+:root[data-theme="vice"] .hero-line {
+  margin-inline: auto;
+}
+
+:root[data-theme="vice"] .hero-contact {
+  justify-content: center;
+}
+
+:root[data-theme="vice"] .hero-cue {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ----------------------------------------------------------------- Hyprland */
 
 :root[data-theme="hyprland"] {
   --color-ink: #05070a;
@@ -38,13 +69,18 @@
 
   --radius-card: 4px;
   --display-tracking: -0.03em;
+  --display-weight: 900;
+  --display-transform: uppercase;
+  --display-leading: 0.86;
   --bg-fallback: linear-gradient(140deg, #05070a 0%, #0a2b38 55%, #063c30 100%);
 }
+
+/* ---------------------------------------------------------------- Caelestia */
 
 :root[data-theme="caelestia"] {
   --color-ink: #f4f0f9;
   --color-paper: #1c1b1f;
-  --color-accent: #7d5bd6;
+  --color-accent: #6c4fd8;
   --color-accent-2: #2f9e79;
   --color-line: #d9d0e4;
 
@@ -53,6 +89,41 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --radius-card: 28px;
-  --display-tracking: -0.02em;
+  --display-tracking: -0.025em;
+  --display-weight: 800;
+  /* Material You no grita: caja baja y aire. */
+  --display-transform: none;
+  --display-leading: 0.95;
   --bg-fallback: linear-gradient(160deg, #f4f0f9 0%, #e4dcf3 50%, #dbeee6 100%);
+}
+
+/*
+ * Contenedores tonales con elevacion: es la pieza que faltaba para que
+ * Caelestia se lea como Material You y no como texto suelto sobre un degradado.
+ */
+:root[data-theme="caelestia"] .hero-surface,
+:root[data-theme="caelestia"] .scene-surface {
+  background: color-mix(in srgb, #ffffff 62%, transparent);
+  backdrop-filter: blur(24px) saturate(1.25);
+  border: 1px solid color-mix(in srgb, #ffffff 72%, transparent);
+  border-radius: var(--radius-card);
+  padding: clamp(1.75rem, 4vw, 3.25rem);
+  box-shadow: 0 30px 70px -30px rgba(70, 45, 110, 0.35);
+}
+
+:root[data-theme="caelestia"] .hero-surface {
+  max-width: 68rem;
+}
+
+/* Chips como contenedores tonales: sobre fondo claro, un 4% de tinta no se ve. */
+:root[data-theme="caelestia"] .chip {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  color: color-mix(in srgb, var(--color-paper) 88%, transparent);
+}
+
+/* En claro, el grano en `overlay` ensucia: multiplicar es mas limpio. */
+:root[data-theme="caelestia"] .bg-noise {
+  opacity: 0.035;
+  mix-blend-mode: multiply;
 }

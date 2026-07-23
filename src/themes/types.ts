@@ -1,10 +1,21 @@
 import type { BackgroundHandle } from "../backgrounds/shaderBackground";
 
 /**
+ * Familia de animacion. No es solo un easing distinto: cada estilo usa recetas
+ * propias en `utils/reveal.ts` (que se anima, por que unidad y con que efecto).
+ *
+ * - `cinematic`: entradas con peso; el hero se atraviesa al hacer scroll (Vice).
+ * - `snap`: seco y rapido, caracter a caracter (Hyprland).
+ * - `fluid`: por palabras, con desenfoque y sobre-impulso blando (Caelestia).
+ */
+export type MotionStyle = "cinematic" | "snap" | "fluid";
+
+/**
  * Ritmo de animacion propio de cada tema: el motion tambien cambia entre
  * temas, no solo el color. Lo consume `utils/reveal.ts`.
  */
 export interface MotionProfile {
+  style: MotionStyle;
   ease: string;
   duration: number;
   stagger: number;

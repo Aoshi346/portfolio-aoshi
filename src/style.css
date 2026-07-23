@@ -43,6 +43,26 @@ body {
   letter-spacing: var(--display-tracking, -0.02em);
 }
 
+/*
+ * Titulares. El peso, la caja y el interlineado son tokens porque cada tema
+ * trata la tipografia distinto: Vice grita en mayusculas de cartel, Caelestia
+ * habla en caja baja. El markup no cambia; cambian los tokens.
+ */
+.display-xl,
+.display-lg {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight, 900);
+  text-transform: var(--display-transform, uppercase);
+  letter-spacing: var(--display-tracking, -0.02em);
+  line-height: var(--display-leading, 0.86);
+}
+
+/* El nombre se escala hasta atravesar la pantalla en Vice: avisar al compositor. */
+[data-hero-name] {
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
 .font-mono {
   font-family: var(--font-mono);
 }

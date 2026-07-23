@@ -7,7 +7,7 @@ export const caelestiaTheme: Theme = {
   themeColor: "#f4f0f9",
   fontHref:
     "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap",
-  motion: { ease: "power2.out", duration: 1.3, stagger: 0.09 },
+  motion: { style: "fluid", ease: "back.out(1.5)", duration: 1.2, stagger: 0.08 },
   async mountBackground(container) {
     const { mountCaelestiaBlobs } = await import("../backgrounds/caelestiaBlobs");
     return mountCaelestiaBlobs(container);
