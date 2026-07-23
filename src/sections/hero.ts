@@ -1,43 +1,56 @@
 import { identity } from "../data/content";
 import { el } from "../utils/dom";
-import type { HeroSceneHandle } from "../three/heroScene";
 
+/**
+ * Apertura. Copy minimo y suelo de conversion garantizado: nombre, rol y
+ * contacto quedan legibles en el primer viewport en los tres temas, sin
+ * depender de que el shader o las animaciones hayan cargado.
+ */
 export function createHero(): HTMLElement {
-  const canvasHost = el(
+  const eyebrow = el("p", "font-mono text-[0.7rem] uppercase tracking-[0.4em] text-accent", [
+    identity.role,
+  ]);
+
+  const name = el(
+    "h1",
+    "mt-5 font-display text-[clamp(3rem,12vw,10.5rem)] font-black uppercase leading-[0.84]",
+    [identity.name],
+  );
+  name.setAttribute("data-reveal", "chars");
+
+  const line = el("p", "mt-8 max-w-xl text-lg leading-relaxed text-paper/70 md:text-xl", [
+    identity.subheadline,
+  ]);
+  line.setAttribute("data-reveal", "fade-up");
+
+  const email = el(
+    "a",
+    "font-mono text-sm text-paper underline decoration-accent decoration-2 underline-offset-8 transition-colors duration-300 hover:text-accent",
+    [identity.email],
+  );
+  email.href = `mailto:${identity.email}`;
+
+  const github = el(
+    "a",
+    "font-mono text-sm text-paper/60 transition-colors duration-300 hover:text-accent",
+    ["GitHub"],
+  );
+  github.href = identity.github;
+  github.target = "_blank";
+  github.rel = "noopener noreferrer";
+
+  const contact = el("div", "mt-10 flex flex-wrap items-center gap-x-8 gap-y-3", [email, github]);
+  contact.setAttribute("data-reveal", "fade-up");
+
+  const scrollCue = el(
     "div",
-    "pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-1000",
+    "mt-16 flex items-center gap-3 font-mono text-[0.65rem] uppercase tracking-[0.35em] text-paper/40",
+    [el("span", "block h-px w-8 bg-paper/40", []), "Desplázate"],
   );
-  canvasHost.setAttribute("aria-hidden", "true");
-  canvasHost.setAttribute("data-parallax", "");
-  canvasHost.dataset.parallaxSpeed = "0.4";
 
-  const section = el(
+  return el(
     "section",
-    "relative flex min-h-screen flex-col justify-center overflow-hidden px-6 md:px-12",
-    [
-      canvasHost,
-      el("p", "font-mono text-sm uppercase tracking-[0.3em] text-accent", [identity.role]),
-      el(
-        "h1",
-        "mt-6 max-w-4xl text-balance font-display text-6xl font-bold leading-[0.95] md:text-8xl",
-        [identity.headline],
-      ),
-      el("p", "mt-8 max-w-xl text-lg text-paper/70 md:text-xl", [identity.subheadline]),
-      el("div", "mt-16 flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-paper/40", [
-        el("span", "block h-px w-8 bg-paper/40", []),
-        "Desplázate",
-      ]),
-    ],
+    "relative flex min-h-screen flex-col justify-center overflow-hidden px-6 py-24 md:px-12",
+    [eyebrow, name, line, contact, scrollCue],
   );
-
-  let sceneHandle: HeroSceneHandle | null = null;
-
-  void import("../three/heroScene").then(({ mountHeroScene }) => {
-    sceneHandle = mountHeroScene(canvasHost);
-    requestAnimationFrame(() => canvasHost.classList.remove("opacity-0"));
-  });
-
-  window.addEventListener("beforeunload", () => sceneHandle?.destroy(), { once: true });
-
-  return section;
 }

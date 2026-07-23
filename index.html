@@ -16,13 +16,23 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/og-image.svg" />
-    <meta name="theme-color" content="#0a0a0f" />
+    <meta name="theme-color" content="#05070a" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap"
-      rel="stylesheet"
-    />
+    <!--
+      El tema se sortea aqui, antes del primer pintado, para que no haya flash
+      (Caelestia es claro y los otros dos oscuros). src/themes/index.ts respeta
+      este valor. La lista de ids se duplica a proposito: es el precio de
+      evitar el FOUC sin cargar el bundle antes de pintar.
+    -->
+    <script>
+      (function () {
+        var ids = ["vice", "hyprland", "caelestia"];
+        var forced = new URLSearchParams(location.search).get("theme");
+        var id = ids.indexOf(forced) >= 0 ? forced : ids[Math.floor(Math.random() * ids.length)];
+        document.documentElement.dataset.theme = id;
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

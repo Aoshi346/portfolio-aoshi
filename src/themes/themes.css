@@ -1,0 +1,58 @@
+/*
+ * Skins por tema. Cada bloque redefine los mismos tokens que declara `@theme`
+ * en style.css, colgados de `:root[data-theme="…"]` (mayor especificidad que
+ * `:root`, asi que ganan siempre). Como Tailwind 4 compila sus utilidades a
+ * `var(--color-*)`, cambiar el atributo re-skinea TODO el sitio sin tocar
+ * una sola clase en el markup.
+ *
+ * `--bg-fallback` es el degradado que se ve si WebGL no esta disponible:
+ * el canvas del shader se monta encima, pero el tema nunca queda en negro.
+ */
+
+:root[data-theme="vice"] {
+  --color-ink: #150726;
+  --color-paper: #fbeff5;
+  --color-accent: #ff2e88;
+  --color-accent-2: #00d9d5;
+  --color-line: #45215c;
+
+  --font-display: "Anton", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-card: 0px;
+  --display-tracking: 0.01em;
+  --bg-fallback: linear-gradient(180deg, #150726 0%, #4b1146 55%, #ff5c3d 100%);
+}
+
+:root[data-theme="hyprland"] {
+  --color-ink: #05070a;
+  --color-paper: #e6f4f1;
+  --color-accent: #33ccff;
+  --color-accent-2: #00ff99;
+  --color-line: #13303a;
+
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-card: 4px;
+  --display-tracking: -0.03em;
+  --bg-fallback: linear-gradient(140deg, #05070a 0%, #0a2b38 55%, #063c30 100%);
+}
+
+:root[data-theme="caelestia"] {
+  --color-ink: #f4f0f9;
+  --color-paper: #1c1b1f;
+  --color-accent: #7d5bd6;
+  --color-accent-2: #2f9e79;
+  --color-line: #d9d0e4;
+
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-body: "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-card: 28px;
+  --display-tracking: -0.02em;
+  --bg-fallback: linear-gradient(160deg, #f4f0f9 0%, #e4dcf3 50%, #dbeee6 100%);
+}

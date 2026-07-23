@@ -1,9 +1,45 @@
+import type { MotionProfile } from "../themes/types";
+
 /**
- * Wire GSAP ScrollTrigger reveals onto elements already present in the DOM.
- * GSAP/ScrollTrigger load via dynamic import so they never sit in the main
- * bundle; content stays fully visible without JS (progressive enhancement).
+ * Parte el texto de un elemento en spans por caracter, agrupados por palabra
+ * para que el salto de linea siga siendo natural. Se hace a mano en vez de con
+ * SplitText (plugin) para no atar el redisenio a la disponibilidad del plugin.
  */
-export async function initScrollReveal(root: HTMLElement): Promise<void> {
+function splitToChars(target: HTMLElement): HTMLElement[] {
+  const text = target.textContent ?? "";
+  target.textContent = "";
+
+  const chars: HTMLElement[] = [];
+  const words = text.split(" ");
+
+  words.forEach((word, wordIndex) => {
+    const wordSpan = document.createElement("span");
+    wordSpan.className = "inline-block whitespace-nowrap";
+
+    for (const character of word) {
+      const charSpan = document.createElement("span");
+      charSpan.className = "inline-block";
+      charSpan.textContent = character;
+      wordSpan.append(charSpan);
+      chars.push(charSpan);
+    }
+
+    target.append(wordSpan);
+    // Espacio real entre palabras: permite que la linea rompa donde toca.
+    if (wordIndex < words.length - 1) target.append(document.createTextNode(" "));
+  });
+
+  return chars;
+}
+
+/**
+ * Cablea los reveals de GSAP ScrollTrigger sobre el DOM ya montado. GSAP entra
+ * por import dinamico para no pesar el bundle inicial; sin JS el contenido
+ * queda visible igual (mejora progresiva).
+ *
+ * El `motion` lo aporta el tema activo: el ritmo tambien cambia entre temas.
+ */
+export async function initScrollReveal(root: HTMLElement, motion: MotionProfile): Promise<void> {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (prefersReducedMotion) return;
 
@@ -13,12 +49,29 @@ export async function initScrollReveal(root: HTMLElement): Promise<void> {
   ]);
   gsap.registerPlugin(ScrollTrigger);
 
+  // Tipografia cinetica: los caracteres suben y se ensamblan al entrar.
+  root.querySelectorAll<HTMLElement>("[data-reveal='chars']").forEach((target) => {
+    const chars = splitToChars(target);
+    gsap.from(chars, {
+      yPercent: 118,
+      opacity: 0,
+      duration: motion.duration,
+      ease: motion.ease,
+      stagger: motion.stagger * 0.35,
+      scrollTrigger: {
+        trigger: target,
+        start: "top 88%",
+        toggleActions: "play none none reverse",
+      },
+    });
+  });
+
   root.querySelectorAll<HTMLElement>("[data-reveal='fade-up']").forEach((target) => {
     gsap.from(target, {
       y: 48,
       opacity: 0,
-      duration: 0.9,
-      ease: "power3.out",
+      duration: motion.duration,
+      ease: motion.ease,
       scrollTrigger: {
         trigger: target,
         start: "top 85%",
@@ -31,8 +84,8 @@ export async function initScrollReveal(root: HTMLElement): Promise<void> {
     gsap.from(target, {
       clipPath: "inset(0 0 100% 0)",
       opacity: 0,
-      duration: 1.1,
-      ease: "expo.out",
+      duration: motion.duration * 1.1,
+      ease: motion.ease,
       scrollTrigger: {
         trigger: target,
         start: "top 85%",
@@ -47,9 +100,9 @@ export async function initScrollReveal(root: HTMLElement): Promise<void> {
     gsap.from(targets, {
       y: 24,
       opacity: 0,
-      duration: 0.7,
-      ease: "power2.out",
-      stagger: 0.08,
+      duration: motion.duration * 0.7,
+      ease: motion.ease,
+      stagger: motion.stagger,
       scrollTrigger: {
         trigger: group,
         start: "top 85%",
@@ -58,11 +111,11 @@ export async function initScrollReveal(root: HTMLElement): Promise<void> {
     });
   });
 
-  // Scroll-scrub sutil sobre los números ordinales de los casos de estudio:
+  // Scroll-scrub sutil sobre los ordinales gigantes de cada escena:
   // desplazamiento contenido para que se lea como profundidad, no como ruido.
   root.querySelectorAll<HTMLElement>("[data-reveal='ordinal']").forEach((target) => {
     gsap.to(target, {
-      yPercent: -10,
+      yPercent: -12,
       ease: "none",
       scrollTrigger: {
         trigger: target.closest("section") ?? target,
@@ -73,8 +126,8 @@ export async function initScrollReveal(root: HTMLElement): Promise<void> {
     });
   });
 
-  // Parallax sutil por capas: el elemento se desplaza a una fracción de la
-  // velocidad de scroll, marcada por data-parallax-speed (0-1, por defecto 0.3).
+  // Parallax por capas: el elemento se desplaza a una fraccion de la velocidad
+  // de scroll, marcada por data-parallax-speed (0-1, por defecto 0.3).
   root.querySelectorAll<HTMLElement>("[data-parallax]").forEach((target) => {
     const speed = Number(target.dataset.parallaxSpeed ?? "0.3");
     gsap.to(target, {
