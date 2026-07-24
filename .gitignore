@@ -41,3 +41,6 @@ PROGRESS.log
 *.key
 secrets.*
 credentials.*
+
+# Brainstorming visual companion (superpowers)
+.superpowers/
