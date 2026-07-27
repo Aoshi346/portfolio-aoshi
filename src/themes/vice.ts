@@ -17,4 +17,8 @@ export const viceTheme: Theme = {
       video: { webm: "/media/vice-hero.webm", mp4: "/media/vice-hero.mp4" },
     });
   },
+  async choreography() {
+    const { viceChoreography } = await import("./vice.choreography");
+    return viceChoreography;
+  },
 };

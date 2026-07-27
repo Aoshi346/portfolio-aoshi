@@ -1,5 +1,5 @@
 import "lenis/dist/lenis.css";
-import type { MotionProfile } from "../themes/types";
+import type { MotionProfile, Theme } from "../themes/types";
 
 type Gsap = typeof import("gsap").default;
 type ScrollTriggerApi = typeof import("gsap/ScrollTrigger").ScrollTrigger;
@@ -109,122 +109,17 @@ async function initSmoothScroll(gsap: Gsap, scrollTrigger: ScrollTriggerApi): Pr
 }
 
 /**
- * Fija de forma SINCRONICA el estado inicial del hero: opacidad explicita del
- * nombre, ocultacion de los elementos en cascada y retirada de la clase
- * `.js-intro`. Debe ejecutarse antes de cualquier `await` y antes de que
- * `wireHeroZoom` cablee su tween con scrub.
- *
- * Motivo (defecto 1 del plan de correccion): `wireHeroZoom` se llama justo
- * despues de `playCinematicIntro`, sin esperarla. Si esa preparacion quedara
- * detras del `await` de fuentes, `ScrollTrigger.refresh()` renderizaria el
- * tween de zoom mientras `[data-hero-name]` todavia tiene `opacity: 0` por la
- * CSS de `.js-intro` (ver style.css). GSAP capta ese 0 como valor de partida
- * y lo cachea: el tween queda animando de 0 a 0 para siempre, aunque la clase
- * se retire despues. Al fijar `opacity: 1` aqui, de forma sincrona, se rompe
- * la carrera sin depender del orden de resolucion de promesas.
- */
-function prepareHeroIntro(gsap: Gsap, root: HTMLElement): HTMLElement | null {
-  const name = root.querySelector<HTMLElement>("[data-hero-name]");
-  if (!name) return null;
-
-  const fading = Array.from(root.querySelectorAll<HTMLElement>("[data-hero-fade]"));
-  gsap.set(fading, { opacity: 0, y: 24 });
-  gsap.set(name, { opacity: 1, scale: 1.08, filter: "blur(7px)" });
-  document.documentElement.classList.remove("js-intro");
-
-  return name;
-}
-
-/**
- * Secuencia de entrada de Vice City. El nombre no "aparece": se monta letra a
- * letra desde el centro hacia fuera, estirado y cayendo en su sitio, y el
- * resto del hero entra despues en cascada.
- *
- * El estado inicial (opacidad, ocultacion de `.js-intro`) ya lo fijo
- * `prepareHeroIntro` de forma sincrona antes de llamar a esta funcion: aqui
- * solo queda la parte que si puede esperar a que carguen las fuentes.
- */
-async function playCinematicIntro(gsap: Gsap, name: HTMLElement, root: HTMLElement): Promise<void> {
-  // Partir el texto antes de que cargue la tipografia mediria mal las letras y
-  // la linea saltaria a mitad de animacion. El limite evita colgar la entrada.
-  await Promise.race([
-    document.fonts.ready,
-    new Promise((resolve) => window.setTimeout(resolve, 1200)),
-  ]);
-
-  const { chars } = splitText(name, true);
-  const fading = Array.from(root.querySelectorAll<HTMLElement>("[data-hero-fade]"));
-
-  gsap.set(chars, { yPercent: 115 });
-
-  const timeline = gsap.timeline();
-
-  // Empuje de camara sobre el titulo entero: lento y sostenido, es lo que da
-  // el aire de plano de apertura.
-  timeline.to(name, { scale: 1, filter: "blur(0px)", duration: 2.4, ease: "power2.out" }, 0);
-
-  // La duracion percibida la manda el stagger, no el easing: con expo.out el
-  // 96% del recorrido se gastaba en 250 ms y la entrada se leia instantanea.
-  timeline.to(
-    chars,
-    { yPercent: 0, duration: 1.0, ease: "power3.out", stagger: 0.075 },
-    0.25,
-  );
-
-  timeline.to(
-    fading,
-    { opacity: 1, y: 0, duration: 0.9, ease: "power2.out", stagger: 0.14 },
-    1.5,
-  );
-}
-
-/**
- * El gesto firma de Vice City: al hacer scroll el hero queda fijado y el nombre
- * crece hasta atravesar la pantalla, como el titulo de GTA. El resto del hero
- * se desvanece antes para que el nombre mande.
- */
-function wireHeroZoom(gsap: Gsap, root: HTMLElement): void {
-  const hero = root.querySelector<HTMLElement>("[data-hero]");
-  const heroName = root.querySelector<HTMLElement>("[data-hero-name]");
-  if (!hero || !heroName) return;
-
-  const fading = Array.from(root.querySelectorAll<HTMLElement>("[data-hero-fade]"));
-
-  const timeline = gsap.timeline({
-    scrollTrigger: {
-      trigger: hero,
-      start: "top top",
-      end: "+=150%",
-      pin: true,
-      scrub: 1,
-      anticipatePin: 1,
-    },
-  });
-
-  if (fading.length > 0) {
-    timeline.to(fading, { opacity: 0, y: -30, ease: "none", duration: 0.35 }, 0);
-  }
-  // La aceleracion (power2.in) es lo que vende el "atravesar": lento al
-  // principio, se dispara al final. `fromTo` con `opacity: 1` explicito evita
-  // que GSAP capte un 0 transitorio del DOM como punto de partida (defecto 1):
-  // el valor de partida queda fijado en el codigo, no en lo que haya en
-  // pantalla en el instante en que este tween se renderiza por primera vez.
-  timeline.fromTo(
-    heroName,
-    { opacity: 1 },
-    { scale: 9, opacity: 0, ease: "power2.in", duration: 1 },
-    0,
-  );
-}
-
-/**
  * Cablea los reveals de GSAP ScrollTrigger sobre el DOM ya montado. GSAP entra
  * por import dinamico para no pesar el bundle inicial; sin JS el contenido
  * queda visible igual (mejora progresiva).
  *
- * El `motion` lo aporta el tema activo: el ritmo y las recetas cambian entre temas.
+ * El tema activo aporta el ritmo (`motion`) y, opcionalmente, una coreografia
+ * propia. Un tema con coreografia la usa en exclusiva: mezclarla con las
+ * recetas genericas de aqui abajo haria que dos timelines peleen por el mismo
+ * elemento. Los temas sin coreografia siguen con las recetas por atributo.
  */
-export async function initScrollReveal(root: HTMLElement, motion: MotionProfile): Promise<void> {
+export async function initScrollReveal(root: HTMLElement, theme: Theme): Promise<void> {
+  const motion = theme.motion;
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (prefersReducedMotion) return;
 
@@ -234,21 +129,18 @@ export async function initScrollReveal(root: HTMLElement, motion: MotionProfile)
   ]);
   gsap.registerPlugin(ScrollTrigger);
 
-  const isCinematic = motion.style === "cinematic";
+  if (motion.style === "cinematic") await initSmoothScroll(gsap, ScrollTrigger);
 
-  if (isCinematic) {
-    await initSmoothScroll(gsap, ScrollTrigger);
-    const heroName = prepareHeroIntro(gsap, root);
-    if (heroName) void playCinematicIntro(gsap, heroName, root);
+  if (theme.choreography) {
+    const choreography = await theme.choreography();
+    choreography({ gsap, ScrollTrigger, root, motion });
+    ScrollTrigger.refresh();
+    return;
   }
 
   root.querySelectorAll<HTMLElement>("[data-reveal='chars']").forEach((target) => {
-    // En cinematic el nombre lo monta la secuencia de entrada, no el scroll.
-    if (isCinematic && target.hasAttribute("data-hero-name")) return;
     revealHeadline(gsap, target, motion);
   });
-
-  if (isCinematic) wireHeroZoom(gsap, root);
 
   root.querySelectorAll<HTMLElement>("[data-reveal='fade-up']").forEach((target) => {
     const scrollTrigger = {

@@ -1,4 +1,5 @@
 import type { BackgroundHandle } from "../backgrounds/shaderBackground";
+import type { Choreography } from "./choreography";
 
 /**
  * Familia de animacion. No es solo un easing distinto: cada estilo usa recetas
@@ -30,6 +31,11 @@ export interface Theme {
   /** Hoja de Google Fonts; solo se carga si el tema sale elegido. */
   fontHref: string;
   motion: MotionProfile;
+  /**
+   * Coreografia propia del tema, cargada en diferido. Si no la define, se
+   * aplican las recetas genericas de `utils/reveal.ts`.
+   */
+  choreography?: () => Promise<Choreography>;
   /** Import dinamico: cada visita descarga un shader, no los tres. */
   mountBackground: (container: HTMLElement) => Promise<BackgroundHandle>;
 }

@@ -47,7 +47,7 @@ void applyTheme(theme, backgroundHost).then((handle) => {
 // Libera el contexto WebGL al salir: el shader corre durante toda la visita.
 window.addEventListener("beforeunload", () => backgroundHandle?.destroy(), { once: true });
 
-void import("./utils/reveal").then(({ initScrollReveal }) => initScrollReveal(main, theme.motion));
+void import("./utils/reveal").then(({ initScrollReveal }) => initScrollReveal(main, theme));
 
 // Sonda de verificacion: la consume scripts/verify.py. No afecta al render.
 Object.defineProperty(window, "__CONTENT_SHAPE__", {
