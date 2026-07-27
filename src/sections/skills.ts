@@ -12,7 +12,7 @@ export function createSkills(): HTMLElement {
   const section = el(
     "section",
     "credits relative flex min-h-screen flex-col justify-center px-6 py-24 md:px-12",
-    [el("p", "hero-kick", ["Con qué construyo"]), createCredits()],
+    [el("h2", "hero-kick", ["Con qué construyo"]), createCredits()],
   );
   section.setAttribute("data-scene", "credits");
   return section;

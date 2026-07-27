@@ -100,7 +100,7 @@ export function createAbout(): HTMLElement {
   const section = el(
     "section",
     "about relative flex min-h-screen flex-col justify-center px-6 py-24 md:px-12",
-    [el("p", "hero-kick", ["Quién es"]), el("div", "about-grid", [createCard(), body])],
+    [el("h2", "hero-kick", ["Quién es"]), el("div", "about-grid", [createCard(), body])],
   );
   section.setAttribute("data-scene", "about");
   // Vice trae su propio gesto de subtitulado (vice.choreography.ts) y lo

@@ -541,6 +541,54 @@ def check_contrast_offscreen_scenes(page, theme: str) -> None:
     _scroll_to_and_settle(page, 0)
 
 
+def check_heading_hierarchy(page) -> None:
+    """Jerarquia de encabezados: hallazgo de la revision final de rama. `about.ts`
+    y `skills.ts` usaban `<p class="hero-kick">` como titulo de seccion en vez
+    de un encabezado real, dejando sus `<h3>` colgados de la nada (saltan el
+    `<h2>` que deberian tener encima) y a la seccion entera fuera del indice
+    de encabezados de cualquier lector de pantalla. `hero.ts`/`contacto.ts`/
+    `projectScene.ts` ya usaban `hero-kick` correctamente: un ANTETITULO sobre
+    un encabezado real (`<h1>`/`<h2>`), nunca en su lugar.
+
+    Dos aserciones, sobre el DOM real (no una convencion de nombres):
+      1. Sin saltos de nivel: recorriendo los encabezados en orden de
+         documento, cada nivel nuevo no puede superar en mas de 1 al nivel
+         mas profundo visto hasta ese punto (regla estandar de outline HTML).
+         Un `<h3>` sin `<h2>` anterior en su rama es un salto de 2 (de nivel 1
+         implicito, o del nivel del `<h2>` de la escena previa que no es su
+         padre real) y lo cazaria.
+      2. Cada `[data-scene]` (una seccion del one-pager) contiene al menos un
+         encabezado real (`h1`-`h6`) — no solo un `<p class="hero-kick">` que
+         parezca titulo mirandolo, sino un nodo que un lector de pantalla
+         cuenta como encabezado."""
+    headings = page.evaluate(
+        """() => Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6')).map((h) => ({
+          level: Number(h.tagName[1]),
+          text: (h.textContent || '').trim().slice(0, 40),
+        }))"""
+    )
+    check(len(headings) > 0, "hay encabezados en el documento")
+
+    max_seen = 0
+    jumps: list[str] = []
+    for h in headings:
+        if h["level"] > max_seen + 1:
+            jumps.append(f"h{h['level']} \"{h['text']}\" tras nivel maximo h{max_seen}")
+        max_seen = max(max_seen, h["level"])
+    check(not jumps, f"sin saltos de nivel en la jerarquia de encabezados ({jumps})")
+
+    h1_count = sum(1 for h in headings if h["level"] == 1)
+    check(h1_count == 1, f"hay exactamente un h1 ({h1_count})")
+
+    scenes_without_heading = page.evaluate(
+        """() => Array.from(document.querySelectorAll('[data-scene]'))
+          .filter((s) => !s.querySelector('h1,h2,h3,h4,h5,h6'))
+          .map((s) => s.dataset.scene)"""
+    )
+    check(not scenes_without_heading,
+          f"toda escena [data-scene] tiene un encabezado real dentro ({scenes_without_heading})")
+
+
 def check_reduced_motion_chrome(browser, url: str, theme: str) -> None:
     """El cromo de cine (letterbox + barra de orientacion) es decoracion pura
     de Vice: con `prefers-reduced-motion` no debe aparecer. Sin este check,
@@ -606,6 +654,8 @@ def run(
             })()""")
             check(shape is not None and shape.get("galleries", 0) >= 2,
                   "content.ts expone galerias en al menos 2 casos de estudio")
+
+            check_heading_hierarchy(page)
 
             # Defecto de contraste: corre en LOS TRES temas. El bug nacio de
             # asumir que un color que se lee bien en los dos temas oscuros
