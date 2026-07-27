@@ -71,6 +71,32 @@
   display: block;
 }
 
+/*
+ * Reserva de espacio para el cromo de cine (Task 10-fix). El `.rail` vive
+ * fijo en `top:0` con ~2.4rem de alto (0.75rem de padding arriba/abajo + su
+ * propia linea de texto, 37.9px medidos) y, durante la obra, el letterbox
+ * superior se le suma hasta 6.5vh (`cinemaChrome` en
+ * `vice.choreography.ts`). El `py-24` (6rem) compartido con
+ * Hyprland/Caelestia (que no muestran cromo, por eso no se toca esa clase)
+ * alcanza de sobra en el punto de reposo "escena alineada arriba", pero no
+ * en el resto del recorrido: al seguir bajando DENTRO de una escena mas alta
+ * que el viewport, la primera etiqueta de la escena (`.hero-kick`) cruza esa
+ * banda fija antes de salir por arriba de la pantalla. Medido en 1440x600,
+ * escena "obra": `.rail` llegaba a `bottom: 37.9px` mientras `.hero-kick` ya
+ * empezaba en `top: 30.4px` -- 7.5px de solape. El cromo es una banda, no un
+ * recorte (mismo principio que el letterbox): se amplia el padding vertical
+ * de las 5 escenas (solo en Vice) para dar mas margen de scroll antes de que
+ * cualquier etiqueta entre en esa banda, en vez de parchear `.hero-kick` en
+ * una escena concreta. El extra reserva el peor caso (letterbox a 6.5vh) en
+ * las 5 por igual, no solo en "obra": el mismo `.hero-kick` compartido puede
+ * quedar igual de cerca del borde en about/creditos/hero/contacto en
+ * viewports bajos, aunque solo la obra despliegue el letterbox.
+ */
+:root[data-theme="vice"] [data-scene] {
+  padding-top: calc(6rem + 3rem + 6.5vh);
+  padding-bottom: calc(6rem + 3rem + 6.5vh);
+}
+
 /* ----------------------------------------------------------------- Hyprland */
 
 :root[data-theme="hyprland"] {
