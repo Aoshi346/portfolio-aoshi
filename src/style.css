@@ -57,6 +57,18 @@ body {
   line-height: var(--display-leading, 0.86);
 }
 
+/*
+ * Subtitulo. Es una linea de cartel, no un parrafo: por eso tiene su propio
+ * token de familia, peso y tamano. Con 13,5 px y opacidad baja pesaba menos
+ * que el cuerpo y la jerarquia se rompia.
+ */
+.lead {
+  font-family: var(--font-lead, var(--font-body));
+  font-weight: var(--lead-weight, 300);
+  font-size: var(--lead-size, 1.125rem);
+  line-height: 1.4;
+}
+
 /* El nombre se escala hasta atravesar la pantalla en Vice: avisar al compositor. */
 [data-hero-name] {
   transform-origin: 50% 50%;

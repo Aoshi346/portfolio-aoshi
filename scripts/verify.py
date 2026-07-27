@@ -66,6 +66,21 @@ def run(theme: str, url: str) -> None:
                 check(backdrop is not None and backdrop["poster"], "hay poster en el backdrop")
                 check(backdrop is not None and backdrop["video"], "hay video en el backdrop")
                 check(backdrop is not None and backdrop["playing"], "el video se reproduce")
+
+                fonts = page.evaluate("""(() => {
+                  const root = getComputedStyle(document.documentElement);
+                  const probe = document.querySelector('[data-hero-name]');
+                  return {
+                    display: root.getPropertyValue('--font-display').trim(),
+                    body: root.getPropertyValue('--font-body').trim(),
+                    accent: root.getPropertyValue('--color-accent').trim(),
+                    rendered: probe ? getComputedStyle(probe).fontFamily : "",
+                  };
+                })()""")
+                check("Passion One" in fonts["display"], "display es Passion One")
+                check("Manrope" in fonts["body"], "cuerpo es Manrope")
+                check(fonts["accent"].lower() == "#ffd166", "acento es ambar")
+                check("mono" not in fonts["body"].lower(), "Vice no usa monoespaciada")
         finally:
             if page:
                 page.close()
