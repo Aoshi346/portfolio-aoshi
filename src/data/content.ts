@@ -47,9 +47,8 @@ export const stats: Stat[] = [
 ];
 
 export const aboutCopy: string[] = [
-  "Soy desarrollador full stack enfocado en Python, React, Django y TypeScript: llevo datos reales a interfaces que la gente usa todos los días.",
-  "Curso noveno semestre de Ingeniería de Sistemas en la Universidad Santa María, en Caracas, mientras trabajo como pasante en Telefónica Venezuela.",
-  "La mayoría de mis repositorios son privados. En este portfolio reúno los públicos que mejor muestran cómo pienso y qué construyo.",
+  "Llevo datos reales a interfaces que la gente usa todos los días.",
+  "La mayoría de mis repositorios son privados. Aquí están los públicos que mejor muestran cómo pienso y qué construyo.",
 ];
 
 export interface Education {
@@ -147,6 +146,23 @@ export const skillGroups: SkillGroup[] = [
         detail: "Donde persisto los datos a gran escala de las plataformas que construyo.",
       },
     ],
+  },
+];
+
+export interface FocusArea {
+  title: string;
+  detail: string;
+}
+
+/** Pares titulo/detalle de "En que me enfoco", especificos de Aoshi. */
+export const focusAreas: FocusArea[] = [
+  {
+    title: "Datos a gran escala",
+    detail: "Que la consulta siga siendo rápida con volumen real",
+  },
+  {
+    title: "Interfaces que aguantan",
+    detail: "Estado complejo sin romperse en producción",
   },
 ];
 

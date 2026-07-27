@@ -1,4 +1,4 @@
-import { education, experience, identity, stats } from "../data/content";
+import { aboutCopy, education, experience, focusAreas, identity, stats } from "../data/content";
 import { el } from "../utils/dom";
 
 function createCard(): HTMLElement {
@@ -72,14 +72,9 @@ function createTrack(): HTMLElement {
 
   const focus = el("div", "about-track-col scene-surface", [
     el("h3", "about-h", ["En qué me enfoco"]),
-    el("div", "about-item", [
-      el("b", "", ["Datos a gran escala"]),
-      el("span", "", ["Que la consulta siga siendo rápida con volumen real"]),
-    ]),
-    el("div", "about-item", [
-      el("b", "", ["Interfaces que aguantan"]),
-      el("span", "", ["Estado complejo sin romperse en producción"]),
-    ]),
+    ...focusAreas.map((area) =>
+      el("div", "about-item", [el("b", "", [area.title]), el("span", "", [area.detail])]),
+    ),
   ]);
 
   const track = el("div", "about-track", [path, focus]);
@@ -96,11 +91,8 @@ function createLine(className: string, text: string): HTMLElement {
 
 export function createAbout(): HTMLElement {
   const body = el("div", "about-body", [
-    createLine("lead text-paper/90", "Llevo datos reales a interfaces que la gente usa todos los días."),
-    createLine(
-      "block mt-3 text-sm leading-relaxed text-paper/85",
-      "La mayoría de mis repositorios son privados. Aquí están los públicos que mejor muestran cómo pienso y qué construyo.",
-    ),
+    createLine("lead text-paper/90", aboutCopy[0] ?? ""),
+    createLine("block mt-3 text-sm leading-relaxed text-paper/85", aboutCopy[1] ?? ""),
     createStats(),
     createTrack(),
   ]);
