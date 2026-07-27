@@ -24,10 +24,15 @@ export function createHero(): HTMLElement {
   const corner = el("div", "hero-corner", [location, email]);
   corner.setAttribute("data-hero-fade", "");
 
+  // Envoltorio comun a los tres temas: Caelestia lo viste como tarjeta
+  // Material You (themes.css), Vice y Hyprland lo neutralizan a sangre.
+  // El DOM es unico; solo el CSS colgado de [data-theme] decide la piel.
+  const surface = el("div", "hero-surface", [eyebrow, name, lead]);
+
   const section = el(
     "section",
     "hero relative flex min-h-screen flex-col justify-center overflow-hidden px-6 py-24 md:px-12",
-    [eyebrow, name, lead, corner],
+    [surface, corner],
   );
   section.setAttribute("data-scene", "hero");
 

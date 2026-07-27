@@ -49,6 +49,19 @@
   text-align: center;
 }
 
+/*
+ * `.hero-surface` es el envoltorio comun a los tres temas (un solo DOM,
+ * ver src/sections/hero.ts). Vice es cinematografico a sangre: sin tarjeta,
+ * sin blur, sin borde, sin sombra. Solo Caelestia (mas abajo) la viste.
+ */
+:root[data-theme="vice"] .hero-surface {
+  background: none;
+  backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
 /* ----------------------------------------------------------------- Hyprland */
 
 :root[data-theme="hyprland"] {

@@ -4,6 +4,14 @@ import type { Choreography, Gsap, ScrollTriggerApi } from "./choreography";
 const HERO_ZOOM_TRIGGER_ID = "vice-hero-zoom";
 
 /**
+ * Timeline de entrada (sin scrollTrigger, por eso no la mata `ScrollTrigger.getById`).
+ * Se guarda a nivel de modulo para poder matarla si `scene1Title` se re-ejecutara,
+ * evitando que quede corriendo sobre spans de caracteres ya destruidos por el
+ * siguiente `splitChars`.
+ */
+let introTimeline: ReturnType<Gsap["timeline"]> | null = null;
+
+/**
  * Parte el texto en spans por caracter, agrupados por palabra para que la
  * linea siga rompiendo donde toca. A mano en vez de con SplitText para no
  * atar el redisenio a la disponibilidad del plugin.
@@ -54,6 +62,9 @@ function scene1Title(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
   // Defensivo: si esta funcion se llamara dos veces (hoy no ocurre: el tema se
   // elige una sola vez por carga), no dejar un trigger huerfano acumulandose.
   ScrollTrigger.getById(HERO_ZOOM_TRIGGER_ID)?.kill();
+  // La timeline de entrada no tiene scrollTrigger propio, asi que
+  // `ScrollTrigger.getById` no la alcanza: hay que matarla a mano.
+  introTimeline?.kill();
 
   const chars = splitChars(name);
   const fading = Array.from(root.querySelectorAll<HTMLElement>("[data-hero-fade]"));
@@ -62,6 +73,7 @@ function scene1Title(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
   gsap.set(fading, { opacity: 0, y: 24 });
 
   const intro = gsap.timeline();
+  introTimeline = intro;
   // Empuje de camara: lento y sostenido, da el aire de plano de apertura.
   intro.to(name, { scale: 1, filter: "blur(0px)", duration: 2.4, ease: "power2.out" }, 0);
   // La duracion percibida la manda el stagger, no el easing: con expo.out el
