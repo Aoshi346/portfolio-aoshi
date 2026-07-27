@@ -7,7 +7,7 @@ import { el } from "../utils/dom";
 export function createThemeSignature(label: string): HTMLElement {
   const signature = el(
     "div",
-    "pointer-events-none fixed bottom-5 right-5 z-40 flex items-center gap-2 font-mono text-[0.6rem] uppercase tracking-[0.3em] text-paper/40",
+    "theme-signature pointer-events-none fixed bottom-5 right-5 z-40 flex items-center gap-2 font-mono text-[0.6rem] uppercase tracking-[0.3em] text-paper/40",
     [el("span", "block h-1.5 w-1.5 rounded-full bg-accent", []), label],
   );
   signature.setAttribute("aria-hidden", "true");

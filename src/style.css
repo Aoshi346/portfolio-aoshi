@@ -335,6 +335,26 @@ body {
   color: var(--color-accent);
 }
 
+/*
+ * La firma de tema (`components/themeSignature.ts`) es `position: fixed` en
+ * la esquina inferior derecha: en movil, el rodillo de creditos ("Con que
+ * construyo") no usa scroll-snap, asi que quien suelta el gesto de scroll a
+ * mitad de camino puede quedarse con una fila de credito exactamente detras
+ * de la firma (medido en 390x844: filas de `.credit` cruzando su banda
+ * vertical durante la transicion de entrada de la escena). Sin superficie
+ * propia, texto de credito y texto de la firma se mezclaban en el mismo
+ * plano. Mismo remedio que `.contacto-corner`/`.rail`: un scrim propio detras
+ * de la firma para que, pase lo que pase debajo, siga siendo legible sin
+ * tapar el contenido real (el pill es pequeno y sigue dejando ver el resto
+ * de la fila).
+ */
+.theme-signature {
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  backdrop-filter: blur(6px);
+}
+
 .font-mono {
   font-family: var(--font-mono);
 }
