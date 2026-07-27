@@ -5,6 +5,7 @@ import { caseStudies } from "./data/content";
 import { createAbout } from "./sections/about";
 import { createHero } from "./sections/hero";
 import { createProjectScene } from "./sections/obra/projectScene";
+import { createSkills } from "./sections/skills";
 import { applyTheme, pickTheme } from "./themes";
 import { el } from "./utils/dom";
 
@@ -39,6 +40,7 @@ const main = el("main", "relative min-h-screen", [
   createHero(),
   createAbout(),
   ...caseStudies.slice(0, 2).map((project, index) => createProjectScene(project, index)),
+  createSkills(),
 ]);
 
 app.append(backgroundHost, noise, main, createThemeSignature(theme.label));

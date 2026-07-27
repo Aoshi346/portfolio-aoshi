@@ -135,3 +135,64 @@
   opacity: 0.035;
   mix-blend-mode: multiply;
 }
+
+/* ------------------------------------------------------- Creditos (compartido) */
+
+/*
+ * `createCredits` (src/components/credits.ts) monta el mismo DOM en los tres
+ * temas: rodillo de creditos a la izquierda, panel de detalle a la derecha.
+ * Ese diseno (creditos finales de pelicula) es la metafora de Vice — Hyprland
+ * y Caelestia comparten el marcado pero NO deben leerse como creditos de
+ * cine. Aqui se re-skinea la misma lista como pildoras en rejilla: el
+ * principio "un DOM, presentacion por tema" se cumple en CSS, sin ramificar
+ * `credits.ts`.
+ */
+:root[data-theme="hyprland"] .credits-grid,
+:root[data-theme="caelestia"] .credits-grid {
+  grid-template-columns: 1fr;
+}
+
+:root[data-theme="hyprland"] .credits-list,
+:root[data-theme="caelestia"] .credits-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+:root[data-theme="hyprland"] .credit,
+:root[data-theme="caelestia"] .credit {
+  width: auto;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+
+/* El rol sobra en formato pildora: manda el nombre (sigue disponible en el
+ * panel de detalle al seleccionar la pildora). */
+:root[data-theme="hyprland"] .credit-role,
+:root[data-theme="caelestia"] .credit-role {
+  display: none;
+}
+
+:root[data-theme="hyprland"] .credit-name,
+:root[data-theme="caelestia"] .credit-name {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  text-transform: none;
+  color: var(--color-paper);
+}
+
+/* Pildora activa: mismo gancho que `.chip` de Caelestia (fondo tonal sobre
+ * el accent), consistente con el resto del design system. */
+:root[data-theme="hyprland"] .credit:hover,
+:root[data-theme="hyprland"] .credit:focus-visible,
+:root[data-theme="hyprland"] .credit.is-active,
+:root[data-theme="caelestia"] .credit:hover,
+:root[data-theme="caelestia"] .credit:focus-visible,
+:root[data-theme="caelestia"] .credit.is-active {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: var(--color-accent);
+}

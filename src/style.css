@@ -587,3 +587,146 @@ body {
   height: 100%;
   background: var(--color-accent);
 }
+
+/*
+ * "Con qué construyo" — creditos interactivos (`components/credits.ts`).
+ * Un solo DOM para los tres temas: en Vice se lee como los creditos finales
+ * de una pelicula (rodillo + panel de detalle); Hyprland/Caelestia lo
+ * re-skinean como pildoras en `themes/themes.css`. Todo color sale de un
+ * token o de `color-mix()` sobre un token — nunca un hex/rgb fijado a mano,
+ * la misma regla que ya rompio el contraste de `.hero-corner` una vez
+ * (1.09:1 en Caelestia, ver comentario ahi).
+ */
+.credits-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.4rem, 4vw, 3.4rem);
+  align-items: start;
+  margin-top: 0.8rem;
+  max-width: 940px;
+}
+
+@media (min-width: 860px) {
+  .credits-grid {
+    grid-template-columns: 1fr minmax(230px, 320px);
+  }
+}
+
+/*
+ * El rodillo necesita su propio scrim, igual que `.credits-panel`: Vice no
+ * trae `scene-surface` (esa clase solo hace algo en Caelestia) y el fondo
+ * real es el video/poster cinematografico sin filtrar. Medido con el arnes
+ * (`check_contrast_wcag`): sin este fondo, "React"/"Vite"/"Python" caian
+ * hasta 1.19:1 sobre el fixture SMPTE (colores primarios saturados) — el
+ * mismo defecto de `.hero-corner`, aqui por falta de superficie, no por un
+ * color fijado a mano. 55% de ink es lo que hizo falta para mantener margen
+ * incluso sobre esos frames primarios; en produccion (Task 11, video real)
+ * seguira siendo un fondo mas moderado que el fixture sintetico.
+ */
+.credits-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.credit {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.55rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-line);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 200ms ease;
+}
+
+.credit:hover,
+.credit:focus-visible,
+.credit.is-active {
+  border-color: var(--color-accent);
+  outline: none;
+}
+
+.credit-role {
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  /*
+   * No el accent puro: mismo motivo que `.about-facts dt` — sobre el fondo a
+   * pelo de esta escena (sin `scene-surface` propia en Vice/Hyprland) el
+   * accent puro se queda sin margen real en algun tema. Mezclado con
+   * `--color-paper` (9 a 18:1 medido en los tres) sube el margen sin perder
+   * el tinte. Medido con `scripts/verify.py::check_contrast_wcag`.
+   */
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+}
+
+.credit-name {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  text-transform: var(--display-transform);
+  font-size: 1.2rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--color-paper) 62%, transparent);
+  transition: color 200ms ease;
+}
+
+.credit:hover .credit-name,
+.credit:focus-visible .credit-name,
+.credit.is-active .credit-name {
+  color: var(--color-paper);
+}
+
+/*
+ * `scene-surface` es el gancho compartido que Caelestia viste como tarjeta
+ * Material You (ver `themes.css` y `about-card`); en Vice/Hyprland no hace
+ * nada por si sola, asi que el fondo cinematografico lo pone esta regla,
+ * calcada del recibo ya probado en `.about-card`.
+ */
+.credits-panel {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 1.15rem;
+  background: color-mix(in srgb, var(--color-ink) 38%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.credits-icon {
+  width: 46px;
+  height: 46px;
+}
+
+.credits-svg svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--color-accent);
+}
+
+.credits-panel-name {
+  margin-top: 0.6rem;
+}
+
+.credits-panel-role {
+  margin-top: 0.35rem;
+  font-weight: 700;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+}
+
+.credits-panel-detail {
+  margin-top: 0.7rem;
+  font-weight: 300;
+  font-size: 0.79rem;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--color-paper) 82%, transparent);
+}

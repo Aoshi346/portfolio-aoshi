@@ -429,13 +429,29 @@ WHEEL_STEP_PAUSE_MS = 80
 
 
 def _scroll_to_and_settle(page, target_y: float) -> None:
-    page.evaluate("window.scrollTo(0, 0)")
-    page.wait_for_timeout(100)
-
-    remaining = target_y
+    """Encontrado al instrumentar la Task 9 (quinta escena, `data-scene="credits"`,
+    anadida al final del documento): forzar `window.scrollTo(0, 0)` antes de
+    cada barrido desincroniza a Lenis. Lenis intercepta el wheel y lleva su
+    propio "target" de scroll suave; `window.scrollTo` mueve el scroll nativo
+    pero no el estado interno de Lenis. En la siguiente llamada, los deltas de
+    `mouse.wheel` se sumaban al target STALE de Lenis (el de la escena
+    anterior), no a 0 — el resultado era un sobre-scroll que aterrizaba en el
+    maximo scrolleable del documento en vez del target pedido. Con 4 escenas
+    pasaba desapercibido (la escena 2 sobre-scrolleaba exactamente a la
+    posicion de la escena 3, ambas "obra": mismo texto, ningun sintoma
+    visible). Con la quinta escena el sobre-scroll aterrizaba dentro de
+    "creditos", y el gate de contraste se puso a medir texto de creditos
+    etiquetado como "obra" — la escena de obra real dejaba de verificarse.
+    Fix: no resetear a 0 nunca; mover solo el delta real desde la posicion
+    actual (que ya deberia coincidir con el target anterior, por eso la
+    funcion se llama "settle"), en cualquier direccion."""
+    current = page.evaluate("window.scrollY")
+    remaining = target_y - current
+    direction = 1 if remaining >= 0 else -1
+    remaining = abs(remaining)
     while remaining > 1:
         delta = min(WHEEL_STEP, remaining)
-        page.mouse.wheel(0, delta)
+        page.mouse.wheel(0, direction * delta)
         remaining -= delta
         page.wait_for_timeout(WHEEL_STEP_PAUSE_MS)
 
@@ -539,6 +555,34 @@ def run(
             # ocasion de intentar cargar.
             if not allow_gallery_placeholder:
                 check_gallery_placeholder(page)
+
+            # Task 9: creditos interactivos ("Con que construyo"). Corre en
+            # LOS TRES temas, no solo Vice: `createCredits` monta el mismo
+            # DOM en los tres (un solo componente, presentacion por CSS via
+            # `[data-theme]`), asi que la interaccion real (el panel cambia
+            # al pasar el raton o el foco por una fila) tiene que sobrevivir
+            # al re-skinning de Hyprland/Caelestia en pildoras, no solo verse
+            # bien en Vice como creditos de cine.
+            credits = page.evaluate("""(() => {
+              const rows = document.querySelectorAll('[data-credit]');
+              if (!rows.length) return null;
+              const panel = document.querySelector('[data-credit-panel]');
+              const before = panel ? panel.textContent.trim() : "";
+              rows[rows.length - 1].dispatchEvent(new MouseEvent('mouseenter', {bubbles:true}));
+              const after = panel ? panel.textContent.trim() : "";
+              return {
+                rows: rows.length,
+                hasPanel: !!panel,
+                hasIcon: !!(panel && panel.querySelector('svg')),
+                changed: before !== after,
+                focusable: rows[0].tabIndex >= 0,
+              };
+            })()""")
+            check(credits is not None and credits["rows"] >= 6, "hay filas de creditos")
+            check(credits is not None and credits["hasPanel"], "hay panel de detalle")
+            check(credits is not None and credits["hasIcon"], "el panel muestra icono")
+            check(credits is not None and credits["changed"], "el panel cambia al interactuar")
+            check(credits is not None and credits["focusable"], "los creditos son enfocables")
 
             if theme == "vice":
                 backdrop = page.evaluate("""(() => {

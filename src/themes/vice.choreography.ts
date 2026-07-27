@@ -255,8 +255,41 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
   });
 }
 
+/** Id fijo del gesto 4: permite matarlo si la funcion se re-ejecuta. */
+const CREDITS_TRIGGER_ID = "vice-credits-roll";
+
+/**
+ * Gesto 4 — Creditos: ruedan al entrar y SE DETIENEN. Un rodillo perpetuo
+ * seria imposible de usar (la seccion es interactiva: hover/foco cambian el
+ * panel de detalle), asi que el ScrollTrigger solo dispara la entrada una
+ * vez por scroll, `toggleActions` incluido — nunca un loop.
+ */
+function scene4Credits(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElement): void {
+  const roll = root.querySelector<HTMLElement>("[data-credit-roll]");
+  if (!roll) return;
+
+  // Defensivo, igual que en los gestos 1 a 3: matar el trigger huerfano si
+  // esta funcion se re-ejecutara.
+  ScrollTrigger.getById(CREDITS_TRIGGER_ID)?.kill();
+
+  gsap.from(roll.children, {
+    y: 34,
+    opacity: 0,
+    duration: 0.7,
+    ease: "power3.out",
+    stagger: 0.07,
+    scrollTrigger: {
+      id: CREDITS_TRIGGER_ID,
+      trigger: roll,
+      start: "top 80%",
+      toggleActions: "play none none reverse",
+    },
+  });
+}
+
 export const viceChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
   scene1Title(gsap, ScrollTrigger, root);
   scene2Card(gsap, ScrollTrigger, root);
   scene3Slate(gsap, ScrollTrigger, root);
+  scene4Credits(gsap, ScrollTrigger, root);
 };
