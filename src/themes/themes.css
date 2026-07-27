@@ -44,26 +44,9 @@
 }
 
 /* Cartel centrado: el nombre manda y luego se atraviesa al hacer scroll. */
-:root[data-theme="vice"] .hero-inner {
+:root[data-theme="vice"] .hero {
+  align-items: center;
   text-align: center;
-}
-
-:root[data-theme="vice"] .hero-surface {
-  margin-inline: auto;
-  max-width: 74rem;
-}
-
-:root[data-theme="vice"] .hero-line {
-  margin-inline: auto;
-}
-
-:root[data-theme="vice"] .hero-contact {
-  justify-content: center;
-}
-
-:root[data-theme="vice"] .hero-cue {
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 /* ----------------------------------------------------------------- Hyprland */

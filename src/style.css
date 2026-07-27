@@ -87,6 +87,43 @@ body {
   opacity: 0;
 }
 
+.hero-kick {
+  font-weight: 700;
+  font-size: 0.66rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.hero-corner {
+  position: absolute;
+  bottom: 9%;
+  left: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(255 244 232 / 0.6);
+}
+
+@media (min-width: 768px) {
+  .hero-corner {
+    left: 3rem;
+    right: 3rem;
+  }
+}
+
+.hero-mail {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 7px;
+  text-decoration-thickness: 2px;
+}
+
 .font-mono {
   font-family: var(--font-mono);
 }

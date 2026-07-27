@@ -174,6 +174,26 @@ def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
                 check(hero_name_opacity is not None and hero_name_opacity > 0.9,
                       f"[data-hero-name] visible a scroll 0 (opacity={hero_name_opacity})")
 
+                # Task 6: el gesto de titulo (Task 6) parte el nombre en spans por
+                # caracter para el zoom con scrub, y el hero deja email visible en
+                # el primer viewport (suelo de conversion, sin depender de scroll).
+                hero = page.evaluate("""(() => {
+                  const s = document.querySelector('[data-scene="hero"]');
+                  if (!s) return null;
+                  const name = s.querySelector('[data-hero-name]');
+                  const mail = document.querySelector('a[href^="mailto:"]');
+                  const r = mail ? mail.getBoundingClientRect() : null;
+                  return {
+                    name: !!name,
+                    chars: name ? name.querySelectorAll('span span').length : 0,
+                    mailVisible: !!(r && r.top >= 0 && r.top < window.innerHeight),
+                  };
+                })()""")
+                check(hero is not None and hero["name"], "el hero tiene nombre marcado")
+                check(hero is not None and hero["chars"] > 5, "el nombre se parte en caracteres")
+                check(hero is not None and hero["mailVisible"],
+                      "el email es visible en el primer viewport")
+
                 if not allow_fixture_assets:
                     check_fixture_assets()
         finally:
