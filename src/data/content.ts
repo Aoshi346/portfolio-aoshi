@@ -205,7 +205,7 @@ export const caseStudies: CaseStudy[] = [
     lead: "Todas las campañas, un solo tablero.",
     role: "Desarrollo full stack",
     period: "Ago 2025 — hoy",
-    status: "Sistema interno de empresa",
+    status: "Sistema interno · Telefónica Venezuela",
     problem:
       "Las campañas pasaban por varias áreas antes de salir, cada una con sus aprobaciones, y el seguimiento vivía repartido entre correos y hojas de cálculo. Nadie podía responder de un vistazo en qué punto estaba cada una.",
     solution:
