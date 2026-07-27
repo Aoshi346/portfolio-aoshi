@@ -245,20 +245,5 @@ export async function initScrollReveal(root: HTMLElement, theme: Theme): Promise
     });
   });
 
-  // Parallax por capas: fraccion de la velocidad de scroll (data-parallax-speed).
-  root.querySelectorAll<HTMLElement>("[data-parallax]").forEach((target) => {
-    const speed = Number(target.dataset.parallaxSpeed ?? "0.3");
-    gsap.to(target, {
-      yPercent: speed * 20,
-      ease: "none",
-      scrollTrigger: {
-        trigger: target.closest("section") ?? target,
-        start: "top bottom",
-        end: "bottom top",
-        scrub: 0.6,
-      },
-    });
-  });
-
   ScrollTrigger.refresh();
 }
