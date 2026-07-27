@@ -1,12 +1,17 @@
 """Arnes de verificacion visual. Cada tarea del plan anade aserciones aqui.
 
 Uso: python3 scripts/verify.py [--theme vice] [--url http://127.0.0.1:5173]
-             [--allow-fixture-assets]
+             [--allow-fixture-assets] [--allow-gallery-placeholder]
 Requiere el servidor de desarrollo levantado (npm run dev).
 
 --allow-fixture-assets silencia el gate de assets provisionales (Tarea C /
 defecto 3) mientras dure el desarrollo. Esta desactivado por defecto: el gate
 final debe correr sin el flag.
+
+--allow-gallery-placeholder silencia el gate del placeholder "Imagen
+pendiente" de la galeria (defecto 3-bis, Task 11) mientras dure el
+desarrollo. Esta desactivado por defecto: el gate final debe correr sin el
+flag.
 """
 import argparse
 import hashlib
@@ -54,6 +59,58 @@ def check_fixture_assets() -> None:
         full_path = REPO_ROOT / rel_path
         is_fixture = full_path.exists() and sha256_of(full_path) == fixture_hash
         check(not is_fixture, f"{rel_path} no es el fixture sintetico de la Task 3")
+
+
+GALLERY_SETTLE_TIMEOUT_MS = 4000
+GALLERY_SETTLE_POLL_MS = 200
+
+
+def check_gallery_placeholder(page) -> None:
+    """Las imagenes de la galeria (`/media/obra/*.webp`) todavia no existen:
+    llegan con las capturas reales en la Task 11. Mientras tanto cada
+    `<img>` de `gallery.ts` falla su carga y `.gallery-fallback` ("Imagen
+    pendiente") queda visible en su lugar — un fallback honesto para el
+    usuario, pero texto placeholder visible en una seccion publicada, que la
+    norma del proyecto prohibe. Mismo patron que `check_fixture_assets`: este
+    gate falla mientras el placeholder siga presente, para que sustituirlo
+    por los assets reales sea obligatorio en la Task 11, no un checklist
+    opcional. Silenciable con `--allow-gallery-placeholder` mientras dure el
+    desarrollo (activo por defecto, igual que `--allow-fixture-assets`).
+
+    Las imagenes llevan `loading="lazy"` (no empiezan a cargar hasta que el
+    scroll las acerca al viewport) y el intento de red — aunque sea un 404
+    local — tarda un instante en resolver. Por eso se espera activamente
+    (poll de `img.complete`, que el navegador marca `true` tanto en `load`
+    como en `error`) antes de leer `[data-broken]`, el marcador que
+    `gallery.ts` fija en el listener de `error` de cada imagen."""
+    elapsed = 0
+    while elapsed < GALLERY_SETTLE_TIMEOUT_MS:
+        pending = page.evaluate(
+            "() => Array.from(document.querySelectorAll('[data-gallery-track] .gallery-img'))"
+            ".filter((img) => !img.complete).length"
+        )
+        if pending == 0:
+            break
+        page.wait_for_timeout(GALLERY_SETTLE_POLL_MS)
+        elapsed += GALLERY_SETTLE_POLL_MS
+    else:
+        print(f"  NOTA galeria: alguna imagen no resolvio su carga en {GALLERY_SETTLE_TIMEOUT_MS}ms")
+    # Margen extra: `data-broken` lo fija un listener de `error` que puede
+    # correr un tick despues de que `img.complete` ya sea `true`.
+    page.wait_for_timeout(200)
+
+    total = page.evaluate(
+        "() => document.querySelectorAll('[data-gallery-track] .gallery-img').length"
+    )
+    broken = page.evaluate(
+        "() => document.querySelectorAll('[data-gallery-track] [data-broken]').length"
+    )
+    check(total > 0, "la galeria tiene imagenes que verificar")
+    check(
+        broken == 0,
+        f"galeria: ninguna imagen cae al fallback de placeholder "
+        f'("Imagen pendiente" visible en {broken}/{total})',
+    )
 
 
 def check(condition: bool, label: str) -> None:
@@ -429,7 +486,12 @@ def check_contrast_offscreen_scenes(page, theme: str) -> None:
     _scroll_to_and_settle(page, 0)
 
 
-def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
+def run(
+    theme: str,
+    url: str,
+    allow_fixture_assets: bool = False,
+    allow_gallery_placeholder: bool = False,
+) -> None:
     global failures
     failures = []
 
@@ -468,6 +530,15 @@ def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
             # igual que el barrido de scroll 0 — ver comentario de
             # `check_contrast_offscreen_scenes`.
             check_contrast_offscreen_scenes(page, theme)
+
+            # Placeholder de galeria (defecto 3-bis): la escena "obra" es
+            # theme-agnostic (`createProjectScene` la monta igual en los tres
+            # temas), asi que corre en los tres, igual que el resto de gates
+            # base. El barrido de arriba ya hizo scroll por cada escena, asi
+            # que las imagenes `loading="lazy"` de la galeria ya tuvieron
+            # ocasion de intentar cargar.
+            if not allow_gallery_placeholder:
+                check_gallery_placeholder(page)
 
             if theme == "vice":
                 backdrop = page.evaluate("""(() => {
@@ -629,8 +700,20 @@ def main() -> int:
         help="Silencia el gate de assets provisionales (defecto 3) mientras dure el desarrollo. "
         "Activo por defecto: el gate final debe correr SIN este flag.",
     )
+    ap.add_argument(
+        "--allow-gallery-placeholder",
+        action="store_true",
+        help="Silencia el gate del placeholder 'Imagen pendiente' de la galeria (defecto 3-bis, "
+        "Task 11) mientras dure el desarrollo. Activo por defecto: el gate final debe correr "
+        "SIN este flag.",
+    )
     args = ap.parse_args()
-    run(args.theme, args.url, allow_fixture_assets=args.allow_fixture_assets)
+    run(
+        args.theme,
+        args.url,
+        allow_fixture_assets=args.allow_fixture_assets,
+        allow_gallery_placeholder=args.allow_gallery_placeholder,
+    )
     print()
     if failures:
         print(f"FALLOS: {len(failures)}")
