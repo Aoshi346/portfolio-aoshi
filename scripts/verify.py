@@ -433,6 +433,30 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
 
     print(f"  [contraste] {checked} elementos evaluados, {excluded} excluidos (fondo no muestreable/no solido)")
 
+    # Hallazgo I-1 de la revision final: el gate median CERO elementos en
+    # hero y contacto (los candidatos ahi caen todos en la exclusion de
+    # "fondo no solido") y aun asi `main()` solo cuenta `failures` — cero
+    # aserciones evaluadas es indistinguible de "todo paso" para el
+    # contador, asi que imprimia TODO OK con una escena entera sin vigilar.
+    # La degradacion es ademas SILENCIOSA y UNIDIRECCIONAL: cuanto peor el
+    # fondo bajo un texto, menos mide el gate y mas verde se ve — el
+    # incentivo va justo al reves de lo que hace falta. Este suelo de
+    # cobertura lo hace ruidoso: si una escena no logra medir NINGUN
+    # elemento, es un FAIL explicito, no un SKIP mas que main() ignora.
+    # Umbral en 1 (no un porcentaje del total de candidatos): con 0
+    # medibles no hay ninguna garantia de contraste en la escena, sea cual
+    # sea el numero de exclusiones; con 1 o mas, al menos una pieza de
+    # texto real quedo verificada. Subir el umbral a un porcentaje fijo
+    # penalizaria escenas con mucho texto decorativo/sobre imagen por
+    # diseno (parte del limite conocido y declarado del gate), que no es el
+    # problema que este hallazgo describe.
+    check(
+        checked >= 1,
+        f"cobertura de contraste — {theme}: al menos un elemento medible "
+        f"(evaluados={checked}, excluidos={excluded}) — cero evaluados en una "
+        "escena a plena luz es un agujero de cobertura, no un fondo dificil",
+    )
+
 
 # --------------------------------------------------------------------------
 # Contraste bajo el pliegue — recorre cada [data-scene] y repite el barrido.
@@ -681,15 +705,24 @@ def check_theme_identity(page, theme: str) -> None:
          temas caen silenciosamente al layout de Vice sin que ningun otro
          gate lo note (el gate de creditos existente solo comprueba
          interaccion/cuenta, no layout).
-      3. Hyprland NO debe heredar la tarjeta de Caelestia (serian
-         indistinguibles, y Hyprland debe seguir chrome-less/mono, mas cerca
-         de Vice en eso). Protege contra el error inverso al (1): ampliar el
-         selector de Caelestia para que tambien alcance a Hyprland."""
+      3. Hyprland NO debe heredar la tarjeta de Caelestia — la marca no es
+         "sin fondo" (Vice tambien anadio su propio scrim de ink para el
+         hallazgo I-1, asi que un fondo no nulo ya no basta para distinguir),
+         sino el borde + sombra que son exclusivos del recibo Material You de
+         Caelestia (`border: 1px solid ...` + `box-shadow` real; el scrim de
+         Vice no lleva ninguno de los dos). Protege contra el error inverso
+         al (1): ampliar el selector de Caelestia para que tambien alcance a
+         Hyprland (o a Vice)."""
     hero_surface = page.evaluate("""(() => {
       const el = document.querySelector('.hero-surface');
       if (!el) return null;
       const s = getComputedStyle(el);
-      return { background: s.backgroundColor, backdropFilter: s.backdropFilter, boxShadow: s.boxShadow };
+      return {
+        background: s.backgroundColor,
+        backdropFilter: s.backdropFilter,
+        boxShadow: s.boxShadow,
+        borderWidth: s.borderTopWidth,
+      };
     })()""")
     scene_surface = page.evaluate("""(() => {
       const el = document.querySelector('.about-stats');
@@ -723,10 +756,17 @@ def check_theme_identity(page, theme: str) -> None:
             f"(background={scene_surface['background'] if scene_surface else None})",
         )
     else:
+        no_caelestia_card = (
+            hero_surface is not None
+            and hero_surface["boxShadow"] == "none"
+            and hero_surface["borderWidth"] == "0px"
+        )
         check(
-            hero_surface is not None and _is_transparent(hero_surface["background"]),
-            f"{theme}: .hero-surface se mantiene sin tarjeta de Caelestia (fondo transparente) "
-            f"(background={hero_surface['background'] if hero_surface else None})",
+            no_caelestia_card,
+            f"{theme}: .hero-surface no hereda la tarjeta Material You de Caelestia "
+            "(sin borde, sin sombra propia) "
+            f"(boxShadow={hero_surface['boxShadow'] if hero_surface else None}, "
+            f"borderWidth={hero_surface['borderWidth'] if hero_surface else None})",
         )
 
     if theme in ("hyprland", "caelestia"):
@@ -825,7 +865,14 @@ def run(
             # (Vice, Hyprland) se lee igual en Caelestia (claro) — por eso
             # este check no es condicional a un tema, es parte del gate base.
             screenshot_bytes = page.screenshot(full_page=False)
-            check_contrast_wcag(page, theme, screenshot_bytes)
+            # Mismo formato de etiqueta que `check_contrast_offscreen_scenes`
+            # ("{theme}·scroll:{escena}"): la escena 0 (hero) vive en este
+            # primer viewport, sin pasar por el barrido de scroll. Antes esto
+            # se etiquetaba solo como `theme`, indistinguible en el reporte
+            # de "el tema en general" — necesario para que el suelo de
+            # cobertura del hallazgo I-1 identifique la escena exacta que
+            # queda sin medir, no solo el tema.
+            check_contrast_wcag(page, f"{theme}·scroll:hero", screenshot_bytes)
 
             # Defecto de contraste bajo el pliegue: corre en LOS TRES temas,
             # igual que el barrido de scroll 0 — ver comentario de

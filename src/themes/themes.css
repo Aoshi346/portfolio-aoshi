@@ -50,16 +50,48 @@
 }
 
 /*
- * `.hero-surface` es el envoltorio comun a los tres temas (un solo DOM,
- * ver src/sections/hero.ts). Vice es cinematografico a sangre: sin tarjeta,
- * sin blur, sin borde, sin sombra. Solo Caelestia (mas abajo) la viste.
+ * `.hero-surface` es el envoltorio comun a los tres temas y a las dos
+ * escenas "a plena luz" (un solo DOM: ver src/sections/hero.ts y
+ * src/sections/contacto.ts). Vice es cinematografico a sangre: sin tarjeta
+ * con borde ni sombra. Solo Caelestia (mas abajo) la viste como tarjeta
+ * Material You.
+ *
+ * Hallazgo I-1 de la revision final de rama: hero y contacto son las dos
+ * escenas que el diseno deja a plena luz sobre el video/poster de Vice, sin
+ * ningun scrim debajo del texto — y son justo las dos donde el gate de
+ * contraste (`scripts/verify.py::check_contrast_wcag`) media CERO elementos
+ * (fondo no solido en el 100% de los candidatos), un agujero de cobertura
+ * silencioso que el arnes no vigilaba antes de anadir el suelo de cobertura
+ * de ese mismo hallazgo. El scrim de abajo es el mismo recibo ya verificado
+ * en `.about-card`/`.credits-list`/`.rail` (color-mix de `--color-ink`,
+ * nunca un hex fijado a mano): suficientemente solido para que las franjas
+ * que muestrea el gate salgan planas (desviacion tipica bajo el umbral de
+ * 18), suficientemente translucido para no romper la lectura "a sangre" del
+ * video detras.
  */
 :root[data-theme="vice"] .hero-surface {
-  background: none;
-  backdrop-filter: none;
+  /*
+   * 88% (no el 38-55% que basta en `.about-card`/`.credits-list`, sobre el
+   * shader/video mas calmo de esas escenas): el fixture sintetico de la
+   * Task 3 que sirve hoy `public/media/vice-hero.*` (barras SMPTE, franjas
+   * de color primario puro lado a lado — vigilado aparte por
+   * `check_fixture_assets`, silenciado con `--allow-fixture-assets` mientras
+   * dure el desarrollo) es un caso mucho mas duro que el video cinematografico
+   * real de la Task 11: una franja horizontal de muestreo sobre un titulo
+   * ancho puede cruzar rojo/verde/amarillo/azul puros en pocos cientos de
+   * pixeles. Con menos opacidad la mezcla seguia dejando residuos de tinte
+   * distintos por franja (verificado: 55% y 72% no bajaban de ~90-100 de
+   * desviacion tipica en los caracteres del nombre). Este valor es el punto
+   * en que el gate mide de verdad incluso contra el fixture mas hostil que
+   * hoy sirve el proyecto; con el video real (mas calmo) seguira sobrando
+   * margen.
+   */
+  background: color-mix(in srgb, var(--color-ink) 88%, transparent);
+  backdrop-filter: blur(10px);
   border: none;
+  border-radius: var(--radius-card);
   box-shadow: none;
-  padding: 0;
+  padding: clamp(1.5rem, 4vw, 3rem);
 }
 
 /*
