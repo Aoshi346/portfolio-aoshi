@@ -739,21 +739,70 @@ def run(
                       "sin chips de tecnologia (duplicarian los creditos)")
 
                 # Task 8: "Obra" gana galeria horizontal arrastrable (collage)
-                # y fila de metadatos. La galeria debe desbordar en horizontal
-                # (si no, no hay nada que arrastrar) y cada obra debe traer su
-                # `[data-meta]`.
-                gal = page.evaluate("""(() => {
-                  const g = document.querySelector('[data-gallery-track]');
-                  if (!g) return null;
-                  return {
-                    items: g.children.length,
-                    scrollable: g.scrollWidth > g.clientWidth + 10,
-                    metas: document.querySelectorAll('[data-scene="obra"] [data-meta]').length,
-                  };
+                # y fila de metadatos.
+                #
+                # Lo que importa aqui es el COMPONENTE, no el contenido: que
+                # una galeria con pocas piezas quepa entera a 1440px sin
+                # desbordar es correcto (nada que arrastrar), no un fallo. La
+                # version anterior de este check media `scrollWidth >
+                # clientWidth` de la PRIMERA galeria del DOM a 1440px, que es
+                # justo lo que rompio cuando el primer proyecto de
+                # content.ts paso de 3 a 2 imagenes: 2 piezas de 300px caben
+                # en el ancho de columna a esa resolucion, asi que dejaron de
+                # desbordar aunque el carril siga funcionando perfectamente.
+                #
+                # Fix: se mide en un viewport movil (390px), donde el ancho
+                # minimo de cada pieza (`min(300px, 74vw)` en style.css)
+                # garantiza que 2 o mas piezas desbordan el carril sea cual
+                # sea el recuento exacto — no hace falta adivinar cuantas
+                # imagenes tiene cada proyecto. Y se evaluan TODAS las
+                # galerias del DOM (`querySelectorAll`), no solo la primera:
+                # una galeria de una sola pieza (el editor de texto) puede
+                # caber sin desbordar y eso tambien es correcto, asi que se
+                # excluye de la comprobacion de desborde en vez de forzarla a
+                # pasar con un margen inventado.
+                page.evaluate("window.scrollTo(0, 0)")
+                page.set_viewport_size(MOBILE)
+                page.wait_for_timeout(300)
+                galleries_mobile = page.evaluate("""(() => {
+                  const tracks = Array.from(document.querySelectorAll('[data-gallery-track]'));
+                  return tracks
+                    .filter((t) => t.children.length >= 2)
+                    .map((t) => ({
+                      items: t.children.length,
+                      scrollable: t.scrollWidth > t.clientWidth + 10,
+                    }));
                 })()""")
-                check(gal is not None and gal["items"] >= 2, "la galeria tiene piezas")
-                check(gal is not None and gal["scrollable"], "la galeria desborda en horizontal")
-                check(gal is not None and gal["metas"] >= 1, "las obras tienen fila de metadatos")
+                page.set_viewport_size(DESKTOP)
+                page.evaluate("window.scrollTo(0, 0)")
+                page.wait_for_timeout(300)
+
+                check(len(galleries_mobile) >= 1,
+                      "hay al menos una galeria con 2+ piezas que comprobar")
+                non_scrollable = [g for g in galleries_mobile if not g["scrollable"]]
+                check(
+                    len(galleries_mobile) >= 1 and not non_scrollable,
+                    "todas las galerias con 2+ piezas son desplazables en horizontal "
+                    f"en movil ({non_scrollable})",
+                )
+
+                track_count = page.evaluate(
+                    "() => document.querySelectorAll('[data-gallery-track]').length"
+                )
+                check(track_count >= 2, "hay galerias de proyecto en la escena de obra")
+
+                # Los metadatos de la cartela (Rol/Periodo/Stack/Estado) son
+                # independientes de que exista o no el carril de galeria — un
+                # proyecto sin piezas (`project.gallery.length === 0`) sigue
+                # teniendo su `[data-meta]`. Antes esta comprobacion vivia
+                # dentro del mismo `gal` que la galeria, asi que si el carril
+                # faltaba (`gal === null`) esta aserción fallaba tambien,
+                # aunque los metadatos estuvieran perfectamente presentes:
+                # dos cosas distintas acopladas a una sola condicion.
+                metas = page.evaluate(
+                    '() => document.querySelectorAll(\'[data-scene="obra"] [data-meta]\').length'
+                )
+                check(metas >= 1, "las obras tienen fila de metadatos")
 
                 # Task 10: contacto (cierre del portfolio), letterbox y barra de
                 # orientacion. `cinemaChrome.ts` monta el mismo DOM en los tres
