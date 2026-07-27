@@ -159,7 +159,104 @@ function scene2Card(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEleme
   }
 }
 
+/** Ids fijos del gesto 3, parametrizados por indice: puede haber varias escenas de obra. */
+function obraTriggerIds(index: number): string[] {
+  return [
+    `vice-obra-ord-${index}`,
+    `vice-obra-title-${index}`,
+    `vice-obra-lead-${index}`,
+    `vice-obra-meta-${index}`,
+    `vice-obra-mask-${index}`,
+    `vice-obra-gallery-${index}`,
+  ];
+}
+
+/** Gesto 3 — Cartela: el ordinal cae, el titulo aterriza seco, el texto barre. */
+function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElement): void {
+  root.querySelectorAll<HTMLElement>('[data-scene="obra"]').forEach((scene, index) => {
+    const ids = obraTriggerIds(index);
+    // Defensivo, igual que en los gestos 1 y 2: matar triggers huerfanos si
+    // esta funcion se re-ejecutara.
+    for (const id of ids) ScrollTrigger.getById(id)?.kill();
+
+    const trigger = {
+      trigger: scene,
+      start: "top 76%",
+      toggleActions: "play none none reverse",
+    } as const;
+    const ordinal = scene.querySelector<HTMLElement>("[data-ord]");
+    const title = scene.querySelector<HTMLElement>("[data-title]");
+    const lead = scene.querySelector<HTMLElement>(".lead");
+    const meta = scene.querySelector<HTMLElement>("[data-meta]");
+    const masks = Array.from(scene.querySelectorAll<HTMLElement>("[data-mask]"));
+    const gallery = scene.querySelector<HTMLElement>("[data-gallery]");
+
+    if (ordinal) {
+      gsap.from(ordinal, {
+        y: -70,
+        scale: 1.35,
+        opacity: 0,
+        duration: 0.7,
+        ease: "expo.out",
+        scrollTrigger: { ...trigger, id: ids[0] },
+      });
+    }
+    if (title) {
+      gsap.from(title, {
+        y: 46,
+        opacity: 0,
+        duration: 0.7,
+        ease: "expo.out",
+        delay: 0.08,
+        scrollTrigger: { ...trigger, id: ids[1] },
+      });
+    }
+    if (lead) {
+      gsap.from(lead, {
+        y: 20,
+        opacity: 0,
+        duration: 0.6,
+        ease: "power2.out",
+        delay: 0.16,
+        scrollTrigger: { ...trigger, id: ids[2] },
+      });
+    }
+    if (meta) {
+      gsap.from(meta, {
+        y: 14,
+        opacity: 0,
+        duration: 0.6,
+        ease: "power2.out",
+        delay: 0.24,
+        scrollTrigger: { ...trigger, id: ids[3] },
+      });
+    }
+    // La mascara barre de izquierda a derecha, desfasada entre columnas.
+    if (masks.length > 0) {
+      gsap.from(masks, {
+        clipPath: "inset(0 100% 0 0)",
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.1,
+        delay: 0.32,
+        scrollTrigger: { ...trigger, id: ids[4] },
+      });
+    }
+    if (gallery) {
+      gsap.from(gallery, {
+        y: 22,
+        opacity: 0,
+        duration: 0.8,
+        ease: "power2.out",
+        delay: 0.48,
+        scrollTrigger: { ...trigger, id: ids[5] },
+      });
+    }
+  });
+}
+
 export const viceChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
   scene1Title(gsap, ScrollTrigger, root);
   scene2Card(gsap, ScrollTrigger, root);
+  scene3Slate(gsap, ScrollTrigger, root);
 };

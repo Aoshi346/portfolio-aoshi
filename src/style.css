@@ -427,3 +427,163 @@ body {
   font-size: 0.69rem;
   color: color-mix(in srgb, var(--color-paper) 78%, transparent);
 }
+
+/*
+ * "Obra" — fila de metadatos (Rol / Periodo / Stack / Estado). Vive dentro de
+ * `.scene-surface` (ver `projectScene.ts`), asi que en Caelestia hereda la
+ * tarjeta translucida Material You: el mismo motivo por el que el `dt` no usa
+ * el accent puro, igual que `.about-facts dt`.
+ */
+.obra-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--color-line);
+  max-width: 860px;
+}
+
+.obra-meta dt {
+  font-weight: 700;
+  font-size: 0.53rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+}
+
+.obra-meta dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--color-paper) 86%, transparent);
+}
+
+/*
+ * Galeria horizontal arrastrable (`components/gallery.ts`). Todo color sale
+ * de un token (`--color-*`) via `color-mix()`, nunca un hex fijado a mano —
+ * la misma regla que ya se rompio una vez en `.hero-corner`.
+ */
+.gallery {
+  margin-top: 1.1rem;
+  max-width: 860px;
+}
+
+.gallery-track {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2rem 0.2rem 0.8rem;
+  scroll-snap-type: x proximity;
+  cursor: grab;
+  scrollbar-width: none;
+  /*
+   * Deja el pan vertical nativo disponible (Lenis sigue con el scroll de la
+   * pagina); el pan horizontal queda bajo control manual de gallery.ts. Ver
+   * el comentario de resolucion de gesto ahi.
+   */
+  touch-action: pan-y;
+}
+
+.gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-track:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+
+.gallery-track.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.gallery-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(300px, 74vw);
+  margin: 0;
+  scroll-snap-align: center;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  transition:
+    border-color 250ms ease,
+    transform 250ms ease;
+}
+
+.gallery-item:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-3px);
+}
+
+.gallery-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--color-ink) 70%, var(--color-paper) 8%);
+}
+
+/*
+ * Los assets reales llegan en la Task 11 (fixtures de la Task 3 aparte, esto
+ * afecta a las rutas de `content.ts`, que hoy no existen en disco). Mientras
+ * la imagen falle su carga, se oculta con `opacity` (no `display`/
+ * `visibility`: eso la sacaria del arbol de accesibilidad y perderia su
+ * `alt`) y `.gallery-fallback` ocupa su sitio.
+ */
+.gallery-img.is-broken {
+  opacity: 0;
+}
+
+.gallery-fallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 82%, transparent);
+  background: color-mix(in srgb, var(--color-ink) 82%, transparent);
+}
+
+.gallery-item[data-broken] .gallery-fallback {
+  display: flex;
+}
+
+.gallery-caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.35rem 0.6rem;
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--color-ink) 94%, transparent),
+    transparent
+  );
+  font-weight: 700;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 92%, transparent);
+}
+
+.gallery-bar {
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-paper) 16%, transparent);
+  overflow: hidden;
+}
+
+.gallery-bar i {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}

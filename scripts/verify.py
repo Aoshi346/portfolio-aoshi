@@ -222,7 +222,17 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
     en los tres temas, ilegible en Caelestia (fondo claro). Este check no
     apunta solo a esa clase: barre TODO el texto hoja visible del viewport
     para que cualquier color fijado a mano que rompa el contraste en algun
-    tema quede atrapado, no solo el caso ya conocido."""
+    tema quede atrapado, no solo el caso ya conocido.
+
+    Excluye texto marcado `aria-hidden="true"` (o dentro de un ancestro con
+    ese atributo): WCAG 1.4.3 exime explicitamente el texto puramente
+    decorativo, sin contenido informativo, del minimo de contraste. El
+    ordinal gigante de "Obra" (`[data-ord]`, un "01"/"02" de fondo al 6% de
+    alfa, watermark intencional) es exactamente ese caso — no es informacion
+    (el orden real lo da el DOM), es decoracion, y aria-hidden ya lo dice.
+    Encontrado al instrumentar la Task 8 (`data-scene="obra"` nuevo en el
+    gate bajo el pliegue): el filtro de opacidad de mas abajo no lo atrapaba
+    porque el alfa vive en `color`, no en la propiedad `opacity`."""
     candidates = page.evaluate(
         """(() => {
       const out = [];
@@ -231,6 +241,7 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
         if (el.children.length > 0) continue; // solo hojas
         const text = (el.textContent || '').trim();
         if (!text) continue;
+        if (el.closest('[aria-hidden="true"]')) continue; // decorativo, exento por WCAG 1.4.3
         const style = getComputedStyle(el);
         if (style.visibility === 'hidden' || style.display === 'none') continue;
         if (parseFloat(style.opacity) < 0.2) continue;
@@ -566,6 +577,23 @@ def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
                 check(about is not None and about["track"], "hay trayectoria")
                 check(about is not None and about["chips"] == 0,
                       "sin chips de tecnologia (duplicarian los creditos)")
+
+                # Task 8: "Obra" gana galeria horizontal arrastrable (collage)
+                # y fila de metadatos. La galeria debe desbordar en horizontal
+                # (si no, no hay nada que arrastrar) y cada obra debe traer su
+                # `[data-meta]`.
+                gal = page.evaluate("""(() => {
+                  const g = document.querySelector('[data-gallery-track]');
+                  if (!g) return null;
+                  return {
+                    items: g.children.length,
+                    scrollable: g.scrollWidth > g.clientWidth + 10,
+                    metas: document.querySelectorAll('[data-scene="obra"] [data-meta]').length,
+                  };
+                })()""")
+                check(gal is not None and gal["items"] >= 2, "la galeria tiene piezas")
+                check(gal is not None and gal["scrollable"], "la galeria desborda en horizontal")
+                check(gal is not None and gal["metas"] >= 1, "las obras tienen fila de metadatos")
 
                 if not allow_fixture_assets:
                     check_fixture_assets()
