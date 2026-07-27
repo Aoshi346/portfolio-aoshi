@@ -575,6 +575,7 @@ def run(
     url: str,
     allow_fixture_assets: bool = False,
     allow_gallery_placeholder: bool = False,
+    reduced: bool = False,
 ) -> None:
     global failures
     failures = []
@@ -583,7 +584,10 @@ def run(
         browser = p.chromium.launch(headless=True, executable_path=CHROME, args=ARGS)
         page = None
         try:
-            page = browser.new_page(viewport=DESKTOP)
+            page = browser.new_page(
+                viewport=DESKTOP,
+                reduced_motion="reduce" if reduced else "no-preference",
+            )
             errors: list[str] = []
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
@@ -666,8 +670,13 @@ def run(
                   };
                 })()""")
                 check(backdrop is not None and backdrop["poster"], "hay poster en el backdrop")
-                check(backdrop is not None and backdrop["video"], "hay video en el backdrop")
-                check(backdrop is not None and backdrop["playing"], "el video se reproduce")
+                # Con reduced-motion, `shouldLoadVideo()` (cinematicBackdrop.ts)
+                # decide a proposito NO cargar el video: la asercion de arriba
+                # ("sin video con reduced-motion") ya cubre ese caso. Comprobar
+                # aqui tambien que SI hay video contradiria esa degradacion.
+                if not reduced:
+                    check(backdrop is not None and backdrop["video"], "hay video en el backdrop")
+                    check(backdrop is not None and backdrop["playing"], "el video se reproduce")
 
                 fonts = page.evaluate("""(() => {
                   const root = getComputedStyle(document.documentElement);
@@ -753,7 +762,15 @@ def run(
                   };
                 })()""")
                 check(hero is not None and hero["name"], "el hero tiene nombre marcado")
-                check(hero is not None and hero["chars"] > 5, "el nombre se parte en caracteres")
+                # `splitChars` (vice.choreography.ts) solo corre dentro de la
+                # coreografia de GSAP, que `initScrollReveal` (reveal.ts) NO
+                # carga con reduced-motion (`if (prefersReducedMotion) return;`
+                # antes del import de gsap). Sin coreografia el nombre se queda
+                # como texto plano, legible igual (ver "el nombre es legible
+                # con reduced-motion" mas abajo) — partirlo en spans es un
+                # requisito del gesto de zoom, no de la legibilidad.
+                if not reduced:
+                    check(hero is not None and hero["chars"] > 5, "el nombre se parte en caracteres")
                 check(hero is not None and hero["mailVisible"],
                       "el email es visible en el primer viewport")
 
@@ -889,7 +906,16 @@ def run(
                 dimmed = page.evaluate(
                     "parseFloat(getComputedStyle(document.querySelector('[data-dim]')).opacity)"
                 )
-                check(dimmed > 0.3, f"el fondo se atenua en secciones interiores ({dimmed})")
+                # El atenuador y el letterbox durante la obra los cablea la
+                # coreografia `cinemaChrome` via ScrollTrigger, que no corre
+                # con reduced-motion (misma causa que "el nombre se parte en
+                # caracteres" arriba): [data-dim] y [data-letterbox] se quedan
+                # en su reposo (0) todo el scroll — degradacion correcta, no
+                # un defecto. Silenciado con `if not reduced`, no un exento
+                # generico: `check_reduced_motion_chrome` mas abajo SI exige
+                # que el cromo no aparezca con reduced-motion.
+                if not reduced:
+                    check(dimmed > 0.3, f"el fondo se atenua en secciones interiores ({dimmed})")
 
                 # El letterbox solo entra durante la obra: en esta misma posicion de
                 # scroll (~45%, dentro de una escena "obra" con 4 casos de estudio)
@@ -897,7 +923,8 @@ def run(
                 letterbox_obra = page.evaluate(
                     "parseFloat(getComputedStyle(document.querySelector('[data-letterbox]')).height)"
                 )
-                check(letterbox_obra > 20, f"el letterbox se despliega durante la obra ({letterbox_obra}px)")
+                if not reduced:
+                    check(letterbox_obra > 20, f"el letterbox se despliega durante la obra ({letterbox_obra}px)")
 
                 _scroll_to_and_settle(page, page.evaluate("document.body.scrollHeight"))
                 dimmed_end = page.evaluate(
@@ -910,6 +937,35 @@ def run(
 
                 if not allow_fixture_assets:
                     check_fixture_assets()
+
+            # Task 12: degradacion con prefers-reduced-motion. Corre solo
+            # cuando `--reduced` esta activo (la pagina se abrio con
+            # `reduced_motion="reduce"`, arriba). Video/letterbox son
+            # decoracion cinematografica pura: deben apagarse. Galeria y
+            # creditos son contenido — apagarlos dejaria al visitante sin
+            # informacion, asi que se comprueba que siguen operativos, no que
+            # desaparecen.
+            if reduced:
+                degraded = page.evaluate("""(() => {
+                  const host = document.querySelector('.bg-theme');
+                  const bars = [...document.querySelectorAll('[data-letterbox]')];
+                  return {
+                    noVideo: !host || !host.querySelector('video'),
+                    barsClosed: bars.every(b => b.getBoundingClientRect().height < 1),
+                    galleryUsable: !!document.querySelector('[data-gallery-track]'),
+                    creditsUsable: document.querySelectorAll('[data-credit]').length > 0,
+                    textVisible: (() => {
+                      const n = document.querySelector('[data-hero-name]');
+                      return !!n && getComputedStyle(n).opacity === "1";
+                    })(),
+                  };
+                })()""")
+                check(degraded["noVideo"], "sin video con reduced-motion")
+                check(degraded["barsClosed"], "sin letterbox con reduced-motion")
+                check(degraded["textVisible"], "el nombre es legible con reduced-motion")
+                # Son contenido, no decoracion: apagarlos dejaria sin informacion.
+                check(degraded["galleryUsable"], "la galeria sigue disponible")
+                check(degraded["creditsUsable"], "los creditos siguen disponibles")
         finally:
             if page:
                 page.close()
@@ -933,12 +989,20 @@ def main() -> int:
         "Task 11) mientras dure el desarrollo. Activo por defecto: el gate final debe correr "
         "SIN este flag.",
     )
+    ap.add_argument(
+        "--reduced",
+        action="store_true",
+        help="Abre la pagina con prefers-reduced-motion:reduce y comprueba la degradacion "
+        "accesible (Task 12): sin video, sin letterbox, nombre legible, galeria y creditos "
+        "operativos.",
+    )
     args = ap.parse_args()
     run(
         args.theme,
         args.url,
         allow_fixture_assets=args.allow_fixture_assets,
         allow_gallery_placeholder=args.allow_gallery_placeholder,
+        reduced=args.reduced,
     )
     print()
     if failures:

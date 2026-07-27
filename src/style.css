@@ -87,6 +87,34 @@ body {
   opacity: 0;
 }
 
+/*
+ * Cinturon de seguridad ademas de la condicion en main.ts (que ya evita
+ * anadir `.js-intro` con reduced-motion): si por lo que sea la clase llegase
+ * a quedar puesta con reduced-motion activo (main.ts roto, orden de carga
+ * distinto), el contenido nunca debe depender de una animacion que no va a
+ * ejecutarse para revelarse — eso ya dejo el nombre invisible 3 segundos en
+ * cada carga una vez (ver .ai/memory.md). El letterbox tambien se apaga aqui
+ * ademas de en `.cinema-chrome` (regla de mas arriba): doble cierre del
+ * mismo hueco, no un solape sin sentido.
+ *
+ * `!important`: la regla de arriba (`:root.js-intro[data-theme="vice"]
+ * [data-hero-name]`) tiene mayor especificidad (incluye el atributo
+ * `[data-theme="vice"]`) y ganaria sobre esta por cascada normal, dejando el
+ * cinturon de seguridad sin efecto real — verificado rompiendo a proposito
+ * la condicion de main.ts y confirmando opacity:0 en t=500ms sin el
+ * `!important` (ver informe de la tarea).
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root.js-intro [data-hero-name],
+  :root.js-intro [data-hero-fade] {
+    opacity: 1 !important;
+  }
+
+  .letterbox {
+    display: none;
+  }
+}
+
 .hero-kick {
   font-weight: 700;
   font-size: 0.66rem;
