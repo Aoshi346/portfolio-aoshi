@@ -21,6 +21,21 @@
   --radius-card: 4px;
 }
 
+/*
+ * `--color-accent-legible`: el accent puro falla contraste AA en varios
+ * puntos de los tres temas (medido con `scripts/verify.py::check_contrast_wcag`
+ * — ver los comentarios de `.hero-kick`/`.contacto-mail`/`.credits-list` que
+ * documentan cada caso concreto). Esta mezcla 55% accent / 45% paper es la
+ * formula ya verificada que sube el margen sin perder el tinte del acento; se
+ * repetia identica en ocho sitios de este fichero. Un solo token, no en
+ * `@theme` (Tailwind resuelve esa capa en build; esto es CSS puro que se
+ * recalcula en runtime via `var()` cuando cambia `--color-accent`/
+ * `--color-paper` al cambiar `[data-theme]`).
+ */
+:root {
+  --color-accent-legible: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+}
+
 html {
   scroll-behavior: smooth;
   background-color: var(--color-ink);
@@ -131,7 +146,7 @@ body {
    * `--color-paper` sube el margen sin perder el tinte, igual que en los
    * demas usos ya probados de esta formula.
    */
-  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  color: var(--color-accent-legible);
 }
 
 .hero-corner {
@@ -175,7 +190,7 @@ body {
  * que se convierta en un fallo real.
  */
 .hero-mail {
-  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  color: var(--color-accent-legible);
   text-decoration: underline;
   text-underline-offset: 7px;
   text-decoration-thickness: 2px;
@@ -190,7 +205,7 @@ body {
    * 3.01:1 (medido con `check_contrast_wcag` en la escena de contacto) — el
    * mismo motivo que `.hero-kick` de arriba.
    */
-  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  color: var(--color-accent-legible);
   text-decoration: underline;
   text-underline-offset: 8px;
   text-decoration-thickness: 2px;
@@ -542,7 +557,7 @@ body {
    * margen sin perder el tinte de acento. Medido con
    * `scripts/verify.py::check_contrast_wcag` sobre el fondo real.
    */
-  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  color: var(--color-accent-legible);
   padding-top: 2px;
 }
 
@@ -625,7 +640,7 @@ body {
   /* Mismo motivo que `.about-facts dt`: el accent puro se quedaba en 3.29:1
      cuando este bloque cae fuera de la tarjeta, sobre el degradado a pelo
      de Caelestia (mas saturado que el punto de partida del fondo). */
-  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  color: var(--color-accent-legible);
 }
 
 .about-item {
@@ -670,7 +685,7 @@ body {
   font-size: 0.53rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  color: var(--color-accent-legible);
 }
 
 .obra-meta dd {
@@ -898,7 +913,7 @@ body {
    * `--color-paper` (9 a 18:1 medido en los tres) sube el margen sin perder
    * el tinte. Medido con `scripts/verify.py::check_contrast_wcag`.
    */
-  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  color: var(--color-accent-legible);
 }
 
 .credit-name {
@@ -952,7 +967,7 @@ body {
   font-size: 0.55rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  color: var(--color-accent-legible);
 }
 
 .credits-panel-detail {
