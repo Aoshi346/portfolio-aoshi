@@ -48,3 +48,9 @@ void applyTheme(theme, backgroundHost).then((handle) => {
 window.addEventListener("beforeunload", () => backgroundHandle?.destroy(), { once: true });
 
 void import("./utils/reveal").then(({ initScrollReveal }) => initScrollReveal(main, theme.motion));
+
+// Sonda de verificacion: la consume scripts/verify.py. No afecta al render.
+Object.defineProperty(window, "__CONTENT_SHAPE__", {
+  value: { galleries: caseStudies.filter((project) => project.gallery.length > 0).length },
+  writable: false,
+});

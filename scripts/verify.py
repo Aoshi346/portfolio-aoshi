@@ -43,6 +43,13 @@ def run(theme: str, url: str) -> None:
             check(page.evaluate("document.documentElement.dataset.theme") == theme,
                   "data-theme aplicado")
             check(not errors, f"cero errores de consola ({errors[:2]})")
+
+            shape = page.evaluate("""(() => {
+              const w = window;
+              return w.__CONTENT_SHAPE__ || null;
+            })()""")
+            check(shape is not None and shape.get("galleries", 0) >= 2,
+                  "content.ts expone galerias en al menos 2 casos de estudio")
         finally:
             if page:
                 page.close()
