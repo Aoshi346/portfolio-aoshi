@@ -50,6 +50,22 @@ def run(theme: str, url: str) -> None:
             })()""")
             check(shape is not None and shape.get("galleries", 0) >= 2,
                   "content.ts expone galerias en al menos 2 casos de estudio")
+
+            if theme == "vice":
+                backdrop = page.evaluate("""(() => {
+                  const host = document.querySelector('.bg-theme');
+                  if (!host) return null;
+                  const img = host.querySelector('img');
+                  const video = host.querySelector('video');
+                  return {
+                    poster: !!img,
+                    video: !!video,
+                    playing: video ? !video.paused : false,
+                  };
+                })()""")
+                check(backdrop is not None and backdrop["poster"], "hay poster en el backdrop")
+                check(backdrop is not None and backdrop["video"], "hay video en el backdrop")
+                check(backdrop is not None and backdrop["playing"], "el video se reproduce")
         finally:
             if page:
                 page.close()

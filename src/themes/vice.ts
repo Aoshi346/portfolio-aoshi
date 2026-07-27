@@ -10,9 +10,11 @@ export const viceTheme: Theme = {
   fontHref:
     "https://fonts.googleapis.com/css2?family=Passion+One:wght@700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap",
   motion: { style: "cinematic", ease: "expo.out", duration: 1.15, stagger: 0.07 },
-  // temporal: el shader synthwave (viceSunset) se retiro por rechazado en diseno.
-  // Task 3 del plan monta el nuevo fondo de Vice City; hasta entonces no hay fondo.
-  async mountBackground() {
-    return { destroy: () => {} };
+  async mountBackground(container) {
+    const { mountCinematicBackdrop } = await import("../backgrounds/cinematicBackdrop");
+    return mountCinematicBackdrop(container, {
+      poster: "/media/vice-poster.webp",
+      video: { webm: "/media/vice-hero.webm", mp4: "/media/vice-hero.mp4" },
+    });
   },
 };

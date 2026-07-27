@@ -95,10 +95,51 @@ body {
   background-image: var(--bg-fallback);
 }
 
-.bg-theme canvas {
+.bg-theme canvas,
+.backdrop-media {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
+}
+
+/* El video entra fundido sobre el poster cuando tiene fotogramas. */
+.backdrop-video {
+  opacity: 0;
+  transition: opacity 900ms ease-out;
+}
+
+.backdrop-video.is-ready {
+  opacity: 1;
+}
+
+/*
+ * Capas de tratamiento del backdrop fotografico. El scrim es obligatorio:
+ * garantiza contraste del texto pase lo que pase en la imagen.
+ */
+:root[data-theme="vice"] .bg-theme::before,
+:root[data-theme="vice"] .bg-theme::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+:root[data-theme="vice"] .bg-theme::before {
+  background: linear-gradient(200deg, #ff2e88 0%, #7b1d6b 45%, #ffb347 100%);
+  mix-blend-mode: soft-light;
+  opacity: 0.48;
+}
+
+:root[data-theme="vice"] .bg-theme::after {
+  background: linear-gradient(
+    180deg,
+    rgb(10 2 20 / 0.5) 0%,
+    rgb(10 2 20 / 0.12) 45%,
+    rgb(10 2 20 / 0.72) 100%
+  );
 }
 
 .tech-icon svg {
