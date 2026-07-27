@@ -7,6 +7,7 @@ export function createCaseStudyPanel(caseStudy: CaseStudy, index: number): HTMLE
   ]);
   ordinal.setAttribute("data-reveal", "ordinal");
   ordinal.setAttribute("aria-hidden", "true");
+  ordinal.setAttribute("data-decorative", "");
 
   const stackList = el(
     "ul",

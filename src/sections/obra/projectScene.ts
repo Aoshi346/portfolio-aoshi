@@ -31,6 +31,7 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
   ordinal.setAttribute("aria-hidden", "true");
   ordinal.setAttribute("data-reveal", "ordinal");
   ordinal.setAttribute("data-ord", "");
+  ordinal.setAttribute("data-decorative", "");
 
   const tag = el("p", "hero-kick", [project.tag]);
 
