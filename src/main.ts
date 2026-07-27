@@ -16,6 +16,15 @@ if (!app) {
 // fondo generativo y el perfil de motion que consume el scroll reveal.
 const theme = pickTheme();
 
+// La secuencia de entrada cinematografica necesita el hero oculto antes del
+// primer pintado. El timeout es el seguro: si GSAP no cargara, el contenido
+// reaparece igualmente en lugar de quedarse invisible.
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!prefersReducedMotion && theme.motion.style === "cinematic") {
+  document.documentElement.classList.add("js-intro");
+  window.setTimeout(() => document.documentElement.classList.remove("js-intro"), 3000);
+}
+
 const backgroundHost = el("div", "bg-theme", []);
 backgroundHost.setAttribute("aria-hidden", "true");
 const noise = el("div", "bg-noise", []);

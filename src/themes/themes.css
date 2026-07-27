@@ -18,16 +18,15 @@
   --color-accent-2: #00d9d5;
   --color-line: #45215c;
 
-  --font-display: "Anton", "Arial Narrow", system-ui, sans-serif;
+  --font-display: "Passion One", "Anton", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --radius-card: 0px;
   --display-tracking: 0.005em;
-  /* Anton solo existe en 400 y ya es ultra-condensada: pedir 900 la falsea. */
-  --display-weight: 400;
+  --display-weight: 900;
   --display-transform: uppercase;
-  --display-leading: 0.82;
+  --display-leading: 0.84;
   --bg-fallback: linear-gradient(180deg, #150726 0%, #4b1146 55%, #ff5c3d 100%);
 }
 
