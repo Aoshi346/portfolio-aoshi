@@ -55,6 +55,8 @@ GALLERY_PLACEHOLDER_HASHES = {
     "public/media/obra/ciberseg-panel.webp": "2323ea1199979d4a7a866d056b54f4bbe3f4e9ab179f67e727a142c406871355",
     "public/media/obra/ciberseg-vulnerabilidades.webp": "bf04d000599c121160668c20f05c3d54b92d6fcb999aa2c6eb808642d51b6333",
     "public/media/obra/editor-interfaz.webp": "c2470fca671c103c70c692bbe589bb4b9aebf0fd008475d20f6c008f76d9e0a7",
+    "public/media/obra/teg-entregas.webp": "4cb8c297efbaf7566f694ba40c5a35147606e67ab153b38d337f4c7f7c123595",
+    "public/media/obra/teg-jurados.webp": "fa5cc1c41d9af46427199a47e2618757d272d21053af1df9f2ecdb220ce14137",
 }
 
 
@@ -64,8 +66,10 @@ def check_gallery_placeholder_hashes() -> None:
     capturas reales del usuario. A diferencia de `check_gallery_placeholder`
     (que detecta imagenes que ni siquiera cargan, un 404), este gate detecta
     imagenes que SI cargan pero siguen siendo el marcador "CAPTURA
-    PENDIENTE" — el estado en el que quedan las siete rutas de la Task 11
-    tras sustituir el 404 por un relleno. Gate obligatorio, no un checklist
+    PENDIENTE" — el estado en el que quedan las nueve rutas de
+    `GALLERY_PLACEHOLDER_HASHES` (las siete de la Task 11 mas las dos de
+    TesisFar anadidas en la Task 12) tras sustituir el 404 por un relleno.
+    Gate obligatorio, no un checklist
     opcional: sin el, un relleno podria llegar a produccion sin que nadie se
     entere. Silenciable con --allow-gallery-placeholder, igual que el resto
     del gate de galeria."""
