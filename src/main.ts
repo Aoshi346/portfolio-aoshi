@@ -17,8 +17,10 @@ if (!app) {
 const theme = pickTheme();
 
 // La secuencia de entrada cinematografica necesita el hero oculto antes del
-// primer pintado. El timeout es el seguro: si GSAP no cargara, el contenido
-// reaparece igualmente en lugar de quedarse invisible.
+// primer pintado. La via normal es reveal.ts, que retira la clase de forma
+// sincrona en cuanto GSAP carga (decenas de ms). Este timeout es solo el
+// seguro para el caso raro de que ese modulo no llegue a cargar: sin el, el
+// contenido se quedaria invisible para siempre en vez de solo unos segundos.
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (!prefersReducedMotion && theme.motion.style === "cinematic") {
   document.documentElement.classList.add("js-intro");

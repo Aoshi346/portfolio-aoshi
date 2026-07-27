@@ -109,6 +109,31 @@ async function initSmoothScroll(gsap: Gsap, scrollTrigger: ScrollTriggerApi): Pr
 }
 
 /**
+ * Fija de forma SINCRONA el estado inicial del hero y retira `.js-intro` en
+ * cuanto GSAP esta disponible, sin esperar a `document.fonts.ready` ni a
+ * ningun timeout. Esa espera era la causante de que el nombre del hero
+ * quedara invisible varios segundos (ver style.css): mientras `.js-intro`
+ * siga puesta, `[data-hero-name]` tiene `opacity: 0` por CSS.
+ *
+ * Deja el nombre en un estado "pre-animacion" (visible pero desenfocado y
+ * escalado) en vez de saltar directamente al estado final: la coreografia
+ * propia del tema (`theme.choreography`, Vice) monta su gesto de entrada
+ * encima de este punto de partida.
+ */
+function prepareHeroIntro(gsap: Gsap, root: HTMLElement): void {
+  const name = root.querySelector<HTMLElement>("[data-hero-name]");
+  if (!name) {
+    document.documentElement.classList.remove("js-intro");
+    return;
+  }
+
+  const fading = Array.from(root.querySelectorAll<HTMLElement>("[data-hero-fade]"));
+  gsap.set(fading, { opacity: 0, y: 24 });
+  gsap.set(name, { opacity: 1, scale: 1.08, filter: "blur(7px)" });
+  document.documentElement.classList.remove("js-intro");
+}
+
+/**
  * Cablea los reveals de GSAP ScrollTrigger sobre el DOM ya montado. GSAP entra
  * por import dinamico para no pesar el bundle inicial; sin JS el contenido
  * queda visible igual (mejora progresiva).
@@ -129,7 +154,10 @@ export async function initScrollReveal(root: HTMLElement, theme: Theme): Promise
   ]);
   gsap.registerPlugin(ScrollTrigger);
 
-  if (motion.style === "cinematic") await initSmoothScroll(gsap, ScrollTrigger);
+  if (motion.style === "cinematic") {
+    prepareHeroIntro(gsap, root);
+    await initSmoothScroll(gsap, ScrollTrigger);
+  }
 
   if (theme.choreography) {
     const choreography = await theme.choreography();

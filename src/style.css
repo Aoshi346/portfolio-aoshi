@@ -78,8 +78,9 @@ body {
 /*
  * Estado previo a la secuencia de entrada (solo Vice). Se oculta el hero para
  * que no se vea el salto entre el pintado y el arranque de la animacion.
- * reveal.ts retira la clase justo antes de animar y main.ts la retira por
- * timeout, asi que el contenido nunca puede quedarse oculto si GSAP falla.
+ * reveal.ts retira esta clase de forma SINCRONA en cuanto GSAP carga (antes de
+ * esperar fuentes ni coreografia): esa es la via normal, en decenas de ms. El
+ * timeout de main.ts es solo el seguro para el caso raro de que GSAP falle.
  */
 :root.js-intro[data-theme="vice"] [data-hero-name],
 :root.js-intro[data-theme="vice"] [data-hero-fade] {
