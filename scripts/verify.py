@@ -652,6 +652,106 @@ def check_gallery_progress_bar(browser, url: str, theme: str) -> None:
         context.close()
 
 
+def check_theme_identity(page, theme: str) -> None:
+    """Hallazgo I-5 de la revision final: el gate solo protegia Vice de
+    verdad (41 aserciones no-contraste) frente a Hyprland/Caelestia (8 cada
+    uno, solo lo generico: creditos, galeria...). El modo de fallo real que ya
+    ha pasado tres veces en este proyecto es "una tarea que reescribe una
+    seccion COMPARTIDA (`style.css`/`themes.css`) rompe la identidad de otro
+    tema" — y el gate de contraste no lo caza: el caso canonico (borrar
+    `.hero-surface` en Caelestia) deja el texto igual de legible, lo roto es
+    la ESTRUCTURA (tarjeta Material You -> texto suelto sobre el degradado),
+    no el contraste.
+
+    Se mide el pixel EFECTIVO via `getComputedStyle`, no la regla CSS
+    declarada: `getComputedStyle` ya devuelve el valor resuelto tras cascada
+    (a diferencia de leer el `cssText` de una regla, que solo demuestra que
+    la regla EXISTE en la hoja, no que gane la especificidad real ni que siga
+    aplicando sobre el elemento correcto).
+
+    Tres marcadores de identidad, elegidos porque cada uno protege un bloque
+    compartido distinto de `themes.css`/`style.css`:
+      1. Caelestia: `.hero-surface`/`.scene-surface` deben tener fondo
+         tonal solido, blur y sombra reales — la tarjeta Material You que
+         distingue a Caelestia de "texto suelto sobre un degradado". Sin
+         esto Caelestia deja de leerse como Material You.
+      2. Hyprland/Caelestia comparten el re-skin de creditos en pildoras
+         (`flex-direction: row`, `.credit-role` oculto) — la alternativa al
+         rodillo vertical de cine de Vice. Si se borra ese bloque, ambos
+         temas caen silenciosamente al layout de Vice sin que ningun otro
+         gate lo note (el gate de creditos existente solo comprueba
+         interaccion/cuenta, no layout).
+      3. Hyprland NO debe heredar la tarjeta de Caelestia (serian
+         indistinguibles, y Hyprland debe seguir chrome-less/mono, mas cerca
+         de Vice en eso). Protege contra el error inverso al (1): ampliar el
+         selector de Caelestia para que tambien alcance a Hyprland."""
+    hero_surface = page.evaluate("""(() => {
+      const el = document.querySelector('.hero-surface');
+      if (!el) return null;
+      const s = getComputedStyle(el);
+      return { background: s.backgroundColor, backdropFilter: s.backdropFilter, boxShadow: s.boxShadow };
+    })()""")
+    scene_surface = page.evaluate("""(() => {
+      const el = document.querySelector('.about-stats');
+      if (!el) return null;
+      const s = getComputedStyle(el);
+      return { background: s.backgroundColor, backdropFilter: s.backdropFilter };
+    })()""")
+
+    def _is_transparent(css_color: str) -> bool:
+        return css_color in ("rgba(0, 0, 0, 0)", "transparent", "") or css_color is None
+
+    if theme == "caelestia":
+        check(
+            hero_surface is not None and not _is_transparent(hero_surface["background"]),
+            f"Caelestia: .hero-surface tiene fondo tonal solido (no transparente) "
+            f"(background={hero_surface['background'] if hero_surface else None})",
+        )
+        check(
+            hero_surface is not None and "blur" in hero_surface["backdropFilter"],
+            f"Caelestia: .hero-surface aplica backdrop-filter con blur real "
+            f"(backdropFilter={hero_surface['backdropFilter'] if hero_surface else None})",
+        )
+        check(
+            hero_surface is not None and hero_surface["boxShadow"] != "none",
+            f"Caelestia: .hero-surface proyecta sombra real "
+            f"(boxShadow={hero_surface['boxShadow'] if hero_surface else None})",
+        )
+        check(
+            scene_surface is not None and not _is_transparent(scene_surface["background"]),
+            f"Caelestia: .scene-surface (.about-stats) tiene fondo tonal solido "
+            f"(background={scene_surface['background'] if scene_surface else None})",
+        )
+    else:
+        check(
+            hero_surface is not None and _is_transparent(hero_surface["background"]),
+            f"{theme}: .hero-surface se mantiene sin tarjeta de Caelestia (fondo transparente) "
+            f"(background={hero_surface['background'] if hero_surface else None})",
+        )
+
+    if theme in ("hyprland", "caelestia"):
+        credits_layout = page.evaluate("""(() => {
+          const list = document.querySelector('.credits-list');
+          const role = document.querySelector('.credit-role');
+          if (!list) return null;
+          const s = getComputedStyle(list);
+          return {
+            flexDirection: s.flexDirection,
+            roleDisplay: role ? getComputedStyle(role).display : null,
+          };
+        })()""")
+        check(
+            credits_layout is not None and credits_layout["flexDirection"] == "row",
+            f"{theme}: .credits-list se re-skinea en pildoras horizontales "
+            f"(flexDirection={credits_layout['flexDirection'] if credits_layout else None})",
+        )
+        check(
+            credits_layout is not None and credits_layout["roleDisplay"] == "none",
+            f"{theme}: el rol se oculta en formato pildora "
+            f"(roleDisplay={credits_layout['roleDisplay'] if credits_layout else None})",
+        )
+
+
 def check_reduced_motion_chrome(browser, url: str, theme: str) -> None:
     """El cromo de cine (letterbox + barra de orientacion) es decoracion pura
     de Vice: con `prefers-reduced-motion` no debe aparecer. Sin este check,
@@ -775,6 +875,11 @@ def run(
             check(credits is not None and credits["hasIcon"], "el panel muestra icono")
             check(credits is not None and credits["changed"], "el panel cambia al interactuar")
             check(credits is not None and credits["focusable"], "los creditos son enfocables")
+
+            # Hallazgo I-5: cobertura estructural de identidad para los dos
+            # temas aprobados (Hyprland/Caelestia), no solo contraste — ver
+            # comentario de `check_theme_identity`.
+            check_theme_identity(page, theme)
 
             if theme == "vice":
                 backdrop = page.evaluate("""(() => {
