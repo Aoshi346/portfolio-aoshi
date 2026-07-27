@@ -589,6 +589,69 @@ def check_heading_hierarchy(page) -> None:
           f"toda escena [data-scene] tiene un encabezado real dentro ({scenes_without_heading})")
 
 
+def check_gallery_progress_bar(browser, url: str, theme: str) -> None:
+    """Hallazgo I-4 de la revision final: la barra de progreso de la galeria
+    (`gallery.ts`) mentia en el primer pintado en movil — se pintaba llena al
+    100% aunque hubiera carril oculto por arrastrar. Causa real: `updateBar()`
+    se llamaba de forma sincrona en la construccion del componente, con
+    `track` todavia desconectado del documento (`createGallery` solo devuelve
+    el nodo; quien la llama lo apendiza despues). `scrollWidth`/`clientWidth`
+    valian 0 en ese instante, la division daba `NaN`, `Math.max(14, NaN)` es
+    tambien `NaN`, y `style.width = "NaN%"` es un valor invalido que el
+    navegador descarta — el inline queda vacio y el `<i>` hereda el 100% de
+    `.gallery-bar` (`display: block`, sin ancho propio). Solo lo corregia el
+    listener de `scroll` del propio carril, que no dispara hasta que alguien
+    ya arrastro: para entonces el visitante ya vio la barra mintiendo.
+
+    Contexto nuevo con viewport movil (mismo motivo que `galleries_mobile` mas
+    abajo: el ancho minimo de cada pieza garantiza desborde real con 2+ piezas)
+    para medir el estado justo tras el primer pintado SIN arrastrar ni
+    scrollear el carril — asi se prueba lo que ve el visitante antes de tocar
+    nada, no un estado ya corregido por una interaccion previa del arnes."""
+    context = browser.new_context(viewport=MOBILE)
+    try:
+        page = context.new_page()
+        page.goto(f"{url}/?theme={theme}", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(1200)
+        data = page.evaluate("""() => {
+          const out = [];
+          for (const gallery of document.querySelectorAll('[data-gallery]')) {
+            const track = gallery.querySelector('[data-gallery-track]');
+            const bar = gallery.querySelector('[data-gallery-bar]');
+            const indicator = bar ? bar.firstElementChild : null;
+            if (!track || !bar || !indicator) continue;
+            if (track.children.length < 2) continue; // sin desborde posible
+            const scrollable = track.scrollWidth > track.clientWidth + 10;
+            if (!scrollable) continue;
+            const barWidth = bar.getBoundingClientRect().width;
+            const indicatorWidth = indicator.getBoundingClientRect().width;
+            out.push({
+              styleWidth: indicator.style.width,
+              ratio: barWidth > 0 ? (indicatorWidth / barWidth) * 100 : null,
+            });
+          }
+          return out;
+        }""")
+        check(
+            len(data) >= 1,
+            "hay al menos una galeria desplazable en movil para medir la barra en el primer pintado",
+        )
+        for i, g in enumerate(data):
+            check(
+                g["styleWidth"] != "" and "NaN" not in g["styleWidth"],
+                f"galeria #{i} ({theme}): la barra tiene un ancho valido en el primer pintado "
+                f"(style.width={g['styleWidth']!r})",
+            )
+            ratio = g["ratio"]
+            check(
+                ratio is not None and ratio < 95,
+                f"galeria #{i} ({theme}): la barra no se pinta llena en el primer pintado pese a "
+                f"haber carril oculto por arrastrar (ratio medido={ratio})",
+            )
+    finally:
+        context.close()
+
+
 def check_reduced_motion_chrome(browser, url: str, theme: str) -> None:
     """El cromo de cine (letterbox + barra de orientacion) es decoracion pura
     de Vice: con `prefers-reduced-motion` no debe aparecer. Sin este check,
@@ -678,6 +741,12 @@ def run(
             if not allow_gallery_placeholder:
                 check_gallery_placeholder(page)
                 check_gallery_placeholder_hashes()
+
+            # Hallazgo I-4: la barra de progreso de la galeria en el primer
+            # pintado movil, sin interaccion previa. Contexto/pagina propios
+            # (ver comentario de la funcion) — no reutiliza `page` porque
+            # necesita medir ANTES de que ningun otro gate scrollee nada.
+            check_gallery_progress_bar(browser, url, theme)
 
             # Task 9: creditos interactivos ("Con que construyo"). Corre en
             # LOS TRES temas, no solo Vice: `createCredits` monta el mismo

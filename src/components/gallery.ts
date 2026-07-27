@@ -23,15 +23,18 @@ const DRAG_AXIS_THRESHOLD = 6;
 export function createGallery(shots: GalleryShot[]): HTMLElement {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  const images: HTMLImageElement[] = [];
+
   const track = el(
     "div",
     "gallery-track",
     shots.map((shot) => {
-      const image = el("img", "gallery-img");
+      const image = el("img", "gallery-img") as HTMLImageElement;
       image.src = shot.src;
       image.alt = shot.caption;
       image.loading = "lazy";
       image.decoding = "async";
+      images.push(image);
 
       const fallback = el("span", "gallery-fallback", ["Imagen pendiente"]);
       fallback.setAttribute("aria-hidden", "true");
@@ -42,14 +45,17 @@ export function createGallery(shots: GalleryShot[]): HTMLElement {
         el("figcaption", "gallery-caption", [shot.caption]),
       ]);
 
-      // Los assets reales llegan en la Task 11; hasta entonces la imagen
-      // falla su carga. El fallback visual se muestra en su lugar, pero el
-      // <img> se queda en el DOM (solo `opacity: 0`, nunca
-      // `display:none`/`visibility:hidden`): asi el lector de pantalla sigue
-      // anunciando el `alt` real de la pieza, no un hueco vacio.
+      // Los assets reales de la galeria (Task 11) devuelven 200: la mayoria
+      // de imagenes carga sin problema. Este listener queda como red de
+      // seguridad honesta por si una ruta puntual deja de resolver (CDN
+      // caido, typo futuro en content.ts): el `<img>` se queda en el DOM
+      // (solo `opacity: 0`, nunca `display:none`/`visibility:hidden`) para
+      // que el lector de pantalla siga anunciando el `alt` real de la pieza,
+      // no un hueco vacio.
       image.addEventListener("error", () => {
         image.classList.add("is-broken");
         figure.setAttribute("data-broken", "");
+        updateBar();
       });
 
       return figure;
@@ -143,14 +149,47 @@ export function createGallery(shots: GalleryShot[]): HTMLElement {
   });
 
   // --- Barra de progreso ------------------------------------------------------
+  //
+  // Hallazgo de la revision final de rama: `updateBar()` se llamaba una sola
+  // vez, de forma sincrona, con `track` todavia desconectado del documento
+  // (esta funcion solo devuelve el nodo `gallery`; quien la llama lo apendiza
+  // despues). `clientWidth`/`scrollWidth` valen 0 en ese momento, la division
+  // da `NaN`, `Math.max(14, NaN)` da `NaN` (no 14: `Math.max` con un NaN
+  // entre los argumentos siempre devuelve NaN) y `style.width = "NaN%"` lo
+  // descarta el navegador — el inline queda vacio y el `<i>` hereda el 100%
+  // de `.gallery-bar` (ver style.css), pintando la barra llena en el primer
+  // pintado aunque haya mucho carril oculto. Solo lo corregia el listener de
+  // `scroll`, que no dispara hasta que el usuario ya arrastro — para entonces
+  // ya vio una barra mintiendo al 100%.
+  //
+  // Fix con dos piezas:
+  //   1. Guardia explicita: si `track` aun no tiene layout (ancho 0 en
+  //      cualquiera de las dos dimensiones), no se pinta nada todavia — se
+  //      espera al recalculo real, en vez de forzar un `NaN` a pixeles.
+  //   2. `ResizeObserver` sobre `track`: dispara en cuanto el elemento se
+  //      conecta y obtiene layout (primer pintado real, sin depender de que
+  //      el padre llame a un metodo `mount()` que no existe en este
+  //      componente) y de nuevo ante cualquier cambio de tamano posterior
+  //      (redimensionar la ventana). Las imagenes `loading="lazy"` sin
+  //      `width`/`height` cambian `scrollWidth` al decodificar sin tocar el
+  //      box de `track` en si, asi que el observer no lo cazaria solo: cada
+  //      `<img>` lleva ademas su propio listener de `load` que recalcula.
   const indicator = bar.firstElementChild as HTMLElement;
   function updateBar(): void {
-    const maxScroll = Math.max(1, track.scrollWidth - track.clientWidth);
-    const ratio = Math.max(14, (track.clientWidth / track.scrollWidth) * 100);
+    const totalWidth = track.scrollWidth;
+    const visibleWidth = track.clientWidth;
+    if (totalWidth <= 0 || visibleWidth <= 0) return;
+    const maxScroll = Math.max(1, totalWidth - visibleWidth);
+    const ratio = Math.max(14, (visibleWidth / totalWidth) * 100);
     indicator.style.width = `${ratio.toFixed(1)}%`;
     indicator.style.marginLeft = `${((track.scrollLeft / maxScroll) * (100 - ratio)).toFixed(1)}%`;
   }
   track.addEventListener("scroll", updateBar, { passive: true });
+  for (const image of images) {
+    image.addEventListener("load", updateBar, { once: true });
+  }
+  const barResizeObserver = new ResizeObserver(() => updateBar());
+  barResizeObserver.observe(track);
   updateBar();
 
   return gallery;
