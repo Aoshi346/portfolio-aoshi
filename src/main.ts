@@ -58,7 +58,12 @@ void applyTheme(theme, backgroundHost).then((handle) => {
 });
 
 // Libera el contexto WebGL al salir: el shader corre durante toda la visita.
-window.addEventListener("beforeunload", () => backgroundHandle?.destroy(), { once: true });
+// `pagehide`, no `beforeunload`: en movil (Safari/Chrome) y al entrar en
+// bfcache, `beforeunload` no dispara de forma fiable, asi que el contexto
+// WebGL se quedaba sin liberar en esas rutas de salida. `pagehide` cubre
+// ambas — navegacion normal y bfcache — y es el evento recomendado para
+// limpieza al abandonar la pagina.
+window.addEventListener("pagehide", () => backgroundHandle?.destroy(), { once: true });
 
 void import("./utils/reveal").then(({ initScrollReveal }) => initScrollReveal(main, theme));
 
