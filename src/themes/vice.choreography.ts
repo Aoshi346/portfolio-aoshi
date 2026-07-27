@@ -287,9 +287,66 @@ function scene4Credits(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEl
   });
 }
 
+/** Id fijo por escena: permite matar cada ScrollTrigger si la funcion se re-ejecuta. */
+function chromeTriggerId(index: number): string {
+  return `vice-chrome-${index}`;
+}
+
+/**
+ * Gesto 5 — Recursos globales de lenguaje de cine: la barra de orientacion
+ * dice donde estas, el letterbox entra solo durante la obra ("esto es la
+ * pelicula") y el atenuador de fondo baja la luz fuera de hero/contacto para
+ * que el texto largo de las secciones intermedias no compita con el video.
+ */
+function cinemaChrome(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElement): void {
+  const bars = Array.from(document.querySelectorAll<HTMLElement>("[data-letterbox]"));
+  const now = document.querySelector<HTMLElement>(".rail-now");
+  const dim = document.querySelector<HTMLElement>("[data-dim]");
+  const scenes = Array.from(root.querySelectorAll<HTMLElement>("[data-scene]"));
+  const labels: Record<string, string> = {
+    hero: "Título",
+    about: "Ficha",
+    obra: "Cartela",
+    credits: "Créditos",
+    contacto: "Fundido",
+  };
+  /** Solo hero y contacto a plena luz; el resto atenuado para que el texto lea. */
+  const brightScenes = new Set(["hero", "contacto"]);
+
+  scenes.forEach((scene, index) => {
+    // Defensivo, igual que en los gestos 1 a 4: matar el trigger huerfano si
+    // esta funcion se re-ejecutara.
+    ScrollTrigger.getById(chromeTriggerId(index))?.kill();
+
+    const kind = scene.dataset.scene ?? "";
+    ScrollTrigger.create({
+      id: chromeTriggerId(index),
+      trigger: scene,
+      start: "top 50%",
+      end: "bottom 50%",
+      onToggle: (self) => {
+        if (!self.isActive) return;
+        if (now) {
+          now.textContent = `${String(index + 1).padStart(2, "0")} · ${labels[kind] ?? ""}`;
+        }
+        // Las franjas entran solo durante la obra: dicen "esto es la pelicula".
+        gsap.to(bars, { height: kind === "obra" ? "6.5vh" : "0vh", duration: 0.45, ease: "power3.out" });
+        if (dim) {
+          gsap.to(dim, {
+            opacity: brightScenes.has(kind) ? 0 : 0.62,
+            duration: 0.6,
+            ease: "power2.out",
+          });
+        }
+      },
+    });
+  });
+}
+
 export const viceChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
   scene1Title(gsap, ScrollTrigger, root);
   scene2Card(gsap, ScrollTrigger, root);
   scene3Slate(gsap, ScrollTrigger, root);
   scene4Credits(gsap, ScrollTrigger, root);
+  cinemaChrome(gsap, ScrollTrigger, root);
 };

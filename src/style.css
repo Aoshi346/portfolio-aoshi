@@ -92,7 +92,18 @@ body {
   font-size: 0.66rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  /*
+   * No el accent puro: mismo motivo que `.about-facts dt`/`.obra-meta dt` —
+   * `.hero-kick` es la etiqueta compartida de las cinco escenas (hero, about,
+   * obra, creditos, contacto) y en Caelestia el accent a secas se queda sin
+   * margen real en cuanto el fondo animado (blobs) se desplaza a un tono mas
+   * saturado (3.75:1 medido en la escena de contacto con
+   * `scripts/verify.py::check_contrast_wcag`; en el hero pasaba de milagro,
+   * 5.05:1, apoyado en un fondo mas claro en ese instante). Mezclado con
+   * `--color-paper` sube el margen sin perder el tinte, igual que en los
+   * demas usos ya probados de esta formula.
+   */
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
 }
 
 .hero-corner {
@@ -132,6 +143,160 @@ body {
   text-decoration: underline;
   text-underline-offset: 7px;
   text-decoration-thickness: 2px;
+}
+
+/* Contacto — cierre del portfolio, mismo tratamiento tipografico que el hero. */
+.contacto-mail {
+  font-size: clamp(1rem, 2.2vw, 1.4rem);
+  /*
+   * No el accent puro: en Caelestia el fondo animado (blobs) cae a veces en
+   * un tono lo bastante saturado como para dejar el accent a secas en
+   * 3.01:1 (medido con `check_contrast_wcag` en la escena de contacto) — el
+   * mismo motivo que `.hero-kick` de arriba.
+   */
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  text-decoration: underline;
+  text-underline-offset: 8px;
+  text-decoration-thickness: 2px;
+}
+
+/*
+ * El enlace de GitHub vive dentro de `.hero-corner`, que fija su color via
+ * `color-mix()` en el DIV padre (ver comentario de `.hero-corner`). Sin este
+ * `color: inherit` explicito, el UA stylesheet del navegador le pone su azul
+ * de enlace por defecto (mayor especificidad que la herencia): eso rompio el
+ * contraste en la escena de contacto (3.90:1 medido con
+ * `scripts/verify.py::check_contrast_wcag` sobre un frame del video con tinte
+ * cian), el mismo tipo de defecto que ya rompio `.hero-corner` una vez.
+ */
+.contacto-github {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/*
+ * `.hero-corner` (compartido con el hero) queda a pelo sobre el video en
+ * contacto: la escena de contacto llega tarde en el recorrido (mas tiempo de
+ * reproduccion, mas probabilidad de caer en un tramo saturado del video/
+ * fixture SMPTE). Medido con `check_contrast_wcag`: 3.90:1 sobre un frame
+ * cian — por debajo del 4.5:1 minimo, aunque el color del texto en si (mezcla
+ * de --color-paper, el mismo token que ya se lee bien en el hero) es
+ * correcto. El scrim propio, calcado del recibo de `.credits-list`/
+ * `.about-card`, acota el riesgo sin depender de que frame le toque.
+ */
+.contacto-corner {
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--color-ink) 55%, transparent) 0%,
+    transparent 100%
+  );
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-card);
+}
+
+/*
+ * Cromo de cine (`components/cinemaChrome.ts`): letterbox, barra de
+ * orientacion y atenuador de fondo. Un solo DOM para los tres temas, pero es
+ * decoracion propia de Vice — Hyprland/Caelestia lo montan igual (mismo
+ * componente) y este bloque lo mantiene oculto ahi; el bloque Vice de
+ * `themes.css` lo vuelve a mostrar. Sin este gate, Hyprland/Caelestia
+ * quedarian con una barra estatica ("01 · Titulo" que nunca cambia, ninguna
+ * coreografia la cablea fuera de Vice) sin ningun sentido narrativo.
+ */
+.cinema-chrome {
+  display: none;
+  pointer-events: none;
+}
+
+/*
+ * Con `prefers-reduced-motion` el cromo no debe aparecer: la coreografia que
+ * cablea letterbox/atenuador/rail (`cinemaChrome` en `vice.choreography.ts`)
+ * ya no corre en ese caso (`initScrollReveal` corta antes de cargar GSAP), asi
+ * que el letterbox ya queda a 0 y el atenuador a 0 por su estado de reposo —
+ * pero la barra de orientacion es texto estatico sin animacion propia y
+ * seguiria visible sin este gate. `!important` porque necesita ganar sobre la
+ * regla de `themes.css` que reactiva `.cinema-chrome` solo para Vice
+ * (mayor especificidad por el selector de atributo `[data-theme="vice"]`).
+ */
+@media (prefers-reduced-motion: reduce) {
+  .cinema-chrome {
+    display: none !important;
+  }
+}
+
+/*
+ * Atenuador del fondo: capa fija bajo el contenido (por encima del backdrop,
+ * z-index -20) que sube su opacidad fuera de hero/contacto (ver `cinemaChrome`
+ * en `vice.choreography.ts`). El color sale de `--color-ink`, nunca un hex
+ * fijado a mano: la misma regla que ya rompio el contraste de `.hero-corner`
+ * una vez.
+ */
+.backdrop-dim {
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  background: var(--color-ink);
+  opacity: 0;
+}
+
+.letterbox {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 40;
+  background: var(--color-ink);
+  transition: height 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.letterbox-top {
+  top: 0;
+}
+
+.letterbox-bottom {
+  bottom: 0;
+}
+
+/*
+ * La rueda de fondo (video/gradiente) es dinamica en el tiempo: un frame
+ * puntual puede caer en un tramo muy saturado (Task 3, fixture SMPTE) y
+ * romper el contraste del texto de la barra, sin que la CSS "declarada" tenga
+ * ningun color a mano de por medio (medido con `check_contrast_wcag`:
+ * 3.03:1-3.90:1 sobre un frame cian en la escena de contacto). Mismo remedio
+ * que `.credits-list`/`.about-card`: un scrim propio de `--color-ink` detras
+ * de la barra, no depender solo del degradado global de `.bg-theme::after`.
+ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 41;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.58rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 70%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-ink) 60%, transparent) 0%,
+    transparent 100%
+  );
+}
+
+@media (min-width: 768px) {
+  .rail {
+    padding-inline: 3rem;
+  }
+}
+
+.rail-now {
+  color: var(--color-accent);
 }
 
 .font-mono {

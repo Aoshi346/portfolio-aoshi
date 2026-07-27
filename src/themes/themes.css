@@ -62,6 +62,15 @@
   padding: 0;
 }
 
+/*
+ * Cromo de cine (letterbox + barra de orientacion + atenuador de fondo): solo
+ * Vice lo muestra. `style.css` lo oculta por defecto (`display: none`); esta
+ * regla, mas especifica, lo reactiva solo aqui.
+ */
+:root[data-theme="vice"] .cinema-chrome {
+  display: block;
+}
+
 /* ----------------------------------------------------------------- Hyprland */
 
 :root[data-theme="hyprland"] {

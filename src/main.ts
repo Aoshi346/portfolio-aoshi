@@ -1,8 +1,10 @@
 import "./style.css";
 import type { BackgroundHandle } from "./backgrounds/shaderBackground";
+import { createCinemaChrome } from "./components/cinemaChrome";
 import { createThemeSignature } from "./components/themeSignature";
 import { caseStudies } from "./data/content";
 import { createAbout } from "./sections/about";
+import { createContacto } from "./sections/contacto";
 import { createHero } from "./sections/hero";
 import { createProjectScene } from "./sections/obra/projectScene";
 import { createSkills } from "./sections/skills";
@@ -34,16 +36,21 @@ backgroundHost.setAttribute("aria-hidden", "true");
 const noise = el("div", "bg-noise", []);
 noise.setAttribute("aria-hidden", "true");
 
-// M1 (prototipo de direccion visual): apertura + dos escenas de obra, una con
-// repositorio publico y otra privada, para ver ambas variantes de cierre.
-const main = el("main", "relative min-h-screen", [
+const main = el("main", "relative", [
   createHero(),
   createAbout(),
-  ...caseStudies.slice(0, 2).map((project, index) => createProjectScene(project, index)),
+  ...caseStudies.map((project, index) => createProjectScene(project, index)),
   createSkills(),
+  createContacto(),
 ]);
 
-app.append(backgroundHost, noise, main, createThemeSignature(theme.label));
+app.append(
+  backgroundHost,
+  noise,
+  main,
+  createCinemaChrome(),
+  createThemeSignature(theme.label),
+);
 
 let backgroundHandle: BackgroundHandle | null = null;
 void applyTheme(theme, backgroundHost).then((handle) => {

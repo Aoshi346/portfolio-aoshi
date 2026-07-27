@@ -502,6 +502,35 @@ def check_contrast_offscreen_scenes(page, theme: str) -> None:
     _scroll_to_and_settle(page, 0)
 
 
+def check_reduced_motion_chrome(browser, url: str, theme: str) -> None:
+    """El cromo de cine (letterbox + barra de orientacion) es decoracion pura
+    de Vice: con `prefers-reduced-motion` no debe aparecer. Sin este check,
+    quitar el `@media (prefers-reduced-motion: reduce) { .cinema-chrome {
+    display: none !important; } }` de `style.css` pasaria desapercibido: la
+    coreografia que anima letterbox/atenuador ya no corre bajo motion reducido
+    (`initScrollReveal` corta antes de cargar GSAP), asi que el letterbox
+    seguiria en su estado de reposo (0 altura) igualmente — pero la barra de
+    orientacion es texto ESTATICO sin animacion propia, y sin el gate CSS
+    quedaria visible para siempre. Solo tiene sentido para Vice: en los otros
+    dos temas el cromo ya esta oculto sin depender de `prefers-reduced-motion`.
+    """
+    context = browser.new_context(viewport=DESKTOP, reduced_motion="reduce")
+    try:
+        page = context.new_page()
+        page.goto(f"{url}/?theme={theme}", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(1500)
+        visible = page.evaluate(
+            "() => { const c = document.querySelector('.cinema-chrome');"
+            " return c ? getComputedStyle(c).display !== 'none' : null; }"
+        )
+        check(
+            visible is False,
+            f"el cromo de cine no aparece con prefers-reduced-motion ({theme}, display visible={visible})",
+        )
+    finally:
+        context.close()
+
+
 def run(
     theme: str,
     url: str,
@@ -725,6 +754,70 @@ def run(
                 check(gal is not None and gal["items"] >= 2, "la galeria tiene piezas")
                 check(gal is not None and gal["scrollable"], "la galeria desborda en horizontal")
                 check(gal is not None and gal["metas"] >= 1, "las obras tienen fila de metadatos")
+
+                # Task 10: contacto (cierre del portfolio), letterbox y barra de
+                # orientacion. `cinemaChrome.ts` monta el mismo DOM en los tres
+                # temas; el arnes solo lo instrumenta aqui porque el gate de
+                # visibilidad (CSS) y la coreografia que lo anima son de Vice.
+                chrome = page.evaluate("""(() => ({
+                  contacto: !!document.querySelector('[data-scene="contacto"]'),
+                  letterbox: document.querySelectorAll('[data-letterbox]').length,
+                  rail: !!document.querySelector('[data-rail]'),
+                }))()""")
+                check(chrome["contacto"], "existe la seccion de contacto")
+                check(chrome["letterbox"] == 2, "hay dos barras de letterbox")
+                check(chrome["rail"], "existe la barra de orientacion")
+
+                contact_links = page.evaluate("""(() => {
+                  const scene = document.querySelector('[data-scene="contacto"]');
+                  if (!scene) return null;
+                  const mail = scene.querySelector('a[href^="mailto:"]');
+                  const external = Array.from(scene.querySelectorAll('a[target="_blank"]'))[0] ?? null;
+                  return {
+                    mail: !!mail,
+                    externalRel: external ? external.getAttribute('rel') : null,
+                  };
+                })()""")
+                check(contact_links is not None and contact_links["mail"],
+                      "el email de contacto es un enlace mailto accionable")
+                check(
+                    contact_links is not None and contact_links["externalRel"] == "noopener noreferrer",
+                    "el enlace externo de contacto lleva rel=noopener noreferrer "
+                    f"(rel={contact_links['externalRel'] if contact_links else None})",
+                )
+
+                # Solo hero y contacto van a plena luz; las intermedias se atenuan.
+                # Causa real vigilada: la coreografia `cinemaChrome` de
+                # `vice.choreography.ts` sube `[data-dim]` a 0.62 fuera de esas dos
+                # escenas — no un valor de opacidad puesto a mano en el DOM.
+                letterbox_hero = page.evaluate(
+                    "parseFloat(getComputedStyle(document.querySelector('[data-letterbox]')).height)"
+                )
+                check(letterbox_hero < 2, f"el letterbox no aparece en el hero ({letterbox_hero}px)")
+
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.45)")
+                page.wait_for_timeout(1200)
+                dimmed = page.evaluate(
+                    "parseFloat(getComputedStyle(document.querySelector('[data-dim]')).opacity)"
+                )
+                check(dimmed > 0.3, f"el fondo se atenua en secciones interiores ({dimmed})")
+
+                # El letterbox solo entra durante la obra: en esta misma posicion de
+                # scroll (~45%, dentro de una escena "obra" con 4 casos de estudio)
+                # debe estar desplegado.
+                letterbox_obra = page.evaluate(
+                    "parseFloat(getComputedStyle(document.querySelector('[data-letterbox]')).height)"
+                )
+                check(letterbox_obra > 20, f"el letterbox se despliega durante la obra ({letterbox_obra}px)")
+
+                _scroll_to_and_settle(page, page.evaluate("document.body.scrollHeight"))
+                dimmed_end = page.evaluate(
+                    "parseFloat(getComputedStyle(document.querySelector('[data-dim]')).opacity)"
+                )
+                check(dimmed_end < 0.1, f"el fondo vuelve a plena luz en contacto ({dimmed_end})")
+                _scroll_to_and_settle(page, 0)
+
+                check_reduced_motion_chrome(browser, url, theme)
 
                 if not allow_fixture_assets:
                     check_fixture_assets()
