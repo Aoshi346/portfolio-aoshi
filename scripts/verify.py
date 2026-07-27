@@ -11,8 +11,10 @@ final debe correr sin el flag.
 import argparse
 import hashlib
 import sys
+from io import BytesIO
 from pathlib import Path
 
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
 CHROME = "/usr/bin/google-chrome"
@@ -62,6 +64,253 @@ def check(condition: bool, label: str) -> None:
         failures.append(label)
 
 
+# --------------------------------------------------------------------------
+# Contraste WCAG AA — medido sobre el PIXEL renderizado, no sobre el CSS.
+#
+# Por que pixel y no `getComputedStyle` a secas: el fondo efectivo de un texto
+# en este sitio casi nunca es un `background-color` solido y ancestro directo.
+# `.bg-theme` es un canvas WebGL/shader (o video+poster en Vice) fijo detras
+# de TODO el sitio (z-index -20, ver style.css); encima puede haber un scrim
+# en gradiente, y encima de eso una tarjeta con `backdrop-filter: blur()`
+# (Caelestia). Sumar esas capas "a mano" leyendo el DOM/CSS es o bien
+# incorrecto (backdrop-filter no es componible por formula simple) o bien
+# requiere reimplementar un compositor. En vez de eso: se hace una captura
+# real de la pagina ya renderizada (canvas + blur + scrims incluidos) y se
+# muestrea el pixel de fondo efectivo directamente del PNG.
+#
+# Metodo:
+#   1. Playwright entrega el rect (viewport-relative, device-scale-factor=1)
+#      de cada nodo de texto hoja visible.
+#   2. Se muestrean varias franjas de pixeles pegadas al borde del rect
+#      (arriba, abajo, izquierda, derecha) en el screenshot ya compuesto.
+#   3. Se cuantizan esos pixeles y se toma la moda: es el fondo efectivo.
+#   4. El color de texto (con su propio alfa, via getComputedStyle) se
+#      compone sobre ese fondo para obtener el color de tinta EFECTIVO.
+#   5. Ratio WCAG entre tinta efectiva y fondo efectivo; umbral 3:1 si el
+#      texto es "grande" (>=24px, o >=18.66px en negrita), 4.5:1 si no.
+#
+# Limites conocidos (deliberados, no bugs):
+#   - Si las franjas muestreadas no son uniformes (>2 colores cuantizados
+#     distintos), el fondo no es un color solido en ese punto — casi siempre
+#     porque el texto esta directamente sobre video/imagen/canvas con detalle
+#     (sin scrim, sin tarjeta). Ese caso se EXCLUYE del gate pass/fail y se
+#     reporta explicitamente como "excluido" con la razon, en vez de forzar
+#     un veredicto sobre un fondo que no es una sola muestra representativa.
+#   - Fondo de VIDEO (Vice): el video es dinamico en el tiempo; el ratio
+#     medido es una fotografia del frame en el instante de la captura
+#     (t~3.5s tras cargar), no una garantia para todos los frames. Vice ya
+#     lleva un scrim fijo (`.bg-theme::after`) precisamente para acotar este
+#     riesgo, pero el arnes no puede probar "todos los frames posibles".
+#   - Solo cubre desktop 1440x900 (mismo viewport que el resto del arnes).
+#   - No seguimos gradientes de TEXTO (`background-clip: text`): no se usan
+#     en este proyecto, pero si se introdujeran, `color` de por si no
+#     reflejaria el pixel real y el check quedaria invalidado silenciosamente.
+CONTRAST_MIN_NORMAL = 4.5
+CONTRAST_MIN_LARGE = 3.0
+# Desviacion tipica maxima (por canal, 0-255) tolerada en la muestra de fondo
+# para considerarla "un color solido". El grano de `.bg-noise` (opacity
+# 0.035) y el antialiasing del texto meten ruido de +-5 incluso sobre un
+# fondo solido real; un umbral demasiado bajo marcaria como "no solido"
+# fondos que en la practica son planos, y uno demasiado alto dejaria pasar
+# video/imagen con detalle real. 18 es el punto donde el grano cae dentro
+# pero un borde de video/imagen con contraste real lo supera.
+MAX_BG_STDDEV = 18.0
+# Separacion del borde del texto para evitar leer antialiasing del propio
+# glifo (ascendentes/descendentes) como si fuera "fondo".
+SAMPLE_GAP = 5
+SAMPLE_THICKNESS = 5
+
+
+def _relative_luminance(rgb: tuple[float, float, float]) -> float:
+    def channel(c: float) -> float:
+        cs = c / 255
+        return cs / 12.92 if cs <= 0.03928 else ((cs + 0.055) / 1.055) ** 2.4
+
+    r, g, b = rgb
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+
+
+def _contrast_ratio(fg: tuple[float, float, float], bg: tuple[float, float, float]) -> float:
+    l1 = _relative_luminance(fg) + 0.05
+    l2 = _relative_luminance(bg) + 0.05
+    return max(l1, l2) / min(l1, l2)
+
+
+def _clamp01(v: float) -> float:
+    return max(0.0, min(1.0, v))
+
+
+def _oklab_to_srgb255(l: float, a_: float, b_: float) -> tuple[float, float, float]:
+    """OKLab -> sRGB (0..255). Matrices estandar de Bjorn Ottosson."""
+    l_ = l + 0.3963377774 * a_ + 0.2158037573 * b_
+    m_ = l - 0.1055613458 * a_ - 0.0638541728 * b_
+    s_ = l - 0.0894841775 * a_ - 1.2914855480 * b_
+    l3, m3, s3 = l_**3, m_**3, s_**3
+
+    lin_r = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3
+    lin_g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3
+    lin_b = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3
+
+    def to_gamma(c: float) -> float:
+        c = _clamp01(c)
+        return 12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1 / 2.4)) - 0.055
+
+    return to_gamma(lin_r) * 255, to_gamma(lin_g) * 255, to_gamma(lin_b) * 255
+
+
+def _parse_css_color(css: str) -> tuple[float, float, float, float]:
+    """Parsea el color que devuelve `getComputedStyle` en Chromium.
+
+    Formatos observados en este proyecto:
+      - `rgb(r, g, b)` / `rgba(r, g, b, a)` — la mayoria de los casos.
+      - `color(srgb r g b / a)` — variante de CSS Color 4 con r/g/b en 0..1.
+      - `oklab(L a b / alpha)` — Chromium serializa ASI un color resuelto por
+        Tailwind 4 al aplicar opacidad sobre un token `@theme`
+        (`text-paper/85`): la resolucion interna usa OKLab/relative color
+        syntax y el computed style vuelve en ese espacio, no en rgb(). Sin
+        convertir esto, el parser reventaba (visto en el FAIL real contra
+        `.lead.text-paper/85`) — no es un caso hipotetico, es el formato que
+        Chromium realmente devuelve para varias utilidades de este sitio.
+      En los tres casos los canales pueden salirse ligeramente de 0..1/0..255
+      por interpolacion; se clampan.
+    """
+    css = css.strip()
+    inner = css[css.index("(") + 1 : css.rindex(")")]
+
+    if css.startswith("oklab("):
+        comps, _, alpha_s = inner.partition("/")
+        vals = [float(v) for v in comps.split()]
+        r, g, b = _oklab_to_srgb255(*vals)
+        a = float(alpha_s.strip()) if alpha_s.strip() else 1.0
+        return r, g, b, a
+
+    if css.startswith("color("):
+        body = inner.replace("srgb", "").strip()
+        comps, _, alpha_s = body.partition("/")
+        r01, g01, b01 = (float(v) for v in comps.split())
+        a = float(alpha_s.strip()) if alpha_s.strip() else 1.0
+        return _clamp01(r01) * 255, _clamp01(g01) * 255, _clamp01(b01) * 255, a
+
+    parts = [p.strip() for p in inner.split(",")]
+    r, g, b = (float(parts[0]), float(parts[1]), float(parts[2]))
+    a = float(parts[3]) if len(parts) > 3 else 1.0
+    return r, g, b, a
+
+
+def _composite(fg_rgba: tuple[float, float, float, float], bg_rgb: tuple[int, int, int]) -> tuple[float, float, float]:
+    r, g, b, a = fg_rgba
+    return (
+        r * a + bg_rgb[0] * (1 - a),
+        g * a + bg_rgb[1] * (1 - a),
+        b * a + bg_rgb[2] * (1 - a),
+    )
+
+
+def _sample_strip(img: Image.Image, x0: float, y0: float, x1: float, y1: float) -> list[tuple[int, int, int]]:
+    width, height = img.size
+    x0i, x1i = max(0, int(x0)), min(width, int(x1))
+    y0i, y1i = max(0, int(y0)), min(height, int(y1))
+    if x1i <= x0i or y1i <= y0i:
+        return []
+    region = img.crop((x0i, y0i, x1i, y1i)).convert("RGB")
+    return list(region.getdata())
+
+
+def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
+    """Defecto de contraste (barra de esquina del hero): el bug real era un
+    `color: rgb(255 244 232 / 0.6)` fijado a mano en `.hero-corner`, el mismo
+    en los tres temas, ilegible en Caelestia (fondo claro). Este check no
+    apunta solo a esa clase: barre TODO el texto hoja visible del viewport
+    para que cualquier color fijado a mano que rompa el contraste en algun
+    tema quede atrapado, no solo el caso ya conocido."""
+    candidates = page.evaluate(
+        """(() => {
+      const out = [];
+      const nodes = document.querySelectorAll('body *');
+      for (const el of nodes) {
+        if (el.children.length > 0) continue; // solo hojas
+        const text = (el.textContent || '').trim();
+        if (!text) continue;
+        const style = getComputedStyle(el);
+        if (style.visibility === 'hidden' || style.display === 'none') continue;
+        if (parseFloat(style.opacity) < 0.2) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.width < 2 || rect.height < 2) continue;
+        if (rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
+        if (rect.right <= 0 || rect.left >= window.innerWidth) continue;
+        out.push({
+          tag: el.tagName.toLowerCase(),
+          text: text.slice(0, 40),
+          color: style.color,
+          fontSize: parseFloat(style.fontSize),
+          fontWeight: style.fontWeight,
+          rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
+        });
+      }
+      return out;
+    })()"""
+    )
+
+    img = Image.open(BytesIO(screenshot_bytes))
+    checked = 0
+    excluded = 0
+
+    for c in candidates:
+        rect = c["rect"]
+        x, y, w, h = rect["x"], rect["y"], rect["w"], rect["h"]
+        gap, thick = SAMPLE_GAP, SAMPLE_THICKNESS
+        samples: list[tuple[int, int, int]] = []
+        samples += _sample_strip(img, x, y - gap - thick, x + w, y - gap)  # arriba
+        samples += _sample_strip(img, x, y + h + gap, x + w, y + h + gap + thick)  # abajo
+        samples += _sample_strip(img, x - gap - thick, y, x - gap, y + h)  # izquierda
+        samples += _sample_strip(img, x + w + gap, y, x + w + gap + thick, y + h)  # derecha
+
+        label_base = f"contraste AA — {theme}: {c['tag']} \"{c['text']}\""
+
+        if len(samples) < 8:
+            excluded += 1
+            print(f"  SKIP {label_base} (sin margen suficiente para muestrear fondo)")
+            continue
+
+        n = len(samples)
+        means = [sum(s[ch] for s in samples) / n for ch in range(3)]
+        variances = [sum((s[ch] - means[ch]) ** 2 for s in samples) / n for ch in range(3)]
+        stddevs = [v**0.5 for v in variances]
+
+        if max(stddevs) > MAX_BG_STDDEV:
+            # Fondo no uniforme bajo el muestreo: video/imagen/canvas con
+            # detalle real justo ahi, sin scrim ni tarjeta solida encima.
+            # Se excluye del gate pass/fail — no es un color solido y no hay
+            # forma fiable de reducirlo a un solo par fg/bg comparable.
+            excluded += 1
+            print(
+                f"  SKIP {label_base} (fondo no solido bajo el texto — "
+                f"desviacion tipica {max(stddevs):.1f} > {MAX_BG_STDDEV}; "
+                "probablemente video/imagen/canvas sin scrim solido, excluido "
+                "del gate de contraste, no silenciado)"
+            )
+            continue
+
+        bg_rgb = tuple(round(m) for m in means)
+        r, g, b, a = _parse_css_color(c["color"])
+        fg_rgb = _composite((r, g, b, a), bg_rgb)
+        ratio = _contrast_ratio(fg_rgb, bg_rgb)
+
+        font_weight = c["fontWeight"]
+        weight_num = 700 if font_weight == "bold" else (400 if font_weight == "normal" else int(float(font_weight)))
+        is_large = c["fontSize"] >= 24 or (weight_num >= 700 and c["fontSize"] >= 18.66)
+        threshold = CONTRAST_MIN_LARGE if is_large else CONTRAST_MIN_NORMAL
+
+        checked += 1
+        check(
+            ratio >= threshold,
+            f"{label_base}: ratio {ratio:.2f}:1 (min {threshold}:1, fg={tuple(round(v) for v in fg_rgb)}, "
+            f"bg={bg_rgb}, desv.tipica={max(stddevs):.1f}, n={n})",
+        )
+
+    print(f"  [contraste] {checked} elementos evaluados, {excluded} excluidos (fondo no muestreable/no solido)")
+
+
 def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
     global failures
     failures = []
@@ -89,6 +338,13 @@ def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
             })()""")
             check(shape is not None and shape.get("galleries", 0) >= 2,
                   "content.ts expone galerias en al menos 2 casos de estudio")
+
+            # Defecto de contraste: corre en LOS TRES temas. El bug nacio de
+            # asumir que un color que se lee bien en los dos temas oscuros
+            # (Vice, Hyprland) se lee igual en Caelestia (claro) — por eso
+            # este check no es condicional a un tema, es parte del gate base.
+            screenshot_bytes = page.screenshot(full_page=False)
+            check_contrast_wcag(page, theme, screenshot_bytes)
 
             if theme == "vice":
                 backdrop = page.evaluate("""(() => {

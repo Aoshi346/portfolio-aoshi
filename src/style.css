@@ -107,7 +107,17 @@ body {
   font-size: 0.6rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgb(255 244 232 / 0.6);
+  /*
+   * Antes: `rgb(255 244 232 / 0.6)` fijo — crema de Vice a pelo. Se leia bien
+   * en los dos temas oscuros por casualidad, pero en Caelestia (fondo claro,
+   * --color-paper oscuro) era casi ilegible (1.09:1 medido). Sale del token
+   * para que cada tema re-skinee el contraste, igual que hace `.hero-mail`
+   * con el accent. 70% (no 60%) porque a 60% Caelestia quedaba en 4.16:1,
+   * por debajo del minimo WCAG AA de 4.5:1 para texto normal — medido con
+   * `scripts/verify.py` (check_contrast_wcag) sobre el fondo real muestreado,
+   * no a ojo.
+   */
+  color: color-mix(in srgb, var(--color-paper) 70%, transparent);
 }
 
 @media (min-width: 768px) {
