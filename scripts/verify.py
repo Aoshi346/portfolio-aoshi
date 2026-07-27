@@ -311,6 +311,97 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
     print(f"  [contraste] {checked} elementos evaluados, {excluded} excluidos (fondo no muestreable/no solido)")
 
 
+# --------------------------------------------------------------------------
+# Contraste bajo el pliegue — recorre cada [data-scene] y repite el barrido.
+#
+# El gate original tomaba una sola captura justo tras `goto`: solo el primer
+# viewport quedaba vigilado. El defecto real que motivo esto (acento sobre
+# fondo crudo en "Quien es" de Caelestia, por debajo del pliegue en 1440x900)
+# no lo caza ese gate — hizo falta un script suelto para encontrarlo. Esta
+# funcion cierra ese hueco: por cada escena marcada `[data-scene]` hace scroll
+# hasta ella y repite `check_contrast_wcag` ahi.
+#
+# Por que rueda simulada y no `window.scrollTo`/`scrollIntoView` directos:
+# Lenis (`src/utils/reveal.ts`) intercepta la rueda para animar el scroll con
+# inercia (`duration: 1.15`); un salto de posicion via `scrollTo` cambia el
+# scroll del documento pero no pasa por esa animacion, así que no reproduce
+# las condiciones reales bajo las que se vio el defecto (fondo shader/blur
+# todavia interpolando). Se dispara con `page.mouse.wheel` en pasos, como
+# haria un visitante real, y luego se espera a que `window.scrollY` deje de
+# cambiar entre lecturas (asentado), en vez de un `wait_for_timeout` fijo:
+# el tiempo real hasta asentar depende de la distancia recorrida, no es
+# constante.
+#
+# Limite nuevo (deliberado): solo cubre escenas que ya llevan el atributo
+# `[data-scene]`. Secciones aun sin construir (contact, skills, experience,
+# caseStudies fuera de las 2 primeras) no estan instrumentadas todavia y no
+# se cubren hasta que lo esten — no es un fondo no muestreable, es que la
+# escena no existe como tal en el DOM.
+SETTLE_POLL_MS = 150
+SETTLE_STABLE_READS = 2
+SETTLE_TIMEOUT_MS = 4000
+WHEEL_STEP = 800
+WHEEL_STEP_PAUSE_MS = 80
+
+
+def _scroll_to_and_settle(page, target_y: float) -> None:
+    page.evaluate("window.scrollTo(0, 0)")
+    page.wait_for_timeout(100)
+
+    remaining = target_y
+    while remaining > 1:
+        delta = min(WHEEL_STEP, remaining)
+        page.mouse.wheel(0, delta)
+        remaining -= delta
+        page.wait_for_timeout(WHEEL_STEP_PAUSE_MS)
+
+    last: float | None = None
+    stable_reads = 0
+    elapsed = 0
+    while elapsed < SETTLE_TIMEOUT_MS:
+        page.wait_for_timeout(SETTLE_POLL_MS)
+        elapsed += SETTLE_POLL_MS
+        current = page.evaluate("window.scrollY")
+        if last is not None and abs(current - last) < 0.5:
+            stable_reads += 1
+            if stable_reads >= SETTLE_STABLE_READS:
+                return
+        else:
+            stable_reads = 0
+        last = current
+    print(f"  NOTA scroll no se asento en {SETTLE_TIMEOUT_MS}ms (ultima lectura y={last})")
+
+
+def check_contrast_offscreen_scenes(page, theme: str) -> None:
+    scenes = page.evaluate(
+        """() => Array.from(document.querySelectorAll('[data-scene]')).map((el, i) => ({
+          index: i,
+          name: el.dataset.scene || String(i),
+        }))"""
+    )
+    for scene in scenes:
+        if scene["index"] == 0:
+            # Escena 0 (hero) ya vive en el primer viewport y la cubre el
+            # barrido inicial en scroll 0 — repetirla aqui solo duplicaria
+            # ruido en el reporte.
+            continue
+
+        target_y = page.evaluate(
+            "(i) => { const el = document.querySelectorAll('[data-scene]')[i]; "
+            "return el.getBoundingClientRect().top + window.scrollY; }",
+            scene["index"],
+        )
+        _scroll_to_and_settle(page, target_y)
+        screenshot_bytes = page.screenshot(full_page=False)
+        check_contrast_wcag(page, f"{theme}·scroll:{scene['name']}", screenshot_bytes)
+
+    # Las aserciones especificas de Vice que corren despues (hero visible a
+    # scroll 0, email en el primer viewport) asumen que la pagina sigue en el
+    # tope: este barrido debe devolverla ahi, no dejarla en la ultima escena
+    # visitada.
+    _scroll_to_and_settle(page, 0)
+
+
 def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
     global failures
     failures = []
@@ -345,6 +436,11 @@ def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
             # este check no es condicional a un tema, es parte del gate base.
             screenshot_bytes = page.screenshot(full_page=False)
             check_contrast_wcag(page, theme, screenshot_bytes)
+
+            # Defecto de contraste bajo el pliegue: corre en LOS TRES temas,
+            # igual que el barrido de scroll 0 — ver comentario de
+            # `check_contrast_offscreen_scenes`.
+            check_contrast_offscreen_scenes(page, theme)
 
             if theme == "vice":
                 backdrop = page.evaluate("""(() => {
