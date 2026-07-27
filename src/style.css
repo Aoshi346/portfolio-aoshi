@@ -852,7 +852,18 @@ body {
 .credit:focus-visible,
 .credit.is-active {
   border-color: var(--color-accent);
-  outline: none;
+}
+
+/*
+ * Indicador de foco solido, igual que `.gallery-track:focus-visible`: el
+ * cambio de `border-color` de arriba no basta por si solo (`.credit` es
+ * ancho completo con la fila siguiente pegada debajo; el borde inferior en
+ * accent es facil de perder). `outline: none` sin sustituto dejaba a quien
+ * navega con teclado sin ninguna senal fuerte de foco.
+ */
+.credit:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .credit-role {
