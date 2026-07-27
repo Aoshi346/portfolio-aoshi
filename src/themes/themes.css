@@ -21,6 +21,14 @@
   --font-display: "Passion One", system-ui, sans-serif;
   --font-body: "Manrope", system-ui, sans-serif;
   --font-lead: "Manrope", system-ui, sans-serif;
+  /*
+   * Red de seguridad: la Task 4 retiro JetBrains Mono de Vice, pero el
+   * marcado todavia trae `font-mono` a pelo en varios sitios (ver
+   * experience.ts y las tareas 6-10 pendientes). Sin este token, esas clases
+   * caian en `ui-monospace` del sistema: la firma tipografica de Hyprland,
+   * justo lo que el spec de Vice prohibe.
+   */
+  --font-mono: "Manrope", system-ui, sans-serif;
 
   --radius-card: 3px;
   --display-tracking: 0.005em;
