@@ -218,3 +218,212 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 160px 160px;
 }
+
+/*
+ * "Quien es" — ficha de reparto + cifras + trayectoria. Todo color aqui sale
+ * de un token (`--color-*`) o de `color-mix()` sobre un token: nunca un hex/rgb
+ * fijado a mano, que es exactamente lo que rompio el contraste de Caelestia en
+ * `.hero-corner` (ver comentario ahi). `.about-card` lleva ademas la clase
+ * compartida `scene-surface`: en Caelestia gana la regla mas especifica de
+ * themes.css y la viste como superficie Material You; en Vice/Hyprland no
+ * hace nada por si sola y manda el look propio de abajo.
+ */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.4rem, 4vw, 3.4rem);
+  align-items: start;
+  margin-top: 1rem;
+}
+
+@media (min-width: 860px) {
+  .about-grid {
+    grid-template-columns: minmax(190px, 235px) 1fr;
+  }
+}
+
+.about-card {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.05rem;
+  background: color-mix(in srgb, var(--color-ink) 38%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.about-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-line);
+}
+
+.about-name {
+  margin-top: 0.6rem;
+}
+
+.about-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-weight: 600;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.about-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+/* El pulso solo si el usuario acepta movimiento. */
+@media (prefers-reduced-motion: no-preference) {
+  .about-dot {
+    animation: about-blip 2s infinite;
+  }
+}
+
+@keyframes about-blip {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 50%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}
+
+.about-facts {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 0.7rem;
+}
+
+.about-facts dt {
+  font-weight: 700;
+  font-size: 0.53rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  /*
+   * No el accent puro: sobre la superficie translucida de Caelestia
+   * (`.about-card.scene-surface`, un blanco al 62% sobre el degradado de
+   * fondo, no un blanco solido) el accent llegaba a 4.52:1 — por encima del
+   * 4.5:1 minimo pero sin margen real. Mezclado con `--color-paper` (que en
+   * los tres temas ya se lee con margen holgado, 9 a 18:1 medido) sube el
+   * margen sin perder el tinte de acento. Medido con
+   * `scripts/verify.py::check_contrast_wcag` sobre el fondo real.
+   */
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+  padding-top: 2px;
+}
+
+.about-facts dd {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--color-paper) 88%, transparent);
+}
+
+.about-line {
+  display: block;
+  overflow: hidden;
+}
+
+.about-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+
+@media (min-width: 640px) {
+  .about-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.about-stats b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1;
+  color: var(--color-accent);
+}
+
+.about-stats span {
+  display: block;
+  margin-top: 0.3rem;
+  font-weight: 600;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 78%, transparent);
+}
+
+.about-track {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.1rem, 3vw, 2.5rem);
+  margin-top: 1rem;
+}
+
+@media (min-width: 860px) {
+  .about-track {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/*
+ * `scene-surface` (ver about.ts) es la clase que da la elevacion Material
+ * You en Caelestia; aqui solo el respiro que necesita como tarjeta cuando
+ * esa regla aplica. En Vice/Hyprland, sin la regla de Caelestia, este
+ * padding no tiene fondo detras — por eso es minimo, no un cambio de layout.
+ */
+.about-track-col {
+  padding: 0.15rem;
+}
+
+.about-h {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  font-size: 0.53rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  /* Mismo motivo que `.about-facts dt`: el accent puro se quedaba en 3.29:1
+     cuando este bloque cae fuera de la tarjeta, sobre el degradado a pelo
+     de Caelestia (mas saturado que el punto de partida del fondo). */
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
+}
+
+.about-item {
+  border-left: 1px solid var(--color-line);
+  padding-left: 0.8rem;
+  margin-bottom: 0.65rem;
+}
+
+.about-item b {
+  display: block;
+  font-weight: 600;
+  font-size: 0.79rem;
+  color: var(--color-paper);
+}
+
+.about-item span {
+  display: block;
+  margin-top: 2px;
+  font-weight: 300;
+  font-size: 0.69rem;
+  color: color-mix(in srgb, var(--color-paper) 78%, transparent);
+}

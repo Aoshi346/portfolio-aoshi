@@ -102,6 +102,64 @@ function scene1Title(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
   );
 }
 
+/** Ids fijos de los ScrollTrigger del gesto 2: permiten matarlos si la funcion se re-ejecuta. */
+const ABOUT_TRIGGER_IDS = ["vice-about-card", "vice-about-lines", "vice-about-stats", "vice-about-track"];
+
+/** Gesto 2 — Subtitulado: la ficha entra y las lineas suben encadenadas. */
+function scene2Card(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElement): void {
+  const about = root.querySelector<HTMLElement>('[data-scene="about"]');
+  if (!about) return;
+
+  // Defensivo, igual que en `scene1Title`: si esta funcion se llamara dos
+  // veces no dejar triggers huerfanos ni relleno de pin duplicado.
+  for (const id of ABOUT_TRIGGER_IDS) ScrollTrigger.getById(id)?.kill();
+
+  const base = { trigger: about, start: "top 78%", toggleActions: "play none none reverse" } as const;
+  const card = about.querySelector<HTMLElement>("[data-card]");
+  const lines = Array.from(about.querySelectorAll<HTMLElement>("[data-line] > *"));
+  const stats = about.querySelector<HTMLElement>("[data-stats]");
+  const track = about.querySelector<HTMLElement>("[data-track]");
+
+  if (card) {
+    gsap.from(card, {
+      x: -34,
+      opacity: 0,
+      duration: 0.9,
+      ease: "power3.out",
+      scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[0] },
+    });
+  }
+  gsap.from(lines, {
+    yPercent: 105,
+    opacity: 0,
+    duration: 0.85,
+    ease: "power3.out",
+    stagger: 0.12,
+    scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[1] },
+  });
+  if (stats) {
+    gsap.from(stats, {
+      y: 16,
+      opacity: 0,
+      duration: 0.8,
+      ease: "power2.out",
+      delay: 0.35,
+      scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[2] },
+    });
+  }
+  if (track) {
+    gsap.from(track, {
+      y: 18,
+      opacity: 0,
+      duration: 0.9,
+      ease: "power2.out",
+      delay: 0.5,
+      scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[3] },
+    });
+  }
+}
+
 export const viceChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
   scene1Title(gsap, ScrollTrigger, root);
+  scene2Card(gsap, ScrollTrigger, root);
 };

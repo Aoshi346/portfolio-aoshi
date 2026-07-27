@@ -2,6 +2,7 @@ import "./style.css";
 import type { BackgroundHandle } from "./backgrounds/shaderBackground";
 import { createThemeSignature } from "./components/themeSignature";
 import { caseStudies } from "./data/content";
+import { createAbout } from "./sections/about";
 import { createHero } from "./sections/hero";
 import { createProjectScene } from "./sections/obra/projectScene";
 import { applyTheme, pickTheme } from "./themes";
@@ -36,6 +37,7 @@ noise.setAttribute("aria-hidden", "true");
 // repositorio publico y otra privada, para ver ambas variantes de cierre.
 const main = el("main", "relative min-h-screen", [
   createHero(),
+  createAbout(),
   ...caseStudies.slice(0, 2).map((project, index) => createProjectScene(project, index)),
 ]);
 

@@ -450,6 +450,27 @@ def run(theme: str, url: str, allow_fixture_assets: bool = False) -> None:
                 check(hero is not None and hero["mailVisible"],
                       "el email es visible en el primer viewport")
 
+                # Task 7: "Quien es" deja de tener el lado derecho vacio — ficha
+                # de reparto (avatar + datos), cuatro cifras y trayectoria. Sin
+                # chips de tecnologia: duplicarian los creditos de obra.
+                about = page.evaluate("""(() => {
+                  const s = document.querySelector('[data-scene="about"]');
+                  if (!s) return null;
+                  return {
+                    card: !!s.querySelector('[data-card]'),
+                    avatar: !!s.querySelector('[data-card] img'),
+                    stats: s.querySelectorAll('[data-stats] > *').length,
+                    track: !!s.querySelector('[data-track]'),
+                    chips: s.querySelectorAll('[data-tech-chip]').length,
+                  };
+                })()""")
+                check(about is not None and about["card"], "hay ficha de reparto")
+                check(about is not None and about["avatar"], "la ficha lleva avatar")
+                check(about is not None and about["stats"] == 4, "hay cuatro cifras")
+                check(about is not None and about["track"], "hay trayectoria")
+                check(about is not None and about["chips"] == 0,
+                      "sin chips de tecnologia (duplicarian los creditos)")
+
                 if not allow_fixture_assets:
                     check_fixture_assets()
         finally:
