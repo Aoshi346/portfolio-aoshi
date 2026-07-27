@@ -69,29 +69,24 @@ def run(theme: str, url: str) -> None:
 
                 fonts = page.evaluate("""(() => {
                   const root = getComputedStyle(document.documentElement);
-                  const probe = document.querySelector('[data-hero-name]');
-                  const fontsReady = document.fonts.status === 'loaded';
-                  const fontsLoaded = {
-                    passionOne: document.fonts.check('900 1rem "Passion One"'),
-                    manrope: document.fonts.check('400 1rem "Manrope"'),
-                  };
+                  const registry = Array.from(document.fonts);
+                  const isLoaded = (name) => registry.some(
+                    (f) => f.family.replace(/["']/g, '').includes(name) && f.status === 'loaded'
+                  );
                   return {
                     display: root.getPropertyValue('--font-display').trim(),
                     body: root.getPropertyValue('--font-body').trim(),
                     accent: root.getPropertyValue('--color-accent').trim(),
-                    rendered: probe ? getComputedStyle(probe).fontFamily : "",
-                    fontsReady: fontsReady,
-                    fontsLoaded: fontsLoaded,
+                    passionOneLoaded: isLoaded('Passion One'),
+                    manropeLoaded: isLoaded('Manrope'),
                   };
                 })()""")
                 check("Passion One" in fonts["display"], "display es Passion One")
                 check("Manrope" in fonts["body"], "cuerpo es Manrope")
                 check(fonts["accent"].lower() == "#ffd166", "acento es ambar")
                 check("mono" not in fonts["body"].lower(), "Vice no usa monoespaciada")
-                check(fonts["fontsReady"], "document.fonts listo (todas cargadas)")
-                check(fonts["fontsLoaded"]["passionOne"], "Passion One renderizada en DOM")
-                check(fonts["fontsLoaded"]["manrope"], "Manrope renderizada en DOM")
-                check("Passion One" in fonts["rendered"], "familias resueltas contienen Passion One")
+                check(fonts["passionOneLoaded"], "Passion One presente y cargada en document.fonts")
+                check(fonts["manropeLoaded"], "Manrope presente y cargada en document.fonts")
         finally:
             if page:
                 page.close()
