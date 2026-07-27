@@ -78,9 +78,11 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
 
   const children: HTMLElement[] = [tag, title, lead, meta, columns];
 
-  // Los assets reales de la galeria (Task 11) todavia no existen: la galeria
-  // se construye igual (con su propio fallback por imagen, ver
-  // `components/gallery.ts`) siempre que el caso de estudio declare piezas.
+  // Las capturas reales de la galeria (Task 11) ya existen y devuelven 200;
+  // la galeria se construye siempre que el caso de estudio declare piezas,
+  // con su propio fallback por imagen (ver `components/gallery.ts`) como red
+  // de seguridad honesta ante un fallo de carga puntual, no el estado
+  // esperado.
   if (project.gallery.length > 0) {
     const gallery = createGallery(project.gallery);
     gallery.setAttribute("data-reveal", "fade-up");
