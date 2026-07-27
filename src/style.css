@@ -138,8 +138,16 @@ body {
   }
 }
 
+/*
+ * No el accent puro: mismo motivo que `.hero-kick`/`.contacto-mail` — la
+ * Task 11 sustituira el video de prueba por el real y el punto donde hoy
+ * muestrea el gate de contraste (fondo no solido, stddev 41.6 > 18, exento)
+ * dejara de ser exento en cuanto ese fondo sea el video definitivo. Mismo
+ * `color-mix` ya verificado en los otros dos casos, aplicado aqui antes de
+ * que se convierta en un fallo real.
+ */
 .hero-mail {
-  color: var(--color-accent);
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
   text-decoration: underline;
   text-underline-offset: 7px;
   text-decoration-thickness: 2px;
