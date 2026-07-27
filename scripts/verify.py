@@ -24,23 +24,29 @@ def check(condition: bool, label: str) -> None:
 
 
 def run(theme: str, url: str) -> None:
+    global failures
+    failures = []
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, executable_path=CHROME, args=ARGS)
-        page = browser.new_page(viewport=DESKTOP)
-        errors: list[str] = []
-        page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-        page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+        page = None
+        try:
+            page = browser.new_page(viewport=DESKTOP)
+            errors: list[str] = []
+            page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+            page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
 
-        page.goto(f"{url}/?theme={theme}", wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(3500)
+            page.goto(f"{url}/?theme={theme}", wait_until="domcontentloaded", timeout=30000)
+            page.wait_for_timeout(3500)
 
-        print(f"[{theme}] desktop")
-        check(page.evaluate("document.documentElement.dataset.theme") == theme,
-              "data-theme aplicado")
-        check(not errors, f"cero errores de consola ({errors[:2]})")
-
-        page.close()
-        browser.close()
+            print(f"[{theme}] desktop")
+            check(page.evaluate("document.documentElement.dataset.theme") == theme,
+                  "data-theme aplicado")
+            check(not errors, f"cero errores de consola ({errors[:2]})")
+        finally:
+            if page:
+                page.close()
+            browser.close()
 
 
 def main() -> int:
