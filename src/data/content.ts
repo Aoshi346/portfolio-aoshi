@@ -49,7 +49,9 @@ export interface Stat {
 /** Lectura instantanea antes de leer una sola frase. */
 export const stats: Stat[] = [
   { value: "2021", label: "Desde" },
-  { value: "10.º", label: "Semestre" },
+  // Sin el ordinal volado: a tamano de cartel (3.4rem en Vice) el "º" de
+  // Passion One se separa tanto de la cifra que se lee como otro caracter.
+  { value: "10", label: "Semestre" },
   { value: "5", label: "Proyectos" },
   { value: "1", label: "En producción" },
 ];

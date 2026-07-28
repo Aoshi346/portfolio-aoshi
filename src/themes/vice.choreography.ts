@@ -158,9 +158,13 @@ function scene2Card(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEleme
   const track = about.querySelector<HTMLElement>("[data-track]");
 
   if (card) {
+    // La ficha entra como una carta que se posa: viene de la izquierda, algo
+    // mas pequena y con el clip abierto desde arriba.
     gsap.from(card, {
       x: -34,
+      scale: 0.96,
       opacity: 0,
+      clipPath: "inset(0 0 22% 0)",
       duration: 0.9,
       ease: "power3.out",
       scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[0] },
@@ -174,22 +178,35 @@ function scene2Card(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEleme
     stagger: 0.12,
     scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[1] },
   });
+  /*
+   * Cifras y trayectoria entran POR ELEMENTO, no como bloque: animar el
+   * contenedor entero mueve una masa de texto de golpe y el ojo no sabe donde
+   * mirar. Escalonadas, la lectura va de izquierda a derecha (cifras) y de
+   * arriba abajo (items), que es el orden en que se leen igualmente.
+   *
+   * Fallback al contenedor si no hubiera hijos: `gsap.from` con un array vacio
+   * es un no-op silencioso y la franja se quedaria sin entrada.
+   */
   if (stats) {
-    gsap.from(stats, {
-      y: 16,
+    const figures = Array.from(stats.children);
+    gsap.from(figures.length > 0 ? figures : stats, {
+      y: 22,
       opacity: 0,
-      duration: 0.8,
-      ease: "power2.out",
+      duration: 0.7,
+      ease: "power3.out",
+      stagger: 0.09,
       delay: 0.35,
       scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[2] },
     });
   }
   if (track) {
-    gsap.from(track, {
-      y: 18,
+    const items = Array.from(track.querySelectorAll<HTMLElement>(".about-item, .about-h"));
+    gsap.from(items.length > 0 ? items : track, {
+      y: 20,
       opacity: 0,
-      duration: 0.9,
+      duration: 0.7,
       ease: "power2.out",
+      stagger: 0.06,
       delay: 0.5,
       scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[3] },
     });
