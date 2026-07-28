@@ -906,6 +906,37 @@ body {
 }
 
 /*
+ * Afordancia tactil. En escritorio el hover ya delata que la fila responde,
+ * pero en movil no hay hover: la tester no tecnica pulso por casualidad y
+ * senalo que nada indicaba que fueran interactivas. El signo de mas es la
+ * senal minima que no compite con el nombre de la tecnologia, y desaparece en
+ * la fila activa porque ahi ya manda el borde en color de acento.
+ */
+.credit::after {
+  content: "+";
+  flex: none;
+  order: 1;
+  margin-left: 0.35rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  transition: opacity 200ms ease;
+}
+
+.credit.is-active::after {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .credit::after {
+    opacity: 0;
+  }
+
+  .credit:hover::after {
+    opacity: 1;
+  }
+}
+
+/*
  * Indicador de foco solido, igual que `.gallery-track:focus-visible`: el
  * cambio de `border-color` de arriba no basta por si solo (`.credit` es
  * ancho completo con la fila siguiente pegada debajo; el borde inferior en
@@ -954,12 +985,36 @@ body {
  * nada por si sola, asi que el fondo cinematografico lo pone esta regla,
  * calcada del recibo ya probado en `.about-card`.
  */
+/*
+ * En una sola columna el panel caia DEBAJO de las doce filas: al pulsar una
+ * tecnologia el detalle aparecia fuera de pantalla y no se entendia la relacion
+ * causa-efecto. Colocarlo primero y fijarlo lo mantiene a la vista mientras se
+ * recorre la lista. El desplazamiento superior deja hueco a la barra de
+ * orientacion de Vice. En dos columnas (a partir de 768px) esto no aplica:
+ * lista y panel ya conviven lado a lado.
+ */
 .credits-panel {
+  order: -1;
+  position: sticky;
+  top: 3.5rem;
+  z-index: 1;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   padding: 1.15rem;
-  background: color-mix(in srgb, var(--color-ink) 38%, transparent);
-  backdrop-filter: blur(6px);
+  /* Fijo y superpuesto sobre la lista: necesita cuerpo. Con el 38% que basta
+     cuando va en el flujo, las filas de debajo se transparentaban a traves del
+     panel y el detalle se leia sucio. */
+  background: color-mix(in srgb, var(--color-ink) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+@media (min-width: 768px) {
+  .credits-panel {
+    order: 0;
+    position: static;
+    background: color-mix(in srgb, var(--color-ink) 38%, transparent);
+    backdrop-filter: blur(6px);
+  }
 }
 
 .credits-icon {
