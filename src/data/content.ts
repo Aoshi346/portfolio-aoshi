@@ -19,6 +19,9 @@ export interface Identity {
   githubAvatar: string;
   /** Estado visible en la ficha: la senal mas util para quien recluta. */
   availability: string;
+  /** Situacion actual. No se deriva de `experience[0]`: la pasantia termino en
+   *  mayo de 2026 y esa entrada sigue siendo historial valido, no el presente. */
+  now: string;
   since: string;
 }
 
@@ -26,14 +29,15 @@ export const identity: Identity = {
   name: "Aoshi Blanco Sanz",
   role: "Desarrollador Full Stack",
   headline: "Construyo sistemas que aguantan producción, no demos.",
-  subheadline: "Uso Python, React y Django para llevar datos reales a interfaces reales.",
+  subheadline: "Caracas. Full stack. Desde 2021.",
   location: "Caracas, Venezuela",
   email: "a.blanco1501@gmail.com",
   phone: "+58 424 228 1033",
   github: "https://github.com/Aoshi346",
   linkedin: "https://www.linkedin.com/in/aoshi-blanco-sanz-14119b2b7",
   githubAvatar: "https://avatars.githubusercontent.com/u/137179835?v=4",
-  availability: "Abierto a oportunidades",
+  availability: "Disponible para proyectos",
+  now: "Freelancer",
   since: "2021",
 };
 
@@ -45,8 +49,8 @@ export interface Stat {
 /** Lectura instantanea antes de leer una sola frase. */
 export const stats: Stat[] = [
   { value: "2021", label: "Desde" },
-  { value: "9.º", label: "Semestre" },
-  { value: "4", label: "Proyectos" },
+  { value: "10.º", label: "Semestre" },
+  { value: "5", label: "Proyectos" },
   { value: "1", label: "En producción" },
 ];
 
@@ -66,7 +70,7 @@ export const education: Education[] = [
   {
     degree: "Ingeniería de Sistemas",
     institution: "Universidad Santa María",
-    period: "2021 — presente (9no semestre)",
+    period: "2021 — presente (10.º semestre)",
   },
   {
     degree: "100 Days of Code: Python Pro Bootcamp",
@@ -86,9 +90,9 @@ export const experience: Experience[] = [
   {
     role: "Pasante B2C Conocimiento al Cliente",
     organization: "Telefónica Venezuela",
-    period: "Ago 2025 — presente",
+    period: "Ago 2025 — May 2026",
     description:
-      "Desarrollo herramientas internas para el equipo de conocimiento al cliente, con foco en datos de campañas a gran escala.",
+      "Desarrollé herramientas internas para el equipo de conocimiento al cliente, con foco en datos de campañas a gran escala.",
   },
 ];
 
@@ -208,7 +212,7 @@ export const caseStudies: CaseStudy[] = [
     tag: "Gestión de campañas",
     lead: "Todas las campañas, un solo tablero.",
     role: "Desarrollo full stack",
-    period: "Ago 2025 — hoy",
+    period: "Ago 2025 — May 2026",
     status: "Sistema interno · Telefónica Venezuela",
     problem:
       "Las campañas pasaban por varias áreas antes de salir, cada una con sus aprobaciones, y el seguimiento vivía repartido entre correos y hojas de cálculo. Nadie podía responder de un vistazo en qué punto estaba cada una.",

@@ -18,7 +18,7 @@ function createCard(): HTMLElement {
     el("dt", "", ["Base"]),
     el("dd", "", [identity.location]),
     el("dt", "", ["Ahora"]),
-    el("dd", "", [experience[0]?.organization ?? ""]),
+    el("dd", "", [identity.now]),
     el("dt", "", ["Estudia"]),
     el("dd", "", [education[0]?.institution ?? ""]),
   ]);
