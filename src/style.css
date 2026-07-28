@@ -339,11 +339,21 @@ body {
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-paper) 70%, transparent);
+  /*
+   * La barra es un HUD fijo y el contenido pasa por DETRAS de ella al
+   * desplazarse. Con solo un velo suave, un rotulo de la lista de creditos
+   * ("OTRAS HERRAMIENTAS") coincidia en posicion, tamano y color con el de la
+   * barra ("AOSHI BLANCO SANZ") y se leian superpuestos: doble exposicion
+   * ilegible, no "algo que pasa por detras". El desenfoque de fondo mas un
+   * velo mas firme subordinan lo que cruza, sin taparlo.
+   */
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-ink) 60%, transparent) 0%,
+    color-mix(in srgb, var(--color-ink) 88%, transparent) 0%,
+    color-mix(in srgb, var(--color-ink) 55%, transparent) 55%,
     transparent 100%
   );
+  backdrop-filter: blur(7px);
 }
 
 @media (min-width: 768px) {

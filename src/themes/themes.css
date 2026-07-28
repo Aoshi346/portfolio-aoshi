@@ -92,6 +92,16 @@
   border-radius: var(--radius-card);
   box-shadow: none;
   padding: clamp(1.5rem, 4vw, 3rem);
+  /*
+   * Durante el gesto de zoom el nombre crece hasta desbordar el panel y antes
+   * se cortaba en seco contra el borde del viewport, que se lee a medio pulir.
+   * La mascara lo disuelve al salir, como un fundido de plano. Va sobre el
+   * panel y no sobre el nombre porque el panel NO escala: su caja se mantiene
+   * fija y la mascara actua a tamano constante mientras el titulo la atraviesa.
+   */
+  mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  mask-composite: intersect;
 }
 
 /*
