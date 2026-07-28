@@ -106,6 +106,30 @@ async function initSmoothScroll(gsap: Gsap, scrollTrigger: ScrollTriggerApi): Pr
   lenis.on("scroll", () => scrollTrigger.update());
   gsap.ticker.add((time) => lenis.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
+
+  wireFocusScroll(lenis);
+}
+
+/** Margen sobre el elemento enfocado, para que no quede pegado al borde ni
+ *  debajo de la barra de orientacion de Vice. */
+const FOCUS_OFFSET = -120;
+
+/**
+ * Al tabular, el navegador desplaza el scroll por su cuenta con un salto seco
+ * que NO pasa por Lenis. Como la posicion de las escenas con `pin` la calcula
+ * ScrollTrigger a partir del scroll que conoce Lenis, ese salto las deja a
+ * medio asentar: el elemento enfocado cae dentro del viewport segun su
+ * `getBoundingClientRect()`, pero lo que se pinta es una pantalla casi vacia.
+ *
+ * Retomamos el desplazamiento con Lenis para que vuelva a haber una sola
+ * fuente de verdad del scroll y ScrollTrigger reciba su `update()`.
+ */
+function wireFocusScroll(lenis: { scrollTo: (target: HTMLElement, options: { offset: number; duration: number }) => void }): void {
+  document.addEventListener("focusin", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    lenis.scrollTo(target, { offset: FOCUS_OFFSET, duration: 0.5 });
+  });
 }
 
 /**
