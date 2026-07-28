@@ -105,6 +105,59 @@
 }
 
 /*
+ * Vineta radial del hero (solo el hero: contacto conserva el rectangulo de
+ * arriba, que ahi no molesta porque no hay gesto de zoom atravesandolo).
+ *
+ * El problema que resuelve: la mascara rectangular de arriba deja cuatro
+ * bordes rectos y, como `backdrop-filter` se recorta por la mascara del
+ * elemento, el desenfoque terminaba en linea recta contra el video — se leia
+ * como un cuadro borroso pegado detras del nombre en vez de como luz.
+ *
+ * La sustitucion NO baja la solidez del scrim bajo el texto: el nucleo
+ * mantiene el mismo color-mix al 88% completamente opaco hasta el 52% del
+ * radio (el nombre y la linea de rol caben dentro), y solo a partir de ahi
+ * se disuelve. Es decir, las franjas que muestrea `check_contrast_wcag`
+ * sobre el titulo siguen cayendo en zona plana; lo que cambia es el borde,
+ * que ya no existe. Medido contra el fixture SMPTE, no estimado.
+ */
+:root[data-theme="vice"] .hero .hero-surface {
+  /*
+   * `backdrop-filter` NO se recorta con `mask-image`: Chrome lo aplica al
+   * border-box del elemento pase lo que pase con la mascara. Medido — con la
+   * vineta puesta y el blur todavia activo seguian viendose los cuatro bordes
+   * rectos del desenfoque contra el video. El blur ERA el cuadro borroso.
+   * Se retira y su aporte al aplanado del fondo se compensa subiendo el
+   * nucleo del scrim del 88% al 93%.
+   */
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--color-ink) 93%, transparent);
+  padding: clamp(2.5rem, 7vw, 5rem) clamp(2rem, 8vw, 6rem);
+  border-radius: 0;
+  /*
+   * Radios al 50%: con cualquier valor mayor la elipse llega al borde de la
+   * caja con alfa todavia alta y la mascara se corta en recto contra el, que
+   * es exactamente el defecto que se venia a quitar (medido: 74%/68% seguia
+   * dejando los cuatro bordes). Al 50% el desvanecido termina justo en el
+   * limite de la caja.
+   *
+   * Solido hasta el 76% del radio: el nombre ocupa ~69% del ancho del panel,
+   * asi que esa parada lo deja entero sobre scrim plano y aun queda un cuarto
+   * de radio para disolver sin que se lea un canto. Medido, ademas, que mover
+   * esta parada entre 72% y 82% no cambia nada en el gate de contraste (las
+   * letras se excluyen igual en el barrido con scroll, donde el nombre ya esta
+   * escalando fuera del panel): se elige por lectura, no por el arnes.
+   */
+  mask-image: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    #000 0%,
+    #000 76%,
+    rgba(0, 0, 0, 0.5) 90%,
+    transparent 100%
+  );
+  mask-composite: add;
+}
+
+/*
  * Cromo de cine (letterbox + barra de orientacion + atenuador de fondo): solo
  * Vice lo muestra. `style.css` lo oculta por defecto (`display: none`); esta
  * regla, mas especifica, lo reactiva solo aqui.
