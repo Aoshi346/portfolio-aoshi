@@ -13,6 +13,9 @@ export interface Identity {
   email: string;
   phone: string;
   github: string;
+  /** Perfil de LinkedIn: para mucha gente de seleccion es la via de contacto
+   *  por defecto, antes que el correo. */
+  linkedin: string;
   githubAvatar: string;
   /** Estado visible en la ficha: la senal mas util para quien recluta. */
   availability: string;
@@ -28,6 +31,7 @@ export const identity: Identity = {
   email: "a.blanco1501@gmail.com",
   phone: "+58 424 228 1033",
   github: "https://github.com/Aoshi346",
+  linkedin: "https://www.linkedin.com/in/aoshi-blanco-sanz-14119b2b7",
   githubAvatar: "https://avatars.githubusercontent.com/u/137179835?v=4",
   availability: "Abierto a oportunidades",
   since: "2021",
@@ -256,7 +260,7 @@ export const caseStudies: CaseStudy[] = [
   },
   {
     slug: "ciberseg",
-    title: "Proyecto CiberSeg",
+    title: "WatchDog",
     tag: "Ciberseguridad",
     lead: "Las herramientas de seguridad, en una sola aplicación.",
     role: "Desarrollo principal",
