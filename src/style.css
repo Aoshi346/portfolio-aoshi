@@ -884,6 +884,29 @@ body {
   backdrop-filter: blur(6px);
 }
 
+/*
+ * Ventanas bajas (portatiles de 13", navegador con muchas barras). Con la
+ * altura normal el hero respira, pero a 600px la ubicacion y el correo de la
+ * esquina quedaban fuera de cuadro: medido, Vice se pasaba 160px y Caelestia
+ * 27px. Se recorta el aire vertical del hero, no su composicion ni su
+ * tipografia, para que el pie vuelva al primer viewport en los tres temas.
+ */
+@media (max-height: 700px) {
+  .hero {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .hero-surface {
+    padding-top: clamp(0.9rem, 2vh, 1.5rem);
+    padding-bottom: clamp(0.9rem, 2vh, 1.5rem);
+  }
+
+  .display-xl {
+    font-size: clamp(2.2rem, 7vw, 5rem);
+  }
+}
+
 .credit {
   display: flex;
   justify-content: space-between;
