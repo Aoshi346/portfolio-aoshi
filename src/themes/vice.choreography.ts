@@ -222,6 +222,7 @@ function obraTriggerIds(index: number): string[] {
     `vice-obra-meta-${index}`,
     `vice-obra-mask-${index}`,
     `vice-obra-gallery-${index}`,
+    `vice-obra-parallax-${index}`,
   ];
 }
 
@@ -297,14 +298,37 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
       });
     }
     if (gallery) {
+      // Entra desde la derecha, que es de donde viene el visor en el encuadre
+      // de escritorio (ver la reasignacion de themes.css).
       gsap.from(gallery, {
-        y: 22,
+        x: 46,
         opacity: 0,
-        duration: 0.8,
-        ease: "power2.out",
-        delay: 0.48,
+        duration: 0.85,
+        ease: "power3.out",
+        delay: 0.42,
         scrollTrigger: { ...trigger, id: ids[5] },
       });
+      /*
+       * Parallax de la captura mientras la escena cruza el encuadre: le da
+       * profundidad respecto al texto, que va quieto. Anima `yPercent` con
+       * scrub y la entrada de arriba anima `x`/`opacity`: propiedades
+       * distintas, asi que las dos timelines no se pisan sobre el mismo nodo.
+       */
+      gsap.fromTo(
+        gallery,
+        { yPercent: -4 },
+        {
+          yPercent: 4,
+          ease: "none",
+          scrollTrigger: {
+            id: ids[6],
+            trigger: scene,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1,
+          },
+        },
+      );
     }
   });
 }

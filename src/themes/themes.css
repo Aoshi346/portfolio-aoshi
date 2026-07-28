@@ -292,6 +292,131 @@
   font-size: 0.82rem;
 }
 
+/*
+ * "Obra" a dos columnas (solo Vice, solo a partir de 1024px). La cartela
+ * ocupaba la mitad izquierda del encuadre y la derecha se quedaba con el
+ * ordinal decorativo y nada mas. Ahora el texto se queda en su columna y la
+ * galeria pasa a la derecha como visor grande, a la altura del bloque.
+ *
+ * Es una reasignacion de rejilla, no un DOM distinto: el orden de los
+ * elementos en el marcado (y por tanto el orden de lectura y de tabulacion)
+ * no cambia, y por debajo de 1024px todo vuelve a la columna unica
+ * compartida con los otros dos temas.
+ */
+@media (min-width: 1024px) {
+  /*
+   * La galeria sale del flujo en vez de ocupar una columna de rejilla. Se
+   * probo primero con `grid-template-columns` + `grid-row: 1 / -1` y el
+   * resultado fue el contrario del buscado: al abarcar todas las filas, la
+   * galeria obliga a que la suma de sus altos iguale el suyo, el excedente se
+   * reparte entre las filas de la izquierda y el texto acaba desperdigado —
+   * medido, la escena pasaba de 900 a 1331px de alto y el titulo caia fuera
+   * del encuadre. Posicionada, el texto conserva su ritmo vertical exacto y
+   * solo se le reserva el hueco con `padding-right`.
+   *
+   * El orden del marcado no cambia en ningun caso: lectura y tabulacion
+   * siguen siendo las mismas, y por debajo de 1024px vuelve todo a la
+   * columna unica compartida con los otros dos temas.
+   */
+  :root[data-theme="vice"] [data-scene="obra"] .scene-surface {
+    padding-right: 46%;
+  }
+
+  :root[data-theme="vice"] [data-scene="obra"] [data-gallery] {
+    /*
+     * Centrado con `margin-block: auto` entre `top:0` y `bottom:0`, NO con
+     * `translateY(-50%)`: la coreografia de Vice anima `x`/`yPercent` sobre
+     * este mismo nodo y GSAP reescribe la propiedad `transform` entera, con
+     * lo que un centrado hecho ahi desapareceria en cuanto entrase el primer
+     * tween.
+     */
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 42%;
+    height: max-content;
+    margin-block: auto;
+    margin-top: auto;
+    max-width: none;
+  }
+
+  /*
+   * Un item por pantalla: en la columna derecha hay sitio para que la captura
+   * se lea de verdad, y el carril sigue siendo el mismo (arrastre, snap,
+   * flechas y barra de progreso de `gallery.ts` intactos) — solo cambia
+   * cuantas piezas caben a la vez.
+   */
+  :root[data-theme="vice"] [data-scene="obra"] .gallery-item {
+    width: 100%;
+  }
+
+  /*
+   * `max-height` en vez de un aspect-ratio mas alto: la captura crece hasta
+   * llenar la columna pero nunca empuja la escena por encima del viewport en
+   * portatiles de 900px de alto o menos.
+   */
+  :root[data-theme="vice"] [data-scene="obra"] .gallery-img {
+    max-height: 54vh;
+  }
+}
+
+/*
+ * Hover de la cartela (cualquier ancho). El usuario pedia que la seccion no
+ * se leyera estatica: la pieza bajo el puntero se levanta y su captura hace
+ * un empuje de camara corto, mientras el pie pasa a acento. Va con
+ * `:hover` sobre `.gallery-item`, que ya existia con un desplazamiento de
+ * 3px — aqui se le da recorrido y se le suma la imagen.
+ *
+ * Bajo `prefers-reduced-motion` se queda solo el cambio de color: el
+ * movimiento se apaga entero (ver el bloque de la media query mas abajo).
+ */
+:root[data-theme="vice"] .gallery-item {
+  transition:
+    border-color 300ms ease,
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 400ms ease;
+}
+
+:root[data-theme="vice"] .gallery-item:hover,
+:root[data-theme="vice"] .gallery-item:focus-within {
+  transform: translateY(-8px);
+  box-shadow: 0 18px 44px -22px color-mix(in srgb, var(--color-ink) 92%, transparent);
+}
+
+:root[data-theme="vice"] .gallery-img {
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="vice"] .gallery-item:hover .gallery-img,
+:root[data-theme="vice"] .gallery-item:focus-within .gallery-img {
+  transform: scale(1.05);
+}
+
+:root[data-theme="vice"] .gallery-caption {
+  transition: color 300ms ease;
+}
+
+:root[data-theme="vice"] .gallery-item:hover .gallery-caption,
+:root[data-theme="vice"] .gallery-item:focus-within .gallery-caption {
+  color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="vice"] .gallery-item,
+  :root[data-theme="vice"] .gallery-img {
+    transition: border-color 300ms ease, color 300ms ease;
+  }
+
+  :root[data-theme="vice"] .gallery-item:hover,
+  :root[data-theme="vice"] .gallery-item:focus-within,
+  :root[data-theme="vice"] .gallery-item:hover .gallery-img,
+  :root[data-theme="vice"] .gallery-item:focus-within .gallery-img {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
 /* ----------------------------------------------------------------- Hyprland */
 
 :root[data-theme="hyprland"] {
