@@ -491,6 +491,69 @@
   mix-blend-mode: multiply;
 }
 
+/*
+ * Rodillo de creditos a tres columnas (solo Vice, solo a partir de 860px).
+ *
+ * En una sola columna con `justify-content: space-between`, el rol a la
+ * izquierda y el nombre a la derecha quedaban a distancias distintas en cada
+ * fila (el rol "Otras herramientas" es tres veces mas largo que "Backend"),
+ * asi que la columna de nombres salia dentada y la mitad derecha de la escena
+ * se quedaba vacia bajo el panel. En columnas, cada credito es un bloque
+ * rol-sobre-nombre: los nombres se alinean, las doce entradas ocupan cuatro
+ * filas en vez de doce y la escena se llena.
+ *
+ * Sigue siendo el mismo DOM y el mismo `<button>` por entrada: hover, foco,
+ * aria-pressed y el panel de detalle funcionan igual.
+ */
+@media (min-width: 860px) {
+  :root[data-theme="vice"] .credits-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 340px);
+    max-width: none;
+    gap: clamp(1.8rem, 4vw, 3.5rem);
+  }
+
+  :root[data-theme="vice"] .credits-list {
+    display: grid;
+    /*
+     * Flujo por columnas, no por filas: con doce entradas en cuatro filas
+     * cada columna cae casi exacta sobre un grupo de `content.ts` (frontend /
+     * backend / otras herramientas), que es como se leen unos creditos de
+     * verdad. Por filas, la primera linea mezclaba React con Tailwind y
+     * Django y el rol repetido encima se leia como ruido.
+     */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-template-rows: repeat(4, auto);
+    gap: 0.15rem 1.6rem;
+    padding: 1.2rem 1.4rem;
+  }
+
+  :root[data-theme="vice"] .credit {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 0.3rem;
+    padding: 0.7rem 0;
+  }
+
+  /* El "+" tactil vuelve a su sitio: en bloque vertical iria a una linea
+     propia bajo el nombre. Se ancla arriba a la derecha del credito. */
+  :root[data-theme="vice"] .credit {
+    position: relative;
+  }
+
+  :root[data-theme="vice"] .credit::after {
+    position: absolute;
+    top: 0.55rem;
+    right: 0;
+    margin-left: 0;
+  }
+
+  :root[data-theme="vice"] .credit-name {
+    font-size: 1.35rem;
+  }
+}
+
 /* ------------------------------------------------------- Creditos (compartido) */
 
 /*
