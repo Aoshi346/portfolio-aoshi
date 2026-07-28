@@ -10,3 +10,14 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   }
   return node;
 }
+
+/**
+ * Envuelve markup SVG de confianza (bundleado, no input externo) en un
+ * contenedor con la clase dada.
+ */
+export function elFromMarkup(className: string, markup: string): HTMLDivElement {
+  const wrapper = document.createElement("div");
+  wrapper.className = className;
+  wrapper.innerHTML = markup;
+  return wrapper;
+}

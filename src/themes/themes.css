@@ -1,0 +1,275 @@
+/*
+ * Skins por tema. Cada bloque redefine los mismos tokens que declara `@theme`
+ * en style.css, colgados de `:root[data-theme="…"]` (mayor especificidad que
+ * `:root`, asi que ganan siempre). Como Tailwind 4 compila sus utilidades a
+ * `var(--color-*)`, cambiar el atributo re-skinea TODO el sitio sin tocar
+ * una sola clase en el markup.
+ *
+ * `--bg-fallback` es el degradado que se ve si WebGL no esta disponible:
+ * el canvas del shader se monta encima, pero el tema nunca queda en negro.
+ */
+
+/* ---------------------------------------------------------------- Vice City */
+
+:root[data-theme="vice"] {
+  --color-ink: #150726;
+  --color-paper: #fff4e8;
+  --color-accent: #ffd166;
+  --color-accent-2: #ff2e88;
+  --color-line: rgb(255 209 102 / 0.32);
+
+  --font-display: "Passion One", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, sans-serif;
+  --font-lead: "Manrope", system-ui, sans-serif;
+  /*
+   * Red de seguridad: la Task 4 retiro JetBrains Mono de Vice, pero el
+   * marcado todavia trae `font-mono` a pelo en varios sitios (ver
+   * experience.ts y las tareas 6-10 pendientes). Sin este token, esas clases
+   * caian en `ui-monospace` del sistema: la firma tipografica de Hyprland,
+   * justo lo que el spec de Vice prohibe.
+   */
+  --font-mono: "Manrope", system-ui, sans-serif;
+
+  --radius-card: 3px;
+  --display-tracking: 0.005em;
+  --display-weight: 900;
+  --display-transform: uppercase;
+  --display-leading: 0.84;
+
+  /* La linea de cartel: grande y ultraligera, nunca un parrafo pequeno. */
+  --lead-weight: 200;
+  --lead-size: clamp(1.05rem, 2vw, 1.45rem);
+
+  --bg-fallback: linear-gradient(180deg, #150726 0%, #4b1146 55%, #ff5c3d 100%);
+}
+
+/* Cartel centrado: el nombre manda y luego se atraviesa al hacer scroll. */
+:root[data-theme="vice"] .hero {
+  align-items: center;
+  text-align: center;
+}
+
+/*
+ * `.hero-surface` es el envoltorio comun a los tres temas y a las dos
+ * escenas "a plena luz" (un solo DOM: ver src/sections/hero.ts y
+ * src/sections/contacto.ts). Vice es cinematografico a sangre: sin tarjeta
+ * con borde ni sombra. Solo Caelestia (mas abajo) la viste como tarjeta
+ * Material You.
+ *
+ * Hallazgo I-1 de la revision final de rama: hero y contacto son las dos
+ * escenas que el diseno deja a plena luz sobre el video/poster de Vice, sin
+ * ningun scrim debajo del texto — y son justo las dos donde el gate de
+ * contraste (`scripts/verify.py::check_contrast_wcag`) media CERO elementos
+ * (fondo no solido en el 100% de los candidatos), un agujero de cobertura
+ * silencioso que el arnes no vigilaba antes de anadir el suelo de cobertura
+ * de ese mismo hallazgo. El scrim de abajo es el mismo recibo ya verificado
+ * en `.about-card`/`.credits-list`/`.rail` (color-mix de `--color-ink`,
+ * nunca un hex fijado a mano): suficientemente solido para que las franjas
+ * que muestrea el gate salgan planas (desviacion tipica bajo el umbral de
+ * 18), suficientemente translucido para no romper la lectura "a sangre" del
+ * video detras.
+ */
+:root[data-theme="vice"] .hero-surface {
+  /*
+   * 88% (no el 38-55% que basta en `.about-card`/`.credits-list`, sobre el
+   * shader/video mas calmo de esas escenas): el fixture sintetico de la
+   * Task 3 que sirve hoy `public/media/vice-hero.*` (barras SMPTE, franjas
+   * de color primario puro lado a lado — vigilado aparte por
+   * `check_fixture_assets`, silenciado con `--allow-fixture-assets` mientras
+   * dure el desarrollo) es un caso mucho mas duro que el video cinematografico
+   * real de la Task 11: una franja horizontal de muestreo sobre un titulo
+   * ancho puede cruzar rojo/verde/amarillo/azul puros en pocos cientos de
+   * pixeles. Con menos opacidad la mezcla seguia dejando residuos de tinte
+   * distintos por franja (verificado: 55% y 72% no bajaban de ~90-100 de
+   * desviacion tipica en los caracteres del nombre). Este valor es el punto
+   * en que el gate mide de verdad incluso contra el fixture mas hostil que
+   * hoy sirve el proyecto; con el video real (mas calmo) seguira sobrando
+   * margen.
+   */
+  background: color-mix(in srgb, var(--color-ink) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-radius: var(--radius-card);
+  box-shadow: none;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  /*
+   * Durante el gesto de zoom el nombre crece hasta desbordar el panel y antes
+   * se cortaba en seco contra el borde del viewport, que se lee a medio pulir.
+   * La mascara lo disuelve al salir, como un fundido de plano. Va sobre el
+   * panel y no sobre el nombre porque el panel NO escala: su caja se mantiene
+   * fija y la mascara actua a tamano constante mientras el titulo la atraviesa.
+   */
+  mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/*
+ * Cromo de cine (letterbox + barra de orientacion + atenuador de fondo): solo
+ * Vice lo muestra. `style.css` lo oculta por defecto (`display: none`); esta
+ * regla, mas especifica, lo reactiva solo aqui.
+ */
+:root[data-theme="vice"] .cinema-chrome {
+  display: block;
+}
+
+/*
+ * Reserva de espacio para el cromo de cine (Task 10-fix). El `.rail` vive
+ * fijo en `top:0` con ~2.4rem de alto (0.75rem de padding arriba/abajo + su
+ * propia linea de texto, 37.9px medidos) y, durante la obra, el letterbox
+ * superior se le suma hasta 6.5vh (`cinemaChrome` en
+ * `vice.choreography.ts`). El `py-24` (6rem) compartido con
+ * Hyprland/Caelestia (que no muestran cromo, por eso no se toca esa clase)
+ * alcanza de sobra en el punto de reposo "escena alineada arriba", pero no
+ * en el resto del recorrido: al seguir bajando DENTRO de una escena mas alta
+ * que el viewport, la primera etiqueta de la escena (`.hero-kick`) cruza esa
+ * banda fija antes de salir por arriba de la pantalla. Medido en 1440x600,
+ * escena "obra": `.rail` llegaba a `bottom: 37.9px` mientras `.hero-kick` ya
+ * empezaba en `top: 30.4px` -- 7.5px de solape. El cromo es una banda, no un
+ * recorte (mismo principio que el letterbox): se amplia el padding vertical
+ * de las 5 escenas (solo en Vice) para dar mas margen de scroll antes de que
+ * cualquier etiqueta entre en esa banda, en vez de parchear `.hero-kick` en
+ * una escena concreta. El extra reserva el peor caso (letterbox a 6.5vh) en
+ * las 5 por igual, no solo en "obra": el mismo `.hero-kick` compartido puede
+ * quedar igual de cerca del borde en about/creditos/hero/contacto en
+ * viewports bajos, aunque solo la obra despliegue el letterbox.
+ */
+:root[data-theme="vice"] [data-scene] {
+  padding-top: calc(6rem + 3rem + 6.5vh);
+  padding-bottom: calc(6rem + 3rem + 6.5vh);
+}
+
+/* ----------------------------------------------------------------- Hyprland */
+
+:root[data-theme="hyprland"] {
+  --color-ink: #05070a;
+  --color-paper: #e6f4f1;
+  --color-accent: #33ccff;
+  --color-accent-2: #00ff99;
+  --color-line: #13303a;
+
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-card: 4px;
+  --display-tracking: -0.03em;
+  --display-weight: 900;
+  --display-transform: uppercase;
+  --display-leading: 0.86;
+  --bg-fallback: linear-gradient(140deg, #05070a 0%, #0a2b38 55%, #063c30 100%);
+}
+
+/* ---------------------------------------------------------------- Caelestia */
+
+:root[data-theme="caelestia"] {
+  --color-ink: #f4f0f9;
+  --color-paper: #1c1b1f;
+  --color-accent: #6c4fd8;
+  --color-accent-2: #2f9e79;
+  --color-line: #d9d0e4;
+
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-body: "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-card: 28px;
+  --display-tracking: -0.025em;
+  --display-weight: 800;
+  /* Material You no grita: caja baja y aire. */
+  --display-transform: none;
+  --display-leading: 0.95;
+  --bg-fallback: linear-gradient(160deg, #f4f0f9 0%, #e4dcf3 50%, #dbeee6 100%);
+}
+
+/*
+ * Contenedores tonales con elevacion: es la pieza que faltaba para que
+ * Caelestia se lea como Material You y no como texto suelto sobre un degradado.
+ */
+:root[data-theme="caelestia"] .hero-surface,
+:root[data-theme="caelestia"] .scene-surface {
+  background: color-mix(in srgb, #ffffff 62%, transparent);
+  backdrop-filter: blur(24px) saturate(1.25);
+  border: 1px solid color-mix(in srgb, #ffffff 72%, transparent);
+  border-radius: var(--radius-card);
+  padding: clamp(1.75rem, 4vw, 3.25rem);
+  box-shadow: 0 30px 70px -30px rgba(70, 45, 110, 0.35);
+}
+
+:root[data-theme="caelestia"] .hero-surface {
+  max-width: 68rem;
+}
+
+/* Chips como contenedores tonales: sobre fondo claro, un 4% de tinta no se ve. */
+:root[data-theme="caelestia"] .chip {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  color: color-mix(in srgb, var(--color-paper) 88%, transparent);
+}
+
+/* En claro, el grano en `overlay` ensucia: multiplicar es mas limpio. */
+:root[data-theme="caelestia"] .bg-noise {
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+}
+
+/* ------------------------------------------------------- Creditos (compartido) */
+
+/*
+ * `createCredits` (src/components/credits.ts) monta el mismo DOM en los tres
+ * temas: rodillo de creditos a la izquierda, panel de detalle a la derecha.
+ * Ese diseno (creditos finales de pelicula) es la metafora de Vice — Hyprland
+ * y Caelestia comparten el marcado pero NO deben leerse como creditos de
+ * cine. Aqui se re-skinea la misma lista como pildoras en rejilla: el
+ * principio "un DOM, presentacion por tema" se cumple en CSS, sin ramificar
+ * `credits.ts`.
+ */
+:root[data-theme="hyprland"] .credits-grid,
+:root[data-theme="caelestia"] .credits-grid {
+  grid-template-columns: 1fr;
+}
+
+:root[data-theme="hyprland"] .credits-list,
+:root[data-theme="caelestia"] .credits-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+:root[data-theme="hyprland"] .credit,
+:root[data-theme="caelestia"] .credit {
+  width: auto;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+
+/* El rol sobra en formato pildora: manda el nombre (sigue disponible en el
+ * panel de detalle al seleccionar la pildora). */
+:root[data-theme="hyprland"] .credit-role,
+:root[data-theme="caelestia"] .credit-role {
+  display: none;
+}
+
+:root[data-theme="hyprland"] .credit-name,
+:root[data-theme="caelestia"] .credit-name {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  text-transform: none;
+  color: var(--color-paper);
+}
+
+/* Pildora activa: mismo gancho que `.chip` de Caelestia (fondo tonal sobre
+ * el accent), consistente con el resto del design system. */
+:root[data-theme="hyprland"] .credit:hover,
+:root[data-theme="hyprland"] .credit:focus-visible,
+:root[data-theme="hyprland"] .credit.is-active,
+:root[data-theme="caelestia"] .credit:hover,
+:root[data-theme="caelestia"] .credit:focus-visible,
+:root[data-theme="caelestia"] .credit.is-active {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: var(--color-accent);
+}

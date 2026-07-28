@@ -1,14 +1,39 @@
 @import "tailwindcss";
+@import "./themes/themes.css";
 
+/*
+ * Tokens base. Los valores aqui son solo el fallback previo a que se fije
+ * `data-theme`; cada tema los sobreescribe en themes/themes.css. Declararlos
+ * en `@theme` es lo que hace que Tailwind genere las utilidades (bg-ink,
+ * text-paper, text-accent, rounded-card…) apuntando a `var(--…)`.
+ */
 @theme {
-  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --color-ink: #0a0a0f;
-  --color-paper: #f4f2ec;
-  --color-accent: #ff5a3c;
-  --color-accent-soft: #ffd9cc;
-  --color-line: #2a2a33;
+  --color-ink: #05070a;
+  --color-paper: #e6f4f1;
+  --color-accent: #33ccff;
+  --color-accent-2: #00ff99;
+  --color-line: #13303a;
+
+  --radius-card: 4px;
+}
+
+/*
+ * `--color-accent-legible`: el accent puro falla contraste AA en varios
+ * puntos de los tres temas (medido con `scripts/verify.py::check_contrast_wcag`
+ * — ver los comentarios de `.hero-kick`/`.contacto-mail`/`.credits-list` que
+ * documentan cada caso concreto). Esta mezcla 55% accent / 45% paper es la
+ * formula ya verificada que sube el margen sin perder el tinte del acento; se
+ * repetia identica en ocho sitios de este fichero. Un solo token, no en
+ * `@theme` (Tailwind resuelve esa capa en build; esto es CSS puro que se
+ * recalcula en runtime via `var()` cuando cambia `--color-accent`/
+ * `--color-paper` al cambiar `[data-theme]`).
+ */
+:root {
+  --color-accent-legible: color-mix(in srgb, var(--color-accent) 55%, var(--color-paper) 45%);
 }
 
 html {
@@ -17,8 +42,8 @@ html {
 }
 
 body {
+  position: relative;
   font-family: var(--font-body);
-  background-color: var(--color-ink);
   color: var(--color-paper);
   overflow-x: hidden;
 }
@@ -30,8 +55,1019 @@ body {
 
 .font-display {
   font-family: var(--font-display);
+  letter-spacing: var(--display-tracking, -0.02em);
+}
+
+/*
+ * Titulares. El peso, la caja y el interlineado son tokens porque cada tema
+ * trata la tipografia distinto: Vice grita en mayusculas de cartel, Caelestia
+ * habla en caja baja. El markup no cambia; cambian los tokens.
+ */
+.display-xl,
+.display-lg {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight, 900);
+  text-transform: var(--display-transform, uppercase);
+  letter-spacing: var(--display-tracking, -0.02em);
+  line-height: var(--display-leading, 0.86);
+  /* Reparte las palabras entre lineas en vez de dejar la ultima sola: sin esto
+     "Aoshi Blanco Sanz" rompia siempre tras "Blanco" y dejaba el apellido
+     huerfano, en los tres temas. */
+  text-wrap: balance;
+}
+
+/*
+ * Subtitulo. Es una linea de cartel, no un parrafo: por eso tiene su propio
+ * token de familia, peso y tamano. Con 13,5 px y opacidad baja pesaba menos
+ * que el cuerpo y la jerarquia se rompia.
+ */
+.lead {
+  font-family: var(--font-lead, var(--font-body));
+  font-weight: var(--lead-weight, 300);
+  font-size: var(--lead-size, 1.125rem);
+  line-height: 1.4;
+}
+
+/* El nombre se escala hasta atravesar la pantalla en Vice: avisar al compositor. */
+[data-hero-name] {
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+/*
+ * Estado previo a la secuencia de entrada (solo Vice). Se oculta el hero para
+ * que no se vea el salto entre el pintado y el arranque de la animacion.
+ * reveal.ts retira esta clase de forma SINCRONA en cuanto GSAP carga (antes de
+ * esperar fuentes ni coreografia): esa es la via normal, en decenas de ms. El
+ * timeout de main.ts es solo el seguro para el caso raro de que GSAP falle.
+ */
+:root.js-intro[data-theme="vice"] [data-hero-name],
+:root.js-intro[data-theme="vice"] [data-hero-fade] {
+  opacity: 0;
+}
+
+/*
+ * Cinturon de seguridad ademas de la condicion en main.ts (que ya evita
+ * anadir `.js-intro` con reduced-motion): si por lo que sea la clase llegase
+ * a quedar puesta con reduced-motion activo (main.ts roto, orden de carga
+ * distinto), el contenido nunca debe depender de una animacion que no va a
+ * ejecutarse para revelarse — eso ya dejo el nombre invisible 3 segundos en
+ * cada carga una vez (ver .ai/memory.md). El letterbox tambien se apaga aqui
+ * ademas de en `.cinema-chrome` (regla de mas arriba): doble cierre del
+ * mismo hueco, no un solape sin sentido.
+ *
+ * `!important`: la regla de arriba (`:root.js-intro[data-theme="vice"]
+ * [data-hero-name]`) tiene mayor especificidad (incluye el atributo
+ * `[data-theme="vice"]`) y ganaria sobre esta por cascada normal, dejando el
+ * cinturon de seguridad sin efecto real — verificado rompiendo a proposito
+ * la condicion de main.ts y confirmando opacity:0 en t=500ms sin el
+ * `!important` (ver informe de la tarea).
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root.js-intro [data-hero-name],
+  :root.js-intro [data-hero-fade] {
+    opacity: 1 !important;
+  }
+
+  .letterbox {
+    display: none;
+  }
+}
+
+.hero-kick {
+  font-weight: 700;
+  font-size: 0.66rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  /*
+   * No el accent puro: mismo motivo que `.about-facts dt`/`.obra-meta dt` —
+   * `.hero-kick` es la etiqueta compartida de las cinco escenas (hero, about,
+   * obra, creditos, contacto) y en Caelestia el accent a secas se queda sin
+   * margen real en cuanto el fondo animado (blobs) se desplaza a un tono mas
+   * saturado (3.75:1 medido en la escena de contacto con
+   * `scripts/verify.py::check_contrast_wcag`; en el hero pasaba de milagro,
+   * 5.05:1, apoyado en un fondo mas claro en ese instante). Mezclado con
+   * `--color-paper` sube el margen sin perder el tinte, igual que en los
+   * demas usos ya probados de esta formula.
+   */
+  color: var(--color-accent-legible);
+}
+
+.hero-corner {
+  position: absolute;
+  bottom: 9%;
+  left: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  /*
+   * Antes: `rgb(255 244 232 / 0.6)` fijo — crema de Vice a pelo. Se leia bien
+   * en los dos temas oscuros por casualidad, pero en Caelestia (fondo claro,
+   * --color-paper oscuro) era casi ilegible (1.09:1 medido). Sale del token
+   * para que cada tema re-skinee el contraste, igual que hace `.hero-mail`
+   * con el accent. 70% (no 60%) porque a 60% Caelestia quedaba en 4.16:1,
+   * por debajo del minimo WCAG AA de 4.5:1 para texto normal — medido con
+   * `scripts/verify.py` (check_contrast_wcag) sobre el fondo real muestreado,
+   * no a ojo.
+   */
+  color: color-mix(in srgb, var(--color-paper) 70%, transparent);
+}
+
+@media (min-width: 768px) {
+  .hero-corner {
+    left: 3rem;
+    right: 3rem;
+  }
+}
+
+/*
+ * No el accent puro: mismo motivo que `.hero-kick`/`.contacto-mail` — la
+ * Task 11 sustituira el video de prueba por el real y el punto donde hoy
+ * muestrea el gate de contraste (fondo no solido, stddev 41.6 > 18, exento)
+ * dejara de ser exento en cuanto ese fondo sea el video definitivo. Mismo
+ * `color-mix` ya verificado en los otros dos casos, aplicado aqui antes de
+ * que se convierta en un fallo real.
+ */
+.hero-mail {
+  color: var(--color-accent-legible);
+  text-decoration: underline;
+  text-underline-offset: 7px;
+  text-decoration-thickness: 2px;
+}
+
+/* Contacto — cierre del portfolio, mismo tratamiento tipografico que el hero. */
+.contacto-mail {
+  font-size: clamp(1rem, 2.2vw, 1.4rem);
+  /*
+   * No el accent puro: en Caelestia el fondo animado (blobs) cae a veces en
+   * un tono lo bastante saturado como para dejar el accent a secas en
+   * 3.01:1 (medido con `check_contrast_wcag` en la escena de contacto) — el
+   * mismo motivo que `.hero-kick` de arriba.
+   */
+  color: var(--color-accent-legible);
+  text-decoration: underline;
+  text-underline-offset: 8px;
+  text-decoration-thickness: 2px;
+}
+
+/*
+ * El enlace de GitHub vive dentro de `.hero-corner`, que fija su color via
+ * `color-mix()` en el DIV padre (ver comentario de `.hero-corner`). Sin este
+ * `color: inherit` explicito, el UA stylesheet del navegador le pone su azul
+ * de enlace por defecto (mayor especificidad que la herencia): eso rompio el
+ * contraste en la escena de contacto (3.90:1 medido con
+ * `scripts/verify.py::check_contrast_wcag` sobre un frame del video con tinte
+ * cian), el mismo tipo de defecto que ya rompio `.hero-corner` una vez.
+ */
+.contacto-github,
+.contacto-phone,
+.contacto-corner a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/*
+ * `.hero-corner` (compartido con el hero) queda a pelo sobre el video en
+ * contacto: la escena de contacto llega tarde en el recorrido (mas tiempo de
+ * reproduccion, mas probabilidad de caer en un tramo saturado del video/
+ * fixture SMPTE). Medido con `check_contrast_wcag`: 3.90:1 sobre un frame
+ * cian — por debajo del 4.5:1 minimo, aunque el color del texto en si (mezcla
+ * de --color-paper, el mismo token que ya se lee bien en el hero) es
+ * correcto. El scrim propio, calcado del recibo de `.credits-list`/
+ * `.about-card`, acota el riesgo sin depender de que frame le toque.
+ */
+.contacto-corner {
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--color-ink) 55%, transparent) 0%,
+    transparent 100%
+  );
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-card);
+}
+
+/*
+ * Cromo de cine (`components/cinemaChrome.ts`): letterbox, barra de
+ * orientacion y atenuador de fondo. Un solo DOM para los tres temas, pero es
+ * decoracion propia de Vice — Hyprland/Caelestia lo montan igual (mismo
+ * componente) y este bloque lo mantiene oculto ahi; el bloque Vice de
+ * `themes.css` lo vuelve a mostrar. Sin este gate, Hyprland/Caelestia
+ * quedarian con una barra estatica ("01 · Titulo" que nunca cambia, ninguna
+ * coreografia la cablea fuera de Vice) sin ningun sentido narrativo.
+ */
+.cinema-chrome {
+  display: none;
+  pointer-events: none;
+}
+
+/*
+ * Con `prefers-reduced-motion` el cromo no debe aparecer: la coreografia que
+ * cablea letterbox/atenuador/rail (`cinemaChrome` en `vice.choreography.ts`)
+ * ya no corre en ese caso (`initScrollReveal` corta antes de cargar GSAP), asi
+ * que el letterbox ya queda a 0 y el atenuador a 0 por su estado de reposo —
+ * pero la barra de orientacion es texto estatico sin animacion propia y
+ * seguiria visible sin este gate. `!important` porque necesita ganar sobre la
+ * regla de `themes.css` que reactiva `.cinema-chrome` solo para Vice
+ * (mayor especificidad por el selector de atributo `[data-theme="vice"]`).
+ */
+@media (prefers-reduced-motion: reduce) {
+  .cinema-chrome {
+    display: none !important;
+  }
+}
+
+/*
+ * Atenuador del fondo: capa fija bajo el contenido (por encima del backdrop,
+ * z-index -20) que sube su opacidad fuera de hero/contacto (ver `cinemaChrome`
+ * en `vice.choreography.ts`). El color sale de `--color-ink`, nunca un hex
+ * fijado a mano: la misma regla que ya rompio el contraste de `.hero-corner`
+ * una vez.
+ */
+.backdrop-dim {
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  background: var(--color-ink);
+  opacity: 0;
+}
+
+.letterbox {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 40;
+  background: var(--color-ink);
+  transition: height 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.letterbox-top {
+  top: 0;
+}
+
+.letterbox-bottom {
+  bottom: 0;
+}
+
+/*
+ * La rueda de fondo (video/gradiente) es dinamica en el tiempo: un frame
+ * puntual puede caer en un tramo muy saturado (Task 3, fixture SMPTE) y
+ * romper el contraste del texto de la barra, sin que la CSS "declarada" tenga
+ * ningun color a mano de por medio (medido con `check_contrast_wcag`:
+ * 3.03:1-3.90:1 sobre un frame cian en la escena de contacto). Mismo remedio
+ * que `.credits-list`/`.about-card`: un scrim propio de `--color-ink` detras
+ * de la barra, no depender solo del degradado global de `.bg-theme::after`.
+ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 41;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.58rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 70%, transparent);
+  /*
+   * La barra es un HUD fijo y el contenido pasa por DETRAS de ella al
+   * desplazarse. Con solo un velo suave, un rotulo de la lista de creditos
+   * ("OTRAS HERRAMIENTAS") coincidia en posicion, tamano y color con el de la
+   * barra ("AOSHI BLANCO SANZ") y se leian superpuestos: doble exposicion
+   * ilegible, no "algo que pasa por detras". El desenfoque de fondo mas un
+   * velo mas firme subordinan lo que cruza, sin taparlo.
+   */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-ink) 88%, transparent) 0%,
+    color-mix(in srgb, var(--color-ink) 55%, transparent) 55%,
+    transparent 100%
+  );
+  backdrop-filter: blur(7px);
+}
+
+@media (min-width: 768px) {
+  .rail {
+    padding-inline: 3rem;
+  }
+}
+
+.rail-now {
+  color: var(--color-accent);
+}
+
+/*
+ * La firma de tema (`components/themeSignature.ts`) es `position: fixed` en
+ * la esquina inferior derecha: en movil, el rodillo de creditos ("Con que
+ * construyo") no usa scroll-snap, asi que quien suelta el gesto de scroll a
+ * mitad de camino puede quedarse con una fila de credito exactamente detras
+ * de la firma (medido en 390x844: filas de `.credit` cruzando su banda
+ * vertical durante la transicion de entrada de la escena). Sin superficie
+ * propia, texto de credito y texto de la firma se mezclaban en el mismo
+ * plano. Mismo remedio que `.contacto-corner`/`.rail`: un scrim propio detras
+ * de la firma para que, pase lo que pase debajo, siga siendo legible sin
+ * tapar el contenido real (el pill es pequeno y sigue dejando ver el resto
+ * de la fila).
+ */
+.theme-signature {
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
 }
 
 .text-balance {
   text-wrap: balance;
+}
+
+/*
+ * Lienzo del tema: contenedor fijo donde `themes/index.ts` monta el shader del
+ * tema activo. El degradado `--bg-fallback` queda debajo del canvas, asi que
+ * si WebGL falla el tema sigue leyendose (nunca pantalla negra).
+ */
+.bg-theme {
+  position: fixed;
+  inset: 0;
+  z-index: -20;
+  background-color: var(--color-ink);
+  background-image: var(--bg-fallback);
+}
+
+.bg-theme canvas,
+.backdrop-media {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* El video entra fundido sobre el poster cuando tiene fotogramas. */
+.backdrop-video {
+  opacity: 0;
+  transition: opacity 900ms ease-out;
+}
+
+.backdrop-video.is-ready {
+  opacity: 1;
+}
+
+/*
+ * Capas de tratamiento del backdrop fotografico. El scrim es obligatorio:
+ * garantiza contraste del texto pase lo que pase en la imagen.
+ */
+:root[data-theme="vice"] .bg-theme::before,
+:root[data-theme="vice"] .bg-theme::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+:root[data-theme="vice"] .bg-theme::before {
+  background: linear-gradient(200deg, #ff2e88 0%, #7b1d6b 45%, #ffb347 100%);
+  mix-blend-mode: soft-light;
+  opacity: 0.48;
+}
+
+:root[data-theme="vice"] .bg-theme::after {
+  background: linear-gradient(
+    180deg,
+    rgb(10 2 20 / 0.5) 0%,
+    rgb(10 2 20 / 0.12) 45%,
+    rgb(10 2 20 / 0.72) 100%
+  );
+}
+
+.tech-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.bg-noise {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/*
+ * "Quien es" — ficha de reparto + cifras + trayectoria. Todo color aqui sale
+ * de un token (`--color-*`) o de `color-mix()` sobre un token: nunca un hex/rgb
+ * fijado a mano, que es exactamente lo que rompio el contraste de Caelestia en
+ * `.hero-corner` (ver comentario ahi). `.about-card` lleva ademas la clase
+ * compartida `scene-surface`: en Caelestia gana la regla mas especifica de
+ * themes.css y la viste como superficie Material You; en Vice/Hyprland no
+ * hace nada por si sola y manda el look propio de abajo.
+ */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.4rem, 4vw, 3.4rem);
+  align-items: start;
+  margin-top: 1rem;
+}
+
+@media (min-width: 860px) {
+  .about-grid {
+    grid-template-columns: minmax(190px, 235px) 1fr;
+  }
+}
+
+.about-card {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.05rem;
+  background: color-mix(in srgb, var(--color-ink) 38%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.about-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-line);
+}
+
+.about-name {
+  margin-top: 0.6rem;
+}
+
+.about-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-weight: 600;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.about-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+/* El pulso solo si el usuario acepta movimiento. */
+@media (prefers-reduced-motion: no-preference) {
+  .about-dot {
+    animation: about-blip 2s infinite;
+  }
+}
+
+@keyframes about-blip {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 50%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}
+
+.about-facts {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 0.7rem;
+}
+
+.about-facts dt {
+  font-weight: 700;
+  font-size: 0.53rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  /*
+   * No el accent puro: sobre la superficie translucida de Caelestia
+   * (`.about-card.scene-surface`, un blanco al 62% sobre el degradado de
+   * fondo, no un blanco solido) el accent llegaba a 4.52:1 — por encima del
+   * 4.5:1 minimo pero sin margen real. Mezclado con `--color-paper` (que en
+   * los tres temas ya se lee con margen holgado, 9 a 18:1 medido) sube el
+   * margen sin perder el tinte de acento. Medido con
+   * `scripts/verify.py::check_contrast_wcag` sobre el fondo real.
+   */
+  color: var(--color-accent-legible);
+  padding-top: 2px;
+}
+
+.about-facts dd {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--color-paper) 88%, transparent);
+}
+
+.about-line {
+  display: block;
+  overflow: hidden;
+}
+
+.about-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+
+@media (min-width: 640px) {
+  .about-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.about-stats b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1;
+  color: var(--color-accent);
+}
+
+.about-stats span {
+  display: block;
+  margin-top: 0.3rem;
+  font-weight: 600;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 78%, transparent);
+}
+
+.about-track {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.1rem, 3vw, 2.5rem);
+  margin-top: 1rem;
+}
+
+@media (min-width: 860px) {
+  .about-track {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/*
+ * `scene-surface` (ver about.ts) es la clase que da la elevacion Material
+ * You en Caelestia; aqui solo el respiro que necesita como tarjeta cuando
+ * esa regla aplica. En Vice/Hyprland, sin la regla de Caelestia, este
+ * padding no tiene fondo detras — por eso es minimo, no un cambio de layout.
+ */
+.about-track-col {
+  padding: 0.15rem;
+}
+
+.about-h {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  font-size: 0.53rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  /* Mismo motivo que `.about-facts dt`: el accent puro se quedaba en 3.29:1
+     cuando este bloque cae fuera de la tarjeta, sobre el degradado a pelo
+     de Caelestia (mas saturado que el punto de partida del fondo). */
+  color: var(--color-accent-legible);
+}
+
+.about-item {
+  border-left: 1px solid var(--color-line);
+  padding-left: 0.8rem;
+  margin-bottom: 0.65rem;
+}
+
+.about-item b {
+  display: block;
+  font-weight: 600;
+  font-size: 0.79rem;
+  color: var(--color-paper);
+}
+
+.about-item span {
+  display: block;
+  margin-top: 2px;
+  font-weight: 300;
+  font-size: 0.69rem;
+  color: color-mix(in srgb, var(--color-paper) 78%, transparent);
+}
+
+/*
+ * "Obra" — fila de metadatos (Rol / Periodo / Stack / Estado). Vive dentro de
+ * `.scene-surface` (ver `projectScene.ts`), asi que en Caelestia hereda la
+ * tarjeta translucida Material You: el mismo motivo por el que el `dt` no usa
+ * el accent puro, igual que `.about-facts dt`.
+ */
+.obra-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--color-line);
+  max-width: 860px;
+}
+
+.obra-meta dt {
+  font-weight: 700;
+  font-size: 0.53rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent-legible);
+}
+
+.obra-meta dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--color-paper) 86%, transparent);
+}
+
+/*
+ * Galeria horizontal arrastrable (`components/gallery.ts`). Todo color sale
+ * de un token (`--color-*`) via `color-mix()`, nunca un hex fijado a mano —
+ * la misma regla que ya se rompio una vez en `.hero-corner`.
+ */
+.gallery {
+  margin-top: 1.1rem;
+  max-width: 860px;
+}
+
+.gallery-track {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2rem 0.2rem 0.8rem;
+  scroll-snap-type: x proximity;
+  cursor: grab;
+  scrollbar-width: none;
+  /*
+   * Deja el pan vertical nativo disponible (Lenis sigue con el scroll de la
+   * pagina); el pan horizontal queda bajo control manual de gallery.ts. Ver
+   * el comentario de resolucion de gesto ahi.
+   */
+  touch-action: pan-y;
+}
+
+.gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-track:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+
+.gallery-track.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.gallery-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(300px, 74vw);
+  margin: 0;
+  scroll-snap-align: center;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  transition:
+    border-color 250ms ease,
+    transform 250ms ease;
+}
+
+.gallery-item:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-3px);
+}
+
+.gallery-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--color-ink) 70%, var(--color-paper) 8%);
+}
+
+/*
+ * Los assets reales llegan en la Task 11 (fixtures de la Task 3 aparte, esto
+ * afecta a las rutas de `content.ts`, que hoy no existen en disco). Mientras
+ * la imagen falle su carga, se oculta con `opacity` (no `display`/
+ * `visibility`: eso la sacaria del arbol de accesibilidad y perderia su
+ * `alt`) y `.gallery-fallback` ocupa su sitio.
+ */
+.gallery-img.is-broken {
+  opacity: 0;
+}
+
+.gallery-fallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 82%, transparent);
+  background: color-mix(in srgb, var(--color-ink) 82%, transparent);
+}
+
+.gallery-item[data-broken] .gallery-fallback {
+  display: flex;
+}
+
+.gallery-caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.35rem 0.6rem;
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--color-ink) 94%, transparent),
+    transparent
+  );
+  font-weight: 700;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 92%, transparent);
+}
+
+.gallery-bar {
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-paper) 16%, transparent);
+  overflow: hidden;
+}
+
+.gallery-bar i {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+/*
+ * "Con qué construyo" — creditos interactivos (`components/credits.ts`).
+ * Un solo DOM para los tres temas: en Vice se lee como los creditos finales
+ * de una pelicula (rodillo + panel de detalle); Hyprland/Caelestia lo
+ * re-skinean como pildoras en `themes/themes.css`. Todo color sale de un
+ * token o de `color-mix()` sobre un token — nunca un hex/rgb fijado a mano,
+ * la misma regla que ya rompio el contraste de `.hero-corner` una vez
+ * (1.09:1 en Caelestia, ver comentario ahi).
+ */
+.credits-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.4rem, 4vw, 3.4rem);
+  align-items: start;
+  margin-top: 0.8rem;
+  max-width: 940px;
+}
+
+@media (min-width: 860px) {
+  .credits-grid {
+    grid-template-columns: 1fr minmax(230px, 320px);
+  }
+}
+
+/*
+ * El rodillo necesita su propio scrim, igual que `.credits-panel`: Vice no
+ * trae `scene-surface` (esa clase solo hace algo en Caelestia) y el fondo
+ * real es el video/poster cinematografico sin filtrar. Medido con el arnes
+ * (`check_contrast_wcag`): sin este fondo, "React"/"Vite"/"Python" caian
+ * hasta 1.19:1 sobre el fixture SMPTE (colores primarios saturados) — el
+ * mismo defecto de `.hero-corner`, aqui por falta de superficie, no por un
+ * color fijado a mano. 55% de ink es lo que hizo falta para mantener margen
+ * incluso sobre esos frames primarios; en produccion (Task 11, video real)
+ * seguira siendo un fondo mas moderado que el fixture sintetico.
+ */
+.credits-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+/*
+ * Ventanas bajas (portatiles de 13", navegador con muchas barras). Con la
+ * altura normal el hero respira, pero a 600px la ubicacion y el correo de la
+ * esquina quedaban fuera de cuadro: medido, Vice se pasaba 160px y Caelestia
+ * 27px. Se recorta el aire vertical del hero, no su composicion ni su
+ * tipografia, para que el pie vuelva al primer viewport en los tres temas.
+ */
+@media (max-height: 700px) {
+  .hero {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .hero-surface {
+    padding-top: clamp(0.9rem, 2vh, 1.5rem);
+    padding-bottom: clamp(0.9rem, 2vh, 1.5rem);
+  }
+
+  .display-xl {
+    font-size: clamp(2.2rem, 7vw, 5rem);
+  }
+}
+
+.credit {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.55rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-line);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 200ms ease;
+}
+
+.credit:hover,
+.credit:focus-visible,
+.credit.is-active {
+  border-color: var(--color-accent);
+}
+
+/*
+ * Afordancia tactil. En escritorio el hover ya delata que la fila responde,
+ * pero en movil no hay hover: la tester no tecnica pulso por casualidad y
+ * senalo que nada indicaba que fueran interactivas. El signo de mas es la
+ * senal minima que no compite con el nombre de la tecnologia, y desaparece en
+ * la fila activa porque ahi ya manda el borde en color de acento.
+ */
+.credit::after {
+  content: "+";
+  flex: none;
+  order: 1;
+  margin-left: 0.35rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  transition: opacity 200ms ease;
+}
+
+.credit.is-active::after {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .credit::after {
+    opacity: 0;
+  }
+
+  .credit:hover::after {
+    opacity: 1;
+  }
+}
+
+/*
+ * Indicador de foco solido, igual que `.gallery-track:focus-visible`: el
+ * cambio de `border-color` de arriba no basta por si solo (`.credit` es
+ * ancho completo con la fila siguiente pegada debajo; el borde inferior en
+ * accent es facil de perder). `outline: none` sin sustituto dejaba a quien
+ * navega con teclado sin ninguna senal fuerte de foco.
+ */
+.credit:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.credit-role {
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  /*
+   * No el accent puro: mismo motivo que `.about-facts dt` — sobre el fondo a
+   * pelo de esta escena (sin `scene-surface` propia en Vice/Hyprland) el
+   * accent puro se queda sin margen real en algun tema. Mezclado con
+   * `--color-paper` (9 a 18:1 medido en los tres) sube el margen sin perder
+   * el tinte. Medido con `scripts/verify.py::check_contrast_wcag`.
+   */
+  color: var(--color-accent-legible);
+}
+
+.credit-name {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  text-transform: var(--display-transform);
+  font-size: 1.2rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--color-paper) 62%, transparent);
+  transition: color 200ms ease;
+}
+
+.credit:hover .credit-name,
+.credit:focus-visible .credit-name,
+.credit.is-active .credit-name {
+  color: var(--color-paper);
+}
+
+/*
+ * `scene-surface` es el gancho compartido que Caelestia viste como tarjeta
+ * Material You (ver `themes.css` y `about-card`); en Vice/Hyprland no hace
+ * nada por si sola, asi que el fondo cinematografico lo pone esta regla,
+ * calcada del recibo ya probado en `.about-card`.
+ */
+/*
+ * En una sola columna el panel caia DEBAJO de las doce filas: al pulsar una
+ * tecnologia el detalle aparecia fuera de pantalla y no se entendia la relacion
+ * causa-efecto. Colocarlo primero y fijarlo lo mantiene a la vista mientras se
+ * recorre la lista. El desplazamiento superior deja hueco a la barra de
+ * orientacion de Vice. En dos columnas (a partir de 768px) esto no aplica:
+ * lista y panel ya conviven lado a lado.
+ */
+.credits-panel {
+  order: -1;
+  position: sticky;
+  top: 3.5rem;
+  z-index: 1;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 1.15rem;
+  /* Fijo y superpuesto sobre la lista: necesita cuerpo. Con el 38% que basta
+     cuando va en el flujo, las filas de debajo se transparentaban a traves del
+     panel y el detalle se leia sucio. */
+  background: color-mix(in srgb, var(--color-ink) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+@media (min-width: 768px) {
+  .credits-panel {
+    order: 0;
+    position: static;
+    background: color-mix(in srgb, var(--color-ink) 38%, transparent);
+    backdrop-filter: blur(6px);
+  }
+}
+
+.credits-icon {
+  width: 46px;
+  height: 46px;
+}
+
+.credits-svg svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--color-accent);
+}
+
+.credits-panel-name {
+  margin-top: 0.6rem;
+}
+
+.credits-panel-role {
+  margin-top: 0.35rem;
+  font-weight: 700;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-accent-legible);
+}
+
+.credits-panel-detail {
+  margin-top: 0.7rem;
+  font-weight: 300;
+  font-size: 0.79rem;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--color-paper) 82%, transparent);
 }

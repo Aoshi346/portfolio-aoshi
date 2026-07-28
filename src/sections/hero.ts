@@ -1,41 +1,40 @@
 import { identity } from "../data/content";
 import { el } from "../utils/dom";
-import type { HeroSceneHandle } from "../three/heroScene";
 
+/**
+ * Apertura. Suelo de conversion garantizado: nombre, rol y contacto legibles
+ * al instante, sin depender de que el video o las animaciones hayan cargado.
+ * El layout concreto lo decide el tema (themes.css).
+ */
 export function createHero(): HTMLElement {
-  const canvasHost = el(
-    "div",
-    "pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-1000",
-  );
-  canvasHost.setAttribute("aria-hidden", "true");
+  const eyebrow = el("p", "hero-kick", [identity.role]);
+  eyebrow.setAttribute("data-hero-fade", "");
+
+  const name = el("h1", "display-xl mt-4 text-[clamp(2.8rem,11vw,9.5rem)]", [identity.name]);
+  name.setAttribute("data-hero-name", "");
+
+  const lead = el("p", "lead mx-auto mt-5 max-w-[32ch] text-paper/85", [identity.subheadline]);
+  lead.setAttribute("data-hero-fade", "");
+
+  const location = el("span", "", [identity.location]);
+
+  const email = el("a", "hero-mail", [identity.email]);
+  email.href = `mailto:${identity.email}`;
+
+  const corner = el("div", "hero-corner", [location, email]);
+  corner.setAttribute("data-hero-fade", "");
+
+  // Envoltorio comun a los tres temas: Caelestia lo viste como tarjeta
+  // Material You (themes.css), Vice y Hyprland lo neutralizan a sangre.
+  // El DOM es unico; solo el CSS colgado de [data-theme] decide la piel.
+  const surface = el("div", "hero-surface", [eyebrow, name, lead]);
 
   const section = el(
     "section",
-    "relative flex min-h-screen flex-col justify-center overflow-hidden px-6 md:px-12",
-    [
-      canvasHost,
-      el("p", "font-display text-sm uppercase tracking-[0.3em] text-accent", [identity.role]),
-      el(
-        "h1",
-        "mt-6 max-w-4xl text-balance font-display text-6xl font-bold leading-[0.95] md:text-8xl",
-        [identity.headline],
-      ),
-      el("p", "mt-8 max-w-xl text-lg text-paper/70 md:text-xl", [identity.subheadline]),
-      el("div", "mt-16 flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-paper/40", [
-        el("span", "block h-px w-8 bg-paper/40", []),
-        "Desplázate",
-      ]),
-    ],
+    "hero relative flex min-h-screen flex-col justify-center overflow-hidden px-6 py-24 md:px-12",
+    [surface, corner],
   );
-
-  let sceneHandle: HeroSceneHandle | null = null;
-
-  void import("../three/heroScene").then(({ mountHeroScene }) => {
-    sceneHandle = mountHeroScene(canvasHost);
-    requestAnimationFrame(() => canvasHost.classList.remove("opacity-0"));
-  });
-
-  window.addEventListener("beforeunload", () => sceneHandle?.destroy(), { once: true });
+  section.setAttribute("data-scene", "hero");
 
   return section;
 }

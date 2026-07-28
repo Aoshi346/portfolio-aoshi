@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+__pycache__/
+*.pyc
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +24,25 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# --- agente Tech Lead (tooling + artefactos de sesión, no versionar) ---
+# Se versiona solo CLAUDE.md (instrucciones del proyecto); el resto queda fuera.
+.ai/
+.claude/
+MEMORY.md
+PROGRESS.json
+audit.jsonl
+PROGRESS.log
+.docs/feedback/*/screenshots/
+.docs/feedback/**/screenshots/
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+secrets.*
+credentials.*
+
+# Brainstorming visual companion (superpowers)
+.superpowers/
