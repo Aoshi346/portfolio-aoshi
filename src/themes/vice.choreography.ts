@@ -81,25 +81,62 @@ function scene1Title(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
   intro.to(chars, { yPercent: 0, duration: 1.0, ease: "power3.out", stagger: 0.075 }, 0.25);
   intro.to(fading, { opacity: 1, y: 0, duration: 0.9, ease: "power2.out", stagger: 0.14 }, 1.5);
 
+  const leaveUp = fading.filter((element) => element.dataset.heroFade === "up");
+  const leaveDown = fading.filter((element) => element.dataset.heroFade !== "up");
+
   const exit = gsap.timeline({
     scrollTrigger: {
       id: HERO_ZOOM_TRIGGER_ID,
       trigger: hero,
       start: "top top",
-      end: "+=150%",
+      end: "+=185%",
       pin: true,
       scrub: 1,
     },
   });
-  // El acompanamiento se va primero: si todo se arrastra a la vez, se ve roto.
-  exit.to(fading, { opacity: 0, y: -30, ease: "none", duration: 0.28 }, 0);
-  // fromTo, no to(): el valor de partida va escrito a mano, no leido del DOM.
+
+  /*
+   * Tres tiempos, no uno. Antes los tres bloques de acompanamiento se iban
+   * juntos en el primer 28% con `ease: none` y el efecto era que el texto
+   * "desaparecia" sin motivo mientras el nombre seguia quieto.
+   *
+   * 1. El acompanamiento se aparta abriendo hueco: lo que esta encima del
+   *    nombre sube y lo que esta debajo baja, con desenfoque, de forma que la
+   *    lectura del gesto sea "se retiran para dejar ver", no "se apagan".
+   * 2. El nombre retrocede un poco mientras se queda solo: ese respiro es lo
+   *    que da impulso al empuje siguiente en vez de arrancarlo en frio.
+   * 3. La camara lo atraviesa. La opacidad NO acompana a la escala durante
+   *    todo el recorrido (asi se evaporaba antes de llenar el encuadre): se
+   *    mantiene entera hasta el ultimo tramo y se funde ya fuera de plano.
+   *
+   * Todos los tweens del nombre son `fromTo` con el punto de partida escrito
+   * a mano: leerlo del DOM fue la causa de la regresion original.
+   */
+  exit.to(
+    leaveUp,
+    { opacity: 0, y: -64, filter: "blur(5px)", ease: "power2.in", duration: 0.34 },
+    0,
+  );
+  exit.to(
+    leaveDown,
+    {
+      opacity: 0,
+      y: 64,
+      filter: "blur(5px)",
+      ease: "power2.in",
+      duration: 0.34,
+      stagger: 0.07,
+    },
+    0.04,
+  );
+  exit.fromTo(name, { scale: 1 }, { scale: 0.94, ease: "power2.out", duration: 0.42 }, 0);
   exit.fromTo(
     name,
-    { scale: 1, opacity: 1 },
-    { scale: 9, opacity: 0, ease: "power2.in", duration: 1 },
-    0.12,
+    { scale: 0.94 },
+    { scale: 9, filter: "blur(6px)", ease: "power2.in", duration: 1.05 },
+    0.5,
   );
+  exit.fromTo(name, { opacity: 1 }, { opacity: 0, ease: "power1.in", duration: 0.4 }, 1.15);
 }
 
 /** Ids fijos de los ScrollTrigger del gesto 2: permiten matarlos si la funcion se re-ejecuta. */

@@ -7,14 +7,19 @@ import { el } from "../utils/dom";
  * El layout concreto lo decide el tema (themes.css).
  */
 export function createHero(): HTMLElement {
+  // El valor del atributo declara hacia donde sale cada bloque en el gesto de
+  // salida de Vice (`vice.choreography.ts`): lo que esta sobre el nombre se va
+  // hacia arriba y lo que esta debajo hacia abajo, de modo que el nombre queda
+  // solo en el centro. El selector `[data-hero-fade]` que usan reveal.ts y
+  // style.css no distingue valor, asi que los otros dos temas no se enteran.
   const eyebrow = el("p", "hero-kick", [identity.role]);
-  eyebrow.setAttribute("data-hero-fade", "");
+  eyebrow.setAttribute("data-hero-fade", "up");
 
   const name = el("h1", "display-xl mt-4 text-[clamp(2.8rem,11vw,9.5rem)]", [identity.name]);
   name.setAttribute("data-hero-name", "");
 
   const lead = el("p", "lead mx-auto mt-5 max-w-[32ch] text-paper/85", [identity.subheadline]);
-  lead.setAttribute("data-hero-fade", "");
+  lead.setAttribute("data-hero-fade", "down");
 
   const location = el("span", "", [identity.location]);
 
@@ -22,7 +27,7 @@ export function createHero(): HTMLElement {
   email.href = `mailto:${identity.email}`;
 
   const corner = el("div", "hero-corner", [location, email]);
-  corner.setAttribute("data-hero-fade", "");
+  corner.setAttribute("data-hero-fade", "down");
 
   // Envoltorio comun a los tres temas: Caelestia lo viste como tarjeta
   // Material You (themes.css), Vice y Hyprland lo neutralizan a sangre.
