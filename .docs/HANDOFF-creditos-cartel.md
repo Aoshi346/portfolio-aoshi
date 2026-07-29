@@ -1,14 +1,28 @@
 # Traspaso — "Con que construyo" como cartel de reparto (tema Vice)
 
-> **SUPERADO PARCIALMENTE (2026-07-29).** Existe un plan formal con spec y
-> checkboxes que es la fuente de verdad para ejecutar esto:
-> `docs/superpowers/plans/2026-07-29-creditos-cartel-reparto.md` (spec en
-> `docs/superpowers/specs/2026-07-29-creditos-cartel-reparto-design.md`).
-> **Empieza por ahi.** Este documento se conserva porque su seccion de
-> contenido real (el cruce tecnologia -> proyectos, verificado contra
-> `content.ts`) y sus siete restricciones duras siguen siendo validas y el plan
-> no las repite. Sigue SIN implementar: no hay rastro de `--font-billing` ni de
-> la tipografia condensada en el codigo.
+> **CERRADO — IMPLEMENTADO Y MERGEADO A `main` (29-jul-2026, merge `5211743`).**
+> Este traspaso ya no describe trabajo pendiente. Se conserva como historia de
+> como se decidio, no como instruccion.
+>
+> Lo que hay que leer ahora, por este orden:
+> `docs/superpowers/specs/2026-07-29-creditos-cartel-reparto-design.md` (el
+> diseno tal como quedo) y
+> `docs/superpowers/plans/2026-07-29-creditos-cartel-reparto.md` (las ocho
+> tareas cerradas y las divergencias respecto a lo planificado).
+>
+> **Dos cosas de este documento ya no son ciertas** y estan corregidas en el
+> spec, no aqui:
+>
+> - El reparto ya no son seis bloques sino **cuatro, de 8/5/5/5**. Se decidio
+>   despues del gate visual, sobre mockup vivo: "Interfaz" absorbe Electron y
+>   GTK4, "Herramientas" absorbe las dos CLI de IA.
+> - Donde este texto cita "44px (WCAG 2.5.5)" como minimo exigible: SC 2.5.5 es
+>   **AAA**. El requisito **AA** es SC 2.5.8, de 24x24, y aplica a las dos
+>   dimensiones. Se cumple el liston AAA por decision, no por obligacion.
+>
+> Lo que sigue siendo valido y por lo que se conserva el fichero: la seccion de
+> contenido real (el cruce tecnologia -> proyectos verificado contra
+> `content.ts`) y las siete restricciones duras, que el plan no repite.
 
 ## Que hay que hacer
 

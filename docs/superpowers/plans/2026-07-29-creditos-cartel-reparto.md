@@ -95,7 +95,7 @@ Contenido y marcas van juntos: cada tecnologia nueva necesita su SVG o
   `secondarySkills` **eliminado**; `CaseStudy.tooling?: string[]`;
   `getIconMarkup(slug)` acepta los 23 slugs usados.
 
-- [ ] **Step 1: Registrar los 11 slugs nuevos en `src/utils/icons.ts`**
+- [x] **Step 1: Registrar los 11 slugs nuevos en `src/utils/icons.ts`**
 
 Anadir junto a los imports existentes:
 
@@ -143,7 +143,7 @@ const icons: Record<string, string> = {
 };
 ```
 
-- [ ] **Step 2: Reescribir `skillGroups` en `src/data/content.ts`**
+- [x] **Step 2: Reescribir `skillGroups` en `src/data/content.ts`**
 
 Sustituir el `skillGroups` actual y **borrar** `secondarySkills` entero. Solo lo
 consumia `credits.ts`, comprobado con grep sobre `src/`, asi que no queda ningun
@@ -207,7 +207,7 @@ export const skillGroups: SkillGroup[] = [
 ];
 ```
 
-- [ ] **Step 3: Anadir `tooling` a `CaseStudy` y rellenarlo**
+- [x] **Step 3: Anadir `tooling` a `CaseStudy` y rellenarlo**
 
 En la interfaz, junto a `stack`:
 
@@ -239,7 +239,7 @@ tooling: ["Git", "GitHub"],
 `project.stack.join(" · ")` y nada mas. Que `tooling` no aparezca en la ficha de
 obra es la decision, no un olvido: no lo anadas "para que se vea".
 
-- [ ] **Step 4: Verificar que compila y que los 23 slugs resuelven**
+- [x] **Step 4: Verificar que compila y que los 23 slugs resuelven**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -249,7 +249,7 @@ npm run build && npm run lint
 Esperado: build verde. Si falla con `Missing simple-icons SVG for slug "..."`,
 falta un slug del Step 1.
 
-- [ ] **Step 5: Asercion sobre el DOM — 23 creditos y 6 encabezados**
+- [x] **Step 5: Asercion sobre el DOM — 23 creditos y 6 encabezados**
 
 Con `npm run dev` corriendo:
 
@@ -283,7 +283,7 @@ Esperado: `OK`. Si `[data-credit-used-list]` da 0 para Git, falta el cruce con
 fallara. **Ejecutala completa despues de la Task 3**; en esta tarea comprueba
 solo los dos primeros `assert`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/data/content.ts src/utils/icons.ts
@@ -305,7 +305,7 @@ Se hace antes que el CSS del cartel porque ese CSS ya referencia el token.
 - Consumes: nada.
 - Produces: variable CSS `--font-billing` disponible bajo `[data-theme="vice"]`.
 
-- [ ] **Step 1: Alta de la fuente en `index.html`**
+- [x] **Step 1: Alta de la fuente en `index.html`**
 
 En el objeto `fontHrefs` del script inline, sustituir el valor de `vice`:
 
@@ -313,7 +313,7 @@ En el objeto `fontHrefs` del script inline, sustituir el valor de `vice`:
 vice: "https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Manrope:wght@200;300;400;600;700&family=Pathway+Gothic+One&display=swap",
 ```
 
-- [ ] **Step 2: Alta de la fuente en `src/themes/vice.ts`**
+- [x] **Step 2: Alta de la fuente en `src/themes/vice.ts`**
 
 Mismo valor en `fontHref`, y ampliar el comentario existente:
 
@@ -334,7 +334,7 @@ Mismo valor en `fontHref`, y ampliar el comentario existente:
     "https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Manrope:wght@200;300;400;600;700&family=Pathway+Gothic+One&display=swap",
 ```
 
-- [ ] **Step 3: Declarar el token en `src/themes/themes.css`**
+- [x] **Step 3: Declarar el token en `src/themes/themes.css`**
 
 Junto al resto de tokens de Vice:
 
@@ -348,7 +348,7 @@ Junto al resto de tokens de Vice:
   --font-billing: "Pathway Gothic One", "Oswald", sans-serif;
 ```
 
-- [ ] **Step 4: Verificar que la fuente carga de verdad**
+- [x] **Step 4: Verificar que la fuente carga de verdad**
 
 ```python
 from playwright.sync_api import sync_playwright
@@ -370,7 +370,7 @@ with sync_playwright() as p:
 Esperado: `cargada: True`. Si sale `False`, el href quedo mal en uno de los dos
 sitios.
 
-- [ ] **Step 5: Confirmar que los tokens protegidos siguen intactos**
+- [x] **Step 5: Confirmar que los tokens protegidos siguen intactos**
 
 ```bash
 python3 scripts/verify.py 2>&1 | grep -E "display es Passion One|cuerpo es Manrope|monoespaciada"
@@ -378,7 +378,7 @@ python3 scripts/verify.py 2>&1 | grep -E "display es Passion One|cuerpo es Manro
 
 Esperado: las tres lineas en `OK`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add index.html src/themes/vice.ts src/themes/themes.css
@@ -399,7 +399,7 @@ git commit -m "feat(vice): anadir Pathway Gothic One como token --font-billing"
   hijo de `.credits-grid`**, conteniendo un `.credits-mark[data-mark-slug]` por
   tecnologia; el activo lleva `.is-active`.
 
-- [ ] **Step 1: Cruzar tambien contra `tooling`**
+- [x] **Step 1: Cruzar tambien contra `tooling`**
 
 En `toEntry()`:
 
@@ -409,7 +409,7 @@ En `toEntry()`:
       .map((project) => project.title),
 ```
 
-- [ ] **Step 2: Simplificar la construccion de `groups`**
+- [x] **Step 2: Simplificar la construccion de `groups`**
 
 `secondarySkills` ya no existe. Sustituir el bloque actual por:
 
@@ -419,7 +419,7 @@ En `toEntry()`:
 
 Y quitar `secondarySkills` del import de la linea 1.
 
-- [ ] **Step 3: Declarar el registro de marcas ANTES del bucle de grupos**
+- [x] **Step 3: Declarar el registro de marcas ANTES del bucle de grupos**
 
 **El orden importa:** `select()` se define dentro del bucle que recorre los
 grupos y cierra sobre `marks`. Si `marks` se declara despues del bucle,
@@ -441,7 +441,7 @@ declaration". Va junto a `rows` y `listChildren`, antes del `for`:
   const markNodes: HTMLElement[] = [];
 ```
 
-- [ ] **Step 4: Crear cada marca dentro del bucle de items**
+- [x] **Step 4: Crear cada marca dentro del bucle de items**
 
 En el mismo `for (const item of group.items)` que ya construye la fila, justo
 despues de crear `row` y antes de definir `select`:
@@ -458,7 +458,7 @@ despues de crear `row` y antes de definir `select`:
       markNodes.push(mark);
 ```
 
-- [ ] **Step 5: Encender la marca activa dentro de `select()`**
+- [x] **Step 5: Encender la marca activa dentro de `select()`**
 
 Anadir al final del cuerpo de `select()`, tras la linea de `used.hidden`:
 
@@ -471,7 +471,7 @@ Anadir al final del cuerpo de `select()`, tras la linea de `used.hidden`:
         }
 ```
 
-- [ ] **Step 6: Montar el friso y devolverlo en el grid**
+- [x] **Step 6: Montar el friso y devolverlo en el grid**
 
 Tras el bucle de grupos, junto a la creacion de `list`:
 
@@ -489,7 +489,7 @@ Tras el bucle de grupos, junto a la creacion de `list`:
   return el("div", "credits-grid", [list, panel, frieze]);
 ```
 
-- [ ] **Step 7: Verificar**
+- [x] **Step 7: Verificar**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -522,7 +522,7 @@ print("OK")
 Esperado: `OK`. `hijos == 29` es la guarda de la restriccion dura 4: si sale 30,
 alguien metio el friso o un separador dentro del rodillo.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/components/credits.ts
@@ -548,7 +548,7 @@ que saber que existe.
 - Consumes: `.credits-marks` / `.credits-mark` de la Task 3.
 - Produces: nada nuevo para tareas posteriores.
 
-- [ ] **Step 1: Anadir el bloque, junto al resto de reglas de creditos**
+- [x] **Step 1: Anadir el bloque, junto al resto de reglas de creditos**
 
 ```css
 /*
@@ -568,7 +568,7 @@ que saber que existe.
 }
 ```
 
-- [ ] **Step 2: Verificar que Hyprland y Caelestia no cambian**
+- [x] **Step 2: Verificar que Hyprland y Caelestia no cambian**
 
 ```python
 from playwright.sync_api import sync_playwright
@@ -590,7 +590,7 @@ print("OK")
 
 Esperado: `none` en los dos.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/style.css
@@ -609,7 +609,7 @@ git commit -m "feat(credits): declarar el friso de marcas oculto por defecto"
 - Consumes: `--font-billing` (Task 2), `.credits-marks` (Tasks 3 y 4).
 - Produces: el cartel compuesto. La Task 6 solo ajusta el interlineado en movil.
 
-- [ ] **Step 1: Grid a una sola columna**
+- [x] **Step 1: Grid a una sola columna**
 
 Sustituir la regla de `.credits-grid` dentro de la media query de 860px por una
 columna unica centrada. El cartel, el pie y el friso se apilan en ese orden.
@@ -623,7 +623,7 @@ columna unica centrada. El cartel, el pie y el friso se apilan en ese orden.
 }
 ```
 
-- [ ] **Step 2: Los nombres fluyen como un parrafo compuesto**
+- [x] **Step 2: Los nombres fluyen como un parrafo compuesto**
 
 `.credit` es `display: flex; width: 100%` en la base — eso es lo que lo hace
 fila. En Vice pasa a comportarse como una palabra dentro de un renglon:
@@ -666,7 +666,7 @@ fila. En Vice pasa a comportarse como una palabra dentro de un renglon:
 entrada de `scene4Credits` y un transform inline de GSAP gana siempre a la regla
 CSS (restriccion dura 6).
 
-- [ ] **Step 3: Separadores sin tocar el DOM**
+- [x] **Step 3: Separadores sin tocar el DOM**
 
 ```css
 /*
@@ -690,7 +690,7 @@ CSS (restriccion dura 6).
 }
 ```
 
-- [ ] **Step 4: Encabezados de bloque**
+- [x] **Step 4: Encabezados de bloque**
 
 Sustituir la regla existente de `.credit-group-label` en Vice (hoy tiene
 `border-bottom`, que es de la version lista):
@@ -710,7 +710,7 @@ Sustituir la regla existente de `.credit-group-label` en Vice (hoy tiene
 }
 ```
 
-- [ ] **Step 5: El panel se re-skinea como pie a dos alturas**
+- [x] **Step 5: El panel se re-skinea como pie a dos alturas**
 
 ```css
 /*
@@ -765,7 +765,7 @@ Sustituir la regla existente de `.credit-group-label` en Vice (hoy tiene
 }
 ```
 
-- [ ] **Step 6: El friso**
+- [x] **Step 6: El friso**
 
 ```css
 :root[data-theme="vice"] .credits-marks {
@@ -794,7 +794,7 @@ Sustituir la regla existente de `.credit-group-label` en Vice (hoy tiene
 }
 ```
 
-- [ ] **Step 7: Verificar composicion y que el pie no salta**
+- [x] **Step 7: Verificar composicion y que el pie no salta**
 
 ```python
 from playwright.sync_api import sync_playwright
@@ -836,7 +836,7 @@ print("OK")
 
 Esperado: los dos altos iguales y `OK`.
 
-- [ ] **Step 8: Capturas de escritorio**
+- [x] **Step 8: Capturas de escritorio**
 
 ```python
 pg.screenshot(path="/tmp/cartel-1440.png", full_page=False)
@@ -845,7 +845,7 @@ pg.screenshot(path="/tmp/cartel-1440.png", full_page=False)
 Mirarla. El cartel debe leerse centrado, sin recuadros, con los seis bloques y el
 friso al pie.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -863,7 +863,7 @@ git commit -m "feat(vice): componer la seccion de creditos como cartel de repart
 - Consumes: el cartel de la Task 5.
 - Produces: area pulsable >= 44px por debajo de 860px.
 
-- [ ] **Step 1: Interlineado 2.7 por debajo de 860px**
+- [x] **Step 1: Interlineado 2.7 por debajo de 860px**
 
 ```css
 /*
@@ -891,7 +891,7 @@ git commit -m "feat(vice): componer la seccion de creditos como cartel de repart
 }
 ```
 
-- [ ] **Step 2: Verificar el objetivo tactil en 390x844**
+- [x] **Step 2: Verificar el objetivo tactil en 390x844**
 
 ```python
 from playwright.sync_api import sync_playwright
@@ -915,7 +915,7 @@ print("OK")
 
 Esperado: `min >= 44` y sin desbordamiento horizontal.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -933,7 +933,7 @@ git commit -m "feat(vice): conservar el cartel en movil con objetivo tactil de 4
 - Consumes: `[data-credit-marks]` de la Task 3.
 - Produces: nada para tareas posteriores.
 
-- [ ] **Step 1: Anadir la entrada, tras el `fromTo` del rodillo**
+- [x] **Step 1: Anadir la entrada, tras el `fromTo` del rodillo**
 
 ```ts
   /*
@@ -966,7 +966,7 @@ git commit -m "feat(vice): conservar el cartel en movil con objetivo tactil de 4
   }
 ```
 
-- [ ] **Step 2: Declarar el id del trigger y matarlo al re-ejecutar**
+- [x] **Step 2: Declarar el id del trigger y matarlo al re-ejecutar**
 
 Junto a `CREDITS_TRIGGER_ID`:
 
@@ -980,7 +980,7 @@ Y junto al `ScrollTrigger.getById(CREDITS_TRIGGER_ID)?.kill();` existente:
   ScrollTrigger.getById(CREDITS_MARKS_TRIGGER_ID)?.kill();
 ```
 
-- [ ] **Step 3: Verificar que el friso termina visible y sin desplazamiento**
+- [x] **Step 3: Verificar que el friso termina visible y sin desplazamiento**
 
 El fallo que esto previene es exactamente el que documenta el traspaso: una
 entrada que deja el elemento desplazado para siempre.
@@ -1009,7 +1009,7 @@ print("OK")
 
 Esperado: cero marcas trasladadas al acabar la entrada.
 
-- [ ] **Step 4: Verificar `prefers-reduced-motion`**
+- [x] **Step 4: Verificar `prefers-reduced-motion`**
 
 ```python
 pg = b.new_page(viewport={"width": 1440, "height": 900},
@@ -1020,7 +1020,7 @@ Repetir la asercion anterior con esa pagina: el friso debe quedar visible y sin
 transform. `initScrollReveal` hace early-return con reduced-motion, asi que nada
 puede depender de que la timeline llegue a ejecutarse.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/vice.choreography.ts
@@ -1039,14 +1039,14 @@ git commit -m "feat(vice): entrada escalonada del friso de marcas"
 - Consumes: todo lo anterior.
 - Produces: nada.
 
-- [ ] **Step 1: Build y lint limpios**
+- [x] **Step 1: Build y lint limpios**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
 npm run build && npm run lint
 ```
 
-- [ ] **Step 2: `verify.py` en su linea base**
+- [x] **Step 2: `verify.py` en su linea base**
 
 ```bash
 python3 scripts/verify.py 2>&1 | tail -3
@@ -1055,7 +1055,7 @@ python3 scripts/verify.py 2>&1 | tail -3
 Esperado: `FALLOS: 12`. Si sale mas de 12, comparar contra la lista base (9
 galerias + 3 `vice-*`) y arreglar lo nuevo.
 
-- [ ] **Step 3: Contraste AA remedido**
+- [x] **Step 3: Contraste AA remedido**
 
 El cartel prescinde del scrim de `.credits-list`, asi que el contraste **no se da
 por hecho**: hay que volver a medirlo, no asumir los 7:1-15:1 de la version
@@ -1068,7 +1068,7 @@ python3 scripts/verify.py 2>&1 | grep -iE "contraste|contrast"
 Esperado: sin fallos nuevos. Si alguno de los textos del cartel baja de AA, subir
 el scrim propio de la seccion antes de dar nada por hecho.
 
-- [ ] **Step 4: Anti-mock**
+- [x] **Step 4: Anti-mock**
 
 ```bash
 grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|lorem ipsum|Lorem" \
@@ -1077,18 +1077,18 @@ grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|l
 
 Esperado: sin resultados en las secciones publicadas.
 
-- [ ] **Step 5: Los otros dos temas, intactos**
+- [x] **Step 5: Los otros dos temas, intactos**
 
 Capturar Hyprland y Caelestia en 1440x900 y comprobar que la seccion sigue siendo
 la lista de pildoras de siempre, con el friso oculto.
 
-- [ ] **Step 6: Capturas finales**
+- [x] **Step 6: Capturas finales**
 
 `?theme=vice` en 1440x900 y 390x844. Confirmar: cartel centrado sin recuadros,
 pie a dos alturas que no salta, friso con la marca activa encendida, cero errores
 de consola.
 
-- [ ] **Step 7: Actualizar traspaso y PROGRESS.json, y commit**
+- [x] **Step 7: Actualizar traspaso y PROGRESS.json, y commit**
 
 ```bash
 git add .docs/HANDOFF-creditos-cartel.md PROGRESS.json
@@ -1108,3 +1108,54 @@ git commit -m "docs(credits): cerrar el traspaso del cartel de reparto"
 4. **Hijos de `[data-credit-roll]`.** La asercion `hijos == 29` de la Task 3 es la
    guarda; si alguien mete separadores o el friso dentro, salta ahi y no tres
    tareas despues.
+
+---
+
+## Estado: COMPLETADO y mergeado a `main` (29-jul-2026)
+
+Las ocho tareas se ejecutaron y estan commiteadas. Merge a `main` en `5211743`
+(`--no-ff`, siguiendo la forma que ya usaba `4187de5` para la rama de rediseno).
+
+Verificacion de cierre: `npm run build` verde, `npx eslint src/` limpio,
+`scripts/verify.py` en sus 12 fallos de base (todos fixtures de `public/media`,
+previos a esta rama) y cero fallos de contraste — 35 elementos de la escena de
+creditos medidos, el peor a 6.97:1 sobre un minimo de 3.0. Cero errores de
+consola. Hyprland y Caelestia sin cambios.
+
+`npm run lint` (eslint sobre todo el repo) esta en rojo por causa **ambiental**,
+no por este trabajo: existe un worktree de otra sesion en
+`.claude/worktrees/about-afirmacion-prueba` y typescript-eslint se niega a elegir
+`tsconfigRootDir` con dos candidatos, asi que falla el parseo de los 33 ficheros
+del repo tambien. `npx eslint src/` sale limpio.
+
+### Divergencias respecto a lo planificado
+
+Cuatro, todas posteriores al plan y todas con su motivo medido:
+
+1. **Cuatro bloques de 8/5/5/5, no seis de 6/5/5/2/3/2.** Se decidio despues del
+   gate visual, sobre mockup vivo. Tres bloques de dos y tres nombres se leian
+   como sobras. Se descarto el 6/5/5/7 porque el rotulo mentiria: Electron y GTK4
+   no son herramientas con las que se trabaja, son aquello con lo que se
+   construye la interfaz. Afecta al Step 2 de la Task 1 (`skillGroups`) y al
+   Step 5 (la asercion es de **4** encabezados, no 6). Commit `cd2a784`.
+2. **Interlineado 2.75, no 2.7** (Task 6, Step 1). Por debajo de 860px el clamp
+   del cuerpo resuelve al minimo exacto de 1rem, asi que 16 x 2.75 = 44px justos
+   y 2.7 se quedaba en 43.2.
+3. **El separador va DETRAS del nombre anterior**, no delante del siguiente
+   (Task 5, Step 3). Se implemento como `.credit + .credit::before` y se cambio a
+   `.credit:has(+ .credit)::after` al medir dos defectos: el subrayado del activo
+   cubria el punto anterior y al partir linea la linea abria con el punto, que se
+   lee como vineta. Commit `82f92d4`.
+4. **Cinco arreglos del gate visual que el plan no preveia**, porque salieron de
+   la revision de vera y lidia: titulo de cartel para la escena, falso negrita
+   fuera de la etiqueta, subrayado como segunda senal del activo, ancho de
+   objetivo tactil y ratio de proximidad en movil. Commit `c01ef84`.
+
+### Lo que NO entro, y sigue abierto
+
+- Normalizar el juego de iconos del friso (F-006).
+- El espacio vacio preexistente en Hyprland/Caelestia (F-009); vera lo dejo en
+  "cuentalo, P0 a la tercera aparicion".
+- El hueco largo antes de contacto en movil: es del padding de `[data-scene]`, no
+  de esta escena.
+- Zustand, que sigue fuera por no tener entrada en `simple-icons`.

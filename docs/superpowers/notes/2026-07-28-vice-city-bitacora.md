@@ -395,3 +395,69 @@ Queda medido, no resuelto: en el bloque de arriba hay 503px entre el dedo y la
 frase (y 633px hasta la marca). Las dos senales estan en pantalla, pero son las
 mas lejanas al dedo de toda la seccion. El realce local del nombre tocado
 (ambar + subrayado) es lo que cubre esa distancia.
+
+---
+
+## 29-jul-2026 — Cierre: cuatro bloques, el separador de lado, y merge a `main`
+
+Merge en `5211743` (`--no-ff`, la forma que ya usaba `4187de5`). Cinco commits:
+arnes documental, titulo + arreglos del gate visual, revision tactil,
+reagrupacion a cuatro bloques, y el separador.
+
+### El corte del reparto: 8/5/5/5, no 6/5/5/7
+
+Se decidio sobre mockup vivo con las tres variantes a la vista y las mismas 23
+tecnologias. El corte obvio era fundir los tres bloques pequenos (2, 3 y 2
+nombres, que en un cartel se leen como sobras) en uno de siete. Se descarto
+porque el rotulo mentiria: **Electron y GTK4 no son herramientas con las que se
+trabaja, son aquello con lo que se construye la interfaz**, al mismo nivel que
+React. De ahi "Interfaz", que cubre web y escritorio, y un "Herramientas" honesto
+con Git, GitHub, n8n y las dos CLI de IA.
+
+Coste asumido: "IA" pierde rotulo propio. Separado se leia como postura
+deliberada; no compensaba un bloque de dos nombres.
+
+Solo cambia `skillGroups`. `credits.ts` recorre los grupos genericamente y los
+hijos directos de `[data-credit-roll]` pasan de 29 a 27 sin cambiar de
+naturaleza, asi que el escalonado de `scene4Credits` sigue intacto.
+
+### El punto separador, de `::before` del siguiente a `::after` del anterior
+
+Tenia dos defectos por una sola causa — el punto vivia dentro de la caja del
+nombre siguiente: el subrayado del activo lo cubria (se subrayaba "· NEXT.JS",
+con 19px de hueco entre el borde del boton y la primera letra) y al partir linea
+en movil la linea abria con el punto, que se lee como vineta.
+
+Detras se arreglan los dos. **El artefacto del corte de linea no desaparece,
+cambia de lado:** la linea que parte cierra con un punto colgando, que en
+creditos de cartel es la convencion. No hay version sin artefacto porque el CSS
+no puede saber donde va a partir el texto. En escritorio no se ve nunca: cuatro
+lineas de 8/5/5/5 sin ningun corte.
+
+### Dos trampas de medicion nuevas
+
+**El pseudoelemento reutilizado arrastra las reglas de la base.** El separador se
+maquetaba —sus 27px estaban ahi— y no se pintaba: heredaba `opacity: 0` del "+"
+de afordancia que `style.css` pone en ese mismo `::after`. Ninguna asercion lo
+cazo, porque `getComputedStyle` devolvia el glifo correcto. Se cazo poniendole
+fondo verde y borde cian y viendo que tampoco aparecian. Habia dos reglas mas
+escondidas ahi: `font-weight: 700`, que en Pathway habria dado falso negrita, y
+un `margin-left` que descuadraba el espaciado.
+
+**El layout puro se mide con `prefers-reduced-motion`.** Agrupar por
+`getBoundingClientRect().top` mientras GSAP tiene desplazamientos por elemento da
+lineas fantasma de un solo nombre: se miden fotogramas de la entrada, no la
+maquetacion.
+
+### Estado
+
+Build verde, `npx eslint src/` limpio, `verify.py` en sus 12 fallos de base
+(fixtures de `public/media`) y cero de contraste — 35 elementos de la escena
+medidos, el peor a 6.97:1. Hyprland y Caelestia sin cambios.
+
+`npm run lint` sobre todo el repo esta en rojo por causa **ambiental**: un
+worktree de otra sesion en `.claude/worktrees/` le da dos candidatos a
+`tsconfigRootDir` a typescript-eslint, que se niega a elegir y falla el parseo de
+los 33 ficheros del repo tambien.
+
+**Sin push.** El merge esta en local.

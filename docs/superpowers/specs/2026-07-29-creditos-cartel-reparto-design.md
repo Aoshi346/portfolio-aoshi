@@ -1,9 +1,16 @@
 # "Con que construyo" como cartel de reparto — diseno
 
 Fecha: 2026-07-29
-Estado: aprobado en brainstorming, pendiente de plan de implementacion
+Estado: **IMPLEMENTADO y mergeado a `main`** (merge `5211743`, 29-jul-2026)
 Alcance: escena `[data-scene="credits"]` en el tema Vice
 Traspaso de origen: `.docs/HANDOFF-creditos-cartel.md`
+Plan de ejecucion: `docs/superpowers/plans/2026-07-29-creditos-cartel-reparto.md`
+(las ocho tareas cerradas; alli estan las divergencias respecto a lo planificado)
+
+> Este documento recoge el diseno tal como quedo, con dos enmiendas posteriores
+> al gate visual marcadas en su sitio: el reparto pasa de seis bloques a cuatro
+> (seccion 3.1) y el punto separador se mueve detras del nombre anterior
+> (seccion 4.3). Lo demas se implemento como estaba escrito.
 
 ---
 
