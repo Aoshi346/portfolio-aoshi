@@ -448,14 +448,22 @@
   display: none;
 }
 
+/*
+ * Encabezado de bloque del cartel. `display: block` es lo que fuerza el salto
+ * de renglon entre grupos: los nombres son `inline-block` y fluyen seguidos,
+ * asi que basta con que el encabezado sea de bloque para que cada grupo
+ * empiece en su propia linea. Sin envoltorios, que romperian el escalonado de
+ * `scene4Credits` (anima los hijos DIRECTOS de `[data-credit-roll]`).
+ */
 :root[data-theme="vice"] .credit-group-label {
   display: block;
-  margin-top: 1.1rem;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px solid var(--color-line);
-  font-weight: 700;
-  font-size: 0.6rem;
-  letter-spacing: 0.22em;
+  margin: 1.05rem 0 0.25rem;
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-family: var(--font-billing);
+  font-weight: 400;
+  font-size: 0.56rem;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--color-accent-legible);
 }
@@ -464,121 +472,245 @@
   margin-top: 0;
 }
 
-@media (min-width: 860px) {
-  /*
-   * Panel a toda la altura de la escena, no una caja pequena arriba a la
-   * derecha: era lo que dejaba medio plano vacio debajo. Lo que llena ese
-   * hueco no son mas efectos, sino contenido — el bloque "Aparece en".
-   */
-  :root[data-theme="vice"] .credits-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
-    align-items: stretch;
-    max-width: none;
-    gap: clamp(1.8rem, 4vw, 3.5rem);
-  }
+/*
+ * El cartel: una sola columna centrada. El rodillo pierde su scrim de tarjeta
+ * (fondo + radio + blur) porque un recuadro es justo lo que esta direccion
+ * elimina. Ese scrim nacio cuando el fondo era el fixture SMPTE de barras de
+ * color, donde "React" caia a 1.19:1; hoy el fondo es la bruma de `viceHaze`,
+ * que acota su brillo por shader. Remedido con `check_contrast_wcag` tras
+ * quitarlo — no se dio por hecho.
+ */
+:root[data-theme="vice"] .credits-grid {
+  display: block;
+  max-width: 880px;
+  margin-inline: auto;
+  text-align: center;
+}
 
-  /*
-   * Dos columnas, con el encabezado de grupo ocupando fila completa
-   * (`grid-column: 1 / -1`). Asi cada grupo empieza en su propia linea y el
-   * motor de rejilla reparte sus items debajo sin que haya que calcular
-   * cuantas filas ocupa cada uno: Frontend cae en 2x2, Backend en 2+1 y Otras
-   * herramientas en 2x2+1, y sigue funcionando si manana cambia el numero de
-   * entradas en `content.ts`.
-   */
-  :root[data-theme="vice"] .credits-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-content: start;
-    column-gap: 2rem;
-    padding: 1.4rem 1.6rem;
-  }
-
-  :root[data-theme="vice"] .credit-group-label {
-    grid-column: 1 / -1;
-    margin-top: 1.5rem;
-  }
-
-  :root[data-theme="vice"] .credit-group-label:first-child {
-    margin-top: 0;
-  }
-
-  :root[data-theme="vice"] .credit {
-    position: relative;
-    padding: 0.6rem 0;
-  }
-
-  /* El "+" tactil se ancla a la derecha de la fila. */
-  :root[data-theme="vice"] .credit::after {
-    position: absolute;
-    top: 50%;
-    right: 0;
-    margin-left: 0;
-    transform: translateY(-50%);
-  }
-
-  :root[data-theme="vice"] .credit-name {
-    font-size: 1.32rem;
-  }
-
-  :root[data-theme="vice"] .credits-panel {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 2rem 1.8rem;
-  }
-
-  :root[data-theme="vice"] .credits-icon {
-    width: 84px;
-    height: 84px;
-  }
-
-  :root[data-theme="vice"] .credits-panel-name {
-    margin-top: 1rem;
-    font-size: clamp(1.8rem, 2.4vw, 2.4rem);
-  }
+:root[data-theme="vice"] .credits-list {
+  display: block;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  backdrop-filter: none;
 }
 
 /*
- * Micro-interaccion de fila del rodillo (solo Vice): el credito se desplaza y
- * recibe un lavado de acento por la izquierda, como el foco de un proyector
- * deteniendose sobre el. El borde inferior y el "+" que ya existen en
- * style.css siguen siendo la afordancia principal; esto es refuerzo.
+ * El nucleo del cartel: los nombres dejan de ser filas y fluyen como palabras
+ * de un parrafo compuesto.
+ *
+ * `inline-block` y no `inline`: en movil el area pulsable de 44px se consigue
+ * subiendo el interlineado, y un `inline` puro no crece con el.
+ *
+ * Sin `scaleX`: Pathway Gothic One ya viene dibujada estrecha (medido, 215px
+ * contra 385px de system-ui en el mismo texto). El `scaleX(.88)` del mockup
+ * no condensa, aplasta — adelgaza los verticales y deja intactos los
+ * horizontales.
  */
 :root[data-theme="vice"] .credit {
-  transition:
-    border-color 200ms ease-out,
-    background 240ms ease-out;
+  display: inline-block;
+  width: auto;
+  min-height: 0;
+  padding: 0.28rem 0.1rem;
+  border-bottom: 0;
+  font-family: var(--font-billing);
+  font-size: clamp(1rem, 2.05vw, 1.55rem);
+  line-height: 1.24;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-paper);
+  transition: color 180ms ease-out;
 }
 
+/*
+ * El realce va por COLOR, nunca por `transform`: `.credit` recibe la entrada
+ * de `scene4Credits`, que le deja un transform inline de GSAP, y un estilo
+ * inline gana siempre a una regla de hoja. Ademas Pathway solo tiene un peso,
+ * asi que tampoco hay grosor al que recurrir.
+ */
 :root[data-theme="vice"] .credit:hover,
 :root[data-theme="vice"] .credit:focus-visible,
 :root[data-theme="vice"] .credit.is-active {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--color-accent) 13%, transparent) 0%,
-    transparent 68%
-  );
+  border-color: transparent;
+  background: none;
+  color: var(--color-accent);
+}
+
+/* Marcas que se escriben en minuscula: el cartel no las sube a versalita. */
+:root[data-theme="vice"] .credit[data-credit-verbatim],
+:root[data-theme="vice"] .credit[data-credit-verbatim] .credit-name {
+  text-transform: none;
 }
 
 /*
- * El desplazamiento va en los hijos, NO en `.credit`. La entrada de
- * `scene4Credits` deja un `transform` inline de GSAP sobre la fila, y un
- * estilo inline gana siempre a una regla de hoja: un `translateX` declarado
- * aqui sobre `.credit` no llegaria a aplicarse nunca. `.credit-role` y
- * `.credit-name` no los toca ninguna timeline, asi que ahi si manda el CSS.
+ * El nombre hereda del boton en vez de traer lo suyo. `.credit-name` fija
+ * `var(--font-display)` y `var(--display-weight)` en la base, y como esta en
+ * el hijo ganaba a la familia declarada arriba: el cartel salia compuesto en
+ * Passion One 900, no en la condensada. Se vio en la captura, no en las
+ * aserciones — `getComputedStyle(.credit).fontFamily` decia "Pathway" y era
+ * cierto, solo que quien pinta el texto es el span de dentro.
  */
-:root[data-theme="vice"] .credit-role,
 :root[data-theme="vice"] .credit-name {
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
 }
 
-:root[data-theme="vice"] .credit:hover .credit-role,
-:root[data-theme="vice"] .credit:hover .credit-name,
-:root[data-theme="vice"] .credit:focus-visible .credit-role,
-:root[data-theme="vice"] .credit:focus-visible .credit-name,
-:root[data-theme="vice"] .credit.is-active .credit-role,
-:root[data-theme="vice"] .credit.is-active .credit-name {
-  transform: translateX(6px);
+/*
+ * El punto separador sale de CSS, no de nodos: metido en el DOM seria un hijo
+ * directo mas de `[data-credit-roll]` y `scene4Credits` lo animaria como si
+ * fuera un credito, descuadrando el escalonado.
+ *
+ * `.credit + .credit` acierta solo: entre dos creditos seguidos hay punto, y
+ * tras un encabezado de grupo no, porque ahi el hermano previo no es
+ * `.credit`.
+ */
+:root[data-theme="vice"] .credit + .credit::before {
+  content: "·";
+  padding: 0 0.4rem;
+  color: color-mix(in srgb, var(--color-paper) 30%, transparent);
+}
+
+/* El "+" de afordancia de la base sobra: aqui la senal es el friso. */
+:root[data-theme="vice"] .credit::after {
+  content: none;
+}
+
+/*
+ * El panel no se elimina — los otros dos temas lo usan como ficha y
+ * `verify.py` valida ese re-skin — se le quita la caja y se le dejan ver solo
+ * los dos renglones del pie del cartel.
+ */
+:root[data-theme="vice"] .credits-panel {
+  display: block;
+  max-width: 760px;
+  margin: 1.6rem auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  text-align: center;
+  /* Altura reservada: el pie no puede cambiar de alto al cambiar de nombre. */
+  min-height: 66px;
+}
+
+:root[data-theme="vice"] .credits-icon,
+:root[data-theme="vice"] .credits-panel-name,
+:root[data-theme="vice"] .credits-panel-role {
+  display: none;
+}
+
+:root[data-theme="vice"] .credits-panel-detail {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+:root[data-theme="vice"] .credits-used {
+  display: block;
+  /*
+   * Altura reservada del renglon completo (etiqueta 13px + lista 29px +
+   * separacion), medido con el bloque lleno. Hace falta ADEMAS del
+   * `visibility` de abajo: cuando no hay proyectos, `credits.ts` vacia
+   * `credits-used-list`, y una lista sin hijos no aporta su renglon aunque el
+   * bloque siga ocupando sitio. Sin esto el pie pasaba de 82px a 66px.
+   */
+  min-height: 50px;
+  margin-top: 0.6rem;
+  padding: 0;
+  border: 0;
+  font-family: var(--font-billing);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/*
+ * Los proyectos son un renglon del cartel, no pildoras. La base les pone
+ * borde y radio para las pieles de interfaz de Hyprland y Caelestia; aqui un
+ * recuadro es justo lo que esta direccion elimina, asi que quedan como texto
+ * corrido separado por puntos, igual que los nombres de arriba.
+ */
+:root[data-theme="vice"] .credits-used-list {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+:root[data-theme="vice"] .credits-used-item {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+:root[data-theme="vice"] .credits-used-item + .credits-used-item::before {
+  content: "·";
+  padding: 0 0.35rem;
+  color: color-mix(in srgb, var(--color-paper) 34%, transparent);
+}
+
+:root[data-theme="vice"] .credits-used-label {
+  color: color-mix(in srgb, var(--color-paper) 45%, transparent);
+}
+
+/*
+ * Siete de las 23 tecnologias no aparecen en ningun proyecto publicado.
+ * `visibility` y no `display`: con `display: none` la altura colapsa y el
+ * cartel entero pega un salto al pasar de una tecnologia con proyecto a una
+ * sin el (medido: 82px contra 66px).
+ *
+ * El marcador es `data-credit-empty` y no el atributo `hidden` porque el
+ * preflight de Tailwind 4 declara `[hidden] { display: none !important }`: con
+ * eso puesto ningun tema puede elegir otra forma de ocultar. Se midio antes de
+ * cambiarlo — el `visibility` de esta regla entraba y el `display` no.
+ */
+:root[data-theme="vice"] .credits-used[data-credit-empty] {
+  display: block;
+  visibility: hidden;
+}
+
+/*
+ * El friso: donde un cartel de cine pone los logos de estudio y distribuidora.
+ */
+:root[data-theme="vice"] .credits-marks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  /*
+   * 1rem y no 1.2: con 23 marcas de 18px, 1.2rem sumaba 836px sobre un ancho
+   * util de 780 y dejaba dos huerfanas en una segunda fila. Medido.
+   */
+  gap: 1rem;
+  max-width: 820px;
+  margin: 1.75rem auto 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+:root[data-theme="vice"] .credits-mark {
+  width: 18px;
+  height: 18px;
+  color: var(--color-paper);
+  opacity: 0.26;
+  transition:
+    opacity 200ms ease-out,
+    color 200ms ease-out;
+}
+
+:root[data-theme="vice"] .credits-mark.is-active {
+  color: var(--color-accent);
+  opacity: 1;
 }
 
 /* ------------------------------------------------ Vice: carril de obra en horizontal */
@@ -845,20 +977,19 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /*
+   * El cartel ya no desplaza nada al pasar por encima — el realce es solo de
+   * color, que no necesita degradarse. Lo que queda por acotar aqui es la
+   * duracion de esa transicion de color y la del friso, mas los gestos del
+   * CTA de contacto, que si mueve caja.
+   */
   :root[data-theme="vice"] .credit,
-  :root[data-theme="vice"] .credit-role,
-  :root[data-theme="vice"] .credit-name,
+  :root[data-theme="vice"] .credits-mark,
   :root[data-theme="vice"] .contacto-mail,
   :root[data-theme="vice"] .contacto-mail::after {
-    transition: background 200ms ease-out;
+    transition: color 120ms ease-out;
   }
 
-  :root[data-theme="vice"] .credit:hover .credit-role,
-  :root[data-theme="vice"] .credit:hover .credit-name,
-  :root[data-theme="vice"] .credit:focus-visible .credit-role,
-  :root[data-theme="vice"] .credit:focus-visible .credit-name,
-  :root[data-theme="vice"] .credit.is-active .credit-role,
-  :root[data-theme="vice"] .credit.is-active .credit-name,
   :root[data-theme="vice"] .contacto-mail:hover,
   :root[data-theme="vice"] .contacto-mail:focus-visible,
   :root[data-theme="vice"] .contacto-mail:hover::after,

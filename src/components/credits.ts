@@ -130,6 +130,15 @@ export function createCredits(): HTMLElement {
       row.dataset.index = String(rows.length);
       row.setAttribute("aria-controls", PANEL_ID);
       row.setAttribute("aria-pressed", "false");
+      /*
+       * Marcas cuyo nombre se escribe en minuscula (n8n hoy) para que el
+       * cartel no las suba a versalita: "N8N" no es como se escribe la marca.
+       * La regla sale del dato, no de una lista de nombres a mano: si en
+       * `content.ts` esta todo en minuscula, es deliberado.
+       */
+      if (entry.name === entry.name.toLowerCase()) {
+        row.setAttribute("data-credit-verbatim", "");
+      }
 
       /*
        * Decorativa pura: `aria-hidden` la saca del arbol de accesibilidad
@@ -158,9 +167,22 @@ export function createCredits(): HTMLElement {
         usedList.replaceChildren(
           ...entry.usedIn.map((title) => el("span", "credits-used-item", [title])),
         );
-        // Sin proyectos publicados, la seccion desaparece entera en vez de
-        // mostrar una etiqueta vacia o una excusa.
-        used.hidden = entry.usedIn.length === 0;
+        /*
+         * Sin proyectos publicados el bloque no se muestra, pero COMO se deja
+         * de mostrar lo decide cada tema, no este componente: Hyprland y
+         * Caelestia lo quitan del flujo, y Vice solo lo hace invisible para
+         * que el pie del cartel no cambie de altura.
+         *
+         * Por eso un `data-` y no el atributo `hidden`: el preflight de
+         * Tailwind 4 declara `[hidden] { display: none !important }`, y con
+         * eso puesto ningun tema puede elegir otra forma de ocultarlo — se
+         * midio, el `visibility` entraba y el `display` no. `aria-hidden`
+         * cubre lo que cubria `hidden`: el bloque vacio sale del arbol de
+         * accesibilidad y el panel `aria-live` no lo anuncia.
+         */
+        const vacio = entry.usedIn.length === 0;
+        used.toggleAttribute("data-credit-empty", vacio);
+        used.setAttribute("aria-hidden", String(vacio));
         // La marca encendida es una segunda senal de seleccion que no depende
         // del hover: en tactil no lo hay, y el cartel no tiene recuadros ni
         // bordes que delaten que un nombre responde.

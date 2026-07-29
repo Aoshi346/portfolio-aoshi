@@ -1054,7 +1054,14 @@ body {
   border-top: 1px solid var(--color-line);
 }
 
-.credits-used[hidden] {
+/*
+ * El bloque vacio se retira del flujo en Hyprland y Caelestia. Vice lo
+ * sobreescribe para dejarlo invisible pero ocupando sitio: ver themes.css.
+ * Se marca con `data-credit-empty` y no con `hidden` porque el preflight de
+ * Tailwind 4 fuerza `[hidden] { display: none !important }` y eso le quitaria
+ * a los temas la posibilidad de elegir.
+ */
+.credits-used[data-credit-empty] {
   display: none;
 }
 
