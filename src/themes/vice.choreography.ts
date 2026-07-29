@@ -382,104 +382,224 @@ function sceneIntro(gsap: Gsap): void {
 }
 
 /** Ids fijos de los ScrollTrigger del gesto 2: permiten matarlos si la funcion se re-ejecuta. */
-const ABOUT_TRIGGER_IDS = [
-  "vice-about-card",
-  "vice-about-lines",
-  "vice-about-stats",
-  "vice-about-track",
-  "vice-about-parallax",
-];
+const ABOUT_TRIGGER_IDS = ["vice-about-head", "vice-about-pairs"];
 
-/** Gesto 2 — Subtitulado: la ficha entra y las lineas suben encadenadas. */
+/**
+ * Las dos timelines del gesto 2, a nivel de modulo. Matar el ScrollTrigger por
+ * id no mata la timeline que lo lleva colgado, y esta parte spans de caracteres
+ * con `splitChars`: si `scene2Card` se re-ejecutara, la timeline vieja seguiria
+ * corriendo sobre nodos que el nuevo `splitChars` ya ha destruido. Mismo motivo
+ * y mismo patron que `introTimeline` en el gesto 1.
+ */
+let aboutTimelines: ReturnType<Gsap["timeline"]>[] = [];
+
+/**
+ * Gesto 2 — Afirmacion y prueba.
+ *
+ * Spec: docs/superpowers/specs/2026-07-29-about-afirmacion-prueba-design.md
+ *
+ * Cuatro cosas cambian respecto de la version anterior, y las cuatro salen de
+ * un defecto medido:
+ *
+ * 1. NINGUN trigger se ancla a `[data-scene]`. A 1440x900, 202,5px de esa caja
+ *    son padding de tema (`themes.css`) y la seccion es `min-h-screen
+ *    justify-center`, asi que el primer pixel util caia en 924px — 24px POR
+ *    DEBAJO del pliegue. Con `start: "top 78%"` los delays de 0,35s y 0,5s se
+ *    gastaban con el bloque fuera de pantalla: el usuario veia el fotograma
+ *    final, no el gesto. Y el desplazamiento variaba con el alto del
+ *    contenido, o sea que el ancla estaba calibrada contra algo que se mueve.
+ *    Cada timeline se ancla ahora a su primer nodo de contenido.
+ * 2. Timelines, no tweens sueltos con `delay`. Con cuatro tweens
+ *    independientes la reversa colapsaba simultanea en vez de ser el inverso
+ *    del montaje: el `delay` se consume al final del recorrido inverso.
+ * 3. Cero `gsap.from`. Deduce un extremo leyendo el estado de reposo del DOM, y
+ *    este rediseno cambia ese estado de reposo (el conector reposa al 22%).
+ * 4. El parallax de la ficha muere. ~1800px de scroll invalidando un
+ *    `backdrop-filter: blur(6px)` encima del canvas WebGL cada frame, a cambio
+ *    de 39px de recorrido total imperceptible.
+ */
 function scene2Card(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElement): void {
   const about = root.querySelector<HTMLElement>('[data-scene="about"]');
   if (!about) return;
 
   // Defensivo, igual que en `scene1Title`: si esta funcion se llamara dos
-  // veces no dejar triggers huerfanos ni relleno de pin duplicado.
+  // veces no dejar triggers ni timelines huerfanas acumulandose.
   for (const id of ABOUT_TRIGGER_IDS) ScrollTrigger.getById(id)?.kill();
+  for (const timeline of aboutTimelines) timeline.kill();
+  aboutTimelines = [];
 
-  const base = { trigger: about, start: "top 78%", toggleActions: "play none none reverse" } as const;
-  const card = about.querySelector<HTMLElement>("[data-card]");
-  const lines = Array.from(about.querySelectorAll<HTMLElement>("[data-line] > *"));
-  const stats = about.querySelector<HTMLElement>("[data-stats]");
-  const track = about.querySelector<HTMLElement>("[data-track]");
+  const head = about.querySelector<HTMLElement>(".about-head");
+  const pairs = about.querySelector<HTMLElement>("[data-focus-pairs]");
 
-  if (card) {
+  if (head) {
     /*
-     * Parallax de la ficha mientras la escena cruza el encuadre: se separa en
-     * profundidad del bloque de texto, que va quieto. Anima `yPercent` con
-     * scrub mientras la entrada de abajo anima `x`/`scale`/`clipPath`:
-     * propiedades distintas, asi que las dos timelines no se pisan sobre el
-     * mismo nodo (mismo patron ya validado en la galeria de obra).
+     * T1 — la cabecera. `start: "top 86%"` deja ~126px de contenido visible al
+     * disparar: espacio para que el retrato (188px) acabe de entrar antes de
+     * que el nombre termine de subir.
      */
-    gsap.fromTo(
-      card,
-      { yPercent: -5 },
-      {
-        yPercent: 5,
-        ease: "none",
-        scrollTrigger: {
-          id: ABOUT_TRIGGER_IDS[4],
-          trigger: about,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 0.9,
-        },
-      },
+    const portrait = head.querySelector<HTMLElement>("[data-portrait]");
+    const chip = head.querySelector<HTMLElement>(".about-status");
+    // El par "Estudia" esta oculto en Vice: incluirlo desbarataria el escalonado
+    // (cuatro tiempos para tres datos visibles) sin que se vea nada moverse.
+    const meta = Array.from(
+      head.querySelectorAll<HTMLElement>('.about-facts dd:not([data-fact="estudia"])'),
     );
-    // La ficha entra como una carta que se posa: viene de la izquierda, algo
-    // mas pequena y con el clip abierto desde arriba.
-    gsap.from(card, {
-      x: -34,
-      scale: 0.96,
-      opacity: 0,
-      clipPath: "inset(0 0 22% 0)",
-      duration: 0.9,
-      ease: "power3.out",
-      scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[0] },
+    const lead = about.querySelector<HTMLElement>('[data-line="lead"] > *');
+    // Las dos lineas del nombre se parten por separado para que cada una siga
+    // siendo una linea: `splitChars` agrupa por palabra, no reflowea el bloque.
+    const chars = Array.from(
+      head.querySelectorAll<HTMLElement>(".about-name-first, .about-name-rest"),
+    ).flatMap((line) => splitChars(line));
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        id: ABOUT_TRIGGER_IDS[0],
+        trigger: head,
+        start: "top 86%",
+        toggleActions: "play none none reverse",
+      },
     });
+    aboutTimelines.push(tl);
+
+    if (portrait) {
+      // El retrato se revela desde arriba, no se desliza: es una foto que
+      // aparece, y el `clipPath` recorta tambien la capa de duotono (por eso el
+      // tween va en el envoltorio y no en el `<img>`).
+      tl.fromTo(
+        portrait,
+        { scale: 0.9, opacity: 0, clipPath: "inset(0 0 20% 0)" },
+        { scale: 1, opacity: 1, clipPath: "inset(0 0 0% 0)", duration: 0.52, ease: "power3.out" },
+        0,
+      );
+    }
+    if (chars.length > 0) {
+      tl.fromTo(
+        chars,
+        { yPercent: 118, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.72, ease: "power3.out", stagger: 0.028 },
+        0.06,
+      );
+    }
+    if (chip) {
+      tl.fromTo(
+        chip,
+        { y: 12, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" },
+        0.4,
+      );
+    }
+    if (meta.length > 0) {
+      tl.fromTo(
+        meta,
+        { y: 10, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.4, ease: "power2.out", stagger: 0.05 },
+        0.44,
+      );
+    }
+    if (lead) {
+      tl.fromTo(
+        lead,
+        { yPercent: 105, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.62, ease: "power3.out" },
+        0.56,
+      );
+    }
   }
-  gsap.from(lines, {
-    yPercent: 105,
-    opacity: 0,
-    duration: 0.85,
-    ease: "power3.out",
-    stagger: 0.12,
-    scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[1] },
-  });
-  /*
-   * Cifras y trayectoria entran POR ELEMENTO, no como bloque: animar el
-   * contenedor entero mueve una masa de texto de golpe y el ojo no sabe donde
-   * mirar. Escalonadas, la lectura va de izquierda a derecha (cifras) y de
-   * arriba abajo (items), que es el orden en que se leen igualmente.
-   *
-   * Fallback al contenedor si no hubiera hijos: `gsap.from` con un array vacio
-   * es un no-op silencioso y la franja se quedaria sin entrada.
-   */
-  if (stats) {
-    const figures = Array.from(stats.children);
-    gsap.from(figures.length > 0 ? figures : stats, {
-      y: 22,
-      opacity: 0,
-      duration: 0.7,
-      ease: "power3.out",
-      stagger: 0.09,
-      delay: 0.35,
-      scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[2] },
+
+  if (pairs) {
+    /*
+     * T2 — el bloque firma. Se ancla al bloque, no a la seccion, por lo mismo
+     * que T1: cuando este trigger dispara, las parejas estan a ~108px del
+     * pliegue y el escalonado se ve entero.
+     */
+    const rule = pairs.querySelector<HTMLElement>("[data-pairs-rule]");
+    const claims = Array.from(pairs.querySelectorAll<HTMLElement>("[data-claim]"));
+    const links = Array.from(pairs.querySelectorAll<HTMLElement>("[data-link]"));
+    const proofs = Array.from(pairs.querySelectorAll<HTMLElement>("[data-proof]"));
+    const footItems = Array.from(
+      about.querySelectorAll<HTMLElement>(
+        '[data-track-col="path"] .about-h, [data-track-col="path"] .about-item',
+      ),
+    );
+    const note = about.querySelector<HTMLElement>('[data-line="note"] > *');
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        id: ABOUT_TRIGGER_IDS[1],
+        trigger: pairs,
+        start: "top 88%",
+        toggleActions: "play none none reverse",
+      },
     });
-  }
-  if (track) {
-    const items = Array.from(track.querySelectorAll<HTMLElement>(".about-item, .about-h"));
-    gsap.from(items.length > 0 ? items : track, {
-      y: 20,
-      opacity: 0,
-      duration: 0.7,
-      ease: "power2.out",
-      stagger: 0.06,
-      delay: 0.5,
-      scrollTrigger: { ...base, id: ABOUT_TRIGGER_IDS[3] },
-    });
+    aboutTimelines.push(tl);
+
+    if (rule) {
+      // `transformOrigin` explicito en todos los `scaleX` de este gesto: GSAP
+      // lee el valor computado si no se le dice, y el default del navegador es
+      // el centro — la regla se abriria desde el medio hacia los dos lados.
+      tl.fromTo(
+        rule,
+        { scaleX: 0 },
+        { scaleX: 1, transformOrigin: "0% 50%", duration: 0.5, ease: "power2.inOut" },
+        0,
+      );
+    }
+    if (claims.length > 0) {
+      tl.fromTo(
+        claims,
+        { x: -14, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.42, ease: "power2.out", stagger: 0.09 },
+        0.14,
+      );
+    }
+    if (links.length > 0) {
+      /*
+       * El conector entra a `scaleX: 1` de SU ENVOLTORIO, que multiplica el
+       * 0.22 que el CSS mantiene en `.about-ln`: el resultado visible es el 22%,
+       * que es el reposo del elemento firma y el punto de partida del hover. El
+       * reparto en dos nodos no es adorno — un transform inline de GSAP gana
+       * siempre a una regla CSS, asi que si la timeline escribiera el mismo
+       * nodo que el hover, el hover se quedaria sin recorrido.
+       */
+      tl.fromTo(
+        links,
+        { scaleX: 0 },
+        { scaleX: 1, transformOrigin: "0% 50%", duration: 0.36, ease: "power2.out", stagger: 0.09 },
+        0.22,
+      );
+    }
+    if (proofs.length > 0) {
+      /*
+       * La prueba entra como un bloque: el detalle (`description`) NO lleva
+       * tween propio. Se lo sumaria al `x` del padre y entraria desde -32px
+       * mientras los demas entran desde -16px. No rompe, pero se ve.
+       */
+      tl.fromTo(
+        proofs,
+        { x: 16, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.42, ease: "power2.out", stagger: 0.09 },
+        0.26,
+      );
+    }
+    if (footItems.length > 0) {
+      // Por elemento y no como bloque: mover una masa de texto de golpe deja al
+      // ojo sin saber donde mirar. Escalonado, la lectura va de arriba abajo,
+      // que es el orden en que se lee igualmente.
+      tl.fromTo(
+        footItems,
+        { x: -18, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.42, ease: "power2.out", stagger: 0.045 },
+        0.62,
+      );
+    }
+    if (note) {
+      tl.fromTo(
+        note,
+        { yPercent: 105, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.62, ease: "power3.out" },
+        0.78,
+      );
+    }
   }
 }
 

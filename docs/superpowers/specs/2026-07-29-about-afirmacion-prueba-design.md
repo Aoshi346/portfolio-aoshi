@@ -449,3 +449,104 @@ Ninguna bloquea la implementacion.
 
 TypeScript strict, cero `any`, cero emojis. Comentarios en espanol **sin tildes**, densos,
 que expliquen POR QUE y no QUE, y que incluyan la medicion que motivo la decision.
+
+---
+
+## Registro de implementacion
+
+Anadido despues de implementar y de pasar el gate de QA. **Lo de arriba es el spec tal
+como se aprobo; lo de aqui es en que se desvio la realidad y por que.** Si los dos se
+contradicen, manda esta seccion.
+
+Implementado en `design/about-afirmacion-prueba` (worktree aparte, como pedia el spec).
+Gate: `lidia-naive-tester` 7,4 ("Algo Claro", contactaria con reservas) y
+`vera-art-director` 6,65 sobre un umbral de 7,5 (BLOCK). Los hallazgos que bloqueaban se
+arreglaron y se re-midieron; el gate NO se ha vuelto a pasar sobre la version corregida.
+
+### Desviaciones respecto del spec
+
+| punto del spec | lo que se hizo | por que |
+|---|---|---|
+| `education[0]` vive en la prueba 3 **y** en el pie | se oculta del pie (`data-item="education"`) | montada la escena, el grado y la universidad se leian dos veces en el mismo encuadre, a 300px. Era el defecto #7 del diagnostico reapareciendo — el spec se contradecia a si mismo |
+| rotulo "En que me enfoco" se conserva | pasa a "Que hago · con que lo respaldo" | el naive test: no describia lo que encabeza, sonaba heredado |
+| nota "Cada afirmacion, con lo que la sostiene" bajo el rotulo | **eliminada** | era el texto menos legible de la seccion (10,88px, peso 300, opacidad 0,55; no se leia en movil). El rotulo nuevo hace su trabajo |
+| prueba 2 = `focusAreas[1].detail` | cifra + stack real (`skillGroups`) | `detail` parafraseaba su propio titulo: no probaba, repetia. El stack aporta un hecho nuevo y ademas es el dato por el que filtra una reclutadora |
+| el tween del conector acaba en `scaleX: 0.22` | el tween lleva el ENVOLTORIO a 1 y el CSS mantiene el hijo en 0.22 | un transform inline de GSAP gana siempre a una regla CSS. Con los dos en el mismo nodo, el hover se quedaba sin recorrido. Los dos `scaleX` se multiplican, asi que lo visible sigue siendo el 22% |
+| la ficha conserva superficie y el blur se cachea | pierde borde, fondo y `backdrop-filter` | es un encabezado, no una tarjeta. Muerto el parallax, no hay nada que difuminar |
+| grano SVG al 16% en `mix-blend-mode: overlay` | **eliminado** | medido: desviacion tipica 0,77 y 1,14 sobre 255 (0,4% de modulacion). `overlay` sobre luminancia del 8% es casi la identidad. Costaba una capa compuesta a pantalla completa que fuerza stacking context sobre el canvas WebGL |
+| movil: afirmacion en Pathway Gothic 1,15rem | 1,5rem, y el titular de la prueba pasa a paper | a 1,15rem contra un titular ambar, el ambar ganaba: la prueba se leia antes que la afirmacion y la tesis de la seccion quedaba invertida en el viewport mayoritario |
+| hover: prueba y titular pasan los dos a `--color-paper` | el titular conserva el ambar; solo sube el detalle | la fila enfocada era la unica NO dorada entre dos vecinas doradas. Enfocar la hacia retroceder |
+| sin tope de medida (escena a sangre) | `max-width: 1180px` en `.about-grid` | 596px vacios a 1440 (44% del ancho util) y 1206px a 1920 (65%), con la mitad superior en medida corta y la inferior a sangre. Decision del usuario entre tres opciones |
+| altura estimada ~688px | **1210px medidos** | la estimacion se quedo corta en un 76%. Sigue siendo escena de dos pantallas, que era la decision; pero el presupuesto de altura del spec no sirve como referencia |
+
+### Anadidos que el spec no contemplaba
+
+Salieron del gate de QA y ninguno estaba previsto:
+
+1. **La afirmacion se alinea a la derecha desde 860px.** Es el arreglo del unico P0. El
+   spec cuidaba la longitud del conector (0.22) y el problema era su ORIGEN: con la
+   afirmacion en bandera izquierda habia 279, 192 y 180px de su ultima letra al munon, y
+   solo 80px constantes del munon a la prueba. Opticamente el conector pertenecia a la
+   prueba y la direccion de la relacion quedaba invertida justo en el estado que mas
+   tiempo se ve. Alineada a la derecha: 16px en las tres y eje vertical comun.
+2. **`align-items: baseline` en la pareja, no `center`.** Centrar centraba el BLOQUE de la
+   prueba, no su primera linea, asi que el conector apuntaba a la descripcion con un
+   desfase que variaba con el numero de lineas (15/11/11px medidos). Con linea de base, 1px
+   y deja de depender del contenido.
+3. **Contorno en `em` (0.028em)**, no en px. Como fraccion del em iba del 1,63% al 4,17%
+   segun el breakpoint: un rango de 2,6x para un motivo declarado UNICO, y se veia.
+4. **Seis escalones tipograficos de verdad.** El spec declaraba cinco y salieron diez,
+   porque estaban escritos como decimales rem inventados uno a uno. Fuera 15,04 / 12,48 /
+   10,88, que estaban a menos del 3% de su vecino.
+5. **Columna del conector a 88px desde 860**, no desde 1024: quedaba una banda de 164px de
+   viewports con el munon a 14,08px, que es el defecto que el comentario del codigo decia
+   haber arreglado.
+6. **Movil:** el trazo acaba EN la prueba y el rombo aterriza sobre su titulo (desfase 0
+   medido) en vez de colgar al final de la descripcion apuntando a nada; y la nota va
+   despues de "Trayectoria" (`order`), con zona de seguridad para el sello de tema, con el
+   que solapaba 2,7px.
+7. **Cabecera apilada por debajo de 640px.** Con el retrato al lado, el nombre se quedaba
+   con 230px y "BLANCO SANZ" a 2,5rem mide 245: se salia.
+8. **Duotono con particion casi neta** (25% / 62%). Con las paradas en los extremos, el
+   centro de la cara caia en hue 11 sat 0,73 —el naranja turbio de la mezcla— justo donde
+   va el ojo.
+9. **`<img>` declara 150x188**, no 50x50: se pintaba a 188px y el layout saltaba al cargar.
+
+### Bugs propios cazados verificando, no leyendo
+
+Los tres se vieron en captura o en medida, ninguno leyendo el codigo:
+
+- `.about-head-main` se quedaba en el `display: contents` de la regla base, asi que sus
+  tres hijos se convertian en celdas de la rejilla de la cabecera: el chip y la fila de
+  meta caian en la **columna del retrato**.
+- El tope de 96px del retrato y su override de 640px tenian la misma especificidad, asi
+  que ganaba el ultimo del fichero y el retrato media 96px tambien a 1440. Reatado a
+  `max-width: 639px` para que el orden deje de importar.
+- Una comprobacion ad-hoc con `window.scrollTo` dio por reales dos fallos de cromo que no
+  existian. Con rueda simulada pasan. **Nunca medir scroll en este repo sin replicar
+  `_scroll_to_and_settle()`.**
+
+### Efecto colateral en el arnes
+
+Al crecer about, el documento paso de ~12000 a 12414px y dos aserciones de cromo empezaron
+a fallar. No era una regresion: la muestra al 45% usaba `scrollTo` crudo mas 1200ms fijos
+justo despues de una tanda de rueda simulada — la desincronizacion de Lenis que documenta
+el docstring de `_scroll_to_and_settle`. Latente desde antes; solo hacia falta un documento
+algo mas largo para cruzar el limite. Corregido en `scripts/verify.py` (commit aparte).
+
+### Decisiones abiertas, al cierre
+
+1. ~~La tercera pareja~~ — **resuelta**: se queda con `identity.role` como afirmacion y la
+   carrera como prueba. Es la unica reaparicion aceptada del plano.
+2. **El chip de disponibilidad como enlace a contacto** — sigue abierta, sin resolver. Es
+   decision de producto.
+3. **NUEVA: `.about-pair` no es enfocable**, asi que el elemento firma de la seccion no
+   existe para teclado ni para tactil. Lo marcaron los DOS criticos. El spec lo decidio a
+   proposito (el hover no revela ningun dato que no este impreso, y la auditoria confirma
+   que no es violacion WCAG), pero conviene saber que para una parte grande del publico el
+   conector es solo una raya. Reconsiderarlo va junto con la decision 2: las dos meten la
+   seccion en el orden de tabulacion por primera vez.
+4. **NUEVA, fuera del alcance de este encargo:** el sitio no tiene navegacion ni un solo
+   enlace en "Quien es", y hay ~8600px de scroll hasta el `mailto:`. Es el hallazgo que el
+   naive test puso por encima de todo: "me convenciste y no me dejaste actuar". No es un
+   defecto de esta seccion, pero se resuelve o no se resuelve fuera de ella.

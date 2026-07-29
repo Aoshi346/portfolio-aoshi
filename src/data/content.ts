@@ -74,11 +74,6 @@ export const education: Education[] = [
     institution: "Universidad Santa María",
     period: "2021 — presente (10.º semestre)",
   },
-  {
-    degree: "100 Days of Code: Python Pro Bootcamp",
-    institution: "Udemy — Dra. Angela Yu",
-    period: "En curso",
-  },
 ];
 
 export interface Experience {

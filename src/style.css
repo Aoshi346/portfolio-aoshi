@@ -618,15 +618,21 @@ body {
   }
 }
 
+/*
+ * El color del pulso sale de `--blip-color` y no de `--color-accent` a pelo:
+ * en Vice el chip de disponibilidad es magenta (lo que esta vivo AHORA) y el
+ * ambar queda reservado para lo medido y cerrado. Sin la indireccion habria
+ * que duplicar el keyframe entero solo para cambiar un token.
+ */
 @keyframes about-blip {
   0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 50%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--blip-color, var(--color-accent)) 50%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-accent) 0%, transparent);
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--blip-color, var(--color-accent)) 0%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--blip-color, var(--color-accent)) 0%, transparent);
   }
 }
 
@@ -756,6 +762,27 @@ body {
   font-weight: 300;
   font-size: 0.69rem;
   color: color-mix(in srgb, var(--color-paper) 78%, transparent);
+}
+
+/*
+ * Envoltorio de la columna de texto de la cabecera (ver about.ts). `contents`
+ * devuelve nombre, estado y ficha al flujo de bloque de `.about-card`: para
+ * Hyprland y Caelestia es como si el div no existiera. Vice lo convierte en
+ * caja para maquetar la cabecera a dos columnas.
+ */
+.about-head-main,
+.about-portrait {
+  display: contents;
+}
+
+/*
+ * Bloque de afirmacion y prueba: patron aditivo estricto. Viaja en el DOM de
+ * los tres temas y solo Vice lo enciende (themes.css). Oculto aqui, en la
+ * regla base y menos especifica, para que anadirlo no pueda alterar el layout
+ * de las dos pieles de interfaz ni por un frame.
+ */
+.about-pairs {
+  display: none;
 }
 
 /*
