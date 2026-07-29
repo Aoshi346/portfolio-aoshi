@@ -15,6 +15,8 @@ flag.
 """
 import argparse
 import hashlib
+import json
+import re
 import sys
 from io import BytesIO
 from pathlib import Path
@@ -150,6 +152,163 @@ def check_gallery_placeholder(page) -> None:
         f"galeria: ninguna imagen cae al fallback de placeholder "
         f'("Imagen pendiente" visible en {broken}/{total})',
     )
+
+
+# --------------------------------------------------------------------------
+# Deriva de la documentacion: las instrucciones afirman hechos sobre el codigo
+# (rutas, dependencias, binarios) y nada los verificaba nunca. El 29-jul-2026
+# se encontro que CINCO ficheros daban Three.js como stack y citaban
+# `src/three/*`, que no existe y jamas fue dependencia; el aviso llevaba cinco
+# dias anotado en un plan sin aplicarse. Peor: el snippet de `verification.md`
+# — el gate de DONE — apuntaba a /usr/bin/chromium-browser, que no existe en
+# esta maquina, asi que fallaba en el acto.
+#
+# Esta comprobacion caza esa clase entera: referencias que ya no resuelven.
+# NO caza deriva semantica (que el design system citado sea de otro proyecto,
+# por ejemplo); para eso hace falta revision humana.
+# --------------------------------------------------------------------------
+
+# Solo ficheros que describen ESTE proyecto. `speckit-workflow.md` y
+# `loop-workflow.md` quedan fuera a proposito: son plantillas genericas con
+# rutas de ejemplo (`backend/apps/[mod]`) que darian ruido en cada corrida.
+DOC_FILES = [
+    "CLAUDE.md",
+    ".claude/CLAUDE.md",
+    ".claude/rules/code-style.md",
+    ".claude/rules/verification.md",
+    ".claude/rules/security.md",
+    "MEMORY.md",
+    ".docs/CURSOR-VICE.md",
+]
+
+# Prefijos de rutas absolutas del sistema cuya existencia se comprueba.
+# El fallo original — /usr/bin/chromium-browser en el snippet del gate de
+# DONE — se escapaba de una version anterior de esta regla que exigia un punto
+# en el nombre del fichero, y "chromium-browser" no lo tiene.
+SYSTEM_PATH_PREFIXES = ("/usr/", "/bin/", "/opt/", "/etc/", "/var/", "/srv/", "/home/")
+
+# Prefijos que se consideran rutas del repo y deben resolver.
+DOC_PATH_PREFIXES = ("src/", "scripts/", "public/", "docs/", ".docs/", ".ai/", ".claude/")
+
+# Termino que aparece en la doc -> paquete que tendria que estar en package.json.
+# Si el termino aparece SIN negacion y el paquete no esta instalado, es deriva.
+DOC_DEPENDENCY_TERMS = {
+    "three.js": "three",
+    "react": "react",
+    "vue": "vue",
+    "svelte": "svelte",
+    "next.js": "next",
+    "gsap": "gsap",
+    "lenis": "lenis",
+}
+
+# Una linea que niega el termino no es una afirmacion falsa: "sin Three.js" o
+# "no Three.js" es justo lo que queremos que la doc diga.
+DOC_NEGATIONS = ("sin ", "no ", "nunca", "obsolet", "ya no", "jamas", "en vez de", "NO ")
+
+
+def _doc_paragraphs(text: str) -> list[str]:
+    """
+    El texto partido en parrafos de markdown (bloques separados por linea en
+    blanco), en el mismo orden.
+
+    La negacion se evalua sobre el PARRAFO y no sobre la linea porque una frase
+    con salto de linea duro se reparte entre varias lineas y la negacion cae en
+    otra que el termino. Caso real que dejaba el gate en rojo permanente
+    (29-jul-2026): esta misma regla, en `.claude/rules/verification.md`, cuenta
+    el fallo historico nombrando "Three.js" y `src/three/*` al final de una
+    linea y aclarando "que no existe y nunca fue dependencia" en la siguiente.
+    Con la ventana de una linea el arnes se acusaba a si mismo.
+
+    El coste esta medido y aceptado: un parrafo que niegue una cosa y afirme
+    otra falsa en la misma respiracion se escapa. Se elige asi porque un gate
+    que falla siempre no se lee — y ese modo de fallo ya se pago una vez.
+    """
+    return re.split(r"\n\s*\n", text)
+
+
+def _doc_citations(text: str) -> list[str]:
+    """Todo lo citado entre acentos graves, sin puntuacion de cierre."""
+    out = []
+    for raw in re.findall(r"`([^`\n]+)`", text):
+        token = raw.strip().rstrip(".,;:)").strip()
+        if token:
+            out.append(token)
+    return out
+
+
+def check_docs_references() -> None:
+    """Falla si la documentacion cita rutas, binarios o dependencias inexistentes."""
+    print("[docs] referencias de la documentacion")
+
+    pkg_path = REPO_ROOT / "package.json"
+    installed: set[str] = set()
+    if pkg_path.exists():
+        pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
+        installed = set(pkg.get("dependencies", {})) | set(pkg.get("devDependencies", {}))
+
+    bad_paths: list[str] = []
+    bad_bins: list[str] = []
+    bad_deps: list[str] = []
+
+    for rel in DOC_FILES:
+        doc = REPO_ROOT / rel
+        if not doc.exists():
+            # No es fallo: varios de estos estan en .gitignore y pueden no
+            # existir en un clon limpio.
+            continue
+        text = doc.read_text(encoding="utf-8")
+
+        for parrafo in _doc_paragraphs(text):
+            negado = any(neg.lower() in parrafo.lower() for neg in DOC_NEGATIONS)
+
+            for token in _doc_citations(parrafo):
+                # Placeholders de plantilla: `src/sections/[nombre].ts`, `${VAR}`.
+                if any(ch in token for ch in "[]<>${}"):
+                    continue
+
+                if token.startswith(DOC_PATH_PREFIXES):
+                    # Una ruta citada dentro de una frase que la niega ("`src/three/*`,
+                    # que no existe") es documentacion correcta del fallo, no el fallo.
+                    if negado:
+                        continue
+                    target = token.rstrip("/")
+                    if "*" in target:
+                        if not list(REPO_ROOT.glob(target)):
+                            bad_paths.append(f"{rel} -> {token}")
+                    elif not (REPO_ROOT / target).exists():
+                        bad_paths.append(f"{rel} -> {token}")
+
+                elif token.startswith(SYSTEM_PATH_PREFIXES) and " " not in token:
+                    # Ruta absoluta a un binario o fichero del sistema. Se exige el
+                    # prefijo para no confundirla con un slash-command (`/dream`) ni
+                    # con una ruta servida por HTTP (`/files/...`).
+                    #
+                    # Los binarios NO llevan escape de negacion: el fallo original
+                    # era justo un snippet que apuntaba a /usr/bin/chromium-browser
+                    # y lo rodeaba de prosa explicativa. Aqui interesa que exista.
+                    if not Path(token).exists():
+                        bad_bins.append(f"{rel} -> {token}")
+
+        for term, package in DOC_DEPENDENCY_TERMS.items():
+            if package in installed:
+                continue
+            # Palabra completa, no subcadena: "vue" hacia match dentro de
+            # "vuelve" y "react" dentro de cualquier palabra que lo contenga.
+            pattern = re.compile(r"(?<![\w.])" + re.escape(term) + r"(?![\w])", re.IGNORECASE)
+            if not pattern.search(text):
+                continue
+            for parrafo in _doc_paragraphs(text):
+                if not pattern.search(parrafo):
+                    continue
+                if any(neg.lower() in parrafo.lower() for neg in DOC_NEGATIONS):
+                    continue
+                bad_deps.append(f"{rel} -> '{term}' pero '{package}' no esta en package.json")
+                break
+
+    check(not bad_paths, f"la doc no cita rutas inexistentes ({bad_paths[:3]})")
+    check(not bad_bins, f"la doc no cita binarios inexistentes ({bad_bins[:3]})")
+    check(not bad_deps, f"la doc no cita dependencias no instaladas ({bad_deps[:3]})")
 
 
 def check(condition: bool, label: str) -> None:
@@ -831,6 +990,9 @@ def run(
     global failures
     failures = []
 
+    # Estatica: no necesita navegador ni servidor.
+    check_docs_references()
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, executable_path=CHROME, args=ARGS)
         page = None
@@ -929,25 +1091,33 @@ def run(
             check_theme_identity(page, theme)
 
             if theme == "vice":
+                # El backdrop de Vice ya no es video+poster: es la bruma
+                # generativa de `src/backgrounds/viceHaze.ts`, un canvas WebGL
+                # como el de los otros dos temas. El cambio fue deliberado —
+                # el video servia el fixture SMPTE, cuyas franjas de color
+                # primario obligaban a tapar hero y contacto con un scrim casi
+                # opaco para poder medir contraste. Con la bruma (brillo
+                # acotado en el propio shader) el scrim desaparecio; lo que
+                # este gate vigila ahora es que el canvas exista y pinte.
                 backdrop = page.evaluate("""(() => {
                   const host = document.querySelector('.bg-theme');
                   if (!host) return null;
-                  const img = host.querySelector('img');
-                  const video = host.querySelector('video');
+                  const canvas = host.querySelector('canvas');
                   return {
-                    poster: !!img,
-                    video: !!video,
-                    playing: video ? !video.paused : false,
+                    canvas: !!canvas,
+                    painted: canvas ? canvas.width > 0 && canvas.height > 0 : false,
+                    legacyMedia: !!host.querySelector('img, video'),
                   };
                 })()""")
-                check(backdrop is not None and backdrop["poster"], "hay poster en el backdrop")
-                # Con reduced-motion, `shouldLoadVideo()` (cinematicBackdrop.ts)
-                # decide a proposito NO cargar el video: la asercion de arriba
-                # ("sin video con reduced-motion") ya cubre ese caso. Comprobar
-                # aqui tambien que SI hay video contradiria esa degradacion.
-                if not reduced:
-                    check(backdrop is not None and backdrop["video"], "hay video en el backdrop")
-                    check(backdrop is not None and backdrop["playing"], "el video se reproduce")
+                check(backdrop is not None and backdrop["canvas"], "hay canvas de fondo en el backdrop")
+                check(backdrop is not None and backdrop["painted"], "el canvas del backdrop tiene tamano")
+                # Con reduced-motion el shader pinta UN fotograma estatico y no
+                # arranca el RAF (`mountShaderBackground`), asi que el canvas
+                # sigue presente en los dos modos: no hay ramificacion aqui.
+                check(
+                    backdrop is not None and not backdrop["legacyMedia"],
+                    "el backdrop no reintroduce el video/poster de fixture",
+                )
 
                 fonts = page.evaluate("""(() => {
                   const root = getComputedStyle(document.documentElement);

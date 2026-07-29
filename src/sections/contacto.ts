@@ -32,10 +32,20 @@ export function createContacto(): HTMLElement {
   // scrim propio medible (hallazgo I-1 de la revision final: sin el, el
   // gate de contraste no lograba muestrear NINGUN elemento de esta escena
   // sobre el video).
+  // Linea de apoyo entre el titulo y la accion: `identity.availability` ya
+  // existe en content.ts y aqui es donde de verdad decide alguien si escribe.
+  // No es copy nuevo, es contenido real que estaba sin usar en esta escena.
+  const status = el("p", "contacto-status", [identity.availability]);
+
   const surface = el("div", "hero-surface", [
     el("p", "hero-kick", ["Contacto"]),
     el("h2", "display-xl mt-3 text-[clamp(2rem,6vw,4rem)]", ["Hablemos"]),
-    el("p", "mt-6", [email]),
+    status,
+    // La coreografia anima ESTE envoltorio, no el enlace: si animara el
+    // enlace, el `transform` inline que deja GSAP ganaria siempre al
+    // `translateY` del hover declarado en themes.css y el CTA se quedaria
+    // sin gesto al pasar el raton.
+    el("p", "contacto-cta mt-8", [email]),
   ]);
 
   const section = el(

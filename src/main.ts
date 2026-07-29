@@ -1,6 +1,7 @@
 import "./style.css";
 import type { BackgroundHandle } from "./backgrounds/shaderBackground";
 import { createCinemaChrome } from "./components/cinemaChrome";
+import { createIntroLeader } from "./components/introLeader";
 import { createThemeSignature } from "./components/themeSignature";
 import { caseStudies } from "./data/content";
 import { createAbout } from "./sections/about";
@@ -20,6 +21,12 @@ if (!app) {
 // fondo generativo y el perfil de motion que consume el scroll reveal.
 const theme = pickTheme();
 
+// La descarga de reveal.ts (y con ella la de GSAP) arranca en el instante en
+// que se ejecuta este `import()`, no cuando se consume la promesa. Dispararlo
+// aqui, antes de construir el DOM de las secciones, adelanta esa peticion
+// varios milisegundos sin cambiar el orden de ejecucion de nada.
+const revealModule = import("./utils/reveal");
+
 // La secuencia de entrada cinematografica necesita el hero oculto antes del
 // primer pintado. La via normal es reveal.ts, que retira la clase de forma
 // sincrona en cuanto GSAP carga (decenas de ms). Este timeout es solo el
@@ -31,15 +38,73 @@ if (!prefersReducedMotion && theme.motion.style === "cinematic") {
   window.setTimeout(() => document.documentElement.classList.remove("js-intro"), 3000);
 }
 
+/*
+ * Leader de apertura (solo Vice). Clase y timeout PROPIOS, no los de
+ * `.js-intro`: aquella solo oculta el nombre del hero, mientras que el leader
+ * tapa la pantalla entera. Si compartieran mecanismo, un fallo pasaria de "el
+ * nombre tarda en verse" a "la pagina se queda en negro". El seguro es ademas
+ * mas corto (1,8s) que el de `.js-intro` (3s), acorde a lo que dura el gesto:
+ * cuenta atras ~0,96s mas iris ~0,62s.
+ */
+let introLeader: HTMLElement | null = null;
+if (!prefersReducedMotion && theme.id === "vice") {
+  introLeader = createIntroLeader();
+  document.documentElement.classList.add("js-leader");
+
+  const dropLeader = (): void => {
+    document.documentElement.classList.remove("js-leader");
+    introLeader?.remove();
+  };
+
+  /*
+   * DOS seguros encadenados, no uno. El primero cubre "GSAP no llego nunca" y
+   * se cuenta desde la carga. El segundo se arma cuando la coreografia avisa
+   * de que empieza el gesto (`leader:start`) y cubre "la timeline arranco pero
+   * se quedo a medias".
+   *
+   * Un unico seguro anclado a la carga no vale, y es un fallo medido: la
+   * timeline no arranca hasta que terminan de cargar GSAP, Lenis y el modulo
+   * de coreografia — cerca de un segundo despues en desarrollo. El seguro de
+   * 1,8 s saltaba a mitad de la cuenta atras y arrancaba el leader de la
+   * pantalla en pleno gesto.
+   */
+  let leaderGuard = window.setTimeout(dropLeader, 2600);
+  window.addEventListener(
+    "leader:start",
+    () => {
+      window.clearTimeout(leaderGuard);
+      // Duracion del gesto (~1,62 s) con margen holgado.
+      leaderGuard = window.setTimeout(dropLeader, 3000);
+    },
+    { once: true },
+  );
+}
+
 const backgroundHost = el("div", "bg-theme", []);
 backgroundHost.setAttribute("aria-hidden", "true");
 const noise = el("div", "bg-noise", []);
 noise.setAttribute("aria-hidden", "true");
 
+/*
+ * Las obras van en un carril propio. En Vice ese carril se recorre en
+ * HORIZONTAL (la coreografia lo fija y lo desplaza con el scroll, ver
+ * `scene3Slate`); en los otros dos temas el carril no hace nada y las escenas
+ * siguen apiladas en vertical. El DOM es el mismo para los tres: quien decide
+ * la direccion es el CSS de cada tema, igual que con el resto de la piel.
+ */
+const obraTrack = el(
+  "div",
+  "obra-track",
+  caseStudies.map((project, index) => createProjectScene(project, index)),
+);
+obraTrack.setAttribute("data-obra-track", "");
+const obraRail = el("div", "obra-rail", [obraTrack]);
+obraRail.setAttribute("data-obra-rail", "");
+
 const main = el("main", "relative", [
   createHero(),
   createAbout(),
-  ...caseStudies.map((project, index) => createProjectScene(project, index)),
+  obraRail,
   createSkills(),
   createContacto(),
 ]);
@@ -52,6 +117,50 @@ app.append(
   createThemeSignature(theme.label),
 );
 
+// El leader va el ultimo del arbol y con z-index propio: tapa todo lo demas
+// mientras dura, cromo de cine incluido.
+if (introLeader) app.append(introLeader);
+
+// Barra de progreso propia: solo Vice sustituye la del navegador. Los otros
+// dos temas son "pieles de interfaz" y ahi la barra nativa es lo correcto.
+let scrollRailHandle: { destroy: () => void } | null = null;
+if (theme.id === "vice") {
+  void import("./components/scrollRail").then(({ mountScrollRail }) => {
+    scrollRailHandle = mountScrollRail(app);
+  });
+}
+
+/*
+ * Cursor propio de Vice. Tres puertas antes de descargar siquiera el modulo:
+ * el tema, el perfil de motion y que el puntero sea fino con hover real. En
+ * tactil no hay hover que disparar ningun estado, asi que el coste correcto
+ * ahi es cero, no "cero animacion".
+ *
+ * Se monta tras el leader, no antes: el gesto de apertura tapa la pantalla
+ * entera y no hay nada pulsable debajo, asi que montarlo antes solo lograria
+ * que la marca parpadease dentro de un gesto de 1,6 s.
+ */
+let cursorHandle: { destroy: () => void } | null = null;
+if (
+  theme.id === "vice" &&
+  !prefersReducedMotion &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches
+) {
+  const mountCursor = (): void => {
+    void import("./components/viceCursor").then(({ mountViceCursor }) => {
+      cursorHandle = mountViceCursor(app);
+    });
+  };
+  if (introLeader) {
+    // El leader se desmonta solo; esperamos a que suelte la pantalla.
+    window.addEventListener("leader:start", () => window.setTimeout(mountCursor, 1800), {
+      once: true,
+    });
+  } else {
+    mountCursor();
+  }
+}
+
 let backgroundHandle: BackgroundHandle | null = null;
 void applyTheme(theme, backgroundHost).then((handle) => {
   backgroundHandle = handle;
@@ -63,9 +172,17 @@ void applyTheme(theme, backgroundHost).then((handle) => {
 // WebGL se quedaba sin liberar en esas rutas de salida. `pagehide` cubre
 // ambas — navegacion normal y bfcache — y es el evento recomendado para
 // limpieza al abandonar la pagina.
-window.addEventListener("pagehide", () => backgroundHandle?.destroy(), { once: true });
+window.addEventListener(
+  "pagehide",
+  () => {
+    backgroundHandle?.destroy();
+    scrollRailHandle?.destroy();
+    cursorHandle?.destroy();
+  },
+  { once: true },
+);
 
-void import("./utils/reveal").then(({ initScrollReveal }) => initScrollReveal(main, theme));
+void revealModule.then(({ initScrollReveal }) => initScrollReveal(main, theme));
 
 // Sonda de verificacion: la consume scripts/verify.py. No afecta al render.
 Object.defineProperty(window, "__CONTENT_SHAPE__", {

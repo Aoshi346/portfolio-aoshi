@@ -14,6 +14,17 @@ import html5 from "simple-icons/icons/html5.svg?raw";
 import css from "simple-icons/icons/css.svg?raw";
 import c from "simple-icons/icons/c.svg?raw";
 import cplusplus from "simple-icons/icons/cplusplus.svg?raw";
+import nextdotjs from "simple-icons/icons/nextdotjs.svg?raw";
+import nodedotjs from "simple-icons/icons/nodedotjs.svg?raw";
+import gsap from "simple-icons/icons/gsap.svg?raw";
+import rxdb from "simple-icons/icons/rxdb.svg?raw";
+import electron from "simple-icons/icons/electron.svg?raw";
+import gtk from "simple-icons/icons/gtk.svg?raw";
+import git from "simple-icons/icons/git.svg?raw";
+import github from "simple-icons/icons/github.svg?raw";
+import n8n from "simple-icons/icons/n8n.svg?raw";
+import claude from "simple-icons/icons/claude.svg?raw";
+import googlegemini from "simple-icons/icons/googlegemini.svg?raw";
 
 const icons: Record<string, string> = {
   react,
@@ -28,6 +39,17 @@ const icons: Record<string, string> = {
   css,
   c,
   cplusplus,
+  nextdotjs,
+  nodedotjs,
+  gsap,
+  rxdb,
+  electron,
+  gtk,
+  git,
+  github,
+  n8n,
+  claude,
+  googlegemini,
 };
 
 export function getIconMarkup(slug: string): string {

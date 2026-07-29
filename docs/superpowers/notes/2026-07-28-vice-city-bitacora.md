@@ -295,3 +295,103 @@ No se aplicaron en el momento porque el agente en vuelo estaba editando
 
 - Vice queda SIN FONDO desde la Task 1 hasta la Task 3 (se retiro `viceSunset.ts`
   y el backdrop cinematografico no existe todavia). Es temporal y esperado.
+
+## Sesion 2026-07-29 — cursor propio y regresion del carril
+
+### Cursor de Vice (implementado, sin commitear)
+
+Motivo elegido: **marca de sincronismo** (circulo con cruz fija + destello de
+cambio de rollo). Se eligio sobre otros cuatro porque su anclaje esta
+VERIFICADO en el codigo y no supuesto: `introLeader.ts:41` monta un
+`.leader-cross`, y `.leader-cue` es un circulo de 13px con halo — la quemadura
+que avisaba al proyeccionista. Reutiliza dos elementos que el visitante ya vio.
+
+Contrato completo, estados y trampas: `.docs/CURSOR-VICE.md`.
+
+Lo unico que conviene repetir aqui porque afecta a cualquiera que toque CSS:
+**`cursor` solo se hereda cuando el elemento no declara el suyo.**
+`.gallery-track` declara `grab` y los `<a>` reciben `pointer` del navegador,
+asi que el `cursor: none` del lienzo no les llega y hay que apuntarlos uno a
+uno. Gracias a eso la lista blanca es segura de verdad: un pulsable nuevo
+conserva su glifo nativo mientras nadie lo opte explicitamente.
+
+### REGRESION: el carril de obra se pintaba encima de "Quien es"
+
+Sintoma reportado: "se ha roto el horizontal scroll de GSAP y la seccion de
+quien soy". Medido: 900px de solape entre `[data-scene="about"]` y
+`[data-scene="obra"]`, con el carril fijado en pantalla mientras su propio
+pin-spacer seguia 1405px mas abajo.
+
+**Causa:** el pin del carril llevaba `refreshPriority: 1` y el del hero
+ninguna (0). ScrollTrigger refresca de mayor a menor prioridad, asi que el
+carril se media ANTES de que el pin del hero reservara sus 1665px (`+=185%`) y
+situaba su inicio 1605px antes de tiempo.
+
+**Arreglo:** escalera de prioridad **descendente segun el orden del
+documento** — hero 2, carril 1, el resto 0. La regla queda anotada en los dos
+sitios del codigo. Cualquier pin nuevo en Vice tiene que entrar en esa escalera
+o el fallo vuelve.
+
+**Como se aislo** (vale la pena repetirlo, ahorro mucho tiempo):
+
+1. A/B antes que hipotesis. El cursor era lo ultimo que se habia tocado y era
+   el sospechoso obvio: bloqueando su modulo con `page.route("**/viceCursor*")`
+   el solape era **identico**. Descartado en un minuto.
+2. Comparacion contra HEAD con `git worktree add` a un directorio aparte
+   (NUNCA `git stash`: en esta misma sesion se llevo por delante todo el
+   trabajo sin commitear). HEAD tenia 1 pin-spacer, el arbol de trabajo 2.
+3. Verificacion final en el **build de produccion**, no en dev: el HMR de Vite
+   corrompe las medidas de ScrollTrigger y da falsos positivos en ambos
+   sentidos.
+
+### Trampa de medicion nueva
+
+**Lenis sigue desplazando la pagina despues de `scrollIntoView`/`scrollTo`.**
+Dos medidas de esta sesion dieron un fallo del cursor que no existia, por leer
+antes de que el scroll asentara. Esperar ~2,5 s, o anclar la comprobacion a
+`document.elementFromPoint` en lugar de a un selector.
+
+### Deuda de documentacion (pendiente, ver `.ai/memory.md`)
+
+El aviso de la linea 2805 del plan del 24-jul — "CLAUDE.md menciona Three.js y
+deja de ser cierto en la Task 1, corregirlo al cerrar" — **nunca se aplico**.
+Hoy `CLAUDE.md` sigue dando Three.js como stack y citando `src/three/*`, que no
+existe y nunca fue dependencia (solo GSAP y Lenis). Tambien lista secciones y
+componentes que ya no existen. No se toca a mitad de sesion por la regla del
+prompt cache.
+
+---
+
+## 29-jul-2026 — Revision tactil del cartel de reparto
+
+Revision del camino tactil de `[data-scene="credits"]` en Vice, con
+`has_touch` y `is_mobile` en 390x844. **Sale limpio:** toque en los seis
+bloques, la frase y "Aparece en" cambian, `n8n` deja el bloque vacio como debe,
+exactamente un nombre activo y un subrayado en cada toque, la marca del friso se
+enciende y esta en pantalla, y cero errores de consola.
+
+Dos cosas que iban de sospecha y quedaron descartadas con medida:
+
+1. **El `:hover` pegado en tactil no produce doble realce.** `.credit:hover` no
+   tiene guarda `@media (hover: hover)`, asi que en tactil se queda pegado tras
+   el toque — pero medido, el hover pegado coincide SIEMPRE con `.is-active`
+   (uno y uno en los seis toques), porque Chrome lo mueve al elemento tocado.
+   No hay nada que arreglar.
+2. **La marca activa del friso si entra en pantalla en movil.** Que es lo que
+   justifica en `credits.ts` que el friso sea "una segunda senal que no depende
+   del hover, porque en tactil no lo hay". La justificacion se sostiene.
+
+### Trampa de medicion nueva
+
+**`scrollIntoView({block: "start"})` no es donde lee un visitante.** Alinea el
+borde de la seccion con el del viewport, un encuadre que nadie ve, y en una
+seccion mas alta que la pantalla deja fuera justo lo de abajo. Con ese encuadre
+cai en dos hipotesis de fallo seguidas — "el titulo choca con las marcas de
+esquina" y "la marca del friso nunca entra en pantalla" — y las dos eran
+falsas: a +200px del tope caben los 23 nombres, el panel y el friso entero.
+Barrer el rango de scroll antes de declarar que algo no cabe.
+
+Queda medido, no resuelto: en el bloque de arriba hay 503px entre el dedo y la
+frase (y 633px hasta la marca). Las dos senales estan en pantalla, pero son las
+mas lejanas al dedo de toda la seccion. El realce local del nombre tocado
+(ambar + subrayado) es lo que cubre esa distancia.

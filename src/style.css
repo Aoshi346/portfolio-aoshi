@@ -233,6 +233,84 @@ body {
 }
 
 /*
+ * Estados de interaccion de los enlaces de contacto y del hero. Antes solo
+ * tenian color estatico: ni hover, ni foco visible propio, ni active. El
+ * foco propio importa mas de lo normal aqui porque el outline por defecto
+ * del navegador se pierde sobre el video de fondo.
+ *
+ * El hover va a `--color-accent-legible`, no al accent puro: estas clases
+ * las comparten los tres temas y el accent a secas ya fallo AA en Caelestia
+ * varias veces (ver los comentarios de `.hero-kick`/`.contacto-mail`).
+ */
+.hero-mail,
+.contacto-github,
+.contacto-phone,
+.contacto-corner a {
+  transition:
+    color 200ms ease-out,
+    text-underline-offset 200ms ease-out,
+    opacity 200ms ease-out;
+}
+
+.hero-mail:hover,
+.contacto-github:hover,
+.contacto-phone:hover,
+.contacto-corner a:hover {
+  color: var(--color-accent-legible);
+  text-underline-offset: 7px;
+}
+
+.hero-mail:focus-visible,
+.contacto-github:focus-visible,
+.contacto-phone:focus-visible,
+.contacto-corner a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+  color: var(--color-accent-legible);
+}
+
+.hero-mail:active,
+.contacto-github:active,
+.contacto-phone:active,
+.contacto-corner a:active {
+  opacity: 0.72;
+}
+
+/*
+ * El panel de detalle de los creditos cambia de contenido al vuelo
+ * (`credits.ts` hace `textContent`/`replaceChildren` en seco). Vice le monta
+ * encima un pulso con GSAP (`scene4Credits`); esta transicion es el suelo
+ * para los otros dos temas y para el caso en que la coreografia no cargue.
+ */
+.credits-icon,
+.credits-panel-name,
+.credits-panel-role,
+.credits-panel-detail {
+  transition: opacity 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-mail,
+  .contacto-github,
+  .contacto-phone,
+  .contacto-corner a,
+  .credits-icon,
+  .credits-panel-name,
+  .credits-panel-role,
+  .credits-panel-detail {
+    transition: none;
+  }
+
+  .hero-mail:hover,
+  .contacto-github:hover,
+  .contacto-phone:hover,
+  .contacto-corner a:hover {
+    text-underline-offset: 4px;
+  }
+}
+
+/*
  * `.hero-corner` (compartido con el hero) queda a pelo sobre el video en
  * contacto: la escena de contacto llega tarde en el recorrido (mas tiempo de
  * reproduccion, mas probabilidad de caer en un tramo saturado del video/
@@ -892,7 +970,8 @@ body {
  * tipografia, para que el pie vuelva al primer viewport en los tres temas.
  */
 @media (max-height: 700px) {
-  .hero {
+  .hero,
+  .contacto {
     padding-top: 3.5rem;
     padding-bottom: 3.5rem;
   }
@@ -905,6 +984,30 @@ body {
   .display-xl {
     font-size: clamp(2.2rem, 7vw, 5rem);
   }
+
+  /*
+   * El selector `.hero` de arriba (0,1,0) PIERDE contra
+   * `:root[data-theme="vice"] [data-scene]` (0,3,0) de themes.css, que fija
+   * un padding vertical mucho mayor. O sea: este bloque, escrito justo para
+   * que el pie vuelva al primer viewport, no surtia efecto en Vice — el
+   * unico tema donde `[data-scene]` existe. Se repite igualando la
+   * especificidad, y se extiende a contacto, que sufre lo mismo.
+   */
+  :root[data-theme="vice"] .hero {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  /*
+   * Contacto NO recupera aire abajo: su pie es una barra `sticky` pegada al
+   * borde de la pantalla (ver themes.css). Devolverle padding inferior aqui
+   * la despegaba 56px del borde justo en las ventanas bajas, que es donde el
+   * problema se veia peor.
+   */
+  :root[data-theme="vice"] .contacto {
+    padding-top: 3.5rem;
+    padding-bottom: 0;
+  }
 }
 
 .credit {
@@ -913,6 +1016,8 @@ body {
   align-items: baseline;
   gap: 1rem;
   width: 100%;
+  /* Objetivo tactil de 44px (WCAG 2.5.5): con el padding solo se quedaba en 36-38px. */
+  min-height: 44px;
   padding: 0.55rem 0;
   border: 0;
   border-bottom: 1px solid var(--color-line);
@@ -920,6 +1025,67 @@ body {
   text-align: left;
   cursor: pointer;
   transition: border-color 200ms ease;
+}
+
+.credit:active {
+  opacity: 0.78;
+}
+
+/*
+ * Encabezado de grupo del reparto (Frontend / Backend / Otras herramientas).
+ * Oculto por defecto: es un hermano plano de cada `.credit` dentro de
+ * `.credits-list` (nunca un envoltorio, ver el comentario de `credits.ts`),
+ * asi que en Hyprland/Caelestia, que muestran la lista como pildoras en
+ * `flex-wrap`, hereda este `display: none` sin necesidad de una regla propia.
+ * Solo Vice lo activa, en `themes.css`.
+ */
+.credit-group-label {
+  display: none;
+}
+
+/*
+ * "Aparece en": los proyectos reales donde se uso la tecnologia activa. Es la
+ * pieza que convierte la seccion de lista en prueba. `credits.ts` oculta el
+ * bloque entero (`hidden`) cuando no hay ninguno.
+ */
+.credits-used {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-line);
+}
+
+/*
+ * El bloque vacio se retira del flujo en Hyprland y Caelestia. Vice lo
+ * sobreescribe para dejarlo invisible pero ocupando sitio: ver themes.css.
+ * Se marca con `data-credit-empty` y no con `hidden` porque el preflight de
+ * Tailwind 4 fuerza `[hidden] { display: none !important }` y eso le quitaria
+ * a los temas la posibilidad de elegir.
+ */
+.credits-used[data-credit-empty] {
+  display: none;
+}
+
+.credits-used-label {
+  font-weight: 700;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-accent-legible);
+}
+
+.credits-used-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.credits-used-item {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--color-paper) 88%, transparent);
 }
 
 .credit:hover,
@@ -1051,6 +1217,27 @@ body {
   fill: var(--color-accent);
 }
 
+/*
+ * El friso de marcas es una pieza del cartel de Vice y de nadie mas: en
+ * Hyprland y Caelestia la seccion son pildoras, y 23 logos al pie serian
+ * ruido sin funcion. Apagado por defecto y encendido solo por Vice, para que
+ * los otros dos temas no tengan que conocer este nodo ni desactivarlo.
+ */
+.credits-marks {
+  display: none;
+}
+
+/*
+ * `currentColor` y no `var(--color-accent)` como en `.credits-svg`: la marca
+ * del friso alterna entre apagada y encendida, asi que el color lo decide el
+ * contenedor via `.is-active` y el SVG solo lo hereda.
+ */
+.credits-mark svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
 .credits-panel-name {
   margin-top: 0.6rem;
 }
@@ -1070,4 +1257,244 @@ body {
   font-size: 0.79rem;
   line-height: 1.65;
   color: color-mix(in srgb, var(--color-paper) 82%, transparent);
+}
+
+/*
+ * ------------------------------------------------ Leader de apertura (Vice)
+ *
+ * `components/introLeader.ts`. El estado visible lo pone `.js-leader` en
+ * `<html>`, que anade `main.ts` ANTES del primer pintado: sin eso habria un
+ * fotograma del hero antes de que arrancara el leader. GSAP escribe encima
+ * con estilos inline, que ganan siempre a estas reglas de clase.
+ *
+ * Clase propia y timeout propio, separados de `.js-intro` (que solo oculta el
+ * nombre): el leader tapa la pantalla ENTERA, asi que un fallo suyo no puede
+ * degradar a "pagina en negro para siempre". Ver el timeout en `main.ts`.
+ */
+.intro-leader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  /*
+   * El fondo NO va aqui: lo pinta `.leader-iris`, una capa a pantalla
+   * completa a la que se le abre un agujero con mascara. Ver el bloque de
+   * `.leader-iris` para el porque de esa tecnica y no otra.
+   */
+  background: transparent;
+  pointer-events: none;
+  /*
+   * Temblor de puerta: en un proyector real el fotograma nunca queda
+   * perfectamente registrado. Amplitud por debajo de 1px — se percibe como
+   * textura, no como un elemento que se mueve.
+   */
+  animation: leader-weave 1.1s steps(2, end) infinite;
+}
+
+:root.js-leader .intro-leader {
+  display: flex;
+}
+
+@keyframes leader-weave {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0.6px, -0.7px);
+  }
+  100% {
+    transform: translate(-0.4px, 0.5px);
+  }
+}
+
+/* Grano de pelicula. Va en un pseudo-elemento para no crear un nodo mas. */
+.intro-leader::after {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  opacity: 0.16;
+  pointer-events: none;
+  background-image: radial-gradient(rgb(255 255 255 / 0.55) 0.5px, transparent 0.6px);
+  background-size: 3px 3px;
+  animation: leader-grain 0.5s steps(3, end) infinite;
+}
+
+@keyframes leader-grain {
+  0% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(-4px, 3px);
+  }
+  66% {
+    transform: translate(3px, -2px);
+  }
+}
+
+/*
+ * El radio del diafragma. Registrado con `@property` para que el navegador lo
+ * trate como longitud y sepa interpolarlo: una custom property sin registrar
+ * es un token de texto y saltaria de 0% a 150% en un fotograma.
+ */
+@property --iris {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+/*
+ * El diafragma. Capa negra a pantalla completa a la que se le abre un agujero
+ * animando el radio de la mascara desde el centro exacto donde estaba el
+ * numero.
+ *
+ * NO se hace escalando un circulo pequeno con `box-shadow: 0 0 0 130vmax`,
+ * que es lo que habia antes: `transform: scale()` escala tambien la sombra,
+ * asi que al final del recorrido el navegador tenia que rasterizar cientos de
+ * miles de pixeles de lado. En maquina real eso se atasca o descarta la capa
+ * — de ahi que la timeline midiera bien y el iris se viera mal igualmente.
+ *
+ * Tampoco con `mask-size` animado, el otro intento fallido: medido, se
+ * quedaba en `auto`. Animar la custom property esquiva el problema porque
+ * GSAP solo escribe un numero y es el navegador quien recompone el gradiente.
+ */
+.leader-iris {
+  position: absolute;
+  inset: 0;
+  background: #07050c;
+  /*
+   * Los stops van en porcentaje del radio del gradiente (esquina mas lejana),
+   * asi que el mismo valor sirve para cualquier viewport: al 100% el agujero
+   * ya toca las esquinas. El segundo stop va medio punto por delante del
+   * primero para dar un borde suave de un pixel escaso en vez de un escalon
+   * dentado.
+   */
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent var(--iris),
+    #000 calc(var(--iris) + 0.5%)
+  );
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent var(--iris),
+    #000 calc(var(--iris) + 0.5%)
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Reticula de registro: las dos lineas que cruzan el encuadre. */
+.leader-cross {
+  position: absolute;
+  inset: 0;
+}
+
+.leader-cross::before,
+.leader-cross::after {
+  content: "";
+  position: absolute;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+.leader-cross::before {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.leader-cross::after {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.leader-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(120px, 17vw, 170px);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 50%, transparent);
+  border-radius: 50%;
+}
+
+/* Anillo interior: el segundo circulo de registro de una cabecera real. */
+.leader-ring::before {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent);
+  border-radius: 50%;
+}
+
+/*
+ * Brazo barredor. Un sector de cono, no una linea: asi barre area y se lee
+ * el giro incluso a 0.3s por vuelta, que es lo que dura cada numero.
+ */
+.leader-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--color-accent) 30%, transparent) 0deg,
+    transparent 62deg,
+    transparent 360deg
+  );
+}
+
+.leader-num {
+  position: absolute;
+  font-family: var(--font-display);
+  font-weight: var(--display-weight, 900);
+  font-size: clamp(3rem, 6vw, 4.4rem);
+  line-height: 1;
+  color: var(--color-accent);
+  text-shadow: 0 0 26px color-mix(in srgb, var(--color-accent) 50%, transparent);
+}
+
+/* Punto de cambio de bobina: la marca de la esquina superior derecha. */
+.leader-cue {
+  position: absolute;
+  top: clamp(1rem, 3vw, 2rem);
+  right: clamp(1.2rem, 3.5vw, 2.4rem);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-paper) 90%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-paper) 60%, transparent);
+  opacity: 0;
+}
+
+.leader-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.55rem 0.9rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
+  font-weight: 700;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+
+/*
+ * Cinturon de seguridad. Si `.js-leader` llegara a quedar puesta con
+ * reduced-motion activo (main.ts roto, orden de carga distinto), el leader no
+ * puede depender de una animacion que no va a ejecutarse para retirarse: se
+ * oculta por CSS pase lo que pase. Mismo patron que el bloque de `.js-intro`.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .intro-leader,
+  :root.js-leader .intro-leader {
+    display: none !important;
+  }
 }

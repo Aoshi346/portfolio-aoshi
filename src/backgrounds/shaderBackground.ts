@@ -3,6 +3,14 @@ export interface BackgroundHandle {
 }
 
 /**
+ * Uniforms `float` extra que el fondo consulta en CADA fotograma. Es un modelo
+ * "pull" a proposito: el shader no guarda estado ni se suscribe a nada, asi que
+ * no hay listeners que limpiar mas alla del RAF que ya se cancela al destruir.
+ * Lo usa Vice para alimentar el fondo con la posicion y la velocidad de scroll.
+ */
+export type DynamicUniforms = Record<string, () => number>;
+
+/**
  * Quad a pantalla completa en WebGL crudo. Se evita Three.js a proposito: el
  * unico uso de WebGL del sitio son fragment shaders fullscreen, y la libreria
  * anadia ~516 kB (129 kB gzip) para dibujar dos triangulos.
@@ -80,6 +88,7 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string):
 export function mountShaderBackground(
   container: HTMLElement,
   fragmentShader: string,
+  dynamicUniforms: DynamicUniforms = {},
 ): BackgroundHandle {
   const canvas = document.createElement("canvas");
   const gl = canvas.getContext("webgl", { antialias: false, alpha: false, depth: false });
@@ -114,6 +123,19 @@ export function mountShaderBackground(
   const timeLocation = gl.getUniformLocation(program, "uTime");
   const resolutionLocation = gl.getUniformLocation(program, "uResolution");
 
+  /*
+   * Las localizaciones se resuelven UNA vez, no por fotograma:
+   * `getUniformLocation` obliga al driver a mirar la tabla de simbolos del
+   * programa y hacerlo 60 veces por segundo por cada uniform es coste puro.
+   * Un uniform que el compilador haya eliminado por no usarse devuelve null y
+   * se descarta aqui mismo, en vez de comprobarlo en cada `draw`.
+   */
+  const dynamicLocations: [WebGLUniformLocation, () => number][] = [];
+  for (const [name, read] of Object.entries(dynamicUniforms)) {
+    const location = gl.getUniformLocation(program, name);
+    if (location) dynamicLocations.push([location, read]);
+  }
+
   container.appendChild(canvas);
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -121,6 +143,9 @@ export function mountShaderBackground(
   function draw(elapsed: number) {
     if (!gl) return;
     gl.uniform1f(timeLocation, elapsed);
+    for (const [location, read] of dynamicLocations) {
+      gl.uniform1f(location, read());
+    }
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
@@ -129,8 +154,16 @@ export function mountShaderBackground(
     const { clientWidth, clientHeight } = container;
     if (clientWidth === 0 || clientHeight === 0) return;
 
-    // Los degradados son suaves: no necesitan DPR alto y el coste sube al cuadrado.
-    const ratio = Math.min(window.devicePixelRatio, 1.5);
+    /*
+     * Los degradados son suaves: no necesitan DPR alto y el coste sube al
+     * cuadrado. El tope es mas bajo en pantallas pequenas porque ahi el margen
+     * de GPU es menor y, ademas, hasta hace poco Vice ni siquiera montaba
+     * fondo en movil (servia un video que se saltaba por debajo de 820px): al
+     * pasar a shader, un movil con DPR 3 y tope 1.5 renderizaba mas del doble
+     * de pixeles por fotograma que a tope 1.0. Como la bruma es de baja
+     * frecuencia y no tiene bordes duros, bajar el tope no se aprecia.
+     */
+    const ratio = Math.min(window.devicePixelRatio, window.innerWidth <= 820 ? 1 : 1.5);
     canvas.width = Math.floor(clientWidth * ratio);
     canvas.height = Math.floor(clientHeight * ratio);
 
