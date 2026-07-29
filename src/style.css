@@ -1210,6 +1210,27 @@ body {
   fill: var(--color-accent);
 }
 
+/*
+ * El friso de marcas es una pieza del cartel de Vice y de nadie mas: en
+ * Hyprland y Caelestia la seccion son pildoras, y 23 logos al pie serian
+ * ruido sin funcion. Apagado por defecto y encendido solo por Vice, para que
+ * los otros dos temas no tengan que conocer este nodo ni desactivarlo.
+ */
+.credits-marks {
+  display: none;
+}
+
+/*
+ * `currentColor` y no `var(--color-accent)` como en `.credits-svg`: la marca
+ * del friso alterna entre apagada y encendida, asi que el color lo decide el
+ * contenedor via `.is-active` y el SVG solo lo hereda.
+ */
+.credits-mark svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
 .credits-panel-name {
   margin-top: 0.6rem;
 }
