@@ -373,12 +373,9 @@ con `setInterval` sobre `tl.progress()`. Para depurar, bloquear el shader con
 
 ## 7. Puntos abiertos
 
-1. **`tooling` sin confirmacion explicita.** Se recomendo la opcion 2 (campo
-   aparte, no visible en obra) y el usuario no la contradijo, pero tampoco la
-   confirmo palabra por palabra. Confirmar antes de implementar.
-2. **Zustand.** Fuera por falta de icono. Entra si se decide dibujar el SVG.
-3. **Nombres de bloque.** "Escritorio", "Herramientas" e "IA" son propuesta mia.
-4. **Frase de React.** Si se prefiere conservar la mencion a Telefonica como
+1. **Zustand.** Fuera por falta de icono. Entra si se decide dibujar el SVG.
+2. **Nombres de bloque.** "Escritorio", "Herramientas" e "IA" son propuesta mia.
+3. **Frase de React.** Si se prefiere conservar la mencion a Telefonica como
    excepcion larga, esa linea fijara sola la altura reservada del pie.
 
 ---
