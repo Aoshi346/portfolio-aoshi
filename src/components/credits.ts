@@ -29,8 +29,13 @@ function toEntry(role: string, item: SkillGroup["items"][number]): CreditEntry {
     name: item.name,
     slug: item.slug,
     detail: item.detail,
+    // Se cruza contra `stack` Y `tooling`: Git, GitHub y las dos CLI de IA no
+    // estan en el stack de ningun proyecto porque `stack` se pinta literal en
+    // la ficha de obra y ahi cuatro nombres repetidos en los cinco proyectos
+    // no distinguen nada. Sin este segundo array, esas cuatro tecnologias
+    // saldrian como "sin proyecto publicado" siendo falso.
     usedIn: caseStudies
-      .filter((project) => project.stack.includes(item.name))
+      .filter((project) => [...project.stack, ...(project.tooling ?? [])].includes(item.name))
       .map((project) => project.title),
   };
 }
@@ -92,6 +97,23 @@ export function createCredits(): HTMLElement {
   const rows: HTMLButtonElement[] = [];
   const listChildren: HTMLElement[] = [];
 
+  /*
+   * Friso de marcas: donde un cartel de cine pone los logos de estudio y
+   * distribuidora. Va al pie y no delante de cada nombre porque una marca por
+   * nombre convierte la linea de reparto en una lista con vinetas — el
+   * defecto exacto que la direccion de cartel elimina.
+   *
+   * Se declara AQUI, antes del bucle, y no despues: `select()` se define
+   * dentro del bucle y cierra sobre `marks`. Declararlo despues compila con
+   * "used before its declaration".
+   *
+   * El Map indexa por slug para encender la marca en O(1): `mouseenter` se
+   * dispara muchas veces por segundo al recorrer el cartel con el raton y no
+   * puede volver a recorrer el DOM en cada disparo.
+   */
+  const marks = new Map<string, HTMLElement>();
+  const markNodes: HTMLElement[] = [];
+
   for (const group of groups) {
     const groupLabel = el("p", "credit-group-label", [group.label]);
     groupLabel.setAttribute("data-credit-group", "");
@@ -108,6 +130,19 @@ export function createCredits(): HTMLElement {
       row.dataset.index = String(rows.length);
       row.setAttribute("aria-controls", PANEL_ID);
       row.setAttribute("aria-pressed", "false");
+
+      /*
+       * Decorativa pura: `aria-hidden` la saca del arbol de accesibilidad
+       * (el nombre ya esta en el boton, la marca no anade informacion) y
+       * `data-decorative` la exime del gate de contraste. Nunca `aria-hidden`
+       * para eximir contraste: ver `scripts/verify.py::check_contrast_wcag`.
+       */
+      const mark = elFromMarkup("credits-mark", getIconMarkup(entry.slug));
+      mark.setAttribute("aria-hidden", "true");
+      mark.setAttribute("data-decorative", "");
+      mark.dataset.markSlug = entry.slug;
+      marks.set(entry.slug, mark);
+      markNodes.push(mark);
 
       const select = () => {
         for (const other of rows) {
@@ -126,6 +161,12 @@ export function createCredits(): HTMLElement {
         // Sin proyectos publicados, la seccion desaparece entera en vez de
         // mostrar una etiqueta vacia o una excusa.
         used.hidden = entry.usedIn.length === 0;
+        // La marca encendida es una segunda senal de seleccion que no depende
+        // del hover: en tactil no lo hay, y el cartel no tiene recuadros ni
+        // bordes que delaten que un nombre responde.
+        for (const [slug, node] of marks) {
+          node.classList.toggle("is-active", slug === entry.slug);
+        }
       };
 
       row.addEventListener("mouseenter", select);
@@ -140,10 +181,21 @@ export function createCredits(): HTMLElement {
   const list = el("div", "credits-list", listChildren);
   list.setAttribute("data-credit-roll", "");
 
+  /*
+   * El friso es hermano de la lista y del panel, NUNCA hijo de
+   * `[data-credit-roll]`: `scene4Credits` anima los hijos DIRECTOS de ese
+   * contenedor, y meter aqui 23 nodos mas ahogaria el escalonado del reparto.
+   * Los otros dos temas lo apagan con una sola regla sin tocar su flex-wrap.
+   */
+  const frieze = el("div", "credits-marks", markNodes);
+  frieze.setAttribute("data-credit-marks", "");
+  frieze.setAttribute("aria-hidden", "true");
+  frieze.setAttribute("data-decorative", "");
+
   // Estado inicial: el panel muestra la primera entrada sin esperar a que
-  // alguien interactue. `rows[0]` siempre existe: `groups` nunca esta vacio
-  // (skillGroups + secondarySkills traen contenido real).
+  // alguien interactue. `rows[0]` siempre existe: `skillGroups` nunca esta
+  // vacio.
   rows[0]?.dispatchEvent(new MouseEvent("mouseenter"));
 
-  return el("div", "credits-grid", [list, panel]);
+  return el("div", "credits-grid", [list, panel, frieze]);
 }
