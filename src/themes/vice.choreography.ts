@@ -686,8 +686,13 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
          * antes que este y calculan su posicion como si el pin no existiera:
          * medido, la barra de orientacion anunciaba "05 · Fundido" mientras el
          * carril de obra ocupaba la pantalla entera, y con el el letterbox se
-         * apagaba. Prioridad alta = se refresca el primero y los demas ya
-         * miden sobre el documento con el hueco del pin reservado.
+         * apagaba. Prioridad alta = se refresca antes que ellos y ya miden
+         * sobre el documento con el hueco del pin reservado.
+         *
+         * Pero SOLO 1, no mas: el pin del hero lleva 2 porque va antes en el
+         * documento y reserva 1665px. Si este se refrescase primero, no los
+         * veria y situaria su inicio 1605px antes de tiempo — medido: el
+         * carril quedaba fijado en pantalla encima de "Quien es".
          */
         refreshPriority: 1,
       },
@@ -711,6 +716,7 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
 
 /** Id fijo del gesto 4: permite matarlo si la funcion se re-ejecuta. */
 const CREDITS_TRIGGER_ID = "vice-credits-roll";
+const CREDITS_MARKS_TRIGGER_ID = "vice-credits-marks";
 
 /**
  * Gesto 4 — Creditos: ruedan al entrar y SE DETIENEN. Un rodillo perpetuo
@@ -732,6 +738,7 @@ function scene4Credits(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEl
   // Defensivo, igual que en los gestos 1 a 3: matar el trigger huerfano si
   // esta funcion se re-ejecutara.
   ScrollTrigger.getById(CREDITS_TRIGGER_ID)?.kill();
+  ScrollTrigger.getById(CREDITS_MARKS_TRIGGER_ID)?.kill();
 
   /*
    * `fromTo` sobre un array materializado, no `from` sobre `roll.children`.
@@ -764,6 +771,44 @@ function scene4Credits(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEl
       },
     },
   );
+
+  /*
+   * El friso de marcas entra despues del reparto y no a la vez: en un cartel
+   * los logos del pie son lo ultimo que se lee, asi que son lo ultimo que
+   * aparece. Escalonado mucho mas corto que el de las filas (0.02 contra
+   * 0.07) porque son 23 piezas pequenas en una sola linea: con el ritmo de
+   * los creditos, el friso tardaria mas de un segundo y medio en cerrarse.
+   *
+   * `fromTo` sobre `Array.from(...)`, nunca `from` sobre la HTMLCollection
+   * viva de `.children`: es exactamente el fallo que dejo doce filas de
+   * creditos con `translate(0, 34px)` pegado para siempre y el pie de
+   * contacto invisible.
+   *
+   * La opacidad se anima en el CONTENEDOR, no en las marcas. Cada marca vive
+   * a `opacity: .26` y sube a 1 solo cuando es la activa: si la entrada las
+   * animara a ellas, GSAP les dejaria un `opacity: 1` inline que gana a la
+   * regla CSS y el friso entero quedaria encendido, perdiendo justo la
+   * funcion por la que existe. Mismo principio que el `transform` del hover.
+   */
+  const frieze = root.querySelector<HTMLElement>("[data-credit-marks]");
+  if (frieze) {
+    const marksIn = gsap.timeline({
+      scrollTrigger: {
+        id: CREDITS_MARKS_TRIGGER_ID,
+        trigger: frieze,
+        start: "top 92%",
+        toggleActions: "play none none reverse",
+      },
+    });
+
+    marksIn.fromTo(frieze, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "power2.out" }, 0);
+    marksIn.fromTo(
+      Array.from(frieze.children),
+      { y: 10 },
+      { y: 0, duration: 0.4, ease: "power2.out", stagger: 0.02 },
+      0,
+    );
+  }
 
   const panel = root.querySelector<HTMLElement>("[data-credit-panel]");
   if (!panel) return;
