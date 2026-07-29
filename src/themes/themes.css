@@ -611,19 +611,56 @@
  * directo mas de `[data-credit-roll]` y `scene4Credits` lo animaria como si
  * fuera un credito, descuadrando el escalonado.
  *
- * `.credit + .credit` acierta solo: entre dos creditos seguidos hay punto, y
- * tras un encabezado de grupo no, porque ahi el hermano previo no es
- * `.credit`.
+ * Va DETRAS del nombre anterior (`::after` con `:has(+ .credit)`), no delante
+ * del siguiente. La version delantera — `.credit + .credit::before` — tenia dos
+ * defectos, los dos medidos, y los dos por la misma causa: el punto vivia
+ * dentro de la caja del nombre siguiente.
+ *
+ *  1. El subrayado del activo se comia el punto: la linea corria bajo
+ *     "· NEXT.JS" en vez de bajo "NEXT.JS", con 19px de hueco entre el borde
+ *     del boton y la primera letra.
+ *  2. Al partir linea en movil, la linea abria con el punto. Un punto al
+ *     principio de linea se lee como vineta, que es justo lo que esta
+ *     direccion elimina.
+ *
+ * Detras los dos desaparecen: al partir, el punto se queda al final de la linea
+ * anterior, donde en un cartel se lee como continuacion. El `:has(+ .credit)`
+ * hace el mismo trabajo que hacia el `+`: solo pone punto si detras viene otro
+ * credito, asi que el ultimo de cada bloque no lo lleva y tras un encabezado de
+ * grupo tampoco aparece de mas.
+ *
+ * `display: inline-block` no es decorativo: corta la propagacion de
+ * `text-decoration` del boton al pseudoelemento. Sin el, el subrayado del
+ * activo volveria a alcanzar al punto, ahora por el otro lado.
+ *
+ * OJO — este `::after` no esta vacio en la base: `style.css` lo usa para el "+"
+ * de afordancia, con estados propios. Reutilizarlo arrastra sus reglas, y hay
+ * que desactivar las tres a mano (medido: sin esto el punto se maquetaba pero
+ * no se pintaba, porque heredaba `opacity: 0`):
+ *
+ *  - `opacity`: la base lo deja a 0 fuera del hover y tambien en la fila
+ *    activa. Sin `opacity: 1` el punto ocupa sus 27px y no se ve ninguno.
+ *  - `font-weight: 700`: Pathway solo tiene un peso, asi que el navegador
+ *    sintetizaria un falso negrita en el punto.
+ *  - `margin-left: 0.35rem`: se sumaria al padding y descuadraria el espaciado.
+ *
+ * El `::before` anterior no tenia este problema porque la base no lo usa. Es el
+ * precio de mover el separador de lado, y se paga aqui una vez.
  */
-:root[data-theme="vice"] .credit + .credit::before {
-  content: "·";
-  padding: 0 0.4rem;
-  color: color-mix(in srgb, var(--color-paper) 30%, transparent);
+:root[data-theme="vice"] .credit::after {
+  /* El "+" de afordancia de la base sobra: aqui la senal es el friso. */
+  content: none;
 }
 
-/* El "+" de afordancia de la base sobra: aqui la senal es el friso. */
-:root[data-theme="vice"] .credit::after {
-  content: none;
+:root[data-theme="vice"] .credit:has(+ .credit)::after {
+  content: "·";
+  display: inline-block;
+  margin-left: 0;
+  padding: 0 0.4rem;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--color-paper) 30%, transparent);
+  opacity: 1;
+  transition: none;
 }
 
 /*

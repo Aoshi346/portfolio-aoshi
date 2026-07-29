@@ -287,10 +287,31 @@ Cambios **aditivos**, nunca reorganizacion (restriccion dura 3):
   hermanos planos dentro de `[data-credit-roll]`.
 
 **Los separadores del cartel no se anaden al DOM.** El punto medio entre nombres
-sale de CSS con `.credit + .credit::before { content: "·" }`: entre dos creditos
-consecutivos aparece el punto, y tras un encabezado de grupo no, porque ahi el
-hermano anterior no es un `.credit`. Cero nodos nuevos, restriccion dura 4
+sale de CSS con `.credit:has(+ .credit)::after { content: "·" }`: aparece cuando
+detras viene otro credito, asi que el ultimo de cada bloque no lo lleva y tras un
+encabezado de grupo no aparece de mas. Cero nodos nuevos, restriccion dura 4
 intacta.
+
+**Enmienda del 29-jul-2026: el punto va DETRAS, no delante.** La primera version
+era `.credit + .credit::before`, con el punto dentro de la caja del nombre
+siguiente, y de ahi salian dos defectos medidos: el subrayado del activo cubria
+el punto anterior (19px de hueco entre el borde del boton y la primera letra, se
+subrayaba "· NEXT.JS"), y al partir linea en movil la linea abria con el punto,
+que se lee como vineta — justo lo que esta direccion elimina.
+
+Detras se arreglan los dos. El artefacto del corte de linea no desaparece, cambia
+de lado: la linea que parte cierra con un punto colgando, que en creditos de
+cartel es la convencion. No hay version sin artefacto porque el CSS no puede
+saber donde va a partir el texto. En escritorio no se ve nunca: son cuatro lineas
+de 8/5/5/5 sin ningun corte.
+
+Tres reglas de `style.css` hay que desactivar a mano al reutilizar ese
+pseudoelemento, porque la base lo usa para su "+" de afordancia: `opacity` (la
+deja a 0 fuera del hover y en la fila activa — sin `opacity: 1` el punto se
+maqueta y no se pinta, medido), `font-weight: 700` (Pathway tiene un solo peso,
+daria falso negrita) y `margin-left` (se sumaria al padding). `display:
+inline-block` en el pseudoelemento corta la propagacion de `text-decoration`,
+que si no volveria a alcanzar al punto por el otro lado.
 
 ### 4.4 `src/style.css`
 
