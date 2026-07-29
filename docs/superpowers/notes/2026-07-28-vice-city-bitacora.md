@@ -359,3 +359,39 @@ Hoy `CLAUDE.md` sigue dando Three.js como stack y citando `src/three/*`, que no
 existe y nunca fue dependencia (solo GSAP y Lenis). Tambien lista secciones y
 componentes que ya no existen. No se toca a mitad de sesion por la regla del
 prompt cache.
+
+---
+
+## 29-jul-2026 — Revision tactil del cartel de reparto
+
+Revision del camino tactil de `[data-scene="credits"]` en Vice, con
+`has_touch` y `is_mobile` en 390x844. **Sale limpio:** toque en los seis
+bloques, la frase y "Aparece en" cambian, `n8n` deja el bloque vacio como debe,
+exactamente un nombre activo y un subrayado en cada toque, la marca del friso se
+enciende y esta en pantalla, y cero errores de consola.
+
+Dos cosas que iban de sospecha y quedaron descartadas con medida:
+
+1. **El `:hover` pegado en tactil no produce doble realce.** `.credit:hover` no
+   tiene guarda `@media (hover: hover)`, asi que en tactil se queda pegado tras
+   el toque — pero medido, el hover pegado coincide SIEMPRE con `.is-active`
+   (uno y uno en los seis toques), porque Chrome lo mueve al elemento tocado.
+   No hay nada que arreglar.
+2. **La marca activa del friso si entra en pantalla en movil.** Que es lo que
+   justifica en `credits.ts` que el friso sea "una segunda senal que no depende
+   del hover, porque en tactil no lo hay". La justificacion se sostiene.
+
+### Trampa de medicion nueva
+
+**`scrollIntoView({block: "start"})` no es donde lee un visitante.** Alinea el
+borde de la seccion con el del viewport, un encuadre que nadie ve, y en una
+seccion mas alta que la pantalla deja fuera justo lo de abajo. Con ese encuadre
+cai en dos hipotesis de fallo seguidas — "el titulo choca con las marcas de
+esquina" y "la marca del friso nunca entra en pantalla" — y las dos eran
+falsas: a +200px del tope caben los 23 nombres, el panel y el friso entero.
+Barrer el rango de scroll antes de declarar que algo no cabe.
+
+Queda medido, no resuelto: en el bloque de arriba hay 503px entre el dedo y la
+frase (y 633px hasta la marca). Las dos senales estan en pantalla, pero son las
+mas lejanas al dedo de toda la seccion. El realce local del nombre tocado
+(ambar + subrayado) es lo que cubre esa distancia.
