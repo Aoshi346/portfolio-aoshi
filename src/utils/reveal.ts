@@ -105,7 +105,22 @@ async function initSmoothScroll(gsap: Gsap, scrollTrigger: ScrollTriggerApi): Pr
   const lenis = new Lenis({ duration: 1.15, smoothWheel: true });
   lenis.on("scroll", () => scrollTrigger.update());
   gsap.ticker.add((time) => lenis.raf(time * 1000));
-  gsap.ticker.lagSmoothing(0);
+  /*
+   * Umbral por defecto de GSAP (500 ms / 33 ms), NO `lagSmoothing(0)`.
+   *
+   * Desactivarlo del todo — que es lo que suele copiarse de los ejemplos de
+   * Lenis — hace que, tras un paron del hilo principal, GSAP aplique TODO el
+   * tiempo transcurrido en un solo fotograma. Medido aqui: la compilacion del
+   * shader de fondo bloquea lo suficiente como para que el leader de apertura
+   * (1,62 s de timeline) se consumiera entero de una vez y la pantalla
+   * saltara directa al hero.
+   *
+   * Con el umbral puesto, un fotograma que tarde mas de 500 ms se contabiliza
+   * como 33 ms: las animaciones se retrasan en vez de evaporarse. Lenis sigue
+   * yendo igual de fino — el suavizado solo actua en paradas anomalas, no en
+   * el fotograma normal.
+   */
+  gsap.ticker.lagSmoothing(500, 33);
 
   wireFocusScroll(lenis);
 }
@@ -128,6 +143,29 @@ function wireFocusScroll(lenis: { scrollTo: (target: HTMLElement, options: { off
   document.addEventListener("focusin", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
+
+    /*
+     * Solo foco de TECLADO. `focusin` tambien dispara al hacer clic con el
+     * raton, y eso convertia cada clic en un salto de scroll: pulsar una fila
+     * de los creditos desplazaba la pagina 412px y sacaba el panel de detalle
+     * fuera del encuadre — medido — dejando a la vista una franja vacia. Es
+     * decir, el arreglo del salto al tabular habia creado un bug peor con el
+     * raton, que es como se usa la seccion el 99% de las veces.
+     *
+     * `:focus-visible` es exactamente esta distincion, resuelta por el
+     * navegador: es falso cuando el foco viene de un clic.
+     */
+    if (!target.matches(":focus-visible")) return;
+
+    /*
+     * Y aun con teclado, solo si el elemento no se ve entero. Tabular entre
+     * dos filas contiguas ya visibles no debe mover nada: el salto solo tiene
+     * sentido cuando el foco se va fuera del encuadre, que es el caso que
+     * este manejador vino a resolver.
+     */
+    const box = target.getBoundingClientRect();
+    if (box.top >= 0 && box.bottom <= window.innerHeight) return;
+
     lenis.scrollTo(target, { offset: FOCUS_OFFSET, duration: 0.5 });
   });
 }
@@ -172,14 +210,28 @@ export async function initScrollReveal(root: HTMLElement, theme: Theme): Promise
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (prefersReducedMotion) return;
 
-  const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
-    import("gsap"),
-    import("gsap/ScrollTrigger"),
-  ]);
-  gsap.registerPlugin(ScrollTrigger);
+  /*
+   * El core de GSAP se pide SOLO, sin esperar a ScrollTrigger. Lo unico que
+   * hace falta para retirar `.js-intro` y pintar el nombre del hero es
+   * `prepareHeroIntro`, que no usa ScrollTrigger para nada — y ese nombre es
+   * el elemento LCP de la pagina. Pedirlos juntos metia 17.5 kB gzip de
+   * ScrollTrigger en el camino critico del primer pintado del titular, para
+   * algo que no se necesita hasta que el usuario scrollea.
+   *
+   * La peticion de ScrollTrigger arranca inmediatamente despues, asi que no se
+   * pierde paralelismo real: solo se deja de BLOQUEAR el hero con ella.
+   */
+  const { default: gsap } = await import("gsap");
+  const scrollTriggerModule = import("gsap/ScrollTrigger");
 
   if (motion.style === "cinematic") {
     prepareHeroIntro(gsap, root);
+  }
+
+  const { ScrollTrigger } = await scrollTriggerModule;
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (motion.style === "cinematic") {
     await initSmoothScroll(gsap, ScrollTrigger);
   }
 

@@ -91,12 +91,20 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
 
   const footerChildren: HTMLElement[] = [];
   if (project.link) {
+    // El foco de teclado replica exactamente lo que hace el hover: sin el par
+    // `focus-visible`, quien navega con Tab no veia moverse la flecha ni
+    // tenia mas indicador que el outline por defecto del navegador, que se
+    // pierde sobre el video de fondo.
     const link = el(
       "a",
-      "group/link inline-flex items-center gap-2 font-mono text-sm text-paper transition-colors duration-300 hover:text-accent",
+      "group/link inline-flex items-center gap-2 rounded-sm font-mono text-sm text-paper transition-colors duration-300 hover:text-accent focus-visible:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent",
       [
         project.link.label,
-        el("span", "transition-transform duration-300 group-hover/link:translate-x-1", ["→"]),
+        el(
+          "span",
+          "transition-transform duration-300 group-hover/link:translate-x-1 group-focus-visible/link:translate-x-1",
+          ["→"],
+        ),
       ],
     );
     link.href = project.link.href;

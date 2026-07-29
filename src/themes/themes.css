@@ -56,105 +56,29 @@
  * con borde ni sombra. Solo Caelestia (mas abajo) la viste como tarjeta
  * Material You.
  *
- * Hallazgo I-1 de la revision final de rama: hero y contacto son las dos
- * escenas que el diseno deja a plena luz sobre el video/poster de Vice, sin
- * ningun scrim debajo del texto — y son justo las dos donde el gate de
- * contraste (`scripts/verify.py::check_contrast_wcag`) media CERO elementos
- * (fondo no solido en el 100% de los candidatos), un agujero de cobertura
- * silencioso que el arnes no vigilaba antes de anadir el suelo de cobertura
- * de ese mismo hallazgo. El scrim de abajo es el mismo recibo ya verificado
- * en `.about-card`/`.credits-list`/`.rail` (color-mix de `--color-ink`,
- * nunca un hex fijado a mano): suficientemente solido para que las franjas
- * que muestrea el gate salgan planas (desviacion tipica bajo el umbral de
- * 18), suficientemente translucido para no romper la lectura "a sangre" del
- * video detras.
+ * Historico (por que ya no hay scrim aqui): mientras el fondo fue el fixture
+ * sintetico de barras SMPTE, estas dos escenas necesitaban un panel casi
+ * opaco debajo del texto — primero un rectangulo con desenfoque, luego una
+ * vineta radial al 93% — porque el gate de contraste
+ * (`scripts/verify.py::check_contrast_wcag`) no puede medir sobre franjas de
+ * color primario puro. Ese panel se leia como una mancha oscura pegada
+ * detras del titulo, que es exactamente lo que un plano "a sangre" no debe
+ * tener.
+ *
+ * El fondo generativo (`backgrounds/viceHaze.ts`) acota su brillo por shader,
+ * asi que la base ya es oscura y plana por diseno: el scrim deja de hacer
+ * falta y el texto se apoya directamente sobre la bruma. Si algun dia vuelve
+ * un fondo de alta varianza, la solucion correcta es acotarlo en su shader,
+ * no volver a tapar el texto.
  */
 :root[data-theme="vice"] .hero-surface {
-  /*
-   * 88% (no el 38-55% que basta en `.about-card`/`.credits-list`, sobre el
-   * shader/video mas calmo de esas escenas): el fixture sintetico de la
-   * Task 3 que sirve hoy `public/media/vice-hero.*` (barras SMPTE, franjas
-   * de color primario puro lado a lado — vigilado aparte por
-   * `check_fixture_assets`, silenciado con `--allow-fixture-assets` mientras
-   * dure el desarrollo) es un caso mucho mas duro que el video cinematografico
-   * real de la Task 11: una franja horizontal de muestreo sobre un titulo
-   * ancho puede cruzar rojo/verde/amarillo/azul puros en pocos cientos de
-   * pixeles. Con menos opacidad la mezcla seguia dejando residuos de tinte
-   * distintos por franja (verificado: 55% y 72% no bajaban de ~90-100 de
-   * desviacion tipica en los caracteres del nombre). Este valor es el punto
-   * en que el gate mide de verdad incluso contra el fixture mas hostil que
-   * hoy sirve el proyecto; con el video real (mas calmo) seguira sobrando
-   * margen.
-   */
-  background: color-mix(in srgb, var(--color-ink) 88%, transparent);
-  backdrop-filter: blur(10px);
+  background: none;
+  backdrop-filter: none;
   border: none;
-  border-radius: var(--radius-card);
+  border-radius: 0;
   box-shadow: none;
   padding: clamp(1.5rem, 4vw, 3rem);
-  /*
-   * Durante el gesto de zoom el nombre crece hasta desbordar el panel y antes
-   * se cortaba en seco contra el borde del viewport, que se lee a medio pulir.
-   * La mascara lo disuelve al salir, como un fundido de plano. Va sobre el
-   * panel y no sobre el nombre porque el panel NO escala: su caja se mantiene
-   * fija y la mascara actua a tamano constante mientras el titulo la atraviesa.
-   */
-  mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
-  mask-composite: intersect;
-}
-
-/*
- * Vineta radial del hero (solo el hero: contacto conserva el rectangulo de
- * arriba, que ahi no molesta porque no hay gesto de zoom atravesandolo).
- *
- * El problema que resuelve: la mascara rectangular de arriba deja cuatro
- * bordes rectos y, como `backdrop-filter` se recorta por la mascara del
- * elemento, el desenfoque terminaba en linea recta contra el video — se leia
- * como un cuadro borroso pegado detras del nombre en vez de como luz.
- *
- * La sustitucion NO baja la solidez del scrim bajo el texto: el nucleo
- * mantiene el mismo color-mix al 88% completamente opaco hasta el 52% del
- * radio (el nombre y la linea de rol caben dentro), y solo a partir de ahi
- * se disuelve. Es decir, las franjas que muestrea `check_contrast_wcag`
- * sobre el titulo siguen cayendo en zona plana; lo que cambia es el borde,
- * que ya no existe. Medido contra el fixture SMPTE, no estimado.
- */
-:root[data-theme="vice"] .hero .hero-surface {
-  /*
-   * `backdrop-filter` NO se recorta con `mask-image`: Chrome lo aplica al
-   * border-box del elemento pase lo que pase con la mascara. Medido — con la
-   * vineta puesta y el blur todavia activo seguian viendose los cuatro bordes
-   * rectos del desenfoque contra el video. El blur ERA el cuadro borroso.
-   * Se retira y su aporte al aplanado del fondo se compensa subiendo el
-   * nucleo del scrim del 88% al 93%.
-   */
-  backdrop-filter: none;
-  background: color-mix(in srgb, var(--color-ink) 93%, transparent);
-  padding: clamp(2.5rem, 7vw, 5rem) clamp(2rem, 8vw, 6rem);
-  border-radius: 0;
-  /*
-   * Radios al 50%: con cualquier valor mayor la elipse llega al borde de la
-   * caja con alfa todavia alta y la mascara se corta en recto contra el, que
-   * es exactamente el defecto que se venia a quitar (medido: 74%/68% seguia
-   * dejando los cuatro bordes). Al 50% el desvanecido termina justo en el
-   * limite de la caja.
-   *
-   * Solido hasta el 76% del radio: el nombre ocupa ~69% del ancho del panel,
-   * asi que esa parada lo deja entero sobre scrim plano y aun queda un cuarto
-   * de radio para disolver sin que se lea un canto. Medido, ademas, que mover
-   * esta parada entre 72% y 82% no cambia nada en el gate de contraste (las
-   * letras se excluyen igual en el barrido con scroll, donde el nombre ya esta
-   * escalando fuera del panel): se elige por lectura, no por el arnes.
-   */
-  mask-image: radial-gradient(
-    ellipse 50% 50% at 50% 50%,
-    #000 0%,
-    #000 76%,
-    rgba(0, 0, 0, 0.5) 90%,
-    transparent 100%
-  );
-  mask-composite: add;
+  mask-image: none;
 }
 
 /*
@@ -492,65 +416,440 @@
 }
 
 /*
- * Rodillo de creditos a tres columnas (solo Vice, solo a partir de 860px).
+ * Reparto agrupado por area (solo Vice).
  *
- * En una sola columna con `justify-content: space-between`, el rol a la
- * izquierda y el nombre a la derecha quedaban a distancias distintas en cada
- * fila (el rol "Otras herramientas" es tres veces mas largo que "Backend"),
- * asi que la columna de nombres salia dentada y la mitad derecha de la escena
- * se quedaba vacia bajo el panel. En columnas, cada credito es un bloque
- * rol-sobre-nombre: los nombres se alinean, las doce entradas ocupan cuatro
- * filas en vez de doce y la escena se llena.
+ * El rol se repetia en las doce filas — "Frontend" cuatro veces seguidas,
+ * "Otras herramientas" cinco — y esa repeticion era la mitad del texto de la
+ * escena sin aportar nada. Ahora aparece UNA vez por grupo, como el encabezado
+ * de un bloque de reparto en unos creditos de verdad, y la fila solo lleva el
+ * nombre de la tecnologia.
  *
- * Sigue siendo el mismo DOM y el mismo `<button>` por entrada: hover, foco,
- * aria-pressed y el panel de detalle funcionan igual.
+ * El `<span class="credit-role">` de cada fila NO se elimina, solo se oculta
+ * aqui: `scripts/verify.py` comprueba que exista y este oculto por CSS para
+ * validar el re-skin a pildoras de Hyprland/Caelestia. Ocultarlo en Vice no
+ * toca ese gate — nunca mira este tema.
  */
+:root[data-theme="vice"] .credit-role {
+  display: none;
+}
+
+:root[data-theme="vice"] .credit-group-label {
+  display: block;
+  margin-top: 1.1rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--color-line);
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-accent-legible);
+}
+
+:root[data-theme="vice"] .credit-group-label:first-child {
+  margin-top: 0;
+}
+
 @media (min-width: 860px) {
+  /*
+   * Panel a toda la altura de la escena, no una caja pequena arriba a la
+   * derecha: era lo que dejaba medio plano vacio debajo. Lo que llena ese
+   * hueco no son mas efectos, sino contenido — el bloque "Aparece en".
+   */
   :root[data-theme="vice"] .credits-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(250px, 340px);
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    align-items: stretch;
     max-width: none;
     gap: clamp(1.8rem, 4vw, 3.5rem);
   }
 
+  /*
+   * Dos columnas, con el encabezado de grupo ocupando fila completa
+   * (`grid-column: 1 / -1`). Asi cada grupo empieza en su propia linea y el
+   * motor de rejilla reparte sus items debajo sin que haya que calcular
+   * cuantas filas ocupa cada uno: Frontend cae en 2x2, Backend en 2+1 y Otras
+   * herramientas en 2x2+1, y sigue funcionando si manana cambia el numero de
+   * entradas en `content.ts`.
+   */
   :root[data-theme="vice"] .credits-list {
     display: grid;
-    /*
-     * Flujo por columnas, no por filas: con doce entradas en cuatro filas
-     * cada columna cae casi exacta sobre un grupo de `content.ts` (frontend /
-     * backend / otras herramientas), que es como se leen unos creditos de
-     * verdad. Por filas, la primera linea mezclaba React con Tailwind y
-     * Django y el rol repetido encima se leia como ruido.
-     */
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-auto-flow: column;
-    grid-template-rows: repeat(4, auto);
-    gap: 0.15rem 1.6rem;
-    padding: 1.2rem 1.4rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    column-gap: 2rem;
+    padding: 1.4rem 1.6rem;
   }
 
-  :root[data-theme="vice"] .credit {
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-end;
-    gap: 0.3rem;
-    padding: 0.7rem 0;
+  :root[data-theme="vice"] .credit-group-label {
+    grid-column: 1 / -1;
+    margin-top: 1.5rem;
   }
 
-  /* El "+" tactil vuelve a su sitio: en bloque vertical iria a una linea
-     propia bajo el nombre. Se ancla arriba a la derecha del credito. */
+  :root[data-theme="vice"] .credit-group-label:first-child {
+    margin-top: 0;
+  }
+
   :root[data-theme="vice"] .credit {
     position: relative;
+    padding: 0.6rem 0;
   }
 
+  /* El "+" tactil se ancla a la derecha de la fila. */
   :root[data-theme="vice"] .credit::after {
     position: absolute;
-    top: 0.55rem;
+    top: 50%;
     right: 0;
     margin-left: 0;
+    transform: translateY(-50%);
   }
 
   :root[data-theme="vice"] .credit-name {
-    font-size: 1.35rem;
+    font-size: 1.32rem;
+  }
+
+  :root[data-theme="vice"] .credits-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem 1.8rem;
+  }
+
+  :root[data-theme="vice"] .credits-icon {
+    width: 84px;
+    height: 84px;
+  }
+
+  :root[data-theme="vice"] .credits-panel-name {
+    margin-top: 1rem;
+    font-size: clamp(1.8rem, 2.4vw, 2.4rem);
+  }
+}
+
+/*
+ * Micro-interaccion de fila del rodillo (solo Vice): el credito se desplaza y
+ * recibe un lavado de acento por la izquierda, como el foco de un proyector
+ * deteniendose sobre el. El borde inferior y el "+" que ya existen en
+ * style.css siguen siendo la afordancia principal; esto es refuerzo.
+ */
+:root[data-theme="vice"] .credit {
+  transition:
+    border-color 200ms ease-out,
+    background 240ms ease-out;
+}
+
+:root[data-theme="vice"] .credit:hover,
+:root[data-theme="vice"] .credit:focus-visible,
+:root[data-theme="vice"] .credit.is-active {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-accent) 13%, transparent) 0%,
+    transparent 68%
+  );
+}
+
+/*
+ * El desplazamiento va en los hijos, NO en `.credit`. La entrada de
+ * `scene4Credits` deja un `transform` inline de GSAP sobre la fila, y un
+ * estilo inline gana siempre a una regla de hoja: un `translateX` declarado
+ * aqui sobre `.credit` no llegaria a aplicarse nunca. `.credit-role` y
+ * `.credit-name` no los toca ninguna timeline, asi que ahi si manda el CSS.
+ */
+:root[data-theme="vice"] .credit-role,
+:root[data-theme="vice"] .credit-name {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="vice"] .credit:hover .credit-role,
+:root[data-theme="vice"] .credit:hover .credit-name,
+:root[data-theme="vice"] .credit:focus-visible .credit-role,
+:root[data-theme="vice"] .credit:focus-visible .credit-name,
+:root[data-theme="vice"] .credit.is-active .credit-role,
+:root[data-theme="vice"] .credit.is-active .credit-name {
+  transform: translateX(6px);
+}
+
+/* ------------------------------------------------ Vice: carril de obra en horizontal */
+
+/*
+ * Las obras se recorren de lado, como pasar cartelas en una moviola, en vez de
+ * apilarse hacia abajo. El carril se fija en pantalla (`pin`) y la coreografia
+ * traslada el track en X con el scroll (`scene3Slate` en vice.choreography.ts).
+ *
+ * Solo Vice. En Hyprland/Caelestia estas dos reglas no existen, el track es un
+ * div normal y las escenas siguen una debajo de otra: el DOM es identico y la
+ * direccion la decide la piel, como el resto del tema.
+ */
+:root[data-theme="vice"] .obra-rail {
+  overflow: hidden;
+}
+
+:root[data-theme="vice"] .obra-track {
+  display: flex;
+  flex-wrap: nowrap;
+  width: max-content;
+  will-change: transform;
+}
+
+:root[data-theme="vice"] .obra-track > [data-scene="obra"] {
+  flex: 0 0 100vw;
+  width: 100vw;
+  /*
+   * El alto lo manda la pantalla, no el contenido: en un recorrido lateral
+   * cada obra es un plano completo y dos planos no pueden tener alturas
+   * distintas o el carril daria saltos verticales al desplazarse.
+   */
+  min-height: 100vh;
+  height: 100vh;
+}
+
+@media (max-width: 900px) {
+  /*
+   * En pantallas estrechas se vuelve a la pila vertical. Un carril horizontal
+   * pineado compite con el gesto de scroll del pulgar y, ademas, cada cartela
+   * incluye su propia galeria arrastrable en horizontal: dos ejes iguales
+   * anidados son una trampa tactil, no una gracia.
+   */
+  :root[data-theme="vice"] .obra-rail {
+    overflow: visible;
+  }
+
+  :root[data-theme="vice"] .obra-track {
+    display: block;
+    width: auto;
+  }
+
+  :root[data-theme="vice"] .obra-track > [data-scene="obra"] {
+    width: auto;
+    height: auto;
+  }
+}
+
+/* ------------------------------------------------- Vice: barra de progreso */
+
+/*
+ * Solo Vice sustituye la barra del navegador por la suya. El gate es doble
+ * (`scrollbar-width` para Firefox, el pseudo-elemento para WebKit/Blink) y
+ * cuelga de `[data-theme="vice"]`, nunca de `html` a secas: en Hyprland y
+ * Caelestia, que son pieles de interfaz, la barra nativa es lo correcto y
+ * quitarla seria peor accesibilidad a cambio de nada.
+ */
+:root[data-theme="vice"] {
+  scrollbar-width: none;
+}
+
+:root[data-theme="vice"]::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+:root[data-theme="vice"] .scroll-rail {
+  position: fixed;
+  top: 22vh;
+  bottom: 22vh;
+  right: 0.75rem;
+  z-index: 42;
+  width: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-paper) 14%, transparent);
+  pointer-events: none;
+}
+
+:root[data-theme="vice"] .scroll-rail-thumb {
+  transform-origin: 50% 0;
+  /*
+   * `scaleY` de una barra a altura completa, no `height`: la escala va en el
+   * compositor y no provoca reflow en cada fotograma del scroll.
+   */
+  transform: scaleY(0);
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    var(--color-accent) 0%,
+    color-mix(in srgb, var(--color-accent-2) 85%, var(--color-accent)) 100%
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+
+@media (max-width: 640px) {
+  /* En movil el pulgar del sistema ya es un overlay fino y efimero: una guia
+     fija anadida solo roba ancho util. */
+  :root[data-theme="vice"] .scroll-rail {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------- Vice: fundido de cierre */
+
+/*
+ * El "pie" de contacto (telefono / LinkedIn / GitHub) usa `.hero-corner`, que
+ * es `position: absolute; bottom: 9%` (style.css). Ese 9% se calcula sobre la
+ * SECCION, no sobre el viewport, asi que "pegado al fondo" solo es cierto
+ * mientras la seccion mida exactamente lo que la pantalla. La regla
+ * `:root[data-theme="vice"] [data-scene]` de mas arriba le suma
+ * `9rem + 6.5vh` de padding por lado y rompe justo esa suposicion: el pie se
+ * queda flotando muy por encima del fondo real, con un hueco muerto debajo.
+ *
+ * Se devuelve al flujo. En flujo no hay porcentaje que calcular: la superficie
+ * central crece para ocupar el hueco disponible y el pie queda siempre al
+ * final de la caja, mida lo que mida. El hero conserva su `.hero-corner`
+ * absoluto — ahi funciona, y ademas la coreografia lo anima como bloque.
+ */
+:root[data-theme="vice"] .contacto {
+  justify-content: flex-start;
+  /*
+   * Espejo del padding lateral que Tailwind pone en la seccion
+   * (`px-6 md:px-12`, ver src/sections/contacto.ts). Se declara aqui como
+   * token para que la barra de pie pueda cancelarlo con margen negativo y
+   * cruzar la pantalla entera sin repetir el numero en dos sitios.
+   */
+  --scene-inline-pad: 1.5rem;
+  /*
+   * El padding de `[data-scene]` reserva `9rem + 6.5vh` abajo para el
+   * letterbox, pero el letterbox solo se despliega en la escena de obra: en
+   * contacto ese hueco es espacio muerto y empujaba el pie 200px por encima
+   * del borde real. Aqui se recorta al aire que necesita un pie de verdad,
+   * dejando sitio bajo el para la firma de tema (`.theme-signature`, fija
+   * abajo a la derecha). Misma especificidad que la regla de `[data-scene]`
+   * y posterior en el archivo, asi que gana por orden.
+   */
+  /*
+   * Sin aire abajo: el pie es una barra pegada al borde de la pantalla, no un
+   * bloque flotando dentro de la escena. El padding que reserva
+   * `[data-scene]` para el letterbox no aplica aqui (en contacto el letterbox
+   * vale 0) y era justo lo que dejaba el pie colgado a media altura.
+   */
+  padding-bottom: 0;
+}
+
+:root[data-theme="vice"] .contacto .hero-surface {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/*
+ * El pie va enganchado al borde inferior de la PANTALLA, no a un punto de la
+ * seccion. `sticky` con `bottom: 0` hace exactamente eso: mientras la escena
+ * de contacto esta en cuadro la barra descansa sobre el borde del viewport, y
+ * al terminar el documento se posa en el final de la seccion sin saltos.
+ *
+ * Se sale del padding lateral de la seccion con margenes negativos para que
+ * la banda cruce la pantalla de lado a lado, como la barra de orientacion de
+ * arriba: son las dos guias fijas del recorrido, una a cada extremo.
+ */
+:root[data-theme="vice"] .contacto .contacto-corner {
+  position: sticky;
+  inset: auto;
+  bottom: 0;
+  z-index: 5;
+  /*
+   * La seccion es `items-center` (ver el markup), asi que por defecto cada
+   * hijo se encoge a su contenido y la barra salia como una caja centrada de
+   * 345px. `stretch` la devuelve al ancho completo del contenedor, que junto
+   * a los margenes negativos de abajo la hace cruzar la pantalla entera.
+   */
+  align-self: stretch;
+  width: auto;
+  margin-top: auto;
+  margin-left: calc(var(--scene-inline-pad) * -1);
+  margin-right: calc(var(--scene-inline-pad) * -1);
+  padding: 1rem var(--scene-inline-pad);
+  border-radius: 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-paper) 12%, transparent);
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--color-ink) 92%, transparent) 0%,
+    color-mix(in srgb, var(--color-ink) 74%, transparent) 100%
+  );
+  backdrop-filter: blur(8px);
+}
+
+@media (min-width: 768px) {
+  :root[data-theme="vice"] .contacto {
+    --scene-inline-pad: 3rem;
+  }
+}
+
+/* Linea de disponibilidad: apoyo entre el titulo y la accion, no protagonista. */
+:root[data-theme="vice"] .contacto-status {
+  margin-top: 0.9rem;
+  font-size: clamp(0.85rem, 1.6vw, 1.05rem);
+  color: color-mix(in srgb, var(--color-paper) 78%, transparent);
+}
+
+/*
+ * El email como accion, no como texto subrayado. Es el ultimo plano de la
+ * pieza y el unico sitio donde alguien convierte: tiene que leerse como algo
+ * que se pulsa. Pastilla con borde en acento, en linea con el lenguaje de
+ * cartel del tema.
+ */
+:root[data-theme="vice"] .contacto-mail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1.8rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition:
+    background 300ms ease-out,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 300ms ease-out;
+}
+
+:root[data-theme="vice"] .contacto-mail::after {
+  content: "→";
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="vice"] .contacto-mail:hover,
+:root[data-theme="vice"] .contacto-mail:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--color-accent-2) 65%, transparent);
+}
+
+:root[data-theme="vice"] .contacto-mail:hover::after,
+:root[data-theme="vice"] .contacto-mail:focus-visible::after {
+  transform: translateX(5px);
+}
+
+:root[data-theme="vice"] .contacto-mail:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+
+:root[data-theme="vice"] .contacto-mail:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="vice"] .credit,
+  :root[data-theme="vice"] .credit-role,
+  :root[data-theme="vice"] .credit-name,
+  :root[data-theme="vice"] .contacto-mail,
+  :root[data-theme="vice"] .contacto-mail::after {
+    transition: background 200ms ease-out;
+  }
+
+  :root[data-theme="vice"] .credit:hover .credit-role,
+  :root[data-theme="vice"] .credit:hover .credit-name,
+  :root[data-theme="vice"] .credit:focus-visible .credit-role,
+  :root[data-theme="vice"] .credit:focus-visible .credit-name,
+  :root[data-theme="vice"] .credit.is-active .credit-role,
+  :root[data-theme="vice"] .credit.is-active .credit-name,
+  :root[data-theme="vice"] .contacto-mail:hover,
+  :root[data-theme="vice"] .contacto-mail:focus-visible,
+  :root[data-theme="vice"] .contacto-mail:hover::after,
+  :root[data-theme="vice"] .contacto-mail:focus-visible::after {
+    transform: none;
+    box-shadow: none;
   }
 }
 
@@ -613,4 +912,163 @@
 :root[data-theme="caelestia"] .credit.is-active {
   background: color-mix(in srgb, var(--color-accent) 14%, transparent);
   border-color: var(--color-accent);
+}
+
+/* =====================================================================
+ * Cursor propio de Vice — marca de sincronismo
+ *
+ * `.vice-cursor-ready` la pone el JS SOLO tras montar con exito. Si el
+ * modulo no carga, no existe ninguna de estas reglas y el cursor del
+ * sistema queda intacto: ni una senal depende del JavaScript.
+ *
+ * La lista blanca se apoya en que `cursor` solo se hereda cuando el
+ * elemento no declara el suyo. `.gallery-track` declara `grab` y los
+ * `<a>` reciben `pointer` de la hoja del navegador, asi que el
+ * `cursor: none` del lienzo NO les llega — hay que apuntarlos uno a uno.
+ * Un pulsable nuevo conserva su glifo nativo mientras nadie lo opte.
+ * ===================================================================== */
+
+/* Lienzo de escenografia: lo hereda todo lo que no declare cursor propio. */
+.vice-cursor-ready:root[data-theme="vice"] [data-scene] {
+  cursor: none;
+}
+
+/* Texto: recupera el I-beam que la herencia del lienzo le habia quitado.
+ * Ocultarlo borraria la senal de que esto se selecciona y se copia. */
+.vice-cursor-ready:root[data-theme="vice"] [data-scene] :is(p, li, dd, dt, figcaption, blockquote) {
+  cursor: auto;
+}
+
+/* Opt-in explicito de los pulsables que la marca sustituye. El enlace
+ * externo queda fuera aposta: abre pestana nueva y la certeza de "esto es
+ * un enlace real" no se toca. `.gallery-track` tampoco entra: su `grab` es
+ * la unica pista de que la galeria se arrastra. */
+.vice-cursor-ready:root[data-theme="vice"]
+  [data-scene]
+  :is(button, a[href]:not([target="_blank"])) {
+  cursor: none;
+}
+
+.vcursor {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.vcursor > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+  /* Sin transiciones CSS: la posicion la escribe el rAF del modulo. Una
+   * transicion aqui pondria retardo al punto de clic, que es justo lo que
+   * hace fallar la punteria. */
+}
+
+/* Punto de clic. Contorno de tinta de 1px para no perderse cuando la bruma
+ * del fondo entra en su fase clara. */
+.vcursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--color-accent-2);
+  box-shadow: 0 0 0 1px rgb(11 5 19 / 0.9);
+  opacity: 0;
+}
+
+/* Fila ya seleccionada (`aria-pressed="true"` en `.credit`). */
+.vcursor-dot.is-active {
+  background: var(--color-accent);
+}
+
+.vcursor-sync {
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 70%, transparent);
+  opacity: 0;
+}
+
+.vcursor-sync.is-hot {
+  border-color: var(--color-accent-2);
+}
+
+.vcursor-sync.is-pressed {
+  border-width: 2px;
+}
+
+/* Anillo interior: solo cuando la fila bajo el cursor ya esta activa. */
+.vcursor-inner {
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+  opacity: 0;
+}
+
+.vcursor-arm {
+  background: color-mix(in srgb, var(--color-accent) 75%, transparent);
+  opacity: 0;
+}
+
+.vcursor-arm-h {
+  width: 9px;
+  height: 1px;
+  margin: -0.5px 0 0 -4.5px;
+}
+
+.vcursor-arm-v {
+  width: 1px;
+  height: 9px;
+  margin: -4.5px 0 0 -0.5px;
+}
+
+/* Cambio de rollo: la quemadura que avisaba al proyeccionista. Un disparo
+ * por entrada, nunca en bucle — una animacion permanente e independiente
+ * del raton compite con "algo se mueve en la escena". */
+.vcursor-cue {
+  width: 15px;
+  height: 15px;
+  margin: -7.5px 0 0 -7.5px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-paper) 92%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-paper) 60%, transparent);
+  opacity: 0;
+}
+
+.vcursor-cue.is-burning {
+  animation: vcursor-burn 260ms ease-out 1;
+}
+
+@keyframes vcursor-burn {
+  0% {
+    opacity: 0;
+    transform: var(--vcursor-burn) scale(0.5);
+  }
+  34% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: var(--vcursor-burn) scale(1.9);
+  }
+}
+
+/* Cinturon de seguridad: aunque el JS llegase a montarlo por error, con
+ * reduced-motion no se dibuja nada. */
+@media (prefers-reduced-motion: reduce) {
+  .vcursor {
+    display: none;
+  }
+
+  .vice-cursor-ready:root[data-theme="vice"] [data-scene],
+  .vice-cursor-ready:root[data-theme="vice"]
+    [data-scene]
+    :is(button, a[href]:not([target="_blank"])) {
+    cursor: auto;
+  }
 }

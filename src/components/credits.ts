@@ -1,4 +1,4 @@
-import { secondarySkills, skillGroups, type SkillGroup } from "../data/content";
+import { caseStudies, secondarySkills, skillGroups, type SkillGroup } from "../data/content";
 import { el, elFromMarkup } from "../utils/dom";
 import { getIconMarkup } from "../utils/icons";
 
@@ -7,45 +7,64 @@ interface CreditEntry {
   name: string;
   slug: string;
   detail: string;
-}
-
-/**
- * Aplana `skillGroups` + `secondarySkills` (ambos de `content.ts`, ninguna
- * cadena nueva) en una sola lista de creditos. Sin esto, las herramientas
- * secundarias (JavaScript, HTML, CSS, C, C++) se perderian: `createSkills`
- * dejaria de referenciarlas y quedarian huerfanas en `content.ts`.
- */
-function flatten(): CreditEntry[] {
-  const groups: SkillGroup[] = [...skillGroups, { label: "Otras herramientas", items: secondarySkills }];
-  return groups.flatMap((group) =>
-    group.items.map((item) => ({
-      role: group.label,
-      name: item.name,
-      slug: item.slug,
-      detail: item.detail,
-    })),
-  );
+  /**
+   * Proyectos de `caseStudies` cuyo `stack` incluye esta tecnologia. Es la
+   * prueba de uso real, y sale de datos que ya estaban en `content.ts` sin
+   * cruzar: ninguna cadena nueva. Se prefiere a una etiqueta de nivel
+   * ("avanzado", "intermedio") porque dice DONDE se uso, que es verificable,
+   * en vez de cuanto dice el autor que sabe, que no lo es.
+   *
+   * Si sale vacio, el bloque entero se oculta: cinco de las doce tecnologias
+   * no aparecen en ningun proyecto publicado y rellenarlas con una frase
+   * generica seria justo el tipo de relleno que el proyecto prohibe.
+   */
+  usedIn: string[];
 }
 
 const PANEL_ID = "credits-panel";
 
+function toEntry(role: string, item: SkillGroup["items"][number]): CreditEntry {
+  return {
+    role,
+    name: item.name,
+    slug: item.slug,
+    detail: item.detail,
+    usedIn: caseStudies
+      .filter((project) => project.stack.includes(item.name))
+      .map((project) => project.title),
+  };
+}
+
 /**
- * Creditos de pelicula interactivos: la lista a la izquierda y, a la derecha,
- * el icono real de la tecnologia y para que se usa. El panel nunca arranca
- * vacio. Responde a hover Y a foco de teclado (no solo raton): cada fila es
- * un `<button>` real, enfocable con Tab, que dispara el mismo `select()` en
- * `mouseenter`, `focus` y `click`.
+ * Creditos de pelicula interactivos, agrupados por area. La lista a la
+ * izquierda y, a la derecha, el icono real de la tecnologia, para que se usa y
+ * en que proyectos aparece. El panel nunca arranca vacio.
  *
- * Accesibilidad: cada fila lleva `aria-pressed` (cual esta activa) y
- * `aria-controls` apuntando al panel; el panel es `aria-live="polite"` para
- * que un lector de pantalla anuncie el cambio de contenido sin que el foco
- * se mueva. El icono es decorativo puro (la info va en texto): se marca con
- * `aria-hidden` (fuera del arbol de accesibilidad) y `data-decorative`
- * (exento del gate de contraste — nunca `aria-hidden` para eso, ver
- * `scripts/verify.py::check_contrast_wcag`).
+ * El encabezado de grupo (`.credit-group-label`) NO envuelve a sus filas: es
+ * un hermano plano mas dentro de `.credits-list`. Dos razones, las dos
+ * comprobadas antes de escribir esto:
+ *
+ *  1. `scene4Credits` (vice.choreography.ts) anima los hijos DIRECTOS de
+ *     `[data-credit-roll]`. Un envoltorio por grupo reduciria el escalonado de
+ *     doce filas a tres bloques; asi, ademas, los encabezados entran tambien.
+ *  2. `scripts/verify.py` exige que `.credit-role` exista en el DOM y este
+ *     oculto por CSS en Hyprland/Caelestia — es el gate que protege el re-skin
+ *     a pildoras. Por eso ese `<span>` sigue aqui aunque en Vice no se vea: se
+ *     oculta con CSS, no se elimina.
+ *
+ * Accesibilidad: cada fila es un `<button>` real, enfocable con Tab, que
+ * dispara el mismo `select()` en `mouseenter`, `focus` y `click`, con
+ * `aria-pressed` (cual esta activa) y `aria-controls` apuntando al panel; el
+ * panel es `aria-live="polite"` para que un lector anuncie el cambio sin mover
+ * el foco. El icono es decorativo puro: `aria-hidden` (fuera del arbol de
+ * accesibilidad) y `data-decorative` (exento del gate de contraste — nunca
+ * `aria-hidden` para eso, ver `scripts/verify.py::check_contrast_wcag`).
  */
 export function createCredits(): HTMLElement {
-  const entries = flatten();
+  const groups: SkillGroup[] = [
+    ...skillGroups,
+    { label: "Otras herramientas", items: secondarySkills },
+  ];
 
   const icon = el("div", "credits-icon", []);
   icon.setAttribute("aria-hidden", "true");
@@ -55,48 +74,74 @@ export function createCredits(): HTMLElement {
   const role = el("p", "credits-panel-role", []);
   const detail = el("p", "credits-panel-detail", []);
 
-  const panel = el("div", "credits-panel scene-surface", [icon, name, role, detail]);
+  const usedList = el("div", "credits-used-list", []);
+  usedList.setAttribute("data-credit-used-list", "");
+  const used = el("div", "credits-used", [
+    el("p", "credits-used-label", ["Aparece en"]),
+    usedList,
+  ]);
+  used.setAttribute("data-credit-used", "");
+
+  const panel = el("div", "credits-panel scene-surface", [icon, name, role, detail, used]);
   panel.id = PANEL_ID;
   panel.setAttribute("data-credit-panel", "");
   panel.setAttribute("role", "status");
   panel.setAttribute("aria-live", "polite");
 
-  const rows = entries.map((entry, index) => {
-    const row = el("button", "credit", [
-      el("span", "credit-role", [entry.role]),
-      el("span", "credit-name", [entry.name]),
-    ]);
-    row.type = "button";
-    row.setAttribute("data-credit", "");
-    row.dataset.index = String(index);
-    row.setAttribute("aria-controls", PANEL_ID);
-    row.setAttribute("aria-pressed", "false");
+  const rows: HTMLButtonElement[] = [];
+  const listChildren: HTMLElement[] = [];
 
-    const select = () => {
-      rows.forEach((other) => {
-        other.classList.remove("is-active");
-        other.setAttribute("aria-pressed", "false");
-      });
-      row.classList.add("is-active");
-      row.setAttribute("aria-pressed", "true");
-      icon.replaceChildren(elFromMarkup("credits-svg", getIconMarkup(entry.slug)));
-      name.textContent = entry.name;
-      role.textContent = entry.role;
-      detail.textContent = entry.detail;
-    };
+  for (const group of groups) {
+    const groupLabel = el("p", "credit-group-label", [group.label]);
+    groupLabel.setAttribute("data-credit-group", "");
+    listChildren.push(groupLabel);
 
-    row.addEventListener("mouseenter", select);
-    row.addEventListener("focus", select);
-    row.addEventListener("click", select);
-    return row;
-  });
+    for (const item of group.items) {
+      const entry = toEntry(group.label, item);
+      const row = el("button", "credit", [
+        el("span", "credit-role", [entry.role]),
+        el("span", "credit-name", [entry.name]),
+      ]);
+      row.type = "button";
+      row.setAttribute("data-credit", "");
+      row.dataset.index = String(rows.length);
+      row.setAttribute("aria-controls", PANEL_ID);
+      row.setAttribute("aria-pressed", "false");
 
-  const list = el("div", "credits-list", rows);
+      const select = () => {
+        for (const other of rows) {
+          other.classList.remove("is-active");
+          other.setAttribute("aria-pressed", "false");
+        }
+        row.classList.add("is-active");
+        row.setAttribute("aria-pressed", "true");
+        icon.replaceChildren(elFromMarkup("credits-svg", getIconMarkup(entry.slug)));
+        name.textContent = entry.name;
+        role.textContent = entry.role;
+        detail.textContent = entry.detail;
+        usedList.replaceChildren(
+          ...entry.usedIn.map((title) => el("span", "credits-used-item", [title])),
+        );
+        // Sin proyectos publicados, la seccion desaparece entera en vez de
+        // mostrar una etiqueta vacia o una excusa.
+        used.hidden = entry.usedIn.length === 0;
+      };
+
+      row.addEventListener("mouseenter", select);
+      row.addEventListener("focus", select);
+      row.addEventListener("click", select);
+
+      rows.push(row);
+      listChildren.push(row);
+    }
+  }
+
+  const list = el("div", "credits-list", listChildren);
   list.setAttribute("data-credit-roll", "");
 
   // Estado inicial: el panel muestra la primera entrada sin esperar a que
-  // alguien interactue. `rows[0]` siempre existe: `flatten()` nunca devuelve
-  // una lista vacia (skillGroups + secondarySkills traen contenido real).
+  // alguien interactue. `rows[0]` siempre existe: `groups` nunca esta vacio
+  // (skillGroups + secondarySkills traen contenido real).
   rows[0]?.dispatchEvent(new MouseEvent("mouseenter"));
 
   return el("div", "credits-grid", [list, panel]);

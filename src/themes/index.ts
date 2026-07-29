@@ -29,6 +29,15 @@ export function pickTheme(): Theme {
 
 /** Carga diferida de la tipografia del tema activo (las otras nunca se piden). */
 function loadThemeFonts(href: string): void {
+  /*
+   * defensive: el script inline de index.html ya pide esta hoja antes del
+   * primer pintado (ver el comentario alli). Esta funcion queda como red de
+   * seguridad para el caso de que ese mapa se desincronice del `fontHref` real
+   * del tema; si la peticion ya esta hecha, no se duplica.
+   */
+  const selector = `link[rel="stylesheet"][href="${CSS.escape(href)}"]`;
+  if (document.head.querySelector(selector)) return;
+
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = href;

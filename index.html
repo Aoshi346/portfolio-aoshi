@@ -31,6 +31,34 @@
         var forced = new URLSearchParams(location.search).get("theme");
         var id = ids.indexOf(forced) >= 0 ? forced : ids[Math.floor(Math.random() * ids.length)];
         document.documentElement.dataset.theme = id;
+
+        /*
+          La hoja de fuentes se pide AQUI, no desde `applyTheme` (themes/index.ts).
+          Pedirla desde el bundle obliga a esperar a que se descargue, se parsee y
+          se ejecute ese modulo antes de que arranque siquiera la peticion del CSS
+          de Google Fonts, que a su vez dispara la del .woff2: dos saltos
+          encadenados detras de una espera evitable. El titular del hero es el
+          elemento LCP de la pagina y depende de esa fuente.
+
+          Duplicar las URLs es el mismo precio que ya se paga con la lista de ids
+          de arriba. Si se anade o cambia un tema, hay que tocar su `fontHref` en
+          themes/*.ts Y este mapa; `loadThemeFonts` no vuelve a pedir la que ya
+          este puesta, asi que una desincronizacion degrada a la via lenta, no a
+          una peticion duplicada.
+        */
+        var fontHrefs = {
+          vice: "https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Manrope:wght@200;300;400;600;700&display=swap",
+          hyprland:
+            "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap",
+          caelestia:
+            "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap",
+        };
+        if (fontHrefs[id]) {
+          var link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = fontHrefs[id];
+          document.head.appendChild(link);
+        }
       })();
     </script>
   </head>

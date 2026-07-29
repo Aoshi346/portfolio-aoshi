@@ -929,25 +929,33 @@ def run(
             check_theme_identity(page, theme)
 
             if theme == "vice":
+                # El backdrop de Vice ya no es video+poster: es la bruma
+                # generativa de `src/backgrounds/viceHaze.ts`, un canvas WebGL
+                # como el de los otros dos temas. El cambio fue deliberado —
+                # el video servia el fixture SMPTE, cuyas franjas de color
+                # primario obligaban a tapar hero y contacto con un scrim casi
+                # opaco para poder medir contraste. Con la bruma (brillo
+                # acotado en el propio shader) el scrim desaparecio; lo que
+                # este gate vigila ahora es que el canvas exista y pinte.
                 backdrop = page.evaluate("""(() => {
                   const host = document.querySelector('.bg-theme');
                   if (!host) return null;
-                  const img = host.querySelector('img');
-                  const video = host.querySelector('video');
+                  const canvas = host.querySelector('canvas');
                   return {
-                    poster: !!img,
-                    video: !!video,
-                    playing: video ? !video.paused : false,
+                    canvas: !!canvas,
+                    painted: canvas ? canvas.width > 0 && canvas.height > 0 : false,
+                    legacyMedia: !!host.querySelector('img, video'),
                   };
                 })()""")
-                check(backdrop is not None and backdrop["poster"], "hay poster en el backdrop")
-                # Con reduced-motion, `shouldLoadVideo()` (cinematicBackdrop.ts)
-                # decide a proposito NO cargar el video: la asercion de arriba
-                # ("sin video con reduced-motion") ya cubre ese caso. Comprobar
-                # aqui tambien que SI hay video contradiria esa degradacion.
-                if not reduced:
-                    check(backdrop is not None and backdrop["video"], "hay video en el backdrop")
-                    check(backdrop is not None and backdrop["playing"], "el video se reproduce")
+                check(backdrop is not None and backdrop["canvas"], "hay canvas de fondo en el backdrop")
+                check(backdrop is not None and backdrop["painted"], "el canvas del backdrop tiene tamano")
+                # Con reduced-motion el shader pinta UN fotograma estatico y no
+                # arranca el RAF (`mountShaderBackground`), asi que el canvas
+                # sigue presente en los dos modos: no hay ramificacion aqui.
+                check(
+                    backdrop is not None and not backdrop["legacyMedia"],
+                    "el backdrop no reintroduce el video/poster de fixture",
+                )
 
                 fonts = page.evaluate("""(() => {
                   const root = getComputedStyle(document.documentElement);
