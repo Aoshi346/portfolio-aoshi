@@ -112,10 +112,24 @@ export type SkillGroup = {
 };
 
 /*
- * El reparto del cartel, en seis bloques. Las frases son cortas y de longitud
- * pareja a proposito: el pie del cartel reserva altura fija, y frases dispares
- * obligarian a reservar hueco para la mas larga y dejarlo medio vacio casi
- * siempre. Por eso se acortaron tambien las doce que ya existian.
+ * El reparto del cartel, en cuatro bloques de 8, 5, 5 y 5. Las frases son
+ * cortas y de longitud pareja a proposito: el pie del cartel reserva altura
+ * fija, y frases dispares obligarian a reservar hueco para la mas larga y
+ * dejarlo medio vacio casi siempre. Por eso se acortaron tambien las doce que
+ * ya existian.
+ *
+ * El corte es por LO QUE SON las cosas, no por su tamano. Antes habia seis
+ * bloques y tres de ellos tenian 2, 3 y 2 nombres: en un cartel eso se lee
+ * como sobras. Se descarto la consolidacion obvia — fundir "Escritorio",
+ * "Herramientas" e "IA" en un bloque de 7 — porque el rotulo resultante
+ * mentiria: Electron y GTK4 no son herramientas con las que trabajas, son
+ * aquello con lo que construyes la interfaz, al mismo nivel que React. De ahi
+ * "Interfaz", que cubre web y escritorio, y un "Herramientas" honesto donde
+ * las cinco entradas si son cosas con las que se trabaja.
+ *
+ * Coste asumido: "IA" pierde rotulo propio. Se acepta porque queda junto a lo
+ * que de verdad se le parece, y porque el rotulo propio no compensaba un
+ * bloque de dos nombres.
  *
  * Cada `slug` tiene que estar registrado en `src/utils/icons.ts`:
  * `getIconMarkup()` lanza excepcion con un slug desconocido, y lo hace en los
@@ -123,7 +137,7 @@ export type SkillGroup = {
  */
 export const skillGroups: SkillGroup[] = [
   {
-    label: "Frontend",
+    label: "Interfaz",
     items: [
       { name: "React", slug: "react", detail: "Interfaces con estado complejo." },
       { name: "Next.js", slug: "nextdotjs", detail: "Para apps con rutas y render en servidor." },
@@ -131,6 +145,8 @@ export const skillGroups: SkillGroup[] = [
       { name: "Tailwind CSS", slug: "tailwindcss", detail: "Maquetación rápida y consistente." },
       { name: "Vite", slug: "vite", detail: "Mi bundler por defecto." },
       { name: "GSAP", slug: "gsap", detail: "Las animaciones y las transiciones." },
+      { name: "Electron", slug: "electron", detail: "Aplicaciones de escritorio con tecnología web." },
+      { name: "GTK4", slug: "gtk", detail: "Interfaces nativas en C." },
     ],
   },
   {
@@ -154,23 +170,11 @@ export const skillGroups: SkillGroup[] = [
     ],
   },
   {
-    label: "Escritorio",
-    items: [
-      { name: "Electron", slug: "electron", detail: "Aplicaciones de escritorio con tecnología web." },
-      { name: "GTK4", slug: "gtk", detail: "Interfaces nativas en C." },
-    ],
-  },
-  {
     label: "Herramientas",
     items: [
       { name: "Git", slug: "git", detail: "Control de versiones en todo lo que hago." },
       { name: "GitHub", slug: "github", detail: "Donde publico y comparto el código." },
       { name: "n8n", slug: "n8n", detail: "Automatizo tareas repetitivas entre servicios." },
-    ],
-  },
-  {
-    label: "IA",
-    items: [
       { name: "Claude Code", slug: "claude", detail: "Asistente en terminal para escribir y revisar código." },
       { name: "Gemini CLI", slug: "googlegemini", detail: "Consultas rápidas desde la terminal." },
     ],

@@ -119,17 +119,36 @@ es por el dibujo de la letra, no por metrica.
 
 ### 3.1 Los 23 nombres, por bloque
 
+**Enmienda del 29-jul-2026, despues del gate visual.** El corte original eran
+seis bloques de 6/5/5/2/3/2. Tres bloques de dos y tres nombres se leian como
+sobras en un cartel, y seis rotulos ambar hacian que la mitad de la pieza fueran
+etiquetas. Se cerro sobre mockup vivo (`.superpowers/brainstorm/37462-1785364143`,
+`bloques-cartel-v2.html`) con tres variantes y las mismas 23 tecnologias.
+
 | Bloque | Tecnologias |
 |---|---|
-| Frontend | React · Next.js · TypeScript · Tailwind CSS · Vite · GSAP |
+| Interfaz | React · Next.js · TypeScript · Tailwind CSS · Vite · GSAP · Electron · GTK4 |
 | Backend y datos | Python · Django · Node.js · MySQL · RxDB |
 | Lenguajes base | JavaScript · HTML · CSS · C · C++ |
-| Escritorio | Electron · GTK4 |
-| Herramientas | Git · GitHub · n8n |
-| IA | Claude Code · Gemini CLI |
+| Herramientas | Git · GitHub · n8n · Claude Code · Gemini CLI |
 
-Los tres primeros nombres de bloque salen de `content.ts`; "Escritorio",
-"Herramientas" e "IA" son nuevos.
+**Por que 8/5/5/5 y no 6/5/5/7.** La consolidacion obvia era fundir los tres
+bloques pequenos en uno de siete, pero el rotulo resultante mentiria: Electron y
+GTK4 no son herramientas con las que se trabaja, son aquello con lo que se
+construye la interfaz, al mismo nivel que React. "Interfaz" cubre web y
+escritorio sin forzar nada, y deja un "Herramientas" honesto donde las cinco
+entradas si son cosas con las que se trabaja. De paso dice algo que el corte
+anterior no decia: que hay interfaz en web *y* en escritorio nativo.
+
+**Coste asumido:** "IA" pierde rotulo propio. Separado se leia como postura
+deliberada; se acepta perderlo porque queda junto a lo que de verdad se le
+parece y porque no compensaba un bloque de dos nombres.
+
+**Objecion descartada con medida:** se apunto que ocho nombres partirian en dos
+lineas en escritorio. Es falso — el contenedor real da 766px y la fila de ocho
+ocupa 620px, y a 1024 y 900px de ventana baja a 539 y 478 por el clamp del
+cuerpo. Medido con `prefers-reduced-motion`, en escritorio el reparto son
+exactamente cuatro lineas de 8/5/5/5.
 
 `n8n` se escribe en minuscula: lleva excepcion a la versalita del cartel, porque
 asi se escribe la marca.
