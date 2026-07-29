@@ -1,5 +1,15 @@
 # Traspaso — "Con que construyo" como cartel de reparto (tema Vice)
 
+> **SUPERADO PARCIALMENTE (2026-07-29).** Existe un plan formal con spec y
+> checkboxes que es la fuente de verdad para ejecutar esto:
+> `docs/superpowers/plans/2026-07-29-creditos-cartel-reparto.md` (spec en
+> `docs/superpowers/specs/2026-07-29-creditos-cartel-reparto-design.md`).
+> **Empieza por ahi.** Este documento se conserva porque su seccion de
+> contenido real (el cruce tecnologia -> proyectos, verificado contra
+> `content.ts`) y sus siete restricciones duras siguen siendo validas y el plan
+> no las repite. Sigue SIN implementar: no hay rastro de `--font-billing` ni de
+> la tipografia condensada en el codigo.
+
 ## Que hay que hacer
 
 Rehacer la escena de creditos (`[data-scene="credits"]`) con la direccion **A ·
