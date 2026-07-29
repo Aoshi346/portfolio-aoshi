@@ -1,4 +1,12 @@
-import { aboutCopy, education, experience, focusAreas, identity, stats } from "../data/content";
+import {
+  aboutCopy,
+  education,
+  experience,
+  focusAreas,
+  identity,
+  skillGroups,
+  stats,
+} from "../data/content";
 import { el } from "../utils/dom";
 
 /**
@@ -9,6 +17,25 @@ import { el } from "../utils/dom";
  */
 function statValue(label: string): string {
   return stats.find((stat) => stat.label === label)?.value ?? "";
+}
+
+/**
+ * Las primeras `count` tecnologias de un grupo de skills, por su rotulo.
+ *
+ * Existe para que la segunda pareja tenga una prueba de verdad. La primera
+ * version usaba `focusAreas[1].detail` ("Estado complejo sin romperse en
+ * produccion") como prueba de la afirmacion "Interfaces que aguantan", y en el
+ * naive test salio el problema: eso no prueba, parafrasea. Una prueba tiene que
+ * aportar un hecho que la afirmacion no contenga ya. El stack real lo aporta —
+ * y ademas responde a lo que una reclutadora usa para filtrar, que "Full Stack"
+ * a secas no le dice.
+ */
+function stackOf(groupLabel: string, count: number): string {
+  const group = skillGroups.find((candidate) => candidate.label === groupLabel);
+  return (group?.items ?? [])
+    .slice(0, count)
+    .map((item) => item.name)
+    .join(" · ");
 }
 
 /** dt + dd de la ficha, etiquetados para que Vice pueda recomponerlos en fila. */
@@ -24,8 +51,15 @@ function createCard(): HTMLElement {
   const avatar = el("img", "about-avatar");
   avatar.src = identity.githubAvatar;
   avatar.alt = identity.name;
-  avatar.width = 50;
-  avatar.height = 50;
+  /*
+   * 150x188 y no 50x50: en Vice el retrato se pinta a ese tamano (4:5) y los
+   * atributos son lo que el navegador usa para reservar el hueco antes de que
+   * la imagen llegue. Con 50x50 declarados y 188px pintados, el layout salta al
+   * cargar. Los otros dos temas lo bajan a 50px por CSS, que es la direccion
+   * correcta: reservar de mas y encoger no desplaza nada.
+   */
+  avatar.width = 150;
+  avatar.height = 188;
   avatar.loading = "lazy";
   avatar.decoding = "async";
 
@@ -192,9 +226,19 @@ function createPairs(): HTMLElement {
   const rule = el("span", "about-pairs-rule", []);
   rule.setAttribute("data-pairs-rule", "");
 
+  /*
+   * El rotulo nombra las DOS columnas, y por eso ya no hace falta la nota
+   * "Cada afirmacion, con lo que la sostiene" que iba debajo. Dos hallazgos de
+   * QA en uno: el rotulo anterior ("En que me enfoco", heredado de la columna
+   * del pie) no describia lo que encabeza, y la nota que si lo describia era el
+   * texto menos legible de la seccion (10,88px, peso 300, opacidad 0,55 — no se
+   * leia en movil). Un rotulo legible hace el trabajo de los dos.
+   *
+   * Es un h3 distinto del de la columna "En que me enfoco" del pie, que sigue
+   * intacta para Hyprland y Caelestia.
+   */
   const head = el("div", "about-pairs-head", [
-    el("h3", "about-h", ["En qué me enfoco"]),
-    el("span", "about-pairs-note", ["Cada afirmación, con lo que la sostiene."]),
+    el("h3", "about-h", ["Qué hago · con qué lo respaldo"]),
     rule,
   ]);
 
@@ -212,7 +256,7 @@ function createPairs(): HTMLElement {
     createPair(
       focusAreas[1]?.title ?? "",
       `${statValue("Proyectos")} proyectos · ${statValue("En producción")} en producción`,
-      focusAreas[1]?.detail ?? "",
+      stackOf("Frontend", 4),
     ),
     // La tercera afirmacion es `identity.role`, que tambien vive en la fila de
     // meta de la cabecera. Es la unica reaparicion aceptada del plano: arriba
