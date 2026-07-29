@@ -659,8 +659,15 @@
   color: color-mix(in srgb, var(--color-paper) 34%, transparent);
 }
 
+/*
+ * 62% y no el 45% con el que empezo: a 45% el gate midio 4.21:1 sobre la
+ * bruma (fg=(124,113,121), bg=(17,6,31)) y el minimo AA es 4.5. Es el mismo
+ * defecto que ya mordio en `.hero-corner` y en la etiqueta de la ficha de
+ * obra — un texto "apagado a ojo" que no llega. 62% deja margen real, no el
+ * justo, porque el fondo es generativo y su brillo varia con el scroll.
+ */
 :root[data-theme="vice"] .credits-used-label {
-  color: color-mix(in srgb, var(--color-paper) 45%, transparent);
+  color: color-mix(in srgb, var(--color-paper) 62%, transparent);
 }
 
 /*
