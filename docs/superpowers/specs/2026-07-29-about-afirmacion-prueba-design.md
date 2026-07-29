@@ -3,12 +3,16 @@
 > Spec de diseno. Escrito el 2026-07-29 tras un brainstorm con companion visual y dos
 > especialistas (`especialista-ux-ui`, `especialista-animaciones`) trabajando en paralelo
 > sobre el mismo brief. Todo numero de este documento esta medido contra el codigo, no
-> deducido. **No se ha tocado `src/`.**
+> deducido. La frase "no se ha tocado `src/`" era cierta al escribirlo y ya no lo es:
+> ver el registro de implementacion al final.
 
-Estado: **en ejecucion** — rama `design/about-afirmacion-prueba`, en un worktree
-aparte (`.claude/worktrees/about-afirmacion-prueba`). Este spec pertenece a ese
-trabajo, no al del cartel de reparto; la linea de estado se anade para que el gate
-de `scripts/verify.py::check_spec_plan_consistency` pueda cruzarlo.
+Estado: **implementado** — mergeado a `main` desde `design/about-afirmacion-prueba`
+(worktree aparte). No lleva plan en `docs/superpowers/plans/`: se implemento
+directamente desde este spec por decision del usuario, asi que
+`check_spec_plan_consistency` no tiene casillas que cruzar. **Lo que sustituye al
+plan es el registro de implementacion del final**, que dice en que se desvio la
+realidad de lo aprobado aqui y por que; si los dos se contradicen, manda el
+registro.
 
 ## Encargo
 

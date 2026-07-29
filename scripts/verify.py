@@ -172,6 +172,11 @@ def check_gallery_placeholder(page) -> None:
 # `loop-workflow.md` quedan fuera a proposito: son plantillas genericas con
 # rutas de ejemplo (`backend/apps/[mod]`) que darian ruido en cada corrida.
 DOC_FILES = [
+    # El README es el documento que MAS deriva de todos: es el unico que
+    # describe el proyecto entero y el unico que lee alguien de fuera, asi que
+    # una ruta muerta ahi cuesta mas que en cualquier otro sitio. Entra por eso,
+    # no por completismo.
+    "README.md",
     "CLAUDE.md",
     ".claude/CLAUDE.md",
     ".claude/rules/code-style.md",
@@ -390,7 +395,13 @@ def check_spec_plan_consistency() -> None:
         if cita is None:
             continue
         plan = REPO_ROOT / cita
-        if not plan.exists():
+        # `is_file()` y no `exists()`: un spec puede citar el DIRECTORIO de
+        # planes en prosa —"no lleva plan en `docs/superpowers/plans/`"— y ahi
+        # `exists()` dice si, con lo que el `read_text()` de abajo revienta con
+        # IsADirectoryError y se lleva por delante el arnes entero antes de
+        # abrir el navegador. Paso de fallo real, no hipotetico: lo disparo el
+        # spec de about al declararse implementado sin plan.
+        if not plan.is_file():
             continue  # check_docs_references() ya se queja de la ruta muerta
         planes_citados[plan] = estado
 
@@ -724,10 +735,23 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
         if (rect.width < 2 || rect.height < 2) continue;
         if (rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
         if (rect.right <= 0 || rect.left >= window.innerWidth) continue;
+        /*
+         * Tipografia en CONTORNO: si `color` es transparente pero el elemento
+         * lleva `-webkit-text-stroke`, lo que se ve es el trazo, y el color del
+         * trazo es el primer plano real. Sin esto el arnes leia `color:
+         * transparent`, lo componia sobre el fondo y obtenia fg == bg, o sea
+         * 1.00:1 — un fallo fantasma sobre texto perfectamente legible (medido
+         * aparte en 12.88:1). Lo destaparon las tres afirmaciones de "Quien es"
+         * en Vice, que van en contorno de 0.028em a proposito.
+         */
+        const strokeW = parseFloat(style.webkitTextStrokeWidth) || 0;
+        const strokeC = style.webkitTextStrokeColor;
+        const pintaSoloElTrazo =
+          /^(transparent|rgba\(0,\s*0,\s*0,\s*0\))$/.test(style.color.trim()) && strokeW > 0;
         out.push({
           tag: el.tagName.toLowerCase(),
           text: text.slice(0, 40),
-          color: style.color,
+          color: pintaSoloElTrazo ? strokeC : style.color,
           fontSize: parseFloat(style.fontSize),
           fontWeight: style.fontWeight,
           rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
