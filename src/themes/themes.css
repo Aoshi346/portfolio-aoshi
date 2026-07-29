@@ -449,6 +449,38 @@
 }
 
 /*
+ * El titulo del cartel. Un one-sheet pone el titulo de la pelicula grande
+ * encima del bloque de reparto; aqui se habia construido el reparto y se
+ * habia omitido el titulo, asi que el conjunto se leia como una lista con
+ * epigrafes. Lo cazaron los dos criticos por caminos distintos: la auditoria
+ * visual midio que el tipo mas grande de la escena eran 24.8px (el hero va a
+ * ~137px) y que el `h2` compartia color computado EXACTO con los encabezados
+ * de bloque; la tester no tecnica, sin que nadie le dijera que pretendia ser,
+ * lo describio como "su curriculum tecnico, en plan lista".
+ *
+ * El DOM no se toca: `skills.ts` sigue montando un `h2.hero-kick` y en
+ * Hyprland y Caelestia se sigue leyendo como el antetitulo pequeno de las
+ * otras cuatro escenas. Aqui se re-skinea a titulo, que es justo lo que
+ * significa que la piel la decide el CSS.
+ *
+ * Mismos tokens que `.display-xl` y misma escala que "Hablemos" en contacto
+ * (clamp 2rem-4rem): el cartel gana ancla sin inventarse una tipografia nueva
+ * ni desentonar con la escena vecina. En paper, no en accent-legible, para
+ * que deje de competir con los encabezados de bloque.
+ */
+:root[data-theme="vice"] .credits > .hero-kick {
+  margin-bottom: clamp(1.5rem, 3vh, 2.6rem);
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: clamp(2rem, 5.5vw, 3.6rem);
+  line-height: var(--display-leading);
+  letter-spacing: var(--display-tracking);
+  text-align: center;
+  text-wrap: balance;
+  color: var(--color-paper);
+}
+
+/*
  * Encabezado de bloque del cartel. `display: block` es lo que fuerza el salto
  * de renglon entre grupos: los nombres son `inline-block` y fluyen seguidos,
  * asi que basta con que el encabezado sea de bloque para que cada grupo
@@ -534,6 +566,21 @@
   border-color: transparent;
   background: none;
   color: var(--color-accent);
+  /*
+   * Segunda senal, ademas del color. El tono no basta y lo dijeron los dos
+   * criticos: la auditoria lo marco como fallo de SC 1.4.1 (ambar y crema
+   * sobre oscuro son ambos "claros", 13.4:1 contra 17.8:1, y para un
+   * deuteranope la diferencia de tono es minima), y la tester no tecnica no
+   * descubrio sola que la seccion respondiera al raton.
+   *
+   * Subrayado y no otra cosa porque las tres alternativas estan vetadas: el
+   * `transform` lo pisa el estilo inline de GSAP, el peso no existe en
+   * Pathway, y un recuadro es lo que esta direccion elimina. Ademas se pinta,
+   * no ocupa: cero reflujo, asi que los nombres vecinos no se mueven.
+   */
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
 }
 
 /* Marcas que se escriben en minuscula: el cartel no las sube a versalita. */
@@ -667,6 +714,17 @@
  * justo, porque el fondo es generativo y su brillo varia con el scroll.
  */
 :root[data-theme="vice"] .credits-used-label {
+  /*
+   * `font-weight: 400` explicito, no heredado. La base pide 700 para las
+   * pieles de interfaz, pero Pathway Gothic One SOLO tiene el 400: el
+   * navegador sintetizaba el negrita engordando el trazo, y un faux bold a
+   * 8.8px se empasta. Es ademas incoherente con la decision de la fuente —
+   * un solo peso, el realce va por color.
+   */
+  font-weight: 400;
+  /* Suelo de 11px: 8.8px estaba por debajo de lo legible para la unica
+     etiqueta que explica que son los nombres en ambar de al lado. */
+  font-size: 0.7rem;
   color: color-mix(in srgb, var(--color-paper) 62%, transparent);
 }
 
@@ -740,11 +798,50 @@
   :root[data-theme="vice"] .credit {
     font-size: 1rem;
     line-height: 2.75;
-    padding: 0 0.06rem;
+    /*
+     * Ancho minimo del objetivo, no solo alto. El comentario anterior daba
+     * por cumplido SC 2.5.8 midiendo la ALTURA, y el criterio pide 24x24: el
+     * ancho se habia quedado sin comprobar. Medido a 390px, "Git" — primer
+     * nombre de su bloque, asi que no hereda el padding del separador —
+     * quedaba en 17.9px, y con 0px de hueco entre objetivos contiguos la
+     * excepcion de espaciado tampoco aplicaba.
+     *
+     * El padding lateral va aqui y no en el separador para que TODOS los
+     * nombres lo tengan, tambien el primero de cada bloque, que es
+     * sistematicamente el mas estrecho.
+     */
+    min-width: 24px;
+    padding: 0 0.3rem;
   }
 
+  /*
+   * 0.62rem, no 0.85: con 23 marcas de 18px el friso caia en filas de
+   * 11/11/1 y la ultima quedaba sola y centrada, leyendose como un simbolo
+   * decorativo suelto en vez de parte del friso. Es el mismo defecto que ya
+   * se corrigio en escritorio bajando el gap, y que aqui no se reverifico.
+   */
   :root[data-theme="vice"] .credits-marks {
-    gap: 0.85rem;
+    gap: 0.62rem;
+  }
+
+  /*
+   * Proximidad. El half-leading de 14px que compra los 44px de area pulsable
+   * se suma por igual al hueco encabezado-nombres y al hueco entre bloques,
+   * asi que comprime la diferencia entre los dos: medido, el ratio caia a
+   * 1.75 contra el 2.11 de escritorio y los encabezados empezaban a flotar
+   * equidistantes entre su bloque y el anterior. Con los recuadros quitados,
+   * la proximidad es lo unico que sostiene la estructura de seis bloques.
+   *
+   * Se corrige con el margen del encabezado y NO bajando el interlineado: el
+   * 2.75 es lo que da los 44px y eso no se negocia.
+   */
+  :root[data-theme="vice"] .credit-group-label {
+    margin-top: 1.9rem;
+    margin-bottom: -0.35rem;
+  }
+
+  :root[data-theme="vice"] .credit-group-label:first-child {
+    margin-top: 0;
   }
 }
 
