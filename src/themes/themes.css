@@ -713,6 +713,34 @@
   opacity: 1;
 }
 
+/*
+ * Movil: la disposicion D. El cartel conserva su composicion — nombres
+ * seguidos, renglones que se parten — y lo unico que cambia es el
+ * interlineado.
+ *
+ * 2.75 no es un valor estetico. Por debajo de 860px el `clamp` del cuerpo
+ * resuelve al minimo exacto de 1rem (16px), asi que 16 x 2.75 = 44px justos:
+ * es el minimo con el que el area pulsable llega al objetivo sin que las
+ * filas se pisen. Con 2.7 se queda en 43.2 y no pasa.
+ *
+ * Las alternativas se midieron en 390px con los 23 nombres: apilar uno por
+ * linea daba 1623px de alto y volver a la lista 1619px, casi el doble que
+ * estos ~870px, en una pagina que ya tiene dos zonas fijadas. El objetivo de
+ * 44px es el liston AAA que se marca el proyecto (SC 2.5.5); el requisito AA
+ * es SC 2.5.8, de 24x24, que ya se cumplia con los 29px de partida.
+ */
+@media (max-width: 859px) {
+  :root[data-theme="vice"] .credit {
+    font-size: 1rem;
+    line-height: 2.75;
+    padding: 0 0.06rem;
+  }
+
+  :root[data-theme="vice"] .credits-marks {
+    gap: 0.85rem;
+  }
+}
+
 /* ------------------------------------------------ Vice: carril de obra en horizontal */
 
 /*
