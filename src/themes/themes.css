@@ -22,6 +22,21 @@
   --font-body: "Manrope", system-ui, sans-serif;
   --font-lead: "Manrope", system-ui, sans-serif;
   /*
+   * Condensada del cartel de reparto, y SOLO del cartel. Es un token aparte a
+   * proposito: `scripts/verify.py` comprueba que `--font-display` contenga
+   * "Passion One" y `--font-body` "Manrope", y que ninguno resuelva a
+   * monoespaciada, asi que ninguno de los dos se puede reasignar.
+   *
+   * Pathway Gothic One ya viene dibujada estrecha, asi que el cartel NO lleva
+   * `transform: scaleX(.88)`: ese truco no condensa, aplasta — adelgaza los
+   * trazos verticales y deja intactos los horizontales. Un solo peso (400):
+   * el nombre activo se realza con color, nunca con grosor.
+   *
+   * Oswald queda de reserva por si la primera no llega a tiempo: es la otra
+   * condensada que se probo y la unica cuyas metricas se parecen.
+   */
+  --font-billing: "Pathway Gothic One", "Oswald", system-ui, sans-serif;
+  /*
    * Red de seguridad: la Task 4 retiro JetBrains Mono de Vice, pero el
    * marcado todavia trae `font-mono` a pelo en varios sitios (ver
    * experience.ts y las tareas 6-10 pendientes). Sin este token, esas clases
