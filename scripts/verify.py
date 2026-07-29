@@ -1180,8 +1180,22 @@ def run(
                 )
                 check(letterbox_hero < 2, f"el letterbox no aparece en el hero ({letterbox_hero}px)")
 
-                page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.45)")
-                page.wait_for_timeout(1200)
+                # `_scroll_to_and_settle` y no `scrollTo` crudo + espera fija: es
+                # justo la desincronizacion que documenta el docstring del
+                # helper. Aqui se llega despues de una tanda de barridos con
+                # rueda simulada, asi que el target interno de Lenis esta
+                # caliente; un `scrollTo` mueve el scroll nativo y NO ese
+                # target, y 1200ms fijos no bastan para el viaje. Se vio al
+                # crecer "about" a escena de dos pantallas (rediseno de
+                # afirmacion y prueba): el documento paso de ~12000 a 12370px,
+                # el salto al 45% crecio con el, y las dos aserciones de cromo
+                # empezaron a medir con Lenis todavia a mitad de camino
+                # (atenuador en 0.0968 de un reposo de 0.62). El cromo estaba
+                # bien —verificado a 0.35, 0.45, 0.55, 0.65 y 0.75 del
+                # documento, siempre 0.62 y 58.5px—; lo que fallaba era la
+                # medicion. Latente desde antes: solo hacia falta un documento
+                # algo mas largo para cruzar el limite.
+                _scroll_to_and_settle(page, page.evaluate("document.body.scrollHeight") * 0.45)
                 dimmed = page.evaluate(
                     "parseFloat(getComputedStyle(document.querySelector('[data-dim]')).opacity)"
                 )
