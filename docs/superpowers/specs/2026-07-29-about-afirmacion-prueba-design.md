@@ -5,6 +5,11 @@
 > sobre el mismo brief. Todo numero de este documento esta medido contra el codigo, no
 > deducido. **No se ha tocado `src/`.**
 
+Estado: **en ejecucion** — rama `design/about-afirmacion-prueba`, en un worktree
+aparte (`.claude/worktrees/about-afirmacion-prueba`). Este spec pertenece a ese
+trabajo, no al del cartel de reparto; la linea de estado se anade para que el gate
+de `scripts/verify.py::check_spec_plan_consistency` pueda cruzarlo.
+
 ## Encargo
 
 Remodelar `[data-scene="about"]` **solo en el tema Vice**. Decision del usuario:

@@ -1,5 +1,15 @@
 # Remodelación de cuatro secciones de Vice City — Plan de implementación
 
+> **Tracking: historico.** Las casillas de este plan nunca se marcaron durante la
+> ejecucion, y no se marcan ahora en bloque: ticar 57 pasos que nadie siguio uno a
+> uno seria falsificar el registro, no completarlo. El trabajo esta hecho y vive en
+> `main` — la prueba es el codigo y los commits, no este fichero.
+>
+> Esta marca existe para que `scripts/verify.py::check_spec_plan_consistency` sepa
+> distinguir "no se siguio" de "esta a medias". En los planes nuevos se marca al
+> completar cada paso, como pide `.claude/rules/speckit-progress-tracking.md`.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Corregir los cuatro defectos visuales que el usuario detectó en el tema Vice City (cuadro borroso del hero, salida de golpe al scrollear, "Quién es" a medio llenar, obra y créditos con medio lienzo vacío) y actualizar el contenido desfasado, sin romper Hyprland ni Caelestia.

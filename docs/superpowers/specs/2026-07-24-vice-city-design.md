@@ -1,6 +1,6 @@
 # Vice City — diseño del tema
 
-Fecha: 2026-07-24 · Estado: aprobado, pendiente de plan de implementación
+Fecha: 2026-07-24 · Estado: **implementado** (el tema vive en `main`; ver la bitacora del rediseno)
 Rama: `design/redesign-cinematic-themes`
 
 ## Contexto

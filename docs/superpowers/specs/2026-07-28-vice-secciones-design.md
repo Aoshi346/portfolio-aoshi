@@ -1,6 +1,6 @@
 # Vice City — remodelación de cuatro secciones
 
-Fecha: 2026-07-28 · Estado: aprobado, pendiente de plan de implementación
+Fecha: 2026-07-28 · Estado: **implementado** (las cuatro secciones estan en `main`)
 Rama base: `main` (`7cbb60f`)
 
 Spec anterior: `docs/superpowers/specs/2026-07-24-vice-city-design.md`

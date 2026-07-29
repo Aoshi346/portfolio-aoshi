@@ -311,12 +311,216 @@ def check_docs_references() -> None:
     check(not bad_deps, f"la doc no cita dependencias no instaladas ({bad_deps[:3]})")
 
 
+# Vocabulario cerrado del campo `Estado:` de un spec. Cerrado a proposito: con
+# prosa libre nadie puede cruzar el estado declarado contra nada.
+SPEC_STATES = (
+    "en diseno",
+    "pendiente de plan",
+    "en ejecucion",
+    "implementado",
+    "descartado",
+)
+
+# Un plan que nunca se marco casilla a casilla lleva esta marca en cabecera. No
+# es una excusa: es la verdad registrada, y es mejor que ticar en bloque 141
+# casillas de trabajo que nadie siguio paso a paso.
+PLAN_HISTORIC_MARKER = "Tracking: historico"
+
+
+def _normaliza(texto: str) -> str:
+    """Minusculas sin markdown ni acentos, para comparar el estado declarado."""
+    out = texto.lower()
+    for a, b in (("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ñ", "n")):
+        out = out.replace(a, b)
+    return out.replace("*", "").replace("`", "").replace("_", "")
+
+
+def check_spec_plan_consistency() -> None:
+    """
+    Falla si el estado declarado de un spec contradice las casillas de su plan.
+
+    Nace del fallo del 29-jul-2026: las ocho tareas del cartel de reparto se
+    ejecutaron y commitearon con las 47 casillas del plan sin marcar, y al
+    cerrarlas de golpe al final hubo que reconstruir el estado leyendo commits —
+    que es justo donde aparecieron cuatro divergencias que nadie habia anotado.
+    `.claude/rules/speckit-progress-tracking.md` ya lo prohibia; lo que faltaba
+    no era la regla, era que algo la comprobara.
+
+    Se comprueba una contradiccion, no la disciplina: un plan a medio marcar es
+    trabajo en curso y es legitimo. Lo que no puede ser es que el spec diga
+    "implementado" y su plan siga con pasos pendientes, ni al contrario.
+    """
+    print("[docs] estado de specs y planes")
+
+    specs = sorted((REPO_ROOT / "docs/superpowers/specs").glob("*.md"))
+    planes = sorted((REPO_ROOT / "docs/superpowers/plans").glob("*.md"))
+    if not specs:
+        check(True, "no hay specs que cruzar")
+        return
+
+    sin_estado: list[str] = []
+    estado_ambiguo: list[str] = []
+    contradicciones: list[str] = []
+    planes_citados: dict[Path, str] = {}
+
+    for spec in specs:
+        rel = spec.relative_to(REPO_ROOT).as_posix()
+        texto = spec.read_text(encoding="utf-8")
+
+        # "estado:" en cualquier parte de la linea, no solo al principio: los dos
+        # specs de julio lo llevan compartido con la fecha ("Fecha: ... · Estado:
+        # ...") y exigir que abriera linea los dejaba pasar sin mirar, que es el
+        # agujero por el que se colaron dos estados falsos.
+        linea = next((ln for ln in texto.splitlines() if "estado:" in _normaliza(ln)), None)
+        if linea is None:
+            sin_estado.append(rel)
+            continue
+
+        encontrados = [s for s in SPEC_STATES if s in _normaliza(linea)]
+        if len(encontrados) != 1:
+            estado_ambiguo.append(f"{rel} -> {encontrados or 'ninguno del vocabulario'}")
+            continue
+        estado = encontrados[0]
+
+        # El plan se localiza por el puntero que el propio spec declara. Si no
+        # cita ninguno, no hay nada que cruzar: no todo spec tiene plan.
+        cita = next(
+            (t for t in _doc_citations(texto) if t.startswith("docs/superpowers/plans/")), None
+        )
+        if cita is None:
+            continue
+        plan = REPO_ROOT / cita
+        if not plan.exists():
+            continue  # check_docs_references() ya se queja de la ruta muerta
+        planes_citados[plan] = estado
+
+        cuerpo = plan.read_text(encoding="utf-8")
+        if PLAN_HISTORIC_MARKER in cuerpo:
+            continue
+        pendientes = len(re.findall(r"^\s*- \[ \]", cuerpo, re.MULTILINE))
+        hechas = len(re.findall(r"^\s*- \[x\]", cuerpo, re.MULTILINE))
+
+        if estado == "implementado" and pendientes:
+            contradicciones.append(
+                f"{rel} dice 'implementado' pero {cita} tiene {pendientes} pasos sin marcar"
+            )
+        if pendientes == 0 and hechas and estado != "implementado":
+            contradicciones.append(
+                f"{cita} esta marcado al completo pero {rel} dice '{estado}'"
+            )
+
+    for plan in planes:
+        rel = plan.relative_to(REPO_ROOT).as_posix()
+        cuerpo = plan.read_text(encoding="utf-8")
+        if PLAN_HISTORIC_MARKER in cuerpo or plan in planes_citados:
+            continue
+        pendientes = len(re.findall(r"^\s*- \[ \]", cuerpo, re.MULTILINE))
+        hechas = len(re.findall(r"^\s*- \[x\]", cuerpo, re.MULTILINE))
+        if pendientes and not hechas:
+            contradicciones.append(
+                f"{rel} tiene {pendientes} pasos y ninguno marcado, y ningun spec lo reclama: "
+                f"marca el progreso o pon '{PLAN_HISTORIC_MARKER}' en cabecera"
+            )
+
+    check(not sin_estado, f"todo spec declara Estado: ({sin_estado[:3]})")
+    check(not estado_ambiguo, f"el Estado: usa el vocabulario cerrado ({estado_ambiguo[:3]})")
+    check(not contradicciones, f"el estado del spec concuerda con su plan ({contradicciones[:3]})")
+
+
 def check(condition: bool, label: str) -> None:
     if condition:
         print(f"  OK   {label}")
     else:
         print(f"  FAIL {label}")
         failures.append(label)
+
+
+# --------------------------------------------------------------------------
+# Linea base de fallos conocidos.
+#
+# El problema que resuelve, medido el 29-jul-2026: el arnes salia SIEMPRE con
+# codigo 1, porque arrastra 12 fallos de fixtures pendientes de sustituir. Un
+# gate que nunca se pone verde no se lee — es el mismo modo de fallo que tuvo el
+# gate documental cuando se acusaba a si mismo. Con 12 fallos fijos en pantalla,
+# el 13 no lo ve nadie, y distinguirlos obligaba a filtrar la salida a mano en
+# cada ejecucion.
+#
+# Por que no bastan `--allow-fixture-assets` y `--allow-gallery-placeholder`,
+# que ya existian y dejan el arnes en verde: silencian CATEGORIAS enteras. Con
+# ellos puestos, una imagen de galeria que falte manana tampoco se ve. La linea
+# base guarda los fallos concretos, asi que un fallo nuevo de la misma categoria
+# sigue saltando.
+#
+# La comparacion normaliza los numeros del texto: varias etiquetas llevan
+# medidas dentro (ratios de contraste, pixeles) que oscilan entre ejecuciones
+# porque el fondo es generativo. Sin normalizar, "ratio 6.97:1" y "ratio 7.00:1"
+# serian dos fallos distintos y la base daria falsas alarmas cada dia.
+# --------------------------------------------------------------------------
+
+BASELINE_PATH = REPO_ROOT / "scripts" / "verify-baseline.json"
+
+
+def _clave_fallo(label: str) -> str:
+    """Etiqueta sin sus numeros, para que las medidas que oscilan no cuenten."""
+    return re.sub(r"\d+(?:[.,]\d+)?", "#", label)
+
+
+def escribir_baseline(actuales: list[str]) -> None:
+    BASELINE_PATH.write_text(
+        json.dumps(
+            {
+                "_comentario": (
+                    "Fallos conocidos y aceptados de scripts/verify.py. El arnes sale 0 "
+                    "mientras la ejecucion coincida con esta lista, y 1 en cuanto aparezca "
+                    "uno nuevo O se arregle uno de estos sin quitarlo de aqui. Regenerar "
+                    "con: python3 scripts/verify.py --update-baseline"
+                ),
+                "fallos": sorted(actuales),
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def comparar_con_baseline(actuales: list[str]) -> int:
+    if not BASELINE_PATH.exists():
+        if actuales:
+            print(f"FALLOS: {len(actuales)} (sin linea base; crea una con --update-baseline)")
+            return 1
+        print("TODO OK")
+        return 0
+
+    base = json.loads(BASELINE_PATH.read_text(encoding="utf-8")).get("fallos", [])
+    claves_base = [_clave_fallo(f) for f in base]
+    claves_ahora = [_clave_fallo(f) for f in actuales]
+
+    nuevos = [a for a, k in zip(actuales, claves_ahora) if k not in claves_base]
+    # Un fallo de la base que ya no aparece tambien rompe el gate, a proposito:
+    # una linea base que se queda grande vuelve a esconder cosas, que es
+    # exactamente lo que se venia a evitar.
+    resueltos = [b for b, k in zip(base, claves_base) if k not in claves_ahora]
+
+    if nuevos:
+        print(f"FALLOS NUEVOS: {len(nuevos)} (fuera de la linea base)")
+        for f in nuevos:
+            print(f"  - {f}")
+    if resueltos:
+        print(f"ARREGLADOS respecto a la linea base: {len(resueltos)}")
+        for f in resueltos:
+            print(f"  - {f}")
+        print("  Quitalos de la base: python3 scripts/verify.py --update-baseline")
+
+    if nuevos or resueltos:
+        return 1
+
+    if actuales:
+        print(f"TODO OK — {len(actuales)} fallos conocidos, 0 nuevos ({BASELINE_PATH.name})")
+    else:
+        print("TODO OK")
+    return 0
 
 
 # --------------------------------------------------------------------------
@@ -990,8 +1194,9 @@ def run(
     global failures
     failures = []
 
-    # Estatica: no necesita navegador ni servidor.
+    # Estaticas: no necesitan navegador ni servidor.
     check_docs_references()
+    check_spec_plan_consistency()
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, executable_path=CHROME, args=ARGS)
@@ -1421,14 +1626,17 @@ def main() -> int:
         "--allow-fixture-assets",
         action="store_true",
         help="Silencia el gate de assets provisionales (defecto 3) mientras dure el desarrollo. "
-        "Activo por defecto: el gate final debe correr SIN este flag.",
+        "NO esta activo por defecto: hay que pasarlo. Silencia la CATEGORIA entera, asi que "
+        "para el uso diario es mejor la linea base, que distingue un fallo nuevo de los "
+        "conocidos. El gate final debe correr sin este flag.",
     )
     ap.add_argument(
         "--allow-gallery-placeholder",
         action="store_true",
         help="Silencia el gate del placeholder 'Imagen pendiente' de la galeria (defecto 3-bis, "
-        "Task 11) mientras dure el desarrollo. Activo por defecto: el gate final debe correr "
-        "SIN este flag.",
+        "Task 11) mientras dure el desarrollo. NO esta activo por defecto: hay que pasarlo. "
+        "Silencia la CATEGORIA entera; para el uso diario, la linea base. El gate final debe "
+        "correr sin este flag.",
     )
     ap.add_argument(
         "--reduced",
@@ -1436,6 +1644,18 @@ def main() -> int:
         help="Abre la pagina con prefers-reduced-motion:reduce y comprueba la degradacion "
         "accesible (Task 12): sin video, sin letterbox, nombre legible, galeria y creditos "
         "operativos.",
+    )
+    ap.add_argument(
+        "--update-baseline",
+        action="store_true",
+        help="Reescribe scripts/verify-baseline.json con los fallos de esta ejecucion. "
+        "Usalo solo cuando el cambio de la linea base sea deliberado y este justificado.",
+    )
+    ap.add_argument(
+        "--no-baseline",
+        action="store_true",
+        help="Ignora la linea base: cualquier fallo cuenta. Es el modo del gate final, "
+        "cuando ya no queden fixtures pendientes.",
     )
     args = ap.parse_args()
     run(
@@ -1446,11 +1666,18 @@ def main() -> int:
         reduced=args.reduced,
     )
     print()
-    if failures:
-        print(f"FALLOS: {len(failures)}")
-        return 1
-    print("TODO OK")
-    return 0
+
+    if args.update_baseline:
+        escribir_baseline(failures)
+        print(f"Linea base reescrita con {len(failures)} fallos -> {BASELINE_PATH.name}")
+        return 0
+    if args.no_baseline:
+        if failures:
+            print(f"FALLOS: {len(failures)}")
+            return 1
+        print("TODO OK")
+        return 0
+    return comparar_con_baseline(failures)
 
 
 if __name__ == "__main__":
