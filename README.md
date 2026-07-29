@@ -129,10 +129,25 @@ npm run build && npm run lint
 python3 scripts/verify.py
 ```
 
-`scripts/verify.py` levanta un navegador real y comprueba tipografías, contraste WCAG por
-escena, galerías, cromo de cine y degradación con `prefers-reduced-motion`. **Hoy deja 12
-fallos conocidos**, todos rellenos de imagen pendientes en `public/media/`: cualquier
-fallo distinto de esos 12 es nuevo.
+`scripts/verify.py` es el arnés. Tiene dos mitades:
+
+- **Sin navegador, primero y en segundos:** comprueba que la documentación no cite rutas
+  del repo, binarios del sistema o dependencias que ya no existen, y que el `Estado:` de
+  cada spec no contradiga las casillas de su plan. Nació de fallos reales: cinco ficheros
+  daban Three.js como stack, y un plan quedó con 47 casillas sin marcar mientras su spec
+  se declaraba terminado. **Este README entra en esa comprobación**, así que si citas aquí
+  una ruta que borras luego, el arnés lo caza.
+- **Con navegador real:** tipografías, contraste WCAG por escena, galerías, cromo de cine
+  y degradación con `prefers-reduced-motion`.
+
+Los fallos conocidos y aceptados viven en `scripts/verify-baseline.json` (hoy 12, todos
+rellenos de imagen pendientes en `public/media/`). **El arnés sale 0 mientras la ejecución
+coincida con esa lista, y 1 en cuanto aparezca uno nuevo o se arregle uno sin quitarlo de
+ahí.** Para regenerarla:
+
+```bash
+python3 scripts/verify.py --update-baseline
+```
 
 Para capturas usa Playwright con `--use-gl=swiftshader`, o el canvas WebGL sale en negro.
 
@@ -166,8 +181,14 @@ incrustado, y no debe quedar ni un placeholder en lo publicado.
 
 ## Estado
 
-Iteración de diseño activa en ramas `design/*`; `main` es la rama de producción. **Sin
-deploy todavía.**
+`main` es la rama de producción y la única publicada; la iteración de diseño va en ramas
+`design/*`, que se quedan en local. **Sin deploy todavía**: el sitio no está en ninguna
+URL, así que el repositorio es, por ahora, la única forma de verlo — clonar, `npm install`
+y `npm run dev`.
+
+Cuando haya deploy hay que actualizar este párrafo. Un README que sigue diciendo "sin
+deploy" con el sitio en producción es exactamente el tipo de deriva que el arnés no puede
+detectar: comprueba que las rutas existan, no que lo escrito siga siendo verdad.
 
 ## Licencia
 
