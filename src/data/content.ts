@@ -111,50 +111,68 @@ export type SkillGroup = {
   items: SkillItem[];
 };
 
+/*
+ * El reparto del cartel, en seis bloques. Las frases son cortas y de longitud
+ * pareja a proposito: el pie del cartel reserva altura fija, y frases dispares
+ * obligarian a reservar hueco para la mas larga y dejarlo medio vacio casi
+ * siempre. Por eso se acortaron tambien las doce que ya existian.
+ *
+ * Cada `slug` tiene que estar registrado en `src/utils/icons.ts`:
+ * `getIconMarkup()` lanza excepcion con un slug desconocido, y lo hace en los
+ * tres temas, no solo en Vice.
+ */
 export const skillGroups: SkillGroup[] = [
   {
     label: "Frontend",
     items: [
-      {
-        name: "React",
-        slug: "react",
-        detail: "Lo uso para interfaces con estado complejo, como los paneles de campañas de Telefónica.",
-      },
-      {
-        name: "TypeScript",
-        slug: "typescript",
-        detail: "Tipo todo lo que escribo: menos bugs en producción, más confianza al refactorizar.",
-      },
-      {
-        name: "Tailwind CSS",
-        slug: "tailwindcss",
-        detail: "Mi forma de maquetar rápido sin perder consistencia visual entre componentes.",
-      },
-      {
-        name: "Vite",
-        slug: "vite",
-        detail: "El bundler que uso por defecto: arranque instantáneo y builds que no me hacen esperar.",
-      },
+      { name: "React", slug: "react", detail: "Interfaces con estado complejo." },
+      { name: "Next.js", slug: "nextdotjs", detail: "Para apps con rutas y render en servidor." },
+      { name: "TypeScript", slug: "typescript", detail: "Tipado en todo lo que escribo." },
+      { name: "Tailwind CSS", slug: "tailwindcss", detail: "Maquetación rápida y consistente." },
+      { name: "Vite", slug: "vite", detail: "Mi bundler por defecto." },
+      { name: "GSAP", slug: "gsap", detail: "Las animaciones y las transiciones." },
     ],
   },
   {
-    label: "Backend",
+    label: "Backend y datos",
     items: [
-      {
-        name: "Python",
-        slug: "python",
-        detail: "Mi lenguaje base para automatizar, procesar datos y construir APIs.",
-      },
-      {
-        name: "Django",
-        slug: "django",
-        detail: "Lo elijo cuando necesito un backend robusto rápido: ORM, admin y auth ya resueltos.",
-      },
-      {
-        name: "MySQL",
-        slug: "mysql",
-        detail: "Donde persisto los datos a gran escala de las plataformas que construyo.",
-      },
+      { name: "Python", slug: "python", detail: "Automatización, datos y APIs." },
+      { name: "Django", slug: "django", detail: "Backend robusto: ORM, admin y auth." },
+      { name: "Node.js", slug: "nodedotjs", detail: "JavaScript fuera del navegador." },
+      { name: "MySQL", slug: "mysql", detail: "Donde persisto los datos." },
+      { name: "RxDB", slug: "rxdb", detail: "Datos locales en el navegador." },
+    ],
+  },
+  {
+    label: "Lenguajes base",
+    items: [
+      { name: "JavaScript", slug: "javascript", detail: "Base de todo lo que corre en el navegador." },
+      { name: "HTML", slug: "html5", detail: "Estructura semántica antes que nada." },
+      { name: "CSS", slug: "css", detail: "Lo que no cubre Tailwind, lo escribo a mano." },
+      { name: "C", slug: "c", detail: "Donde aprendí a pensar en memoria y punteros." },
+      { name: "C++", slug: "cplusplus", detail: "Sistemas y aplicaciones nativas." },
+    ],
+  },
+  {
+    label: "Escritorio",
+    items: [
+      { name: "Electron", slug: "electron", detail: "Aplicaciones de escritorio con tecnología web." },
+      { name: "GTK4", slug: "gtk", detail: "Interfaces nativas en C." },
+    ],
+  },
+  {
+    label: "Herramientas",
+    items: [
+      { name: "Git", slug: "git", detail: "Control de versiones en todo lo que hago." },
+      { name: "GitHub", slug: "github", detail: "Donde publico y comparto el código." },
+      { name: "n8n", slug: "n8n", detail: "Automatizo tareas repetitivas entre servicios." },
+    ],
+  },
+  {
+    label: "IA",
+    items: [
+      { name: "Claude Code", slug: "claude", detail: "Asistente en terminal para escribir y revisar código." },
+      { name: "Gemini CLI", slug: "googlegemini", detail: "Consultas rápidas desde la terminal." },
     ],
   },
 ];
@@ -176,14 +194,6 @@ export const focusAreas: FocusArea[] = [
   },
 ];
 
-export const secondarySkills: SkillItem[] = [
-  { name: "JavaScript", slug: "javascript", detail: "Base de todo lo que corre en el navegador." },
-  { name: "HTML", slug: "html5", detail: "Estructura semántica antes que nada." },
-  { name: "CSS", slug: "css", detail: "Lo que no cubre Tailwind, lo escribo a mano." },
-  { name: "C", slug: "c", detail: "Donde aprendí a pensar en memoria y punteros." },
-  { name: "C++", slug: "cplusplus", detail: "Para el editor de texto nativo y proyectos de sistemas." },
-];
-
 export interface GalleryShot {
   /** Ruta bajo /public. Capturas reales del proyecto. */
   src: string;
@@ -202,6 +212,18 @@ export interface CaseStudy {
   problem: string;
   solution: string;
   stack: string[];
+  /**
+   * Lo transversal: control de versiones y asistentes con los que se
+   * construyo el proyecto, no con lo que el producto funciona. Va aparte de
+   * `stack` porque `stack` se pinta literal en la ficha de obra
+   * (`sections/obra/projectScene.ts`) y meter aqui cuatro nombres repetidos
+   * identicos en los cinco proyectos alargaba esa linea sin distinguir nada:
+   * Git no separa un proyecto de otro.
+   *
+   * Solo alimenta el cruce "Aparece en" de los creditos. La ficha de obra
+   * sigue mostrando unicamente `stack`, y eso es la decision, no un olvido.
+   */
+  tooling?: string[];
   gallery: GalleryShot[];
   link?: { label: string; href: string };
   privateProject?: boolean;
@@ -221,6 +243,7 @@ export const caseStudies: CaseStudy[] = [
     solution:
       "Un sistema interno que reúne el recorrido completo de la campaña en un mismo sitio: quién la creó, qué aprobaciones lleva, si ya se configuró y cuándo salió. Con permisos por rol y tableros que muestran cómo va todo sin tener que preguntar.",
     stack: ["Python", "Django", "TypeScript", "React", "Vite"],
+    tooling: ["Git", "GitHub", "Claude Code", "Gemini CLI"],
     gallery: [
       { src: "/media/obra/echoplan-tablero.webp", caption: "Tablero de campañas" },
       { src: "/media/obra/echoplan-aprobaciones.webp", caption: "Estado de aprobaciones" },
@@ -239,6 +262,7 @@ export const caseStudies: CaseStudy[] = [
     solution:
       "Construí una plataforma que gestiona el ciclo completo del TEG: entregas de avances, coordinación estudiantes–tutores y evaluación por jurados, todo en un mismo lugar.",
     stack: ["TypeScript", "Next.js"],
+    tooling: ["Git", "GitHub", "Claude Code", "Gemini CLI"],
     gallery: [
       { src: "/media/obra/teg-entregas.webp", caption: "Entregas de avances" },
       { src: "/media/obra/teg-jurados.webp", caption: "Asignación de jurados" },
@@ -258,6 +282,7 @@ export const caseStudies: CaseStudy[] = [
     solution:
       "Una aplicación donde tus datos se quedan en tu propio equipo, cifrados, y la nube solo sirve para sincronizar entre tus dispositivos. Guarda cada movimiento con el cambio del día en que ocurrió, así el total nunca miente, y reparte solo las compras a cuotas para que sepas qué te queda por pagar.",
     stack: ["TypeScript", "React", "RxDB", "GSAP", "Zustand"],
+    tooling: ["Git", "GitHub", "Claude Code", "Gemini CLI"],
     gallery: [
       { src: "/media/obra/hyprfinance-resumen.webp", caption: "Resumen financiero" },
       { src: "/media/obra/hyprfinance-movimientos.webp", caption: "Registro de movimientos" },
@@ -277,6 +302,7 @@ export const caseStudies: CaseStudy[] = [
     solution:
       "Una aplicación de escritorio que reúne en un mismo sitio el análisis de vulnerabilidades, la gestión de contraseñas, el monitor de red y las herramientas de análisis forense, con una interfaz que no exige ser experto para entenderla.",
     stack: ["JavaScript", "Electron", "Python"],
+    tooling: ["Git", "GitHub", "Claude Code", "Gemini CLI"],
     gallery: [
       { src: "/media/obra/ciberseg-panel.webp", caption: "Panel de la suite" },
       { src: "/media/obra/ciberseg-vulnerabilidades.webp", caption: "Análisis de vulnerabilidades" },
@@ -296,6 +322,7 @@ export const caseStudies: CaseStudy[] = [
     solution:
       "Un editor completo en C con interfaz en GTK4, donde el bloque de texto crece según se escribe, el corrector señala las palabras y el contenido puede cifrarse antes de guardarlo.",
     stack: ["C", "GTK4"],
+    tooling: ["Git", "GitHub"],
     gallery: [{ src: "/media/obra/editor-interfaz.webp", caption: "Interfaz en GTK4" }],
     link: {
       label: "Ver repositorio",

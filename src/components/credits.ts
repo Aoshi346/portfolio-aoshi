@@ -1,4 +1,4 @@
-import { caseStudies, secondarySkills, skillGroups, type SkillGroup } from "../data/content";
+import { caseStudies, skillGroups, type SkillGroup } from "../data/content";
 import { el, elFromMarkup } from "../utils/dom";
 import { getIconMarkup } from "../utils/icons";
 
@@ -61,10 +61,11 @@ function toEntry(role: string, item: SkillGroup["items"][number]): CreditEntry {
  * `aria-hidden` para eso, ver `scripts/verify.py::check_contrast_wcag`).
  */
 export function createCredits(): HTMLElement {
-  const groups: SkillGroup[] = [
-    ...skillGroups,
-    { label: "Otras herramientas", items: secondarySkills },
-  ];
+  // `skillGroups` ya trae los seis bloques del reparto. Antes habia que
+  // coserle a mano un grupo "Otras herramientas" desde `secondarySkills`; ese
+  // array desaparecio al reorganizar el contenido y su contenido vive ahora en
+  // el bloque "Lenguajes base".
+  const groups: SkillGroup[] = skillGroups;
 
   const icon = el("div", "credits-icon", []);
   icon.setAttribute("aria-hidden", "true");
