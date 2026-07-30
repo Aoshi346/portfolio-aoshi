@@ -744,7 +744,9 @@ En `src/themes/themes.css`, elimina las reglas de `.contacto-mail`, `.contacto-s
   top: 2.1rem;
   left: 1.75rem;
   writing-mode: vertical-rl;
-  font-size: 34px;
+  /* var(--t-5), no 34px: 34 no es un paso de la escala y la Tarea 1 acaba de
+     cerrarla. El valor de la maqueta se sube al paso mas cercano hacia arriba. */
+  font-size: var(--t-5);
   font-weight: 700;
   letter-spacing: 0.34em;
   color: rgb(255 244 232 / 0.34);
