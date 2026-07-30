@@ -522,8 +522,8 @@ python3 scripts/measure-obra-rail.py --json /tmp/rail-despues.json
 
 | métrica | antes (pre-ritmo) | objetivo | medido tras la escala tipográfica (2026-07-30) |
 |---|---|---|---|
-| adelanto cartela entera | ~800 px | **≤ 40 px**, y sin dispersión entre las tres velocidades | 0-111 px en un solo barrido flick (piezas 2-4); repetido 3 veces a cada lado del cambio (ver nota), la dispersión es del mismo tamaño antes y después — **ruido del barrido flick, no efecto de la escala** |
-| adelanto del lead | 938-995 px | **≤ 260 px** | 220-323 px en un solo barrido flick (piezas 2-4); la media de 9 muestras (3 repeticiones) es 244 px antes y 242 px después — **sin cambio real**, el rango más ancho lo explica un único valor atípico (ver nota) |
+| adelanto cartela entera | ~800 px | **≤ 40 px**, y sin dispersión entre las tres velocidades | 6 repeticiones (18 muestras, piezas 2-4, flick): media 77.3→70.5 px (91.2%, no <75%), ceros 5/18→6/18 (no dobla) — **ruido, con regla de decisión fijada de antemano** (ver nota) |
+| adelanto del lead | 938-995 px | **≤ 260 px** | 6 repeticiones (18 muestras): media 235.8→246.9 px (la post es mayor, no menor), 0 ceros en las dos series — **sin cambio real** (ver nota) |
 | v lateral en el encuadre | 220-245 px/s | **≤ 20 px/s** en las cinco piezas | métrica retirada (ver spec del ritmo, línea "se retira de la tabla": el instrumento no la mide bien; no se recalcula para no dar una cifra que invite a leerse) |
 | permanencia pieza 5 vs central | 33-40% | paridad | p1 68%, p5 71% (barrido lento; p1 sigue siendo un artefacto de la medida, ver spec) |
 | `distance` reportado | 5760 | sigue 5760 (el recorrido no cambia) | 5760 — **sin cambio** |
@@ -541,15 +541,25 @@ python3 scripts/measure-obra-rail.py --json /tmp/rail-despues.json
 > carril: `distance` y el presupuesto del pin no se movieron un solo píxel).
 >
 > **Cartela entera y lead en el barrido flick, comprobado contra un `git worktree` del commit
-> `eba1a72` (justo antes de la escala), 3 repeticiones a cada lado — es ruido, no efecto de la
-> escala.** El primer vistazo (una sola repetición por lado) daba 66-89 → 0-111 px y 249-297 →
-> 220-323 px, que parecía un ensanchamiento real. Con 3 repeticiones por lado (9 muestras,
-> piezas 2-4): el rango de "cartela entera" es prácticamente igual de ancho antes (0-123.5 px)
-> que después (0-122.5 px), y la media de "lead" apenas se mueve (244.2 px antes, 241.7 px
-> después). El rango de "lead" sí sale más ancho después (185-371 px) que antes (190-290 px),
-> pero ese ensanchamiento lo produce un único valor atípico (371 px, una de nueve muestras); sin
-> él, el rango después es 185-294 px, prácticamente igual al de antes. El detalle completo, con
-> las nueve muestras de cada lado, está en
+> `eba1a72` (justo antes de la escala) — es ruido, no efecto de la escala. Zanjado en dos rondas.**
+>
+> Ronda 1 (3 repeticiones = 9 muestras por lado): un vistazo con una sola repetición por lado
+> daba 66-89 → 0-111 px (cartela) y 249-297 → 220-323 px (lead), que parecía un ensanchamiento
+> real. Con 9 muestras la amplitud del rango era similar a los dos lados, pero esa lectura
+> tenía un fallo — miraba solo el rango, ciego a un desplazamiento de toda la distribución y al
+> hecho de que "cartela entera" topa en 0 por definición. Con 9 muestras la media de "cartela
+> entera" caía de 90.9 a 60.8 px (-33%) y los ceros pasaban de 1/9 a 4/9: parecía efecto real, y
+> "ruido, confirmado" no estaba pagado con esos números.
+>
+> Ronda 2 (6 repeticiones = 18 muestras por lado, con una regla de decisión fijada **antes** de
+> mirar los números: efecto real si la media post cae por debajo del 75% de la pre **y** los
+> ceros post doblan a los pre; ninguna de las dos → ruido): media de "cartela entera" 77.3→70.5
+> px (91.2% de la pre, no <75%), ceros 5/18→6/18 (no doblan). Ninguna condición se cumple →
+> **ruido**. La caída pronunciada de la Ronda 1 (9 muestras) era el propio ruido de una muestra
+> pequeña regresando hacia la media al doblar el tamaño de muestra. Para "lead": media
+> 235.8→246.9 px (la posterior es mayor, no menor) y cero muestras a cero en las dos series.
+>
+> El detalle completo, con las 18 muestras de cada lado y la aplicación de la regla, está en
 > `.superpowers/sdd/2026-07-30-contacto-carta-de-ajuste/tarea-2-report.md` del repo principal.
 
 El presupuesto del pin no lo imprime el instrumento; compruébalo aparte:
