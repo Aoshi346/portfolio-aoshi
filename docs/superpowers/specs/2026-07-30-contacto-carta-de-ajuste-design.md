@@ -1,6 +1,7 @@
 # La carta de ajuste — el cierre de Vice, la escala del tema y la navegación
 
-Estado: pendiente de plan
+Estado: en ejecucion
+Plan: `docs/superpowers/plans/2026-07-30-contacto-carta-de-ajuste.md`
 Fecha: 2026-07-30
 Alcance: tema Vice. La escala tipográfica y la navegación tocan todas las escenas del tema;
 la escena de contacto se rehace entera. Hyprland y Caelestia no se tocan: solo se comprueba
