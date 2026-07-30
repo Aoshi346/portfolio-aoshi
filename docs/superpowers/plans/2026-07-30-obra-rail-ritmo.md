@@ -522,8 +522,8 @@ python3 scripts/measure-obra-rail.py --json /tmp/rail-despues.json
 
 | métrica | antes (pre-ritmo) | objetivo | medido tras la escala tipográfica (2026-07-30) |
 |---|---|---|---|
-| adelanto cartela entera | ~800 px | **≤ 40 px**, y sin dispersión entre las tres velocidades | 0-111 px (piezas 2-4, tres velocidades) |
-| adelanto del lead | 938-995 px | **≤ 260 px** | 220-323 px (piezas 2-4, tres velocidades) |
+| adelanto cartela entera | ~800 px | **≤ 40 px**, y sin dispersión entre las tres velocidades | 0-111 px en un solo barrido flick (piezas 2-4); repetido 3 veces a cada lado del cambio (ver nota), la dispersión es del mismo tamaño antes y después — **ruido del barrido flick, no efecto de la escala** |
+| adelanto del lead | 938-995 px | **≤ 260 px** | 220-323 px en un solo barrido flick (piezas 2-4); la media de 9 muestras (3 repeticiones) es 244 px antes y 242 px después — **sin cambio real**, el rango más ancho lo explica un único valor atípico (ver nota) |
 | v lateral en el encuadre | 220-245 px/s | **≤ 20 px/s** en las cinco piezas | métrica retirada (ver spec del ritmo, línea "se retira de la tabla": el instrumento no la mide bien; no se recalcula para no dar una cifra que invite a leerse) |
 | permanencia pieza 5 vs central | 33-40% | paridad | p1 68%, p5 71% (barrido lento; p1 sigue siendo un artefacto de la medida, ver spec) |
 | `distance` reportado | 5760 | sigue 5760 (el recorrido no cambia) | 5760 — **sin cambio** |
@@ -535,10 +535,22 @@ python3 scripts/measure-obra-rail.py --json /tmp/rail-despues.json
 > "objetivo" son el registro histórico de la Tarea 2 de este mismo plan (dimensionado del
 > ritmo) y no se han tocado; la comparación real "antes de la escala / después de la escala"
 > es contra el registro de la spec (`docs/superpowers/specs/2026-07-30-obra-rail-ritmo-design.md`,
-> tabla "hoy / objetivo / medido"): cartela entera pasó de 66-89 px a 0-111 px, lead de 249-297 px
-> a 220-323 px, deriva lateral tras soltar de 46 px a 46.1 px (sin cambio real), permanencia de
-> p1 66%/p5 67% a p1 68%/p5 71%, y el documento de 11587 px a 11605 px (+18 px). El recorrido
-> lateral (5760 px) y el presupuesto del pin (5040 px) no se movieron un solo píxel.
+> tabla "hoy / objetivo / medido"). Deriva lateral tras soltar: de 46 px a 46.1 px (sin cambio
+> real). Permanencia: de p1 66%/p5 67% a p1 68%/p5 71% (movimiento pequeño, dentro de lo
+> esperable entre ejecuciones). Documento: de 11587 px a 11605 px (+18 px, real pero ajeno al
+> carril: `distance` y el presupuesto del pin no se movieron un solo píxel).
+>
+> **Cartela entera y lead en el barrido flick, comprobado contra un `git worktree` del commit
+> `eba1a72` (justo antes de la escala), 3 repeticiones a cada lado — es ruido, no efecto de la
+> escala.** El primer vistazo (una sola repetición por lado) daba 66-89 → 0-111 px y 249-297 →
+> 220-323 px, que parecía un ensanchamiento real. Con 3 repeticiones por lado (9 muestras,
+> piezas 2-4): el rango de "cartela entera" es prácticamente igual de ancho antes (0-123.5 px)
+> que después (0-122.5 px), y la media de "lead" apenas se mueve (244.2 px antes, 241.7 px
+> después). El rango de "lead" sí sale más ancho después (185-371 px) que antes (190-290 px),
+> pero ese ensanchamiento lo produce un único valor atípico (371 px, una de nueve muestras); sin
+> él, el rango después es 185-294 px, prácticamente igual al de antes. El detalle completo, con
+> las nueve muestras de cada lado, está en
+> `.superpowers/sdd/2026-07-30-contacto-carta-de-ajuste/tarea-2-report.md` del repo principal.
 
 El presupuesto del pin no lo imprime el instrumento; compruébalo aparte:
 
