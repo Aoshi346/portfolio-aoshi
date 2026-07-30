@@ -305,6 +305,22 @@ def analyse(samples: list[dict], geo: dict, label: str) -> dict:
             gap_ms = cross["t"] - entry_done
             gap_px = abs(gap_ms / 1000.0 * real_speed)
 
+        # Cierre de la cartela ENTERA: la galeria es el ultimo elemento de la
+        # entrada (posicion 0.56 + duracion 0.34 = 0.90 de la ventana). El `.lead`
+        # cierra al 52%, asi que medir solo por el lead subestima el acoplamiento.
+        slate_done = None
+        for s in samples:
+            v = s["gal"][i]
+            if v is not None and v >= 0.99:
+                slate_done = s["t"]
+                break
+
+        slate_ms = None
+        slate_px = None
+        if slate_done is not None and cross is not None and i > 0:
+            slate_ms = cross["t"] - slate_done
+            slate_px = abs(slate_ms / 1000.0 * real_speed)
+
         per_scene.append(
             {
                 "pieza": i + 1,
@@ -312,6 +328,8 @@ def analyse(samples: list[dict], geo: dict, label: str) -> dict:
                 "entrada_lista_t_ms": round(entry_done, 1) if entry_done is not None else None,
                 "adelanto_entrada_ms": round(gap_ms, 1) if gap_ms is not None else None,
                 "adelanto_entrada_px": round(gap_px, 1) if gap_px is not None else None,
+                "adelanto_cartela_ms": round(slate_ms, 1) if slate_ms is not None else None,
+                "adelanto_cartela_px": round(slate_px, 1) if slate_px is not None else None,
                 "permanencia_ms": round(dwell, 1),
                 "v_lateral_encuadre_px_s": round(v_framed, 1) if v_framed else None,
                 "nota": "encuadrada al enganchar el pin: sin llegada que acentuar" if i == 0 else None,
@@ -377,9 +395,8 @@ def main() -> int:
             print(f"  M1 desfase pico: {res.get('M1_desfase_lateral_pico_px')} px"
                   f"  mediana: {res.get('M1_desfase_lateral_mediana_px')} px")
             for ps in res.get("por_pieza", []):
-                print(f"    pieza {ps['pieza']}: entrada lista {ps['entrada_lista_t_ms']} ms, "
-                      f"encuadre {ps['encuadre_t_ms']} ms, "
-                      f"adelanto {ps['adelanto_entrada_ms']} ms / {ps['adelanto_entrada_px']} px, "
+                print(f"    pieza {ps['pieza']}: lead {ps['adelanto_entrada_px']} px antes, "
+                      f"cartela entera {ps['adelanto_cartela_px']} px antes, "
                       f"permanencia {ps['permanencia_ms']} ms")
             print()
 
