@@ -1001,7 +1001,7 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
         invalidateOnRefresh: true,
         anticipatePin: 1,
         /*
-         * El pin reserva ~5760px de recorrido extra, asi que TODO lo que va
+         * El pin reserva ~5040px de recorrido extra, asi que TODO lo que va
          * despues en el documento (creditos, contacto y sus regiones de cromo)
          * se desplaza hacia abajo. Sin prioridad, esos triggers se refrescan
          * antes que este y calculan su posicion como si el pin no existiera:
