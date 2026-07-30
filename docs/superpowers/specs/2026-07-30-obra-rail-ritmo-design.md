@@ -1,6 +1,7 @@
 # El ritmo del carril de obra — reposo, tránsito y cartelas acopladas
 
-Estado: pendiente de plan
+Estado: en ejecucion
+Plan: `docs/superpowers/plans/2026-07-30-obra-rail-ritmo.md`
 Fecha: 2026-07-30
 Alcance: tema Vice, escritorio (>=901px). Por debajo de 901px no hay carril y no se toca.
 
@@ -209,10 +210,20 @@ Objetivos numéricos:
 
 | | hoy | objetivo |
 |---|---|---|
-| adelanto de la entrada (M2) | 938-995 px | ≤ 40 px, y sin dispersión entre velocidades |
+| adelanto de la **cartela entera** (M2) | 938-995 px | ≤ 40 px, y sin dispersión entre velocidades |
+| adelanto del **`.lead`** (M2) | 938-995 px | ≤ 260 px |
 | v lateral en el encuadre (M3) | 220-245 px/s | ≤ 20 px/s en las cinco piezas |
 | permanencia pieza 5 vs central (M4) | 33-40% | paridad |
 | documento | 12307 px | ~11587 px |
+
+**Corrección posterior a la aprobación del spec.** La primera versión de esta tabla ponía un
+solo objetivo de M2 (≤ 40 px) contra la métrica que el instrumento mide hoy, que es la
+opacidad del `.lead`. Son cosas distintas: en el dimensionado de arriba el `.lead` cierra al
+52% de la ventana y la galería al 90%, así que el lead termina 233 px antes del encuadre y la
+cartela entera 20 px antes. Con un único objetivo de 40 px medido sobre el lead, el gate era
+inalcanzable por construcción. Se separan las dos métricas y `measure-obra-rail.py` pasa a
+medir también el cierre de la galería. Los dos números mejoran respecto a los 938-995 px de
+hoy; el que describe "la pieza aterriza ya montada" es el de la cartela entera.
 
 ## Fuera de alcance, anotado
 
