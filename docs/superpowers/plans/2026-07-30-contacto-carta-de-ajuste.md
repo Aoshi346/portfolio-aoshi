@@ -81,7 +81,7 @@ Copiadas literales del spec y de `CLAUDE.md`. Aplican a **todas** las tareas.
 - Produce: diez custom properties `--t-1` … `--t-10` en `:root[data-theme="vice"]`. Todas las
   tareas siguientes usan estos nombres y **ningún tamaño literal en píxeles**.
 
-- [ ] **Paso 1: escribe el arnés que falla**
+- [x] **Paso 1: escribe el arnés que falla**
 
 Crea `scripts/measure-type-scale.py`:
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: córrelo y comprueba que falla**
+- [x] **Paso 2: córrelo y comprueba que falla**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -159,7 +159,7 @@ escena a 152 / 73,6 / 64 / 57,6 px.
 
 Anota el número exacto de fallos: es la línea base de la tarea.
 
-- [ ] **Paso 3: declara los tokens**
+- [x] **Paso 3: declara los tokens**
 
 En `src/themes/themes.css`, dentro del bloque `:root[data-theme="vice"]` que ya declara los
 tokens del tema, añade:
@@ -187,7 +187,7 @@ tokens del tema, añade:
   --t-10: 159.66px;
 ```
 
-- [ ] **Paso 4: aplica la escala escena por escena**
+- [x] **Paso 4: aplica la escala escena por escena**
 
 Sustituye cada tamaño literal por su paso. Los que salen del arnés del paso 2 y sus destinos:
 
@@ -209,7 +209,7 @@ declara el respaldo en la propia función para no romper Hyprland ni Caelestia:
 }
 ```
 
-- [ ] **Paso 5: córrelo y comprueba que pasa**
+- [x] **Paso 5: córrelo y comprueba que pasa**
 
 ```bash
 npm run build && python3 scripts/measure-type-scale.py
@@ -221,7 +221,7 @@ Si queda alguno, arréglalo. **No amplíes `ESCALA` ni `TOLERANCIA` para que pas
 el arnés en un sello de goma, que es exactamente el modo de fallo que ya tuvo el gate documental
 de este proyecto.
 
-- [ ] **Paso 6: comprueba que los otros dos temas siguen en pie**
+- [x] **Paso 6: comprueba que los otros dos temas siguen en pie**
 
 ```bash
 python3 -c "
@@ -243,7 +243,7 @@ with sync_playwright() as p:
 
 Esperado: los dos con altura de documento distinta de cero y cero errores de consola.
 
-- [ ] **Paso 7: commit**
+- [x] **Paso 7: commit**
 
 ```bash
 git add src/themes/themes.css src/style.css scripts/measure-type-scale.py

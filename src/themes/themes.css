@@ -53,7 +53,27 @@
 
   /* La linea de cartel: grande y ultraligera, nunca un parrafo pequeno. */
   --lead-weight: 200;
-  --lead-size: clamp(1.05rem, 2vw, 1.45rem);
+
+  /*
+   * Escala tipografica del tema: cuarta, razon 1,333, base 16, suelo duro 12.
+   * Existe porque los tamanos del tema iban por su tercera aparicion en la
+   * auditoria visual (10,56 y 9,6 en contacto; 152 / 73,6 / 64 / 57,6 en los
+   * titulos de escena, que eran cuatro tamanos para un mismo papel).
+   *
+   * Dos reglas, y son parte de la escala tanto como los numeros:
+   *   1. Todo clamp() lleva LOS DOS extremos en pasos de esta escala.
+   *   2. Maximo cuatro tamanos por encuadre.
+   */
+  --t-1: 12px;
+  --t-2: 16px;
+  --t-3: 21.33px;
+  --t-4: 28.43px;
+  --t-5: 37.9px;
+  --t-6: 50.52px;
+  --t-7: 67.4px;
+  --t-8: 89.85px;
+  --t-9: 119.77px;
+  --t-10: 159.66px;
 
   --bg-fallback: linear-gradient(180deg, #150726 0%, #4b1146 55%, #ff5c3d 100%);
 }
@@ -333,7 +353,9 @@
  */
 :root[data-theme="vice"] .about-name {
   margin: 0;
-  font-size: clamp(2.5rem, 6.4vw, 6.4rem);
+  /* Escala: 40px (movil) y 92.16px (desktop, el vw manda antes que llegar al
+     techo de 6.4rem) pasan a sus pasos mas cercanos, t-5 y t-8. */
+  font-size: clamp(var(--t-5), 6.4vw, var(--t-8));
   line-height: 0.84;
 }
 
@@ -402,7 +424,7 @@
 }
 
 :root[data-theme="vice"] .about-facts dd {
-  font-size: 0.8rem;
+  font-size: var(--t-1);
   font-weight: 500;
   color: color-mix(in srgb, var(--color-paper) 82%, transparent);
 }
@@ -438,7 +460,7 @@
   /* 34ch, no 22: con `aboutCopy[0]` (63 caracteres) 22ch da tres lineas y el
      lead se come 104px del presupuesto de altura. A 34ch entra en dos. */
   max-width: 34ch;
-  font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+  font-size: clamp(var(--t-3), 2.2vw, var(--t-4));
   font-weight: 200;
   line-height: 1.22;
 }
@@ -488,7 +510,9 @@
 
 :root[data-theme="vice"] .about-pairs-head .about-h {
   margin: 0;
-  font-size: 0.62rem;
+  /* 9.92px -> 12px (+20.97%), el mismo salto que `.about-h` de mas abajo:
+     anotado en el informe. */
+  font-size: var(--t-1);
   letter-spacing: 0.28em;
 }
 
@@ -591,7 +615,7 @@
   display: block;
   font-family: var(--font-billing);
   font-weight: 400;
-  font-size: 1.5rem;
+  font-size: var(--t-3);
   line-height: 1.1;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -609,7 +633,7 @@
 
 :root[data-theme="vice"] .about-proof-in b {
   display: block;
-  font-size: 0.96rem;
+  font-size: var(--t-2);
   font-weight: 600;
   line-height: 1.25;
   color: var(--color-paper);
@@ -619,7 +643,7 @@
 :root[data-theme="vice"] .about-proof-in > span {
   display: block;
   margin-top: 0.28rem;
-  font-size: 0.8rem;
+  font-size: var(--t-1);
   font-weight: 300;
   line-height: 1.45;
   color: color-mix(in srgb, var(--color-paper) 62%, transparent);
@@ -724,7 +748,12 @@
   :root[data-theme="vice"] .about-claim-in {
     font-family: var(--font-display);
     font-weight: var(--display-weight);
-    font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+    /* 3vw y no el 2.4vw original: con 2.4vw el termino preferido caia DENTRO
+       del clamp a 1440px (34.56px) sin llegar al techo `--t-5`, que es
+       justo el paso al que hay que llegar. Con 3vw el preferido supera el
+       techo a partir de ~1263px y el clamp lo satura ahi, asi que a 1440px
+       el resultado es exactamente `--t-5` (37.9px). */
+    font-size: clamp(var(--t-3), 3vw, var(--t-5));
     line-height: 0.92;
     letter-spacing: 0.005em;
     padding-right: 1rem;
@@ -855,7 +884,9 @@
 
 :root[data-theme="vice"] .about-h {
   margin-bottom: 0.7rem;
-  font-size: 0.62rem;
+  /* 9.92px -> 12px (+20.97%), mismo salto que `.about-pairs-head .about-h`:
+     anotado en el informe. */
+  font-size: var(--t-1);
   letter-spacing: 0.28em;
 }
 
@@ -866,13 +897,14 @@
 
 :root[data-theme="vice"] .about-item b {
   /* 0.96 y no 0.94: separados un 2,1%, costaban consistencia sin comprar
-     jerarquia. Mismo motivo en los detalles, que iban a 0.78 contra 0.8. */
-  font-size: 0.96rem;
+     jerarquia. Mismo motivo en los detalles, que iban a 0.78 contra 0.8.
+     Ahora en la escala: t-2 (16px). */
+  font-size: var(--t-2);
 }
 
 :root[data-theme="vice"] .about-item span {
   margin-top: 3px;
-  font-size: 0.8rem;
+  font-size: var(--t-1);
 }
 
 /*
@@ -904,7 +936,7 @@
 :root[data-theme="vice"] .about-body > [data-line="note"] > * {
   display: block;
   margin-top: 0;
-  font-size: 0.8rem;
+  font-size: var(--t-1);
   font-weight: 300;
   line-height: 1.5;
   color: color-mix(in srgb, var(--color-paper) 58%, transparent);
@@ -1151,12 +1183,74 @@
   margin-bottom: clamp(1.5rem, 3vh, 2.6rem);
   font-family: var(--font-display);
   font-weight: var(--display-weight);
-  font-size: clamp(2rem, 5.5vw, 3.6rem);
+  /* Convergen aqui las tres apariciones de "titulo de escena" que la Tarea 1
+     cierra: obra 73.6px, contacto 64px y este, 57.6px. Un solo paso de la
+     escala (t-6..t-7) para las tres, ver comentario mas abajo. */
+  font-size: clamp(var(--t-6), 6vw, var(--t-7));
   line-height: var(--display-leading);
   letter-spacing: var(--display-tracking);
   text-align: center;
   text-wrap: balance;
   color: var(--color-paper);
+}
+
+/*
+ * Titulos de escena (hero, obra, contacto): la Tarea 1 los cierra sobre la
+ * escala en vez de tocar la clase base compartida `.display-lg`/`.display-xl`
+ * de `style.css`. Se probo directamente (`font-size: 999px` temporal en la
+ * base): un font-size ahi gana SIEMPRE al `text-[clamp(...)]` de Tailwind de
+ * cada instancia, en los tres temas — no hay capa CSS que lo proteja. Como
+ * `.display-lg`/`.display-xl` tienen valores distintos por uso (about-name y
+ * `.credits-panel-name` en 24px plano vs. el titulo de obra en un clamp
+ * 32-73.6px vs. el nombre del hero en 44.8-152px), no existe UN respaldo que
+ * mantenga a Hyprland/Caelestia identicos en los tres a la vez. La base
+ * queda intacta (sin font-size) y cada escena que de verdad necesitaba
+ * cambiar recibe su propio override aqui, con mayor especificidad, cero
+ * riesgo para los otros dos temas (no hay `var()` con respaldo: sencillamente
+ * no aplica fuera de Vice).
+ */
+:root[data-theme="vice"] [data-scene="hero"] h1.display-xl {
+  /* 12vw y no el 9vw del pliego: con 9vw el termino preferido caia DENTRO
+     del clamp a 1440px (129.6px), sin llegar a ninguno de los dos extremos
+     de la escala (nunca los toca entre 390 y 1440px). Con 12vw el preferido
+     ya supera el techo en todo el rango medido, asi que el resultado es
+     siempre uno de los dos extremos: 67.4px en movil, 159.66px en desktop.
+     44.8px -> 67.4px es un salto de +50.4%, anotado en el informe: viene del
+     pliego (fila `.display-xl`), no es una decision de esta tarea. */
+  font-size: clamp(var(--t-7), 12vw, var(--t-10));
+}
+
+:root[data-theme="vice"] [data-scene="obra"] h2.display-lg {
+  font-size: clamp(var(--t-6), 6vw, var(--t-7));
+}
+
+:root[data-theme="vice"] [data-scene="contacto"] h2.display-xl {
+  font-size: clamp(var(--t-6), 6vw, var(--t-7));
+}
+
+/*
+ * Etiquetas "Problema"/"Solucion" de la ficha de obra (`projectScene.ts`,
+ * `column()`): traen su tamano inline como utilidad arbitraria de Tailwind
+ * (`text-[0.65rem]`), asi que el mismo motivo que arriba aplica — no hay
+ * capa que proteja esa utilidad de un override sin `var()`, y como aqui SI
+ * queremos cambiar Vice sin tocar el markup compartido, el override entra
+ * aqui, scopeado a Vice, en vez de editar `projectScene.ts`. 10.4px -> 12px
+ * (+15.4%).
+ */
+:root[data-theme="vice"] [data-scene="obra"] [data-mask] > p:first-child {
+  font-size: var(--t-1);
+}
+
+/*
+ * Flecha del CTA de obra (`project.link`): el span hereda el `text-sm` de
+ * Tailwind (14px) del ancla `.group/link` que lo envuelve. Se sube el
+ * ancla entera (no solo la flecha) para que la etiqueta y la flecha
+ * mantengan el mismo tamano — si solo se tocara la flecha, quedaria mas
+ * grande que su propio texto. 14px cae justo entre dos pasos (12 y 16,
+ * ambos a 2px); se elige 16 para no encoger una llamada a la accion.
+ */
+:root[data-theme="vice"] [data-scene="obra"] .group\/link {
+  font-size: var(--t-2);
 }
 
 /*
@@ -1173,7 +1267,9 @@
   border-bottom: 0;
   font-family: var(--font-billing);
   font-weight: 400;
-  font-size: 0.56rem;
+  /* 8.96px -> 12px (+33.9%), el salto mas grande de la tarea junto al de
+     `.obra-meta dt`: anotado en el informe. */
+  font-size: var(--t-1);
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--color-accent-legible);
@@ -1225,7 +1321,7 @@
   padding: 0.28rem 0.1rem;
   border-bottom: 0;
   font-family: var(--font-billing);
-  font-size: clamp(1rem, 2.05vw, 1.55rem);
+  font-size: clamp(var(--t-2), 2.05vw, var(--t-3));
   line-height: 1.24;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1372,7 +1468,7 @@
   margin: 0;
   font-family: var(--font-body);
   font-weight: 300;
-  font-size: 0.92rem;
+  font-size: var(--t-2);
   line-height: 1.5;
 }
 
@@ -1439,8 +1535,9 @@
    */
   font-weight: 400;
   /* Suelo de 11px: 8.8px estaba por debajo de lo legible para la unica
-     etiqueta que explica que son los nombres en ambar de al lado. */
-  font-size: 0.7rem;
+     etiqueta que explica que son los nombres en ambar de al lado. Ahora en
+     la escala: t-1 (12px). */
+  font-size: var(--t-1);
   color: color-mix(in srgb, var(--color-paper) 62%, transparent);
 }
 
@@ -1770,7 +1867,7 @@
 /* Linea de disponibilidad: apoyo entre el titulo y la accion, no protagonista. */
 :root[data-theme="vice"] .contacto-status {
   margin-top: 0.9rem;
-  font-size: clamp(0.85rem, 1.6vw, 1.05rem);
+  font-size: clamp(var(--t-1), 1.6vw, var(--t-2));
   color: color-mix(in srgb, var(--color-paper) 78%, transparent);
 }
 
@@ -1784,6 +1881,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
+  /* Base compartida (`style.css`) trae `clamp(1rem, 2.2vw, 1.4rem)`, sin
+     tocar para Hyprland/Caelestia. Aqui, en Vice, a la escala: 16-22.4px
+     pasan a t-2..t-3. */
+  font-size: clamp(var(--t-2), 2.2vw, var(--t-3));
   padding: 0.9rem 1.8rem;
   border: 1px solid var(--color-accent);
   border-radius: 999px;

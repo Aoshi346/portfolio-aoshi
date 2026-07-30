@@ -84,7 +84,14 @@ body {
 .lead {
   font-family: var(--font-lead, var(--font-body));
   font-weight: var(--lead-weight, 300);
-  font-size: var(--lead-size, 1.125rem);
+  /*
+   * `--t-3` solo existe bajo `[data-theme="vice"]`; el respaldo es el valor
+   * que ya rendia aqui para Hyprland/Caelestia antes de la escala (medido:
+   * 1.125rem via el extinto `--lead-size`), asi que los otros dos temas
+   * quedan identicos al pixel. Vice pierde el clamp por vw: la Tarea 1 lo deja
+   * en un solo paso de la escala, no en un rango.
+   */
+  font-size: var(--t-3, 1.125rem);
   line-height: 1.4;
 }
 
@@ -136,7 +143,10 @@ body {
 
 .hero-kick {
   font-weight: 700;
-  font-size: 0.66rem;
+  /* `--t-1` solo existe bajo `[data-theme="vice"]`; el respaldo es el
+     0.66rem que ya rendia aqui, medido en Hyprland/Caelestia antes de tocar
+     nada — los otros dos temas quedan identicos al pixel. */
+  font-size: var(--t-1, 0.66rem);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   /*
@@ -162,7 +172,11 @@ body {
   justify-content: space-between;
   gap: 1rem;
   font-weight: 700;
-  font-size: 0.6rem;
+  /* `--t-1` solo existe en Vice; respaldo = 0.6rem medido en Hyprland/
+     Caelestia antes de la escala, idem `.hero-kick` arriba. Comparte esta
+     clase el pie de contacto (`.contacto-corner`), asi que fija tambien
+     los rotulos de telefono/GitHub/LinkedIn a un unico tamano ahi. */
+  font-size: var(--t-1, 0.6rem);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   /*
@@ -803,7 +817,10 @@ body {
 
 .obra-meta dt {
   font-weight: 700;
-  font-size: 0.53rem;
+  /* `--t-1` solo en Vice; respaldo = 0.53rem medido en Hyprland/Caelestia
+     antes de la escala. Paso mas cercano en Vice: 8.48px -> 12px (+41.5%,
+     el salto mas grande de la tarea — anotado en el informe). */
+  font-size: var(--t-1, 0.53rem);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--color-accent-legible);
@@ -926,7 +943,10 @@ body {
     transparent
   );
   font-weight: 700;
-  font-size: 0.58rem;
+  /* `--t-1` solo en Vice; respaldo = 0.58rem medido en Hyprland/Caelestia
+     antes de la escala. Paso mas cercano en Vice: 9.28px -> 12px (+29.3%,
+     anotado en el informe). */
+  font-size: var(--t-1, 0.58rem);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-paper) 92%, transparent);
