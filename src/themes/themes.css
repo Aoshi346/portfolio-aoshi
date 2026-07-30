@@ -1568,52 +1568,51 @@
  * apilarse hacia abajo. El carril se fija en pantalla (`pin`) y la coreografia
  * traslada el track en X con el scroll (`scene3Slate` en vice.choreography.ts).
  *
- * Solo Vice. En Hyprland/Caelestia estas dos reglas no existen, el track es un
- * div normal y las escenas siguen una debajo de otra: el DOM es identico y la
+ * Solo Vice. En Hyprland/Caelestia estas reglas no existen, el track es un div
+ * normal y las escenas siguen una debajo de otra: el DOM es identico y la
  * direccion la decide la piel, como el resto del tema.
+ *
+ * LA PILA VERTICAL ES EL ESTADO POR DEFECTO y la geometria horizontal se activa
+ * dentro de la query, no al reves. Cuando estaba al reves, esta seccion tenia un
+ * agujero: la geometria colgaba SOLO del ancho, asi que con
+ * `prefers-reduced-motion: reduce` en escritorio el CSS seguia montando el track
+ * de 7200px dentro de un carril de 1440px con `overflow: hidden`, mientras
+ * `initScrollReveal` hacia early-return y `scene3Slate` no llegaba a correr. El
+ * track se quedaba en `transform: none` y las obras 2 a 5 eran INALCANZABLES:
+ * ni encuadradas, ni desplazables, ni apiladas. Medido con un barrido completo
+ * de la seccion: de las cinco piezas solo se veia la primera.
+ *
+ * De ahi las dos condiciones juntas. La preferencia de movimiento tiene que
+ * estar aqui porque es AQUI donde se decide si hay eje horizontal; dejarla solo
+ * en el JS deja el CSS afirmando una geometria que nadie va a animar.
+ *
+ * El motivo del corte por ancho se mantiene: un carril horizontal fijado compite
+ * con el gesto de scroll del pulgar y, ademas, cada cartela incluye su propia
+ * galeria arrastrable en horizontal. Dos ejes iguales anidados son una trampa
+ * tactil, no una gracia.
  */
-:root[data-theme="vice"] .obra-rail {
-  overflow: hidden;
-}
-
-:root[data-theme="vice"] .obra-track {
-  display: flex;
-  flex-wrap: nowrap;
-  width: max-content;
-  will-change: transform;
-}
-
-:root[data-theme="vice"] .obra-track > [data-scene="obra"] {
-  flex: 0 0 100vw;
-  width: 100vw;
-  /*
-   * El alto lo manda la pantalla, no el contenido: en un recorrido lateral
-   * cada obra es un plano completo y dos planos no pueden tener alturas
-   * distintas o el carril daria saltos verticales al desplazarse.
-   */
-  min-height: 100vh;
-  height: 100vh;
-}
-
-@media (max-width: 900px) {
-  /*
-   * En pantallas estrechas se vuelve a la pila vertical. Un carril horizontal
-   * pineado compite con el gesto de scroll del pulgar y, ademas, cada cartela
-   * incluye su propia galeria arrastrable en horizontal: dos ejes iguales
-   * anidados son una trampa tactil, no una gracia.
-   */
+@media (min-width: 901px) and (prefers-reduced-motion: no-preference) {
   :root[data-theme="vice"] .obra-rail {
-    overflow: visible;
+    overflow: hidden;
   }
 
   :root[data-theme="vice"] .obra-track {
-    display: block;
-    width: auto;
+    display: flex;
+    flex-wrap: nowrap;
+    width: max-content;
+    will-change: transform;
   }
 
   :root[data-theme="vice"] .obra-track > [data-scene="obra"] {
-    width: auto;
-    height: auto;
+    flex: 0 0 100vw;
+    width: 100vw;
+    /*
+     * El alto lo manda la pantalla, no el contenido: en un recorrido lateral
+     * cada obra es un plano completo y dos planos no pueden tener alturas
+     * distintas o el carril daria saltos verticales al desplazarse.
+     */
+    min-height: 100vh;
+    height: 100vh;
   }
 }
 

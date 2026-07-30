@@ -776,7 +776,17 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
   obraContext?.revert();
   obraContext = gsap.matchMedia();
 
-  obraContext.add("(min-width: 901px)", () => {
+  /*
+   * Las dos condiciones tienen que ser LAS MISMAS que las del CSS que monta la
+   * geometria del carril (themes.css, "Vice: carril de obra en horizontal").
+   * Cuando aqui se leia solo el ancho y alli tambien, con `reduce` el CSS
+   * montaba un track de 7200px en un carril de 1440px que nadie animaba y cuatro
+   * obras quedaban inalcanzables. Hoy `initScrollReveal` ya hace early-return con
+   * `reduce` y esta rama no llega a ejecutarse, asi que esta clausula no cambia
+   * nada observable: esta para que las dos mitades del invariante digan lo mismo
+   * y no se puedan volver a separar sin verlo.
+   */
+  obraContext.add("(min-width: 901px) and (prefers-reduced-motion: no-preference)", () => {
     if (!rail || !track) return;
 
     /*
@@ -821,7 +831,9 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
     scenes.forEach((scene, index) => buildSlate(gsap, scene, obraTriggerIds(index), horizontal));
   });
 
-  obraContext.add("(max-width: 900px)", () => {
+  // El complemento exacto de la rama de arriba: pila vertical si la pantalla es
+  // estrecha O si se pide menos movimiento.
+  obraContext.add("(max-width: 900px), (prefers-reduced-motion: reduce)", () => {
     scenes.forEach((scene, index) => buildSlate(gsap, scene, obraTriggerIds(index), null));
   });
 
