@@ -612,7 +612,12 @@ body {
   gap: 0.4rem;
   margin-top: 0.5rem;
   font-weight: 600;
-  font-size: 0.62rem;
+  /* `--t-1` solo en Vice; respaldo = 0.62rem medido en Hyprland/Caelestia
+     antes de la escala. Ronda de correcciones 1: el arnes original no lo
+     media (punto ciego de `n.children.length`, ver measure-type-scale.py).
+     Paso mas cercano en Vice: 9.92px -> 12px (+20.97%, mismo salto que
+     `.about-h`, anotado en el informe). */
+  font-size: var(--t-1, 0.62rem);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-accent);

@@ -393,7 +393,11 @@
   padding: 0.34rem 0.62rem;
   border: 1px solid color-mix(in srgb, var(--color-accent-2) 55%, transparent);
   background: color-mix(in srgb, var(--color-accent-2) 14%, transparent);
-  font-size: 0.62rem;
+  /* Este override, mas especifico que la regla base de style.css, era el
+     que de verdad ganaba en Vice — arreglar solo la base no bastaba.
+     9.92px -> 12px (+20.97%), mismo salto que `.about-h`, anotado en el
+     informe. */
+  font-size: var(--t-1);
   letter-spacing: 0.14em;
   /* Mezclado con paper por la misma razon que `.about-facts dt`: el magenta
      puro sobre el degradado de Vice se queda corto de contraste. */
@@ -1609,7 +1613,10 @@
  */
 @media (max-width: 859px) {
   :root[data-theme="vice"] .credit {
-    font-size: 1rem;
+    /* 1rem literal coincidia con un paso (16px = --t-2) y por eso el arnes
+       lo dejaba pasar, pero a partir de la Tarea 1 no hay tamanos literales:
+       token, no coincidencia. */
+    font-size: var(--t-2);
     line-height: 2.75;
     /*
      * Ancho minimo del objetivo, no solo alto. El comentario anterior daba
