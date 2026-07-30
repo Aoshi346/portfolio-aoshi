@@ -1,5 +1,22 @@
 # HANDOFF — ejecutar el ritmo del carril de obra
 
+> **RELEVADO el 2026-07-30.** El plan se ejecutó entero y se mergeó a `main` en `cdcc3ef`. Este
+> fichero se queda como registro de lo que se decidió *antes* de implementar; para el estado
+> real, ir al registro de implementación del spec. Lo que sigue abierto está en
+> `.docs/HANDOFF-obra-siguiente-iteracion.md`.
+>
+> Qué pasó con lo que este handoff daba por decidido:
+>
+> - **El dimensionado se respetó entero.** 5040 px de presupuesto, `scrub` 0.5, reposo/tránsito
+>   0.45. No se tocó ni una constante.
+> - **Los objetivos numéricos de la tabla de abajo se reformularon**, tres de ellos. Estaban
+>   calculados contra el final del tween y el instrumento los mide en el cruce de 0,99, que con
+>   una cuártica llega un 32% de duración antes. La aritmética que lo demuestra está en el
+>   registro del spec. La tabla de abajo es la de entonces: **la vigente es la del spec**.
+> - **Una métrica se cayó**: `v_lateral_encuadre_px_s` está roto y se retiró.
+> - **Apareció un punto de re-verificación que este handoff no previó**: el propio instrumento
+>   medía contra el recorrido lateral en vez de contra el presupuesto del pin.
+>
 > Escrito el 2026-07-30 al cerrar el diseño. Releva a `HANDOFF-obra-rail-timing.md`, cuyo
 > encargo (medir antes de tocar) está cumplido.
 
