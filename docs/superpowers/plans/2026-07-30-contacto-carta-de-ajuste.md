@@ -291,7 +291,7 @@ Sustituye los valores de la tabla y añade una línea debajo:
 Si algún número **no** cambió, déjalo y dilo. Reescribir a ojo lo que no se movió es igual de
 falso que dejar lo que sí.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add docs/superpowers/plans/2026-07-30-obra-rail-ritmo.md
