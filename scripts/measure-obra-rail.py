@@ -45,6 +45,12 @@ from playwright.sync_api import sync_playwright
 VIEWPORT = {"width": 1440, "height": 900}
 DEFAULT_URL = "http://localhost:4173/?theme=vice"
 
+# Estas constantes tienen que ir a la par de src/themes/vice.choreography.ts.
+# Si alguien cambia OBRA_REST u OBRA_TRANSIT alli y no aqui, ideal_x() miente:
+# modelaria una timeline maestra que ya no es la que corre en el navegador.
+OBRA_TRANSIT = 1.0
+OBRA_REST = 0.45
+
 # Tres velocidades de rueda. El delta y la pausa son la ORDEN; la velocidad
 # real se mide de los datos y se reporta, porque Lenis y el navegador no
 # entregan exactamente lo que se les pide.
@@ -97,6 +103,7 @@ GEOMETRY = """
     scrollWidth: track.scrollWidth,
     sceneCount: scenes.length,
     innerWidth: window.innerWidth,
+    innerHeight: window.innerHeight,
     docHeight: document.documentElement.scrollHeight,
   };
 }
@@ -215,11 +222,85 @@ def measure_settle(page, geo: dict) -> dict:
     }
 
 
+def ease_power2_inout(p: float) -> float:
+    """Cubica in-out. GSAP nombra sus eases por grado de la potencia MENOS 1:
+    power1 = cuadratica, power2 = cubica, power3 = cuartica."""
+    p = min(max(p, 0.0), 1.0)
+    return 4 * p**3 if p < 0.5 else 1 - ((-2 * p + 2) ** 3) / 2
+
+
+def make_ideal_x(geo: dict, pin_budget: float):
+    """Modela la timeline maestra de vice.choreography.ts para dar, a cada
+    scrollY dentro del pin, la x que el track DEBERIA tener sin el desfase de
+    `scrub`/Lenis (alimenta M1).
+
+    Ya no es el mapeo 1:1 lineal que hubo antes de las mesetas. La secuencia,
+    en unidades de timeline (1 unidad = 1 transito), es:
+
+        reposo(OBRA_REST), transito(OBRA_TRANSIT), reposo(OBRA_REST), ...,
+        reposo(OBRA_REST)
+
+    con `hops = sceneCount - 1` transitos y `hops + 1` reposos. Durante el
+    transito k (1-indexado) el track va de -(k-1)*innerWidth a -k*innerWidth,
+    salvo el ULTIMO, que se clampa a -travel() exacto (ver comentario de
+    `vice.choreography.ts` sobre subpixel/scrollbar). El ease de cada transito
+    es power2.inOut = cubica in-out.
+
+    Esta funcion tiene que ir a la par de OBRA_REST/OBRA_TRANSIT (arriba) y de
+    la construccion real del master timeline en vice.choreography.ts. Si
+    cambian alli las constantes o la forma de los segmentos, este modelo
+    miente sin avisar.
+    """
+    n = geo["sceneCount"]
+    hops = n - 1
+    inner = geo["innerWidth"]
+    travel = geo["distance"]
+    rail_start = geo["railStart"]
+    total = hops * OBRA_TRANSIT + (hops + 1) * OBRA_REST
+
+    # segmentos: lista de (kind, duration, extra) en orden
+    segments: list[tuple[str, float, int]] = [("rest", OBRA_REST, 0)]
+    for k in range(1, hops + 1):
+        segments.append(("transit", OBRA_TRANSIT, k))
+        segments.append(("rest", OBRA_REST, k))
+
+    def x_at_hop(k: int) -> float:
+        if k == 0:
+            return 0.0
+        if k == hops:
+            return -travel
+        return -k * inner
+
+    def ideal_x(y: float) -> float:
+        p = (y - rail_start) / pin_budget if pin_budget else 0.0
+        p = min(max(p, 0.0), 1.0)
+        u = p * total
+
+        acc = 0.0
+        for kind, dur, k in segments:
+            if u <= acc + dur or (kind, dur, k) == segments[-1]:
+                if kind == "rest":
+                    return x_at_hop(k)
+                local_p = (u - acc) / dur if dur else 1.0
+                eased = ease_power2_inout(local_p)
+                return x_at_hop(k - 1) + eased * (x_at_hop(k) - x_at_hop(k - 1))
+            acc += dur
+        return x_at_hop(hops)
+
+    return ideal_x
+
+
 def analyse(samples: list[dict], geo: dict, label: str) -> dict:
     n = geo["sceneCount"]
     scene_w = geo["scrollWidth"] / n
     distance = max(geo["scrollWidth"] - geo["innerWidth"], 0)
     rail_start = geo["railStart"]
+    # Presupuesto REAL de scroll que reserva el pin. Con la timeline maestra
+    # de mesetas ya no coincide con el recorrido lateral (`distance`): a 1440
+    # el recorrido lateral son 5760px pero el pin solo reserva 5040px de
+    # scroll. Usar `distance` aqui contaba 720px de scroll post-pin, con el
+    # track ya topado en `-travel()`, como si aun estuviera dentro del pin.
+    pin_budget = max(geo["spacerHeight"] - geo["innerHeight"], 1)
 
     if len(samples) < 10:
         return {"speed": label, "error": "muestras insuficientes"}
@@ -238,28 +319,32 @@ def analyse(samples: list[dict], geo: dict, label: str) -> dict:
         real_speed = 0.0
 
     # --- M1: desfase entre el carril real y el que tocaria para ese scrollY
-    def ideal_x(y: float) -> float:
-        p = (y - rail_start) / distance if distance else 0.0
-        p = min(max(p, 0.0), 1.0)
-        return -p * distance
+    ideal_x = make_ideal_x(geo, pin_budget)
 
     lags = [
         abs(s["x"] - ideal_x(s["y"]))
         for s in moving
-        if rail_start < s["y"] < rail_start + distance
+        if rail_start < s["y"] < rail_start + pin_budget
     ]
     lag_peak = max(lags) if lags else 0.0
     lag_med = statistics.median(lags) if lags else 0.0
 
     # --- M3/M4: por escena, instante de encuadre y permanencia
     #
-    # Todo se acota a la ventana del pin. Fuera de ella el carril esta topado
-    # (`x = 0` antes de engancharse, `x = -distance` despues de soltarse), asi
-    # que las piezas 1 y 5 acumularian como "permanencia" el margen de
-    # aproximacion y la cola en silencio del barrido: la primera version de
-    # este script le daba a la pieza 5 casi 10s de los que 2,5 eran el propio
-    # instrumento parado.
-    pinned = [s for s in samples if rail_start <= s["y"] <= rail_start + distance]
+    # Todo se acota a la ventana del pin, y esa ventana es `pin_budget`
+    # (el scroll que RESERVA el ScrollTrigger, `spacerHeight - innerHeight`),
+    # no `distance` (el recorrido lateral del track). Con la timeline maestra
+    # de mesetas el pin consume el recorrido lateral en menos scroll del que
+    # antes ocupaba 1:1 (5760px de recorrido en 5040px de scroll a 1440): usar
+    # `distance` aqui se comia 720px de scroll post-pin con el carril ya
+    # topado en `-travel()` como si siguiera dentro del pin, y esa cola se
+    # la llevaba entera la pieza 5 como "permanencia". Fuera de la ventana el
+    # carril esta topado (`x = 0` antes de engancharse, `x = -distance`
+    # despues de soltarse), asi que las piezas 1 y 5 acumularian ademas el
+    # margen de aproximacion y la cola en silencio del barrido: la primera
+    # version de este script le daba a la pieza 5 casi 10s de los que 2,5 eran
+    # el propio instrumento parado.
+    pinned = [s for s in samples if rail_start <= s["y"] <= rail_start + pin_budget]
 
     per_scene = []
     for i in range(n):
@@ -305,6 +390,22 @@ def analyse(samples: list[dict], geo: dict, label: str) -> dict:
             gap_ms = cross["t"] - entry_done
             gap_px = abs(gap_ms / 1000.0 * real_speed)
 
+        # Cierre de la cartela ENTERA: la galeria es el ultimo elemento de la
+        # entrada (posicion 0.56 + duracion 0.34 = 0.90 de la ventana). El `.lead`
+        # cierra al 52%, asi que medir solo por el lead subestima el acoplamiento.
+        slate_done = None
+        for s in samples:
+            v = s["gal"][i]
+            if v is not None and v >= 0.99:
+                slate_done = s["t"]
+                break
+
+        slate_ms = None
+        slate_px = None
+        if slate_done is not None and cross is not None and i > 0:
+            slate_ms = cross["t"] - slate_done
+            slate_px = abs(slate_ms / 1000.0 * real_speed)
+
         per_scene.append(
             {
                 "pieza": i + 1,
@@ -312,6 +413,8 @@ def analyse(samples: list[dict], geo: dict, label: str) -> dict:
                 "entrada_lista_t_ms": round(entry_done, 1) if entry_done is not None else None,
                 "adelanto_entrada_ms": round(gap_ms, 1) if gap_ms is not None else None,
                 "adelanto_entrada_px": round(gap_px, 1) if gap_px is not None else None,
+                "adelanto_cartela_ms": round(slate_ms, 1) if slate_ms is not None else None,
+                "adelanto_cartela_px": round(slate_px, 1) if slate_px is not None else None,
                 "permanencia_ms": round(dwell, 1),
                 "v_lateral_encuadre_px_s": round(v_framed, 1) if v_framed else None,
                 "nota": "encuadrada al enganchar el pin: sin llegada que acentuar" if i == 0 else None,
@@ -323,6 +426,7 @@ def analyse(samples: list[dict], geo: dict, label: str) -> dict:
 
     return {
         "speed": label,
+        "pin_budget_px": round(pin_budget, 1),
         "velocidad_scroll_real_px_s": round(real_speed, 1),
         "muestras": len(samples),
         "fps_medio": round(len(samples) / (samples[-1]["t"] / 1000.0), 1) if samples[-1]["t"] else None,
@@ -360,6 +464,7 @@ def main() -> int:
 
         geo = page.evaluate(GEOMETRY)
         geo["distance"] = max(geo["scrollWidth"] - geo["innerWidth"], 0)
+        geo["pin_budget"] = max(geo["spacerHeight"] - geo["innerHeight"], 1)
         report["geometria"] = geo
         print("Geometria medida:")
         for k, v in geo.items():
@@ -377,9 +482,8 @@ def main() -> int:
             print(f"  M1 desfase pico: {res.get('M1_desfase_lateral_pico_px')} px"
                   f"  mediana: {res.get('M1_desfase_lateral_mediana_px')} px")
             for ps in res.get("por_pieza", []):
-                print(f"    pieza {ps['pieza']}: entrada lista {ps['entrada_lista_t_ms']} ms, "
-                      f"encuadre {ps['encuadre_t_ms']} ms, "
-                      f"adelanto {ps['adelanto_entrada_ms']} ms / {ps['adelanto_entrada_px']} px, "
+                print(f"    pieza {ps['pieza']}: lead {ps['adelanto_entrada_px']} px antes, "
+                      f"cartela entera {ps['adelanto_cartela_px']} px antes, "
                       f"permanencia {ps['permanencia_ms']} ms")
             print()
 

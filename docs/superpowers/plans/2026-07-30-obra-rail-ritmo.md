@@ -118,12 +118,12 @@ hay forma de saber si las siguientes funcionan**.
   `adelanto_entrada_ms` / `adelanto_entrada_px` se conservan y pasan a llamarse en el
   informe "adelanto del lead".
 
-- [ ] **Paso 1: comprobar que el muestreador ya recoge la galería**
+- [x] **Paso 1: comprobar que el muestreador ya recoge la galería**
 
 `SAMPLER` ya empuja `gal:` en cada fotograma (`gals.map(op)`). No hace falta tocarlo.
 Verifícalo leyendo el bloque `SAMPLER` antes de seguir.
 
-- [ ] **Paso 2: calcular el cierre de la cartela entera en `analyse()`**
+- [x] **Paso 2: calcular el cierre de la cartela entera en `analyse()`**
 
 Junto al bloque que calcula `entry_done`, añadir:
 
@@ -145,7 +145,7 @@ Junto al bloque que calcula `entry_done`, añadir:
             slate_px = abs(slate_ms / 1000.0 * real_speed)
 ```
 
-- [ ] **Paso 3: publicar las dos métricas**
+- [x] **Paso 3: publicar las dos métricas**
 
 En el `per_scene.append({...})`, añadir junto a las que ya hay:
 
@@ -154,7 +154,7 @@ En el `per_scene.append({...})`, añadir junto a las que ya hay:
                 "adelanto_cartela_px": round(slate_px, 1) if slate_px is not None else None,
 ```
 
-- [ ] **Paso 4: imprimirlas**
+- [x] **Paso 4: imprimirlas**
 
 En `main()`, sustituir la línea de impresión por pieza por:
 
@@ -164,7 +164,7 @@ En `main()`, sustituir la línea de impresión por pieza por:
                       f"permanencia {ps['permanencia_ms']} ms")
 ```
 
-- [ ] **Paso 5: correr contra el código ACTUAL y guardar la línea base**
+- [x] **Paso 5: correr contra el código ACTUAL y guardar la línea base**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -178,7 +178,7 @@ Esperado: `lead` entre 938 y 995 px a velocidad lenta, y `cartela entera` en un 
 Si `cartela entera` sale `None` en todas las piezas, la galería no llega a opacidad 1 en la
 ventana muestreada: revisa el `SAMPLER` antes de seguir.
 
-- [ ] **Paso 6: commit**
+- [x] **Paso 6: commit**
 
 ```bash
 git add scripts/measure-obra-rail.py
@@ -212,12 +212,12 @@ Partirla deja el carril roto entre commits.
   - `slateWindow(index: number): { at: number; len: number }`
   - `parallaxWindow(index: number): { at: number; len: number }`
 
-- [ ] **Paso 1: añadir el bloque de constantes**
+- [x] **Paso 1: añadir el bloque de constantes**
 
 Pégalo justo encima de `obraTriggerIds` (línea 606). Es el bloque completo de la sección
 "Constantes del dimensionado" de este plan, con sus comentarios.
 
-- [ ] **Paso 2: extraer `slateParts`**
+- [x] **Paso 2: extraer `slateParts`**
 
 Sustituye las seis búsquedas sueltas de dentro de `buildSlate` por:
 
@@ -245,7 +245,7 @@ function slateParts(scene: HTMLElement): SlateParts {
 }
 ```
 
-- [ ] **Paso 3: las ventanas de la cartela y del parallax**
+- [x] **Paso 3: las ventanas de la cartela y del parallax**
 
 ```ts
 /**
@@ -280,7 +280,7 @@ function parallaxWindow(index: number): { at: number; len: number } {
 }
 ```
 
-- [ ] **Paso 4: renombrar el camino vertical a `buildSlateStack` y matar los `gsap.from`**
+- [x] **Paso 4: renombrar el camino vertical a `buildSlateStack` y matar los `gsap.from`**
 
 Renombra `buildSlate` a `buildSlateStack`, quítale el parámetro `container` (ahora siempre es
 la pila) y deja el `trigger` fijo en `{ trigger: scene, start: "top 76%", toggleActions: "play none none reverse" }`.
@@ -332,7 +332,7 @@ Convierte los cinco `gsap.from` a `fromTo` con los dos extremos a mano:
 El título sigue con `composeTitle(gsap, p.title, trigger, ids[1], 0.08)` y el parallax vertical
 se queda como está (`yPercent -4 -> 4`, `scrub: 1`, ids[6]): la pila no está en el alcance.
 
-- [ ] **Paso 5: escribir `buildSlateRail`**
+- [x] **Paso 5: escribir `buildSlateRail`**
 
 ```ts
 /**
@@ -430,7 +430,7 @@ function buildSlateRail(
 }
 ```
 
-- [ ] **Paso 6: reescribir el cuerpo horizontal de `scene3Slate`**
+- [x] **Paso 6: reescribir el cuerpo horizontal de `scene3Slate`**
 
 Sustituye el `gsap.to(track, {...})` y el `scenes.forEach(...)` de la rama
 `(min-width: 901px) and (prefers-reduced-motion: no-preference)` por:
@@ -490,7 +490,7 @@ Sustituye el `gsap.to(track, {...})` y el `scenes.forEach(...)` de la rama
 Conserva **intacto** el comentario largo de `refreshPriority` que ya está en el fichero: sigue
 siendo válido y documenta dos regresiones reales.
 
-- [ ] **Paso 7: la rama vertical llama a `buildSlateStack`**
+- [x] **Paso 7: la rama vertical llama a `buildSlateStack`**
 
 ```ts
   obraContext.add("(max-width: 900px), (prefers-reduced-motion: reduce)", () => {
@@ -502,7 +502,7 @@ siendo válido y documenta dos regresiones reales.
 sobran seis, y es cierto **solo para el camino horizontal**. Anótalo para el registro de
 implementación.
 
-- [ ] **Paso 8: build y lint**
+- [x] **Paso 8: build y lint**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -512,7 +512,7 @@ npm run build && npm run lint
 Esperado: cero errores. Si `tsc` se queja de `gsap.core.Timeline`, el tipo viene de
 `Gsap = typeof import("gsap").default`; usa `ReturnType<Gsap["timeline"]>`.
 
-- [ ] **Paso 9: medir y comparar contra los objetivos**
+- [x] **Paso 9: medir y comparar contra los objetivos**
 
 ```bash
 npm run preview -- --port 4173 &
@@ -549,7 +549,7 @@ with sync_playwright() as p:
 
 Esperado: `spacer` ~5940 (900 de viewport + 5040 de reserva) y `doc` ~11587.
 
-- [ ] **Paso 10: commit**
+- [x] **Paso 10: commit**
 
 ```bash
 git add src/themes/vice.choreography.ts
@@ -575,14 +575,14 @@ Esta tarea no cambia código salvo que encuentre un fallo.
 - Verificar: `src/themes/vice.choreography.ts:901` (trigger de créditos), `:1200`
   (`railBound`), `:846` (`scrollrail:refresh`)
 
-- [ ] **Paso 1: la barra de orientación no miente**
+- [x] **Paso 1: la barra de orientación no miente**
 
 Con `?theme=vice` a 1440x900, recorrer el documento entero con rueda simulada y comprobar que
 la etiqueta anunciada coincide con la sección en pantalla en las fronteras. La región del
 carril se estrecha del 54,1% al 51,3% del documento. El fallo que se busca es el ya conocido:
 que anuncie "04 · Créditos" con el carril todavía ocupando la pantalla.
 
-- [ ] **Paso 2: el trigger de créditos no dispara con el carril fijado**
+- [x] **Paso 2: el trigger de créditos no dispara con el carril fijado**
 
 `start: "top 80%"` en la línea 901. Comprobar que su `start` en px cae **después** del `end`
 del pin del carril:
@@ -610,12 +610,12 @@ Esperado: `margen` positivo. Si sale el aviso de que `ScrollTrigger` no está en
 (probable, el bundle es de módulos), hazlo con `markers: true` temporalmente en los dos
 triggers y una captura, y **quítalos antes de commitear**.
 
-- [ ] **Paso 3: el letterbox enciende y apaga en la frontera correcta**
+- [x] **Paso 3: el letterbox enciende y apaga en la frontera correcta**
 
 Fue una regresión real. Recorrer la frontera fin-de-carril / inicio-de-créditos y confirmar
 que las barras de `[data-letterbox]` entran durante la obra y salen al pasar a créditos.
 
-- [ ] **Paso 4: el arnés completo**
+- [x] **Paso 4: el arnés completo**
 
 ```bash
 free -h | awk '/Mem:/{print "RAM libre:", $7}'   # >3GB antes de lanzar
@@ -625,7 +625,7 @@ python3 scripts/verify.py
 Esperado: código de salida 0, con los 12 fallos de fixtures de la línea base y ninguno nuevo.
 Si arreglas alguno de la base, quítalo con `--update-baseline` y revisa el diff.
 
-- [ ] **Paso 5: comprobar la pila vertical y el reduced-motion**
+- [x] **Paso 5: comprobar la pila vertical y el reduced-motion**
 
 El camino que no se ha tocado también tiene que seguir vivo:
 
@@ -646,7 +646,10 @@ with sync_playwright() as p:
 "
 ```
 
-- [ ] **Paso 6: commit si hubo arreglos, si no seguir**
+- [x] **Paso 6: commit si hubo arreglos, si no seguir** — sin arreglos: los cuatro
+  puntos leen dinamicamente `ScrollTrigger.getById("vice-obra-rail")` (railBound,
+  refresco de la barra) o dependen del `onToggle` de escenas adyacentes (creditos,
+  letterbox), ninguno tiene el numero 5760/5040 quemado. Sin commit de codigo.
 
 ```bash
 git add -A && git commit -m "fix(obra): <lo que se rompio> tras acortar el pin"
@@ -659,7 +662,7 @@ git add -A && git commit -m "fix(obra): <lo que se rompio> tras acortar el pin"
 **Ficheros:**
 - Modificar: `docs/superpowers/specs/2026-07-30-obra-rail-ritmo-design.md`
 
-- [ ] **Paso 1: rellenar el registro**
+- [x] **Paso 1: rellenar el registro**
 
 Sustituir la sección "Registro de implementación" por lo que pasó de verdad: en qué se desvió
 la realidad del dimensionado y por qué. Como mínimo van estas dos, que ya se saben:
@@ -671,19 +674,19 @@ la realidad del dimensionado y por qué. Como mínimo van estas dos, que ya se s
 
 Añade las que aparezcan al implementar. **Sin este registro el spec miente.**
 
-- [ ] **Paso 2: cambiar el `Estado:`**
+- [x] **Paso 2: cambiar el `Estado:`**
 
 De `pendiente de plan` a `implementado`. Vocabulario cerrado: `en diseno`,
 `pendiente de plan`, `en ejecucion`, `implementado`, `descartado`. `verify.py` lo comprueba, y
 también comprueba que las casillas de este plan estén todas marcadas si el spec dice
 `implementado`.
 
-- [ ] **Paso 3: marcar todas las casillas de este plan**
+- [x] **Paso 3: marcar todas las casillas de este plan**
 
 En vivo, según se hacen. No en bloque al final: ticar de golpe pasos que nadie siguió uno a
 uno falsifica el registro en vez de completarlo.
 
-- [ ] **Paso 4: gate documental**
+- [x] **Paso 4: gate documental**
 
 ```bash
 python3 scripts/verify.py
@@ -691,7 +694,7 @@ python3 scripts/verify.py
 
 Esperado: `[docs] estado de specs y planes` en verde y salida 0.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add docs/superpowers/

@@ -603,6 +603,23 @@ function scene2Card(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEleme
   }
 }
 
+/** Un transito completo de una pieza a la siguiente. Unidad base de la timeline. */
+const OBRA_TRANSIT = 1;
+/** Reposo entre transitos, y en los dos bordes. 0.45 del transito (spec 2026-07-30). */
+const OBRA_REST = 0.45;
+/**
+ * Px de scroll por px de innerWidth y por unidad de timeline. Con 5 obras esto da
+ * 3.5 x innerWidth de presupuesto (5040px a 1440), frente a los 5760 de antes.
+ */
+const OBRA_SCROLL_PER_UNIT = 0.56;
+/**
+ * `scrub: 0.5`, no 1. Medido: el reposo solo se siente como reposo si el asentamiento
+ * del scrub es mas corto que la meseta. Con scrub 1 (956ms de asentamiento) y una
+ * meseta de 563ms, el carril se pasa el reposo entero recuperando retardo y la pieza
+ * que peor se posa se queda en 147 px/s. Con 0.5 (480ms) baja a 18 px/s.
+ */
+const OBRA_SCRUB = 0.5;
+
 /** Ids fijos del gesto 3, parametrizados por indice: puede haber varias escenas de obra. */
 function obraTriggerIds(index: number): string[] {
   return [
@@ -624,131 +641,305 @@ function obraTriggerIds(index: number): string[] {
  */
 let obraContext: ReturnType<Gsap["matchMedia"]> | null = null;
 
-/**
- * Entrada de UNA cartela. `container` es la timeline del recorrido horizontal
- * cuando la obra se recorre de lado: sin ella, ScrollTrigger mediria la
- * posicion de la escena contra el scroll vertical, y en un carril fijado en
- * pantalla esa posicion no cambia nunca (todas las cartelas entrarian a la vez
- * al fijarse el carril). Con `containerAnimation` mide contra el avance
- * horizontal, que es el eje real por el que la escena cruza el encuadre.
- */
-function buildSlate(
-  gsap: Gsap,
-  scene: HTMLElement,
-  ids: string[],
-  container: gsap.core.Tween | null,
-): void {
-  // En horizontal el borde de referencia es el izquierdo, no el superior.
-  const trigger = container
-    ? ({
-        trigger: scene,
-        containerAnimation: container,
-        start: "left 78%",
-        toggleActions: "play none none reverse",
-      } as const)
-    : ({
-        trigger: scene,
-        start: "top 76%",
-        toggleActions: "play none none reverse",
-      } as const);
-  {
-    const ordinal = scene.querySelector<HTMLElement>("[data-ord]");
-    const title = scene.querySelector<HTMLElement>("[data-title]");
-    const lead = scene.querySelector<HTMLElement>(".lead");
-    const meta = scene.querySelector<HTMLElement>("[data-meta]");
-    const masks = Array.from(scene.querySelectorAll<HTMLElement>("[data-mask]"));
-    const gallery = scene.querySelector<HTMLElement>("[data-gallery]");
+interface SlateParts {
+  ordinal: HTMLElement | null;
+  title: HTMLElement | null;
+  lead: HTMLElement | null;
+  meta: HTMLElement | null;
+  masks: HTMLElement[];
+  gallery: HTMLElement | null;
+}
 
-    if (ordinal) {
-      gsap.from(ordinal, {
-        y: -70,
-        scale: 1.35,
-        opacity: 0,
+/** Los nodos animables de una cartela. Se buscan una vez y se reparten. */
+function slateParts(scene: HTMLElement): SlateParts {
+  return {
+    ordinal: scene.querySelector<HTMLElement>("[data-ord]"),
+    title: scene.querySelector<HTMLElement>("[data-title]"),
+    lead: scene.querySelector<HTMLElement>(".lead"),
+    meta: scene.querySelector<HTMLElement>("[data-meta]"),
+    // Array.from: `querySelectorAll` devuelve una coleccion viva.
+    masks: Array.from(scene.querySelectorAll<HTMLElement>("[data-mask]")),
+    gallery: scene.querySelector<HTMLElement>("[data-gallery]"),
+  };
+}
+
+/**
+ * Ventana de la entrada de la cartela `index` dentro de la timeline maestra, en
+ * unidades de timeline. Arranca al 35% de su transito y cierra 0.10 reposos
+ * DESPUES de que la pieza quede encuadrada: la cartela se monta con la pieza, no
+ * 950px antes como hacia el reloj de pared.
+ *
+ * La pieza 0 es un caso aparte: esta encuadrada desde que el pin engancha, asi
+ * que su entrada ocupa el reposo de cabeza.
+ */
+function slateWindow(index: number): { at: number; len: number } {
+  if (index === 0) return { at: 0, len: OBRA_REST * 0.8 };
+  const base = OBRA_REST + (index - 1) * (OBRA_TRANSIT + OBRA_REST);
+  return {
+    at: base + 0.35 * OBRA_TRANSIT,
+    len: 0.65 * OBRA_TRANSIT + 0.1 * OBRA_REST,
+  };
+}
+
+/**
+ * El parallax de la galeria cubre TAMBIEN el reposo, a proposito: mientras el
+ * track esta quieto la captura sigue derivando unos pixeles con el dedo, asi que
+ * la meseta nunca se lee como que la pagina se ha colgado. Es la mitigacion del
+ * riesgo principal de un carril con reposos.
+ */
+function parallaxWindow(index: number): { at: number; len: number } {
+  if (index === 0) return { at: 0, len: OBRA_REST };
+  const base = OBRA_REST + (index - 1) * (OBRA_TRANSIT + OBRA_REST);
+  const at = base + 0.35 * OBRA_TRANSIT;
+  return { at, len: base + OBRA_TRANSIT + OBRA_REST - at };
+}
+
+/**
+ * Entrada de UNA cartela en la pila vertical (movil, o `prefers-reduced-motion:
+ * reduce`). Sigue anclada a su propio ScrollTrigger de scroll vertical, porque en
+ * este camino no hay recorrido horizontal contra el que acoplar una timeline
+ * maestra.
+ */
+function buildSlateStack(gsap: Gsap, scene: HTMLElement, ids: string[]): void {
+  const trigger = {
+    trigger: scene,
+    start: "top 76%",
+    toggleActions: "play none none reverse",
+  } as const;
+  const p = slateParts(scene);
+
+  if (p.ordinal) {
+    gsap.fromTo(
+      p.ordinal,
+      { y: -70, scale: 1.35, opacity: 0 },
+      {
+        y: 0,
+        scale: 1,
+        opacity: 1,
         duration: 0.7,
         ease: "expo.out",
         scrollTrigger: { ...trigger, id: ids[0] },
-      });
-    }
-    if (title) {
-      // El titulo de la cartela se monta letra a letra, como el de apertura:
-      // es la cabecera de la escena y merece el mismo gesto, no un fundido.
-      composeTitle(gsap, title, trigger, ids[1], 0.08);
-    }
-    if (lead) {
-      gsap.from(lead, {
-        y: 20,
-        opacity: 0,
+      },
+    );
+  }
+  if (p.title) {
+    // El titulo de la cartela se monta letra a letra, como el de apertura:
+    // es la cabecera de la escena y merece el mismo gesto, no un fundido.
+    composeTitle(gsap, p.title, trigger, ids[1], 0.08);
+  }
+  if (p.lead) {
+    gsap.fromTo(
+      p.lead,
+      { y: 20, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
         duration: 0.6,
         ease: "power2.out",
         delay: 0.16,
         scrollTrigger: { ...trigger, id: ids[2] },
-      });
-    }
-    if (meta) {
-      gsap.from(meta, {
-        y: 14,
-        opacity: 0,
+      },
+    );
+  }
+  if (p.meta) {
+    gsap.fromTo(
+      p.meta,
+      { y: 14, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
         duration: 0.6,
         ease: "power2.out",
         delay: 0.24,
         scrollTrigger: { ...trigger, id: ids[3] },
-      });
-    }
-    // La mascara barre de izquierda a derecha, desfasada entre columnas.
-    if (masks.length > 0) {
-      gsap.from(masks, {
-        clipPath: "inset(0 100% 0 0)",
+      },
+    );
+  }
+  // La mascara barre de izquierda a derecha, desfasada entre columnas.
+  if (p.masks.length > 0) {
+    gsap.fromTo(
+      p.masks,
+      { clipPath: "inset(0 100% 0 0)" },
+      {
+        clipPath: "inset(0 0% 0 0)",
         duration: 0.9,
         ease: "power3.out",
         stagger: 0.1,
         delay: 0.32,
         scrollTrigger: { ...trigger, id: ids[4] },
-      });
-    }
-    if (gallery) {
-      // Entra desde la derecha, que es de donde viene el visor en el encuadre
-      // de escritorio (ver la reasignacion de themes.css).
-      gsap.from(gallery, {
-        x: 46,
-        opacity: 0,
+      },
+    );
+  }
+  if (p.gallery) {
+    // Entra desde la derecha, que es de donde viene el visor en el encuadre
+    // de escritorio (ver la reasignacion de themes.css).
+    gsap.fromTo(
+      p.gallery,
+      { x: 46, opacity: 0 },
+      {
+        x: 0,
+        opacity: 1,
         duration: 0.85,
         ease: "power3.out",
         delay: 0.42,
         scrollTrigger: { ...trigger, id: ids[5] },
-      });
-      /*
-       * Parallax de la captura mientras la escena cruza el encuadre: le da
-       * profundidad respecto al texto, que va quieto. El eje es el del
-       * recorrido — `xPercent` cuando la obra pasa de lado, `yPercent` cuando
-       * baja — y en los dos casos es una propiedad DISTINTA de la que anima la
-       * entrada de arriba (`x`), asi que las dos timelines no se pisan sobre
-       * el mismo nodo.
-       */
-      gsap.fromTo(
-        gallery,
-        container ? { xPercent: -3.5 } : { yPercent: -4 },
-        {
-          ...(container ? { xPercent: 3.5 } : { yPercent: 4 }),
-          ease: "none",
-          scrollTrigger: container
-            ? {
-                id: ids[6],
-                trigger: scene,
-                containerAnimation: container,
-                start: "left right",
-                end: "right left",
-                scrub: 1,
-              }
-            : {
-                id: ids[6],
-                trigger: scene,
-                start: "top bottom",
-                end: "bottom top",
-                scrub: 1,
-              },
+      },
+    );
+    /*
+     * Parallax vertical de la captura mientras la escena cruza el encuadre: le
+     * da profundidad respecto al texto, que va quieto. `yPercent` porque en la
+     * pila la obra baja, y es una propiedad DISTINTA de la que anima la entrada
+     * de arriba (`x`), asi que las dos timelines no se pisan sobre el mismo
+     * nodo.
+     */
+    gsap.fromTo(
+      p.gallery,
+      { yPercent: -4 },
+      {
+        yPercent: 4,
+        ease: "none",
+        scrollTrigger: {
+          id: ids[6],
+          trigger: scene,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1,
         },
-      );
-    }
+      },
+    );
+  }
+}
+
+/**
+ * Entrada de UNA cartela, acoplada al recorrido. Ya no crea ScrollTriggers: se
+ * añade a la timeline maestra en una posicion absoluta, asi que avanza en pixeles
+ * de scroll y no en segundos de reloj.
+ *
+ * `immediateRender: false` en todos los `fromTo`: dentro de una timeline, un
+ * `fromTo` aplica su extremo inicial al CREARSE si no se le dice lo contrario, y
+ * las cinco cartelas se pintarian de golpe en su estado de entrada al montar.
+ */
+function buildSlateRail(
+  gsap: Gsap,
+  scene: HTMLElement,
+  master: ReturnType<Gsap["timeline"]>,
+  index: number,
+): void {
+  const p = slateParts(scene);
+  const { at, len } = slateWindow(index);
+  // Fraccion de la ventana -> unidades de timeline.
+  const f = (fraction: number): number => fraction * len;
+
+  /*
+   * Pre-fijar el estado "from" a mano, igual que `scene1Title` con `chars` y
+   * `fading`. `immediateRender: false` evita que el `fromTo` se pinte al
+   * CREARSE, pero no protege del `ScrollTrigger.refresh()` que corre al final
+   * de `scene3Slate`: para medir el pin, GSAP renderiza la maestra a su
+   * progreso final (para ver si algo cambia el alto) y luego la restaura al
+   * progreso que toque segun el scroll actual — y esa restauracion no siempre
+   * vuelve a poner en pausa un tween cuya posicion en la maestra todavia no se
+   * ha alcanzado. Medido: las cinco cartelas se veian montadas (`opacity: 1`
+   * de fabrica GSAP) en el instante de cargar la pagina, con `scrollY: 0` y
+   * el carril sin fijarse aun. `gsap.set` deja escrito el estado inicial
+   * ANTES de esa medicion, asi que lo que quede pintado de mas se vuelve a
+   * tapar con el mismo valor.
+   */
+  if (p.ordinal) gsap.set(p.ordinal, { y: -70, scale: 1.35, opacity: 0 });
+  if (p.lead) gsap.set(p.lead, { y: 20, opacity: 0 });
+  if (p.meta) gsap.set(p.meta, { y: 14, opacity: 0 });
+  if (p.masks.length > 0) gsap.set(p.masks, { clipPath: "inset(0 100% 0 0)" });
+  if (p.gallery) gsap.set(p.gallery, { x: 46, opacity: 0 });
+
+  const tl = gsap.timeline();
+
+  if (p.ordinal) {
+    tl.fromTo(
+      p.ordinal,
+      { y: -70, scale: 1.35, opacity: 0 },
+      {
+        y: 0,
+        scale: 1,
+        opacity: 1,
+        duration: f(0.22),
+        ease: "expo.out",
+        immediateRender: false,
+      },
+      f(0),
+    );
+  }
+  if (p.title) {
+    const chars = splitChars(p.title);
+    gsap.set(chars, { yPercent: 118, opacity: 0, scaleY: 1.28 });
+    tl.fromTo(
+      chars,
+      { yPercent: 118, opacity: 0, scaleY: 1.28 },
+      {
+        yPercent: 0,
+        opacity: 1,
+        scaleY: 1,
+        transformOrigin: "50% 100%",
+        duration: f(0.3),
+        ease: "power3.out",
+        stagger: f(0.012),
+        immediateRender: false,
+      },
+      f(0.06),
+    );
+  }
+  if (p.lead) {
+    tl.fromTo(
+      p.lead,
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: f(0.26), ease: "power2.out", immediateRender: false },
+      f(0.26),
+    );
+  }
+  if (p.meta) {
+    tl.fromTo(
+      p.meta,
+      { y: 14, opacity: 0 },
+      { y: 0, opacity: 1, duration: f(0.24), ease: "power2.out", immediateRender: false },
+      f(0.34),
+    );
+  }
+  if (p.masks.length > 0) {
+    tl.fromTo(
+      p.masks,
+      { clipPath: "inset(0 100% 0 0)" },
+      {
+        clipPath: "inset(0 0% 0 0)",
+        duration: f(0.36),
+        ease: "power3.out",
+        stagger: f(0.05),
+        immediateRender: false,
+      },
+      f(0.44),
+    );
+  }
+  if (p.gallery) {
+    tl.fromTo(
+      p.gallery,
+      { x: 46, opacity: 0 },
+      { x: 0, opacity: 1, duration: f(0.34), ease: "power3.out", immediateRender: false },
+      f(0.56),
+    );
+  }
+
+  master.add(tl, at);
+
+  if (p.gallery) {
+    /*
+     * Parallax en su propia ventana, que se solapa con el reposo. `xPercent` y no
+     * `x`: la entrada de arriba ya anima `x` sobre este mismo nodo y dos tweens
+     * sobre la misma propiedad se pisan.
+     */
+    const par = parallaxWindow(index);
+    master.fromTo(
+      p.gallery,
+      { xPercent: -3.5 },
+      { xPercent: 3.5, duration: par.len, ease: "none", immediateRender: false },
+      par.at,
+    );
   }
 }
 
@@ -789,28 +980,28 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
   obraContext.add("(min-width: 901px) and (prefers-reduced-motion: no-preference)", () => {
     if (!rail || !track) return;
 
+    const hops = scenes.length - 1;
+    const travel = (): number => Math.max(track.scrollWidth - window.innerWidth, 0);
     /*
-     * Recorrido lateral. `end` y el destino se calculan con funcion, no con un
-     * numero fijo: `invalidateOnRefresh` los vuelve a pedir en cada refresh de
-     * ScrollTrigger (resize, cambio de fuentes, imagenes que terminan de
-     * cargar), que es lo que evita que el carril se quede corto o se pase de
-     * largo cuando el ancho del track cambia despues del montaje.
+     * Presupuesto de scroll del pin. Ya NO es el recorrido lateral: el recorrido
+     * sigue siendo `travel()` (5760px a 1440), pero se consume en menos scroll
+     * porque hay mesetas. A 1440 esto da 5040px, 720 menos que antes.
      */
-    const distance = (): number => Math.max(track.scrollWidth - window.innerWidth, 0);
-    const horizontal = gsap.to(track, {
-      x: () => -distance(),
-      ease: "none",
+    const budget = (): number =>
+      (hops * OBRA_TRANSIT + (hops + 1) * OBRA_REST) * OBRA_SCROLL_PER_UNIT * window.innerWidth;
+
+    const master = gsap.timeline({
       scrollTrigger: {
         id: "vice-obra-rail",
         trigger: rail,
         pin: true,
-        scrub: 1,
+        scrub: OBRA_SCRUB,
         start: "top top",
-        end: () => `+=${distance()}`,
+        end: () => `+=${budget()}`,
         invalidateOnRefresh: true,
         anticipatePin: 1,
         /*
-         * El pin reserva ~5760px de recorrido extra, asi que TODO lo que va
+         * El pin reserva ~5040px de recorrido extra, asi que TODO lo que va
          * despues en el documento (creditos, contacto y sus regiones de cromo)
          * se desplaza hacia abajo. Sin prioridad, esos triggers se refrescan
          * antes que este y calculan su posicion como si el pin no existiera:
@@ -828,13 +1019,34 @@ function scene3Slate(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElem
       },
     });
 
-    scenes.forEach((scene, index) => buildSlate(gsap, scene, obraTriggerIds(index), horizontal));
+    // Reposo de cabeza: la pieza 1 deja de estar encuadrada justo en el instante
+    // en que el pin engancha, que es lo que la dejaba sin llegada que acentuar.
+    master.to({}, { duration: OBRA_REST });
+
+    for (let i = 1; i <= hops; i++) {
+      master.fromTo(
+        track,
+        { x: () => -(i - 1) * window.innerWidth },
+        {
+          // El ultimo destino se clampa a `travel()` exacto: con barra de scroll o
+          // redondeo subpixel, `hops * innerWidth` no coincide con
+          // `scrollWidth - innerWidth` y quedaria una franja de la pieza 5 fuera.
+          x: () => (i === hops ? -travel() : -i * window.innerWidth),
+          duration: OBRA_TRANSIT,
+          ease: "power2.inOut",
+          immediateRender: false,
+        },
+      );
+      master.to({}, { duration: OBRA_REST });
+    }
+
+    scenes.forEach((scene, index) => buildSlateRail(gsap, scene, master, index));
   });
 
   // El complemento exacto de la rama de arriba: pila vertical si la pantalla es
   // estrecha O si se pide menos movimiento.
   obraContext.add("(max-width: 900px), (prefers-reduced-motion: reduce)", () => {
-    scenes.forEach((scene, index) => buildSlate(gsap, scene, obraTriggerIds(index), null));
+    scenes.forEach((scene, index) => buildSlateStack(gsap, scene, obraTriggerIds(index)));
   });
 
   // El pin del carril cambia la altura del documento: sin este refresco, los
