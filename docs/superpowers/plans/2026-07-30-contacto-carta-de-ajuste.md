@@ -263,7 +263,7 @@ carril, y una tabla de traspaso desactualizada no falla, miente.
 **Interfaces:**
 - Consume: la escala de la Tarea 1 ya aplicada.
 
-- [ ] **Paso 1: re-mide con el instrumento que ya existe**
+- [x] **Paso 1: re-mide con el instrumento que ya existe**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -274,12 +274,12 @@ python3 scripts/measure-obra-rail.py
 *debería* estar la pista. Si `OBRA_TRANSIT` u `OBRA_REST` de `vice.choreography.ts` cambian, hay
 que cambiarlos también ahí: desincronizados no fallan, mienten.
 
-- [ ] **Paso 2: comprueba las cinco mesetas**
+- [x] **Paso 2: comprueba las cinco mesetas**
 
 Las posiciones nominales son `u = 0,225 / 1,675 / 3,125 / 4,575 / 6,025`. Compara la salida con
 la tabla del plan del carril.
 
-- [ ] **Paso 3: actualiza la tabla con los números nuevos**
+- [x] **Paso 3: actualiza la tabla con los números nuevos**
 
 Sustituye los valores de la tabla y añade una línea debajo:
 

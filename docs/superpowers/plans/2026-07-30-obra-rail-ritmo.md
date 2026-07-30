@@ -520,13 +520,25 @@ sleep 3
 python3 scripts/measure-obra-rail.py --json /tmp/rail-despues.json
 ```
 
-| métrica | antes | objetivo |
-|---|---|---|
-| adelanto cartela entera | ~800 px | **≤ 40 px**, y sin dispersión entre las tres velocidades |
-| adelanto del lead | 938-995 px | **≤ 260 px** |
-| v lateral en el encuadre | 220-245 px/s | **≤ 20 px/s** en las cinco piezas |
-| permanencia pieza 5 vs central | 33-40% | paridad |
-| `distance` reportado | 5760 | sigue 5760 (el recorrido no cambia) |
+| métrica | antes (pre-ritmo) | objetivo | medido tras la escala tipográfica (2026-07-30) |
+|---|---|---|---|
+| adelanto cartela entera | ~800 px | **≤ 40 px**, y sin dispersión entre las tres velocidades | 0-111 px (piezas 2-4, tres velocidades) |
+| adelanto del lead | 938-995 px | **≤ 260 px** | 220-323 px (piezas 2-4, tres velocidades) |
+| v lateral en el encuadre | 220-245 px/s | **≤ 20 px/s** en las cinco piezas | métrica retirada (ver spec del ritmo, línea "se retira de la tabla": el instrumento no la mide bien; no se recalcula para no dar una cifra que invite a leerse) |
+| permanencia pieza 5 vs central | 33-40% | paridad | p1 68%, p5 71% (barrido lento; p1 sigue siendo un artefacto de la medida, ver spec) |
+| `distance` reportado | 5760 | sigue 5760 (el recorrido no cambia) | 5760 — **sin cambio** |
+
+> Re-medido el 2026-07-30 tras aplicar la escala tipográfica del tema
+> (`docs/superpowers/plans/2026-07-30-contacto-carta-de-ajuste.md`, Tarea 2). Se comprobó antes
+> que `OBRA_TRANSIT` (1) y `OBRA_REST` (0.45) siguen coincidiendo entre
+> `src/themes/vice.choreography.ts` y `scripts/measure-obra-rail.py`. Los valores de "antes" y
+> "objetivo" son el registro histórico de la Tarea 2 de este mismo plan (dimensionado del
+> ritmo) y no se han tocado; la comparación real "antes de la escala / después de la escala"
+> es contra el registro de la spec (`docs/superpowers/specs/2026-07-30-obra-rail-ritmo-design.md`,
+> tabla "hoy / objetivo / medido"): cartela entera pasó de 66-89 px a 0-111 px, lead de 249-297 px
+> a 220-323 px, deriva lateral tras soltar de 46 px a 46.1 px (sin cambio real), permanencia de
+> p1 66%/p5 67% a p1 68%/p5 71%, y el documento de 11587 px a 11605 px (+18 px). El recorrido
+> lateral (5760 px) y el presupuesto del pin (5040 px) no se movieron un solo píxel.
 
 El presupuesto del pin no lo imprime el instrumento; compruébalo aparte:
 
@@ -547,7 +559,9 @@ with sync_playwright() as p:
 "
 ```
 
-Esperado: `spacer` ~5940 (900 de viewport + 5040 de reserva) y `doc` ~11587.
+Esperado: `spacer` ~5940 (900 de viewport + 5040 de reserva) y `doc` ~11587 (11605 tras la escala
+tipográfica del 2026-07-30 — el spacer no se movió, el documento sí, 18 px, por layout ajeno al
+carril).
 
 - [x] **Paso 10: commit**
 
