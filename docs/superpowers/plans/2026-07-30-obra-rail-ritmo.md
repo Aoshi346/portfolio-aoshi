@@ -575,14 +575,14 @@ Esta tarea no cambia código salvo que encuentre un fallo.
 - Verificar: `src/themes/vice.choreography.ts:901` (trigger de créditos), `:1200`
   (`railBound`), `:846` (`scrollrail:refresh`)
 
-- [ ] **Paso 1: la barra de orientación no miente**
+- [x] **Paso 1: la barra de orientación no miente**
 
 Con `?theme=vice` a 1440x900, recorrer el documento entero con rueda simulada y comprobar que
 la etiqueta anunciada coincide con la sección en pantalla en las fronteras. La región del
 carril se estrecha del 54,1% al 51,3% del documento. El fallo que se busca es el ya conocido:
 que anuncie "04 · Créditos" con el carril todavía ocupando la pantalla.
 
-- [ ] **Paso 2: el trigger de créditos no dispara con el carril fijado**
+- [x] **Paso 2: el trigger de créditos no dispara con el carril fijado**
 
 `start: "top 80%"` en la línea 901. Comprobar que su `start` en px cae **después** del `end`
 del pin del carril:
@@ -610,12 +610,12 @@ Esperado: `margen` positivo. Si sale el aviso de que `ScrollTrigger` no está en
 (probable, el bundle es de módulos), hazlo con `markers: true` temporalmente en los dos
 triggers y una captura, y **quítalos antes de commitear**.
 
-- [ ] **Paso 3: el letterbox enciende y apaga en la frontera correcta**
+- [x] **Paso 3: el letterbox enciende y apaga en la frontera correcta**
 
 Fue una regresión real. Recorrer la frontera fin-de-carril / inicio-de-créditos y confirmar
 que las barras de `[data-letterbox]` entran durante la obra y salen al pasar a créditos.
 
-- [ ] **Paso 4: el arnés completo**
+- [x] **Paso 4: el arnés completo**
 
 ```bash
 free -h | awk '/Mem:/{print "RAM libre:", $7}'   # >3GB antes de lanzar
@@ -625,7 +625,7 @@ python3 scripts/verify.py
 Esperado: código de salida 0, con los 12 fallos de fixtures de la línea base y ninguno nuevo.
 Si arreglas alguno de la base, quítalo con `--update-baseline` y revisa el diff.
 
-- [ ] **Paso 5: comprobar la pila vertical y el reduced-motion**
+- [x] **Paso 5: comprobar la pila vertical y el reduced-motion**
 
 El camino que no se ha tocado también tiene que seguir vivo:
 
@@ -646,7 +646,10 @@ with sync_playwright() as p:
 "
 ```
 
-- [ ] **Paso 6: commit si hubo arreglos, si no seguir**
+- [x] **Paso 6: commit si hubo arreglos, si no seguir** — sin arreglos: los cuatro
+  puntos leen dinamicamente `ScrollTrigger.getById("vice-obra-rail")` (railBound,
+  refresco de la barra) o dependen del `onToggle` de escenas adyacentes (creditos,
+  letterbox), ninguno tiene el numero 5760/5040 quemado. Sin commit de codigo.
 
 ```bash
 git add -A && git commit -m "fix(obra): <lo que se rompio> tras acortar el pin"
