@@ -1,5 +1,13 @@
 # HANDOFF — el ritmo del carril horizontal de obra (Vice)
 
+> **RELEVADO el 2026-07-30 por `.docs/HANDOFF-obra-rail-ritmo-ejecucion.md`.** El encargo de
+> este documento (medir antes de tocar) esta cumplido: los numeros viven en
+> `docs/superpowers/specs/2026-07-30-obra-rail-ritmo-design.md` y el instrumento en
+> `scripts/measure-obra-rail.py`. Dos de las sospechas de la seccion "Pistas" salieron
+> confirmadas (la 1 y la 4), una se reformulo (la 2: no es retardo, es que el carril no
+> aterriza en ningun sitio) y la 3 resulto ser 1440px por transicion, no ~1150 por pieza.
+> Se conserva por su seccion de trampas de medicion, que sigue vigente.
+
 > Brief para una sesion nueva. Escrito el 2026-07-29 al cerrar el rediseno de "Quien es".
 > Todo numero de aqui esta medido contra el codigo o el navegador, no deducido. Lo que no
 > esta medido se dice como sospecha, no como hecho.
