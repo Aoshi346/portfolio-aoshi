@@ -662,7 +662,7 @@ git add -A && git commit -m "fix(obra): <lo que se rompio> tras acortar el pin"
 **Ficheros:**
 - Modificar: `docs/superpowers/specs/2026-07-30-obra-rail-ritmo-design.md`
 
-- [ ] **Paso 1: rellenar el registro**
+- [x] **Paso 1: rellenar el registro**
 
 Sustituir la sección "Registro de implementación" por lo que pasó de verdad: en qué se desvió
 la realidad del dimensionado y por qué. Como mínimo van estas dos, que ya se saben:
@@ -674,19 +674,19 @@ la realidad del dimensionado y por qué. Como mínimo van estas dos, que ya se s
 
 Añade las que aparezcan al implementar. **Sin este registro el spec miente.**
 
-- [ ] **Paso 2: cambiar el `Estado:`**
+- [x] **Paso 2: cambiar el `Estado:`**
 
 De `pendiente de plan` a `implementado`. Vocabulario cerrado: `en diseno`,
 `pendiente de plan`, `en ejecucion`, `implementado`, `descartado`. `verify.py` lo comprueba, y
 también comprueba que las casillas de este plan estén todas marcadas si el spec dice
 `implementado`.
 
-- [ ] **Paso 3: marcar todas las casillas de este plan**
+- [x] **Paso 3: marcar todas las casillas de este plan**
 
 En vivo, según se hacen. No en bloque al final: ticar de golpe pasos que nadie siguió uno a
 uno falsifica el registro en vez de completarlo.
 
-- [ ] **Paso 4: gate documental**
+- [x] **Paso 4: gate documental**
 
 ```bash
 python3 scripts/verify.py
@@ -694,7 +694,7 @@ python3 scripts/verify.py
 
 Esperado: `[docs] estado de specs y planes` en verde y salida 0.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add docs/superpowers/

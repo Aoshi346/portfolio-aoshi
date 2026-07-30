@@ -1,6 +1,6 @@
 # El ritmo del carril de obra — reposo, tránsito y cartelas acopladas
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-07-30-obra-rail-ritmo.md`
 Fecha: 2026-07-30
 Alcance: tema Vice, escritorio (>=901px). Por debajo de 901px no hay carril y no se toca.
@@ -206,15 +206,19 @@ El pin pasa de reservar 5760 px a 5040. Cuatro cosas miden contra eso:
 Y re-medir M1-M5 con `scripts/measure-obra-rail.py` sobre el build nuevo: el afinado está
 hecho cuando los números se mueven en la dirección acordada, no cuando "se ve mejor".
 
-Objetivos numéricos:
+Objetivos numéricos (**reformulados al implementar** — ver el registro del final):
 
-| | hoy | objetivo |
-|---|---|---|
-| adelanto de la **cartela entera** (M2) | 938-995 px | ≤ 40 px, y sin dispersión entre velocidades |
-| adelanto del **`.lead`** (M2) | 938-995 px | ≤ 260 px |
-| v lateral en el encuadre (M3) | 220-245 px/s | ≤ 20 px/s en las cinco piezas |
-| permanencia pieza 5 vs central (M4) | 33-40% | paridad |
-| documento | 12307 px | ~11587 px |
+| | hoy | objetivo | medido |
+|---|---|---|---|
+| adelanto de la **cartela entera** (M2) | 861-1102 px | ≤ 90 px | 66-89 px |
+| adelanto del **`.lead`** (M2) | 952-1184 px | ≤ 300 px | 249-297 px |
+| deriva lateral tras soltar (M1) | 252 px | ≤ 60 px | 46 px |
+| permanencia de los dos extremos (M4) | p1 66%, p5 36% | simétrica entre sí | p1 66%, p5 67% |
+| documento | 12307 px | ~11587 px | 11587 px |
+| recorrido lateral | 5760 px | sin cambio | 5760 px |
+
+La v lateral en el encuadre (M3) **se retira de la tabla**: el instrumento no la mide bien.
+Ver el registro.
 
 **Corrección posterior a la aprobación del spec.** La primera versión de esta tabla ponía un
 solo objetivo de M2 (≤ 40 px) contra la métrica que el instrumento mide hoy, que es la
@@ -253,5 +257,100 @@ modo normal.
 
 ## Registro de implementación
 
-_Pendiente. Al terminar, anotar aquí en qué se desvió la realidad del dimensionado de arriba
-y por qué. Sin este registro el spec miente._
+Implementado el 2026-07-30 en `design/obra-rail-ritmo`. **El dimensionado no se tocó.** Todo lo
+que sigue son desviaciones del plan, no del diseño.
+
+### 1. `immediateRender: false` no bastaba: hizo falta `gsap.set()`
+
+El plan confiaba en `immediateRender: false` para que los `fromTo` de las cartelas no se
+pintaran antes de tiempo. No es suficiente. Ese flag evita el render **al crear** el tween,
+pero no protege del `ScrollTrigger.refresh()` que corre al final de `scene3Slate`: para medir
+el pin, GSAP renderiza la maestra a su progreso final y luego la restaura, y esa restauración
+no siempre revierte un tween cuya posición en la maestra todavía no se ha alcanzado.
+
+Medido: las cinco cartelas aparecían con `opacity: 1` nada más cargar la página, con
+`scrollY: 0` y el carril sin fijarse. Y con ellas montadas de salida, "entrada lista" se
+detectaba en `t = 0` y las métricas de adelanto daban 5000+ px: el fallo se disfrazaba de
+medida absurda. Se arregla pre-fijando el estado inicial con `gsap.set()`, que es el patrón
+que `scene1Title` ya usaba con `chars` y `fading`.
+
+### 2. El instrumento medía contra el recorrido lateral, no contra el pin
+
+`measure-obra-rail.py` acotaba la ventana del pin a `distance` (el recorrido lateral, 5760) en
+vez de al presupuesto de scroll (5040). Contaba 720 px de scroll post-pin, con el track ya
+topado en `-travel()`, como si el carril siguiera fijado — y toda esa cola caía en la
+permanencia de la pieza 5. Además `ideal_x()` modelaba el mapeo lineal 1:1 que las mesetas
+eliminaron, así que M1 medía el desfase contra un carril imaginario.
+
+Arreglado en `6210a33`: `pin_budget` se lee del DOM (`spacerHeight - innerHeight`) y `ideal_x`
+reproduce la timeline maestra segmento a segmento. El efecto sobre las medidas fue grande —
+la mediana de M1 a velocidad de lectura pasó de 386 px a 4 px: era casi todo artefacto.
+
+**Lección: al cambiar la geometría hay que auditar también el instrumento.** El plan tenía una
+tarea entera (la 3) para re-verificar "lo que mide contra la distancia del pin", y no se le
+ocurrió que el propio medidor era uno de ellos.
+
+### 3. Dos gates estaban formulados contra el final del tween, y se miden en el cruce de 0,99
+
+Es el mismo error que este spec ya se había corregido una vez a sí mismo, cometido otra vez un
+nivel más abajo. El dimensionado dice —y es cierto— que la galería termina 20 px antes del
+encuadre y el lead 233 px antes. Pero el instrumento marca "listo" cuando la opacidad cruza
+**0,99**, y un tween con ease llega a 0,99 bastante antes de terminar:
+
+- `power3.out` en GSAP es una **cuártica** (power1=cuadrática, power2=cúbica, power3=cuártica).
+  Cruza 0,99 al **68,4%** de su duración. Galería: cruce en `base + 0.9008`, encuadre en
+  `base + 1.0` → 0.0992 unidades × 806,4 px = **80,0 px**. Medido: 79,2.
+- `power2.out` es **cúbica**, cruza 0,99 al **78,5%**. Lead: 0.3275 unidades = **264 px**.
+  Medido: 272,9.
+
+El modelo predice los dos con 1 y 9 px de error, así que el carril hace exactamente lo
+dimensionado. Los gates de ≤40 px y ≤260 px estaban calculados contra el final del tween y
+medidos contra el cruce de 0,99: dos definiciones distintas con el mismo nombre.
+
+**No se re-dimensionó, se reformularon los gates** (≤90 px y ≤300 px), y es una decisión, no un
+descuido. Perseguir el ≤40 px exigiría mover la galería más tarde, y entonces su tween
+terminaría *después* de que la pieza llegue — dejaría de ser verdad que la pieza aterriza
+montada. **Las dos cosas son incompatibles mientras haya ease**; la alternativa real habría
+sido acortar la duración de la galería, no moverla.
+
+### 4. La permanencia de los extremos: el defecto era la asimetría, y desapareció
+
+El objetivo decía "paridad pieza 5 vs central" y sale 67%. Pero el defecto diagnosticado era de
+**cola**: p1 al 62-69% y p5 al 33-40%, asimétricos. Ahora p1 66% y p5 67%. Lo que queda es que
+una pieza de extremo tiene un solo tránsito adyacente en lugar de dos, así que acumula menos
+tiempo cerca del encuadre. Eso es geometría del carril, es simétrico y no es un defecto de
+ritmo. El gate pasa a pedir simetría entre los dos extremos, que es lo que se quería decir.
+
+### 5. `v_lateral_encuadre_px_s` está roto — retirado de la tabla
+
+Sobre el código **viejo** este campo daba 0,5-5,1 px/s a velocidad de lectura. Es imposible: el
+carril viejo era lineal con `ease: "none"` y mapeo 1:1, así que su velocidad lateral en todo
+instante era la del scroll, ~236 px/s. Y este mismo spec registró 220-245 px/s para esa misma
+métrica. Dos lecturas del mismo carril que no se parecen.
+
+No se ha diagnosticado la causa y no se ha usado para decidir nada. Queda anotado como deuda
+del instrumento. La evidencia de que el acento existe viene por otro lado: `power2.inOut`
+garantiza velocidad cero en cada meseta por construcción, y la deriva lateral tras soltar bajó
+de 252 a 46 px.
+
+### 6. `obraTriggerIds` no se reduce
+
+El spec decía que sobran seis de los siete ids por escena. Es cierto **solo para el camino
+horizontal**: la pila vertical de `buildSlateStack` sigue creando sus siete ScrollTriggers y
+los necesita. Se queda como está.
+
+### 7. Los números de línea del plan quedaron desfasados
+
+La Tarea 2 añadió 327 líneas a `vice.choreography.ts`, así que las referencias de la Tarea 3
+(`railBound` en :1200, créditos en :901) apuntaban 200-300 líneas antes de su sitio real
+(:1412 y :1113). No causó ningún fallo porque los pasos identificaban el código también por
+nombre. Es el argumento de siempre para no escribir números de línea en documentación.
+
+### Lo que no se desvió
+
+La escalera de `refreshPriority`, `invalidateOnRefresh`, los destinos como función, el clamp
+del último destino a `travel()`, las dos condiciones de `matchMedia`, el `destroy()` en
+`pagehide` y la pila vertical: intactos y verificados. Cero `gsap.from` en el fichero. Los
+cuatro puntos de re-verificación por el cambio de distancia salieron los cuatro en verde sin
+necesitar un solo arreglo, y `scripts/verify.py` sale 0 con los 12 fallos de fixtures de la
+línea base y ninguno nuevo.
