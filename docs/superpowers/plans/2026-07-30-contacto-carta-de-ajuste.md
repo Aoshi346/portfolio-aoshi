@@ -317,7 +317,7 @@ git commit -m "docs(obra): mesetas del carril re-medidas tras la escala"
   `.contacto-bar-value`, y el modificador `.contacto-bar--<key>` con
   `key ∈ {correo, linkedin, telefono, github}`.
 
-- [ ] **Paso 1: añade el contenido**
+- [x] **Paso 1: añade el contenido**
 
 En `src/data/content.ts`, añade `invitation` a la interfaz `Identity` y al objeto:
 
@@ -383,7 +383,7 @@ export const contactChannels: ContactChannel[] = [
 ];
 ```
 
-- [ ] **Paso 2: reescribe la sección**
+- [x] **Paso 2: reescribe la sección**
 
 Sustituye `src/sections/contacto.ts` entero:
 
@@ -441,7 +441,7 @@ export function createContacto(): HTMLElement {
 }
 ```
 
-- [ ] **Paso 3: estilo base para los otros dos temas**
+- [x] **Paso 3: estilo base para los otros dos temas**
 
 En `src/style.css`, junto al resto de estilo base de secciones:
 
@@ -513,7 +513,7 @@ En `src/style.css`, junto al resto de estilo base de secciones:
 }
 ```
 
-- [ ] **Paso 4: comprueba que compila y que los tres temas montan la escena**
+- [x] **Paso 4: comprueba que compila y que los tres temas montan la escena**
 
 ```bash
 npm run build && npm run lint
@@ -541,7 +541,7 @@ with sync_playwright() as p:
 Esperado en los tres: `barras: 4`, `frase: 'Cuéntame tu idea.'`,
 `estado: 'Disponible para proyectos'`, cero errores.
 
-- [ ] **Paso 5: comprueba que no quedan restos del DOM viejo**
+- [x] **Paso 5: comprueba que no quedan restos del DOM viejo**
 
 ```bash
 grep -rn "contacto-mail\|contacto-status\|contacto-corner\|contacto-phone\|contacto-github" src/
@@ -550,7 +550,7 @@ grep -rn "contacto-mail\|contacto-status\|contacto-corner\|contacto-phone\|conta
 Esperado: solo aparecen en `themes.css` (los limpia la Tarea 4) y en
 `vice.choreography.ts` (los limpia la Tarea 5). **Cero apariciones en `src/sections/`.**
 
-- [ ] **Paso 6: commit**
+- [x] **Paso 6: commit**
 
 ```bash
 git add src/data/content.ts src/sections/contacto.ts src/style.css
