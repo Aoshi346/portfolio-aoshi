@@ -345,6 +345,72 @@ body {
 }
 
 /*
+ * Estilo base de la carta de ajuste: el que ven Hyprland y Caelestia. Aqui las
+ * barras no son barras, son una lista de vias apilada. La piel de Vice
+ * (themes.css) es la que las pone a sangre y en horizontal.
+ */
+.contacto-band {
+  padding: 4rem 1.5rem 2rem;
+}
+
+.contacto-lead {
+  font-size: var(--t-3, 1.25rem);
+  margin-top: 1rem;
+}
+
+.contacto-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  font-size: var(--t-2, 1rem);
+}
+
+.contacto-estado-label {
+  font-size: var(--t-1, 0.75rem);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.contacto-bars {
+  display: flex;
+  flex-direction: column;
+}
+
+.contacto-bar {
+  display: block;
+  /* 24x24 CSS px es el minimo de WCAG 2.2 AA SC 2.5.8. El pie anterior media
+     14,4 px de alto y lo incumplia. */
+  min-height: 3.5rem;
+  padding: 1rem 1.5rem;
+  text-decoration: none;
+}
+
+.contacto-bar-label {
+  display: block;
+  font-size: var(--t-1, 0.75rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.contacto-bar-value {
+  display: block;
+  font-size: var(--t-3, 1.25rem);
+  margin-top: 0.25rem;
+}
+
+.contacto-bar-mark {
+  display: block;
+  width: 1.75rem;
+  height: 2px;
+  margin: 0.5rem 0;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+/*
  * Cromo de cine (`components/cinemaChrome.ts`): letterbox, barra de
  * orientacion y atenuador de fondo. Un solo DOM para los tres temas, pero es
  * decoracion propia de Vice — Hyprland/Caelestia lo montan igual (mismo
