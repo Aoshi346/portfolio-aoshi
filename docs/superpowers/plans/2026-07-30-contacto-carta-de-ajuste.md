@@ -563,6 +563,7 @@ git commit -m "feat(contacto): carta de ajuste — cuatro vias desde content.ts"
 
 **Ficheros:**
 - Modificar: `src/themes/themes.css` (sustituye el bloque "fundido de cierre", líneas ~1676-1850)
+- Modificar: `src/style.css` (retira el estilo base del DOM viejo — ver Paso 1b)
 
 **Interfaces:**
 - Consume: las clases de la Tarea 3.
@@ -572,6 +573,38 @@ git commit -m "feat(contacto): carta de ajuste — cuatro vias desde content.ts"
 
 En `src/themes/themes.css`, elimina las reglas de `.contacto-mail`, `.contacto-status`,
 `.contacto-corner` y `.contacto .hero-surface`. Son la piel de un DOM que ya no existe.
+
+- [ ] **Paso 1b: y el estilo base huérfano de `src/style.css`**
+
+Añadido el 2026-07-31: lo levantó el implementador de la Tarea 3 al correr el grep del Paso 5.
+La Tarea 3 se llevó por delante el DOM que producía `.contacto-mail`, `.contacto-github`,
+`.contacto-phone` y `.contacto-corner`, pero **ninguna tarea tenía asignada la retirada de su
+estilo base**: la 4 solo hablaba de `themes.css` y la 5 solo de la coreografía. Es CSS muerto e
+inofensivo — selectores que ya no casan con nada — pero se retira aquí, junto a su gemelo de
+`themes.css`, en vez de dejarlo para que confunda a quien lea el fichero dentro de seis meses.
+
+**No es un borrado a ciegas, y aquí está la trampa:** cinco de esas reglas están *agrupadas* con
+`.hero-mail` / `.hero-corner`, que **siguen vivos** (`src/sections/hero.ts:26,29`). Son las que
+dan al hero su `transition`, su `:hover`, su `:focus-visible`, su `:active` y su degradación bajo
+`prefers-reduced-motion`. Borrar los bloques enteros dejaría al hero **sin foco visible sobre el
+vídeo**, que es justo el defecto de accesibilidad que esas reglas se escribieron para tapar (lo
+dicen sus propios comentarios). Retira **solo las líneas de selector `.contacto-*`** y deja el
+resto del bloque intacto.
+
+- Reglas de las que se quitan selectores, conservando `.hero-mail`: la de `transition`
+  (~línea 259), `:hover` (~269), `:focus-visible` (~277), `:active` (~287) y las dos del bloque
+  `@media (prefers-reduced-motion: reduce)` (~308 y ~319).
+- Reglas que se eliminan **enteras**, porque no las comparte nadie: `.contacto-mail` (~218,
+  con su comentario), el bloque `.contacto-github, .contacto-phone, .contacto-corner a`
+  (~241-247, con su comentario sobre el azul del UA stylesheet) y `.contacto-corner` (~337,
+  con su comentario del scrim).
+- Los comentarios de otras reglas que citan `.contacto-mail` como ejemplo (~27, ~203, ~257,
+  ~469) documentan un fallo de contraste real y su remedio: **no los borres**, reescribe la
+  referencia para que apunte a `.hero-kick`, que sigue existiendo y ejemplifica lo mismo.
+
+Comprobación del paso: `npm run build` verde, y una captura del hero con foco en el enlace de
+correo (`page.focus(".hero-mail")`) que enseñe el outline. Si el outline no está, has borrado de
+más.
 
 - [ ] **Paso 2: escribe la piel nueva**
 

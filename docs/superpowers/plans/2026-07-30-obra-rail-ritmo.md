@@ -536,8 +536,10 @@ python3 scripts/measure-obra-rail.py --json /tmp/rail-despues.json
 > ritmo) y no se han tocado; la comparación real "antes de la escala / después de la escala"
 > es contra el registro de la spec (`docs/superpowers/specs/2026-07-30-obra-rail-ritmo-design.md`,
 > tabla "hoy / objetivo / medido"). Deriva lateral tras soltar: de 46 px a 46.1 px (sin cambio
-> real). Permanencia: de p1 66%/p5 67% a p1 68%/p5 71% (movimiento pequeño, dentro de lo
-> esperable entre ejecuciones). Documento: de 11587 px a 11605 px (+18 px, real pero ajeno al
+> real). Permanencia: de p1 66%/p5 67% a p1 68%/p5 71%. **Esa cifra descansa en una sola
+> medición por lado**: a diferencia de la cartela y del lead, no se sometió a repeticiones ni a
+> regla de decisión, así que no distingue movimiento real de dispersión entre ejecuciones y no
+> autoriza a concluir nada en ninguno de los dos sentidos. Documento: de 11587 px a 11605 px (+18 px, real pero ajeno al
 > carril: `distance` y el presupuesto del pin no se movieron un solo píxel).
 >
 > **Cartela entera y lead en el barrido flick, comprobado contra un `git worktree` del commit
@@ -556,7 +558,13 @@ python3 scripts/measure-obra-rail.py --json /tmp/rail-despues.json
 > ceros post doblan a los pre; ninguna de las dos → ruido): media de "cartela entera" 77.3→70.5
 > px (91.2% de la pre, no <75%), ceros 5/18→6/18 (no doblan). Ninguna condición se cumple →
 > **ruido**. La caída pronunciada de la Ronda 1 (9 muestras) era el propio ruido de una muestra
-> pequeña regresando hacia la media al doblar el tamaño de muestra. Para "lead": media
+> pequeña regresando hacia la media al doblar el tamaño de muestra.
+>
+> El aviso más claro de eso está en el propio lado **pre**, que no cambió de código entre las dos
+> rondas: sus ceros pasaron de 1/9 a 5/18, es decir, las 9 muestras añadidas aportaron 4 ceros
+> ellas solas. Con el binario congelado, el recuento de ceros se movió tanto como el que se
+> estaba atribuyendo a la escala tipográfica. Por eso la regla exigía **las dos** condiciones a
+> la vez: a este tamaño de muestra, el recuento de ceros por sí solo no sostiene una conclusión. Para "lead": media
 > 235.8→246.9 px (la posterior es mayor, no menor) y cero muestras a cero en las dos series.
 >
 > El detalle completo, con las 18 muestras de cada lado y la aplicación de la regla, está en
