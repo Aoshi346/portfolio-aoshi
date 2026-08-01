@@ -1440,7 +1440,7 @@ git commit -m "feat(nav): navegacion de escenas con corte seco y arnes de aterri
 - Consume: la escena terminada (Tareas 3-5).
 - Produce: los criterios 1, 2, 3, 4, 5 y 7 del spec, medidos.
 
-- [ ] **Paso 1: escribe el arnés**
+- [x] **Paso 1: escribe el arnés**
 
 Crea `scripts/measure-contacto.py`:
 
@@ -1572,7 +1572,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: córrelo**
+- [x] **Paso 2: córrelo**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -1581,7 +1581,9 @@ python3 scripts/measure-contacto.py
 
 Esperado: `0 criterios incumplidos`.
 
-- [ ] **Paso 3: si el contraste falla en algún fotograma**
+- [x] **Paso 3: si el contraste falla en algún fotograma** (no aplicó: los 15 puntos de contraste
+  de los 3 fotogramas dieron entre 13,8:1 y 18,5:1, todos por encima de 4.5:1 — no hizo falta
+  subir alfa de ninguna barra)
 
 La corrección es **subir el relleno de la gelatina a un valor opaco**, no oscurecer el ámbar:
 perder el ámbar es perder el tema. En `themes.css`, sube la alfa de la barra que falle y vuelve
@@ -1591,7 +1593,7 @@ Si el fondo de esta escena todavía no está decidido en `main`, **para aquí y 
 criterios 4 y 5 se miden con el shader real o no se miden. Deja la casilla en `[!]` con el
 motivo en línea y sigue con la Tarea 8.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add scripts/measure-contacto.py
