@@ -1399,7 +1399,30 @@ Esperado: `hash #contacto` y la escena en cuadro es `contacto`. Comprueba con
 `document.elementFromPoint`, no con un selector: Lenis sigue moviendo la página después de un
 `scrollTo` y anclar la comprobación a un selector da falsos positivos.
 
-- [ ] **Paso 9: commit**
+- [x] **Paso 9: commit**
+
+> Nota de ejecucion (no en el plan original). Durante la Tarea 6 se propuso ampliar el
+> Paso 6 con un chip de fondo en `.scene-nav a` (`color-mix`) alegando que el ancla
+> "Creditos" pisaba el texto de `.hero-corner .hero-mail` "de forma ilegible en
+> escritorio y movil". **Se descarto tras medirlo, porque esa premisa era falsa:** en
+> 1440x900 no habia solape ninguno (ancla bottom 797,6 contra correo top 801,0 — 3,4px
+> de aire), y el correo nunca dejo de recibir el clic (`document.elementFromPoint` sobre
+> su centro devuelve `.hero-mail` en los dos anchos). Lo unico cierto era un solape de
+> 9,6px en 390x844, y **entre DIANAS de 44px, no entre textos** — los dos rotulos se
+> leen en lineas distintas.
+>
+> El arreglo real fue otro: la esquina inferior derecha ya la ocupaban la firma de tema
+> y el pie del hero, y ninguna altura la libraba (a 1.5rem "FUNDIDO" caia sobre "VICE
+> CITY"; a 3.5rem chocaban las dianas). Con cinco dianas de 44px apiladas no hay altura
+> buena ahi, asi que la navegacion salio de esa esquina a `top: 50%` sobre el borde
+> derecho, que esta vacio en las cinco escenas. Confirmado con el usuario (1-ago-2026).
+> Comprobado sin solape contra la firma, `.hero-mail`, `.hero-corner` y el texto de las
+> barras de contacto en 1440x900 y 390x844.
+>
+> Segundo cambio de la misma tanda: `.contacto-bar-value` bajo de `--t-4` a `--t-3` (el
+> correo se recortaba 36px en escritorio, 340 de texto en 304 de hueco), y en el
+> breakpoint movil el correo baja un paso mas, a `--t-2`, porque es el unico de los
+> cuatro valores que alcanzaba la banda del nav (256px frente a 184, 174 y 95).
 
 ```bash
 git add src/components/sceneNav.ts src/main.ts src/themes/themes.css scripts/measure-nav.py

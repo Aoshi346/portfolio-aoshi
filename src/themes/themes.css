@@ -2019,6 +2019,18 @@
     font-size: var(--t-3);
   }
 
+  /*
+   * El correo baja un paso mas, y SOLO el correo. A 390px la navegacion es
+   * `fixed` sobre el borde derecho y su caja empieza en x=260; el correo es el
+   * unico de los cuatro valores que llega hasta ahi (256px de texto desde
+   * x=24, o sea hasta 280 — 20px por dentro del nav). Los otros tres miden
+   * 184, 174 y 95, asi que encogerlos seria pagar por un problema que no
+   * tienen. A `--t-2` el correo mide ~192px y acaba en 216, con 44px de aire.
+   */
+  :root[data-theme="vice"] .contacto-bar--correo .contacto-bar-value {
+    font-size: var(--t-2);
+  }
+
   :root[data-theme="vice"] .contacto-bar-mark {
     display: none;
   }
