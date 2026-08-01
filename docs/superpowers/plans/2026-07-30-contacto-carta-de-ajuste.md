@@ -1088,7 +1088,7 @@ git commit -m "fix(vice): scene5Contact sin gsap.from y adaptada a la carta de a
 - Produce: `mountSceneNav(root: HTMLElement): { destroy: () => void }`.
 - Produce: ids de escena `#hero`, `#quien-es`, `#obra`, `#creditos`, `#contacto`.
 
-- [ ] **Paso 1: escribe el arnés que falla**
+- [x] **Paso 1: escribe el arnés que falla**
 
 Crea `scripts/measure-nav.py`:
 
@@ -1144,7 +1144,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: córrelo y comprueba que falla**
+- [x] **Paso 2: córrelo y comprueba que falla**
 
 ```bash
 python3 scripts/measure-nav.py
@@ -1153,7 +1153,7 @@ python3 scripts/measure-nav.py
 Esperado: FALLA con `no hay enlace` en las quince combinaciones. Hoy `nav a` es 0 en todo el
 documento.
 
-- [ ] **Paso 3: pon ids a las escenas**
+- [x] **Paso 3: pon ids a las escenas**
 
 En `src/main.ts`, tras componer `main` y antes de `app.append(...)`:
 
@@ -1175,7 +1175,7 @@ for (const [scene, id] of Object.entries(ANCHOR_IDS)) {
 obraRail.id = "obra";
 ```
 
-- [ ] **Paso 4: escribe el componente**
+- [x] **Paso 4: escribe el componente**
 
 Crea `src/components/sceneNav.ts`:
 
@@ -1286,7 +1286,7 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
 }
 ```
 
-- [ ] **Paso 5: móntala y desmóntala en `main.ts`**
+- [x] **Paso 5: móntala y desmóntala en `main.ts`**
 
 Junto al resto de handles, antes del `pagehide`:
 
@@ -1301,7 +1301,7 @@ Con su import arriba (`import { mountSceneNav } from "./components/sceneNav";`) 
     sceneNavHandle.destroy();
 ```
 
-- [ ] **Paso 6: dale piel**
+- [x] **Paso 6: dale piel**
 
 En `src/themes/themes.css`:
 
@@ -1361,7 +1361,7 @@ En `src/themes/themes.css`:
 }
 ```
 
-- [ ] **Paso 7: córrelo y comprueba que pasa**
+- [x] **Paso 7: córrelo y comprueba que pasa**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -1374,7 +1374,7 @@ Si falla solo `#obra`, el sospechoso es el presupuesto del pin: **comprueba que 
 midiendo la ventana del pin contra `distance`**. El pin reserva 5.040 px y el recorrido lateral
 es de 5.760: son cosas distintas y confundirlas ya costó una sesión.
 
-- [ ] **Paso 8: comprueba el camino sin ratón y el de movimiento reducido**
+- [x] **Paso 8: comprueba el camino sin ratón y el de movimiento reducido**
 
 ```bash
 python3 -c "

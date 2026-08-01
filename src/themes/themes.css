@@ -2286,3 +2286,57 @@
     cursor: auto;
   }
 }
+
+/*
+ * Navegacion: fija abajo a la derecha, fuera del cromo de cine. Diana de
+ * 44x44 px, holgada sobre los 24x24 que exige WCAG 2.2 AA SC 2.5.8 — el pie
+ * anterior media 14,4 px de alto y lo incumplia.
+ */
+.scene-nav {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 40;
+}
+
+.scene-nav ul {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scene-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  font-size: var(--t-1, 0.75rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: currentColor;
+  opacity: 0.55;
+  transition: opacity 260ms ease-out;
+}
+
+.scene-nav a:hover,
+.scene-nav a:focus-visible {
+  opacity: 1;
+}
+
+:root[data-theme="vice"] .scene-nav a:hover,
+:root[data-theme="vice"] .scene-nav a:focus-visible {
+  color: var(--accent-amber, #ffd166);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-nav a {
+    transition: none;
+  }
+}
