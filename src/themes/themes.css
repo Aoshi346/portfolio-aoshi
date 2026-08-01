@@ -1776,181 +1776,294 @@
   }
 }
 
-/* ---------------------------------------------------- Vice: fundido de cierre */
-
 /*
- * El "pie" de contacto (telefono / LinkedIn / GitHub) usa `.hero-corner`, que
- * es `position: absolute; bottom: 9%` (style.css). Ese 9% se calcula sobre la
- * SECCION, no sobre el viewport, asi que "pegado al fondo" solo es cierto
- * mientras la seccion mida exactamente lo que la pantalla. La regla
- * `:root[data-theme="vice"] [data-scene]` de mas arriba le suma
- * `9rem + 6.5vh` de padding por lado y rompe justo esa suposicion: el pie se
- * queda flotando muy por encima del fondo real, con un hueco muerto debajo.
+ * Fundido de cierre — carta de ajuste. Termino la emision: cuatro barras a
+ * sangre con como localizar a quien emite.
  *
- * Se devuelve al flujo. En flujo no hay porcentaje que calcular: la superficie
- * central crece para ocupar el hueco disponible y el pie queda siempre al
- * final de la caja, mida lo que mida. El hero conserva su `.hero-corner`
- * absoluto — ahi funciona, y ademas la coreografia lo anima como bloque.
+ * Las barras son GELATINAS de iluminacion, no color opaco: filtros
+ * translucidos delante del foco. El fondo generativo sigue vivo debajo y se
+ * tine al pasar. Con barras opacas el shader quedaria tapado en el 56% de la
+ * pantalla final, que es tirar lo que mas caracteriza al sitio.
  */
 :root[data-theme="vice"] .contacto {
   justify-content: flex-start;
-  /*
-   * Espejo del padding lateral que Tailwind pone en la seccion
-   * (`px-6 md:px-12`, ver src/sections/contacto.ts). Se declara aqui como
-   * token para que la barra de pie pueda cancelarlo con margen negativo y
-   * cruzar la pantalla entera sin repetir el numero en dos sitios.
-   */
-  --scene-inline-pad: 1.5rem;
-  /*
-   * El padding de `[data-scene]` reserva `9rem + 6.5vh` abajo para el
-   * letterbox, pero el letterbox solo se despliega en la escena de obra: en
-   * contacto ese hueco es espacio muerto y empujaba el pie 200px por encima
-   * del borde real. Aqui se recorta al aire que necesita un pie de verdad,
-   * dejando sitio bajo el para la firma de tema (`.theme-signature`, fija
-   * abajo a la derecha). Misma especificidad que la regla de `[data-scene]`
-   * y posterior en el archivo, asi que gana por orden.
-   */
-  /*
-   * Sin aire abajo: el pie es una barra pegada al borde de la pantalla, no un
-   * bloque flotando dentro de la escena. El padding que reserva
-   * `[data-scene]` para el letterbox no aplica aqui (en contacto el letterbox
-   * vale 0) y era justo lo que dejaba el pie colgado a media altura.
-   */
-  padding-bottom: 0;
+  padding: 0;
 }
 
-:root[data-theme="vice"] .contacto .hero-surface {
+:root[data-theme="vice"] .contacto-band {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  width: 100%;
+  min-height: 39vh;
+  padding: 0 3rem 2.2rem;
 }
 
-/*
- * El pie va enganchado al borde inferior de la PANTALLA, no a un punto de la
- * seccion. `sticky` con `bottom: 0` hace exactamente eso: mientras la escena
- * de contacto esta en cuadro la barra descansa sobre el borde del viewport, y
- * al terminar el documento se posa en el final de la seccion sin saltos.
- *
- * Se sale del padding lateral de la seccion con margenes negativos para que
- * la banda cruce la pantalla de lado a lado, como la barra de orientacion de
- * arriba: son las dos guias fijas del recorrido, una a cada extremo.
- */
-:root[data-theme="vice"] .contacto .contacto-corner {
-  position: sticky;
-  inset: auto;
-  bottom: 0;
-  z-index: 5;
-  /*
-   * La seccion es `items-center` (ver el markup), asi que por defecto cada
-   * hijo se encoge a su contenido y la barra salia como una caja centrada de
-   * 345px. `stretch` la devuelve al ancho completo del contenedor, que junto
-   * a los margenes negativos de abajo la hace cruzar la pantalla entera.
-   */
-  align-self: stretch;
-  width: auto;
-  margin-top: auto;
-  margin-left: calc(var(--scene-inline-pad) * -1);
-  margin-right: calc(var(--scene-inline-pad) * -1);
-  padding: 1rem var(--scene-inline-pad);
-  border-radius: 0;
-  border-top: 1px solid color-mix(in srgb, var(--color-paper) 12%, transparent);
-  background: linear-gradient(
-    0deg,
-    color-mix(in srgb, var(--color-ink) 92%, transparent) 0%,
-    color-mix(in srgb, var(--color-ink) 74%, transparent) 100%
-  );
-  backdrop-filter: blur(8px);
-}
-
-@media (min-width: 768px) {
-  :root[data-theme="vice"] .contacto {
-    --scene-inline-pad: 3rem;
-  }
-}
-
-/* Linea de disponibilidad: apoyo entre el titulo y la accion, no protagonista. */
-:root[data-theme="vice"] .contacto-status {
+:root[data-theme="vice"] .contacto-title {
+  font-size: clamp(var(--t-7), 9vw, var(--t-9));
+  line-height: 0.84;
   margin-top: 0.9rem;
-  font-size: clamp(var(--t-1), 1.6vw, var(--t-2));
-  color: color-mix(in srgb, var(--color-paper) 78%, transparent);
+}
+
+:root[data-theme="vice"] .contacto-lead {
+  font-size: var(--t-3);
+  font-weight: 300;
+  line-height: 1.42;
+  max-width: 46ch;
+  color: rgb(255 244 232 / 0.85);
+}
+
+:root[data-theme="vice"] .contacto-estado {
+  width: max-content;
+  margin-top: 2.1rem;
+  gap: 0;
+  cursor: default;
+}
+
+:root[data-theme="vice"] .contacto-estado-label {
+  font-size: var(--t-1);
+  font-weight: 700;
+  color: rgb(255 244 232 / 0.5);
+  transition: color 340ms ease-out;
+}
+
+:root[data-theme="vice"] .contacto-estado-sep {
+  margin: 0 0.95rem;
+  font-size: var(--t-2);
+  color: rgb(255 244 232 / 0.34);
+  transition: color 340ms ease-out;
+}
+
+:root[data-theme="vice"] .contacto-estado-value {
+  position: relative;
+  padding: 0.56rem 0.82rem;
+  margin: -0.56rem -0.82rem;
+  font-size: var(--t-2);
+  font-weight: 600;
+  color: var(--accent-amber, #ffd166);
 }
 
 /*
- * El email como accion, no como texto subrayado. Es el ultimo plano de la
- * pieza y el unico sitio donde alguien convierte: tiene que leerse como algo
- * que se pulsa. Pastilla con borde en acento, en linea con el lenguaje de
- * cartel del tema.
+ * Al pasar por encima, el encuadre se cierra sobre el dato: las mismas marcas
+ * de esquina que enmarcan el hero, aqui alrededor de una sola linea. Se
+ * descarto la pastilla redondeada con punto latiendo — es el componente mas
+ * repetido de la web y no pertenece a este sitio.
  */
-:root[data-theme="vice"] .contacto-mail {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  /* Base compartida (`style.css`) trae `clamp(1rem, 2.2vw, 1.4rem)`, sin
-     tocar para Hyprland/Caelestia. Aqui, en Vice, a la escala: 16-22.4px
-     pasan a t-2..t-3. */
-  font-size: clamp(var(--t-2), 2.2vw, var(--t-3));
-  padding: 0.9rem 1.8rem;
-  border: 1px solid var(--color-accent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  text-decoration: none;
-  letter-spacing: 0.01em;
+:root[data-theme="vice"] .contacto-estado-value::before,
+:root[data-theme="vice"] .contacto-estado-value::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-amber, #ffd166);
+  opacity: 0;
   transition:
-    background 300ms ease-out,
-    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 300ms ease-out;
+    opacity 260ms ease-out,
+    top 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    right 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    bottom 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-:root[data-theme="vice"] .contacto-mail::after {
-  content: "→";
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+:root[data-theme="vice"] .contacto-estado-value::before {
+  top: -7px;
+  left: -7px;
+  border-right: 0;
+  border-bottom: 0;
 }
 
-:root[data-theme="vice"] .contacto-mail:hover,
-:root[data-theme="vice"] .contacto-mail:focus-visible {
-  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
-  transform: translateY(-2px);
-  box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--color-accent-2) 65%, transparent);
+:root[data-theme="vice"] .contacto-estado-value::after {
+  bottom: -7px;
+  right: -7px;
+  border-left: 0;
+  border-top: 0;
 }
 
-:root[data-theme="vice"] .contacto-mail:hover::after,
-:root[data-theme="vice"] .contacto-mail:focus-visible::after {
-  transform: translateX(5px);
+:root[data-theme="vice"] .contacto-estado:hover .contacto-estado-value::before {
+  opacity: 1;
+  top: 0;
+  left: 0;
 }
 
-:root[data-theme="vice"] .contacto-mail:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 4px;
+:root[data-theme="vice"] .contacto-estado:hover .contacto-estado-value::after {
+  opacity: 1;
+  bottom: 0;
+  right: 0;
 }
 
-:root[data-theme="vice"] .contacto-mail:active {
-  transform: translateY(0);
-  box-shadow: none;
+:root[data-theme="vice"] .contacto-estado:hover .contacto-estado-label,
+:root[data-theme="vice"] .contacto-estado:hover .contacto-estado-sep {
+  color: var(--accent-amber, #ffd166);
+}
+
+/* --- las barras --- */
+:root[data-theme="vice"] .contacto-bars {
+  flex: 1;
+  flex-direction: row;
+}
+
+:root[data-theme="vice"] .contacto-bar {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: 0 0 1.9rem;
+  box-shadow: inset 1px 0 0 rgb(255 244 232 / 0.16);
+  backdrop-filter: saturate(1.25);
+  transition: flex-grow 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="vice"] .contacto-bar:hover,
+:root[data-theme="vice"] .contacto-bar:focus-visible {
+  flex-grow: 2.6;
+}
+
+:root[data-theme="vice"] .contacto-bar--correo { background: rgb(255 46 136 / 0.3); }
+:root[data-theme="vice"] .contacto-bar--linkedin { background: rgb(255 209 102 / 0.26); }
+:root[data-theme="vice"] .contacto-bar--telefono { background: rgb(255 244 232 / 0.15); }
+:root[data-theme="vice"] .contacto-bar--github { background: rgb(11 5 19 / 0.55); }
+
+/*
+ * La tinta bajo el valor NO es adorno: sobre un fondo generativo la luminancia
+ * se mueve, y sin ella el contraste del dato deja de estar garantizado. Es lo
+ * que hace que el criterio 4 del spec sea medible en vez de depender del
+ * fotograma que toque.
+ */
+:root[data-theme="vice"] .contacto-bar::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 190px;
+  z-index: -1;
+  background: linear-gradient(to top, rgb(11 5 19 / 0.82) 0%, rgb(11 5 19 / 0) 100%);
+}
+
+:root[data-theme="vice"] .contacto-bar-label {
+  position: absolute;
+  top: 2.1rem;
+  left: 1.75rem;
+  writing-mode: vertical-rl;
+  /* var(--t-5), no 34px: 34 no es un paso de la escala y la Tarea 1 acaba de
+     cerrarla. El valor de la maqueta se sube al paso mas cercano hacia arriba. */
+  font-size: var(--t-5);
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  color: rgb(255 244 232 / 0.34);
+  opacity: 1;
+  transition: color 420ms ease-out;
+}
+
+:root[data-theme="vice"] .contacto-bar:hover .contacto-bar-label {
+  color: rgb(255 244 232 / 0.55);
+}
+
+:root[data-theme="vice"] .contacto-bar-value {
+  margin: 0 1.75rem;
+  font-size: var(--t-4);
+  font-weight: 600;
+  white-space: nowrap;
+  color: rgb(255 244 232 / 1);
+  transform-origin: left bottom;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="vice"] .contacto-bar:hover .contacto-bar-value {
+  transform: scale(1.14);
+}
+
+:root[data-theme="vice"] .contacto-bar-mark {
+  margin: 0 1.75rem 1rem;
+  width: 28px;
+  height: 2px;
+  background: var(--accent-amber, #ffd166);
+  opacity: 0.8;
+  transition:
+    width 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 420ms ease-out;
+}
+
+:root[data-theme="vice"] .contacto-bar:hover .contacto-bar-mark {
+  width: 120px;
+  opacity: 1;
+}
+
+:root[data-theme="vice"] .contacto-bar:focus-visible {
+  outline: 3px solid var(--accent-amber, #ffd166);
+  outline-offset: -6px;
+}
+
+/* En vertical las barras no caben en fila: se apilan y el rotulo vuelve a
+   horizontal, que en 390px de ancho es lo unico legible. */
+@media (max-width: 900px) {
+  :root[data-theme="vice"] .contacto-bars {
+    flex-direction: column;
+  }
+
+  :root[data-theme="vice"] .contacto-bar {
+    flex: 1 1 auto;
+    min-height: 5.5rem;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+  }
+
+  :root[data-theme="vice"] .contacto-bar-label {
+    position: static;
+    writing-mode: horizontal-tb;
+    font-size: var(--t-1);
+    letter-spacing: 0.2em;
+  }
+
+  :root[data-theme="vice"] .contacto-bar-value {
+    margin: 0.4rem 0 0;
+    font-size: var(--t-3);
+  }
+
+  :root[data-theme="vice"] .contacto-bar-mark {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /*
-   * El cartel ya no desplaza nada al pasar por encima — el realce es solo de
-   * color, que no necesita degradarse. Lo que queda por acotar aqui es la
-   * duracion de esa transicion de color y la del friso, mas los gestos del
-   * CTA de contacto, que si mueve caja.
-   */
-  :root[data-theme="vice"] .credit,
-  :root[data-theme="vice"] .credits-mark,
-  :root[data-theme="vice"] .contacto-mail,
-  :root[data-theme="vice"] .contacto-mail::after {
-    transition: color 120ms ease-out;
+  :root[data-theme="vice"] .contacto-bar,
+  :root[data-theme="vice"] .contacto-bar-value,
+  :root[data-theme="vice"] .contacto-bar-mark,
+  :root[data-theme="vice"] .contacto-estado-value::before,
+  :root[data-theme="vice"] .contacto-estado-value::after {
+    transition: none;
   }
 
-  :root[data-theme="vice"] .contacto-mail:hover,
-  :root[data-theme="vice"] .contacto-mail:focus-visible,
-  :root[data-theme="vice"] .contacto-mail:hover::after,
-  :root[data-theme="vice"] .contacto-mail:focus-visible::after {
+  :root[data-theme="vice"] .contacto-bar:hover,
+  :root[data-theme="vice"] .contacto-bar:focus-visible {
+    flex-grow: 1;
+  }
+
+  :root[data-theme="vice"] .contacto-bar:hover .contacto-bar-value {
     transform: none;
-    box-shadow: none;
+  }
+
+  :root[data-theme="vice"] .contacto-estado:hover .contacto-estado-value::before {
+    top: -7px;
+    left: -7px;
+  }
+
+  :root[data-theme="vice"] .contacto-estado:hover .contacto-estado-value::after {
+    bottom: -7px;
+    right: -7px;
+  }
+}
+
+/*
+ * El realce del friso de creditos es solo de color (ver el comentario de
+ * `.credit` mas arriba); esta es la version acortada de esa transicion bajo
+ * `prefers-reduced-motion`. Vivia agrupada con `.contacto-mail` porque
+ * compartian duracion, no relacion — separada aqui tras retirar el CTA
+ * viejo de contacto en la Tarea 4.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="vice"] .credit,
+  :root[data-theme="vice"] .credits-mark {
+    transition: color 120ms ease-out;
   }
 }
 

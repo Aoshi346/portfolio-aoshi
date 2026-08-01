@@ -24,7 +24,7 @@
 /*
  * `--color-accent-legible`: el accent puro falla contraste AA en varios
  * puntos de los tres temas (medido con `scripts/verify.py::check_contrast_wcag`
- * — ver los comentarios de `.hero-kick`/`.contacto-mail`/`.credits-list` que
+ * — ver los comentarios de `.hero-kick`/`.credits-list` que
  * documentan cada caso concreto). Esta mezcla 55% accent / 45% paper es la
  * formula ya verificada que sube el margen sin perder el tinte del acento; se
  * repetia identica en ocho sitios de este fichero. Un solo token, no en
@@ -200,7 +200,7 @@ body {
 }
 
 /*
- * No el accent puro: mismo motivo que `.hero-kick`/`.contacto-mail` — la
+ * No el accent puro: mismo motivo que `.hero-kick` — la
  * Task 11 sustituira el video de prueba por el real y el punto donde hoy
  * muestrea el gate de contraste (fondo no solido, stddev 41.6 > 18, exento)
  * dejara de ser exento en cuanto ese fondo sea el video definitivo. Mismo
@@ -214,38 +214,6 @@ body {
   text-decoration-thickness: 2px;
 }
 
-/* Contacto — cierre del portfolio, mismo tratamiento tipografico que el hero. */
-.contacto-mail {
-  font-size: clamp(1rem, 2.2vw, 1.4rem);
-  /*
-   * No el accent puro: en Caelestia el fondo animado (blobs) cae a veces en
-   * un tono lo bastante saturado como para dejar el accent a secas en
-   * 3.01:1 (medido con `check_contrast_wcag` en la escena de contacto) — el
-   * mismo motivo que `.hero-kick` de arriba.
-   */
-  color: var(--color-accent-legible);
-  text-decoration: underline;
-  text-underline-offset: 8px;
-  text-decoration-thickness: 2px;
-}
-
-/*
- * El enlace de GitHub vive dentro de `.hero-corner`, que fija su color via
- * `color-mix()` en el DIV padre (ver comentario de `.hero-corner`). Sin este
- * `color: inherit` explicito, el UA stylesheet del navegador le pone su azul
- * de enlace por defecto (mayor especificidad que la herencia): eso rompio el
- * contraste en la escena de contacto (3.90:1 medido con
- * `scripts/verify.py::check_contrast_wcag` sobre un frame del video con tinte
- * cian), el mismo tipo de defecto que ya rompio `.hero-corner` una vez.
- */
-.contacto-github,
-.contacto-phone,
-.contacto-corner a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
 /*
  * Estados de interaccion de los enlaces de contacto y del hero. Antes solo
  * tenian color estatico: ni hover, ni foco visible propio, ni active. El
@@ -254,40 +222,28 @@ body {
  *
  * El hover va a `--color-accent-legible`, no al accent puro: estas clases
  * las comparten los tres temas y el accent a secas ya fallo AA en Caelestia
- * varias veces (ver los comentarios de `.hero-kick`/`.contacto-mail`).
+ * varias veces (ver el comentario de `.hero-kick`).
  */
-.hero-mail,
-.contacto-github,
-.contacto-phone,
-.contacto-corner a {
+.hero-mail {
   transition:
     color 200ms ease-out,
     text-underline-offset 200ms ease-out,
     opacity 200ms ease-out;
 }
 
-.hero-mail:hover,
-.contacto-github:hover,
-.contacto-phone:hover,
-.contacto-corner a:hover {
+.hero-mail:hover {
   color: var(--color-accent-legible);
   text-underline-offset: 7px;
 }
 
-.hero-mail:focus-visible,
-.contacto-github:focus-visible,
-.contacto-phone:focus-visible,
-.contacto-corner a:focus-visible {
+.hero-mail:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 4px;
   border-radius: 2px;
   color: var(--color-accent-legible);
 }
 
-.hero-mail:active,
-.contacto-github:active,
-.contacto-phone:active,
-.contacto-corner a:active {
+.hero-mail:active {
   opacity: 0.72;
 }
 
@@ -306,9 +262,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-mail,
-  .contacto-github,
-  .contacto-phone,
-  .contacto-corner a,
   .credits-icon,
   .credits-panel-name,
   .credits-panel-role,
@@ -316,32 +269,9 @@ body {
     transition: none;
   }
 
-  .hero-mail:hover,
-  .contacto-github:hover,
-  .contacto-phone:hover,
-  .contacto-corner a:hover {
+  .hero-mail:hover {
     text-underline-offset: 4px;
   }
-}
-
-/*
- * `.hero-corner` (compartido con el hero) queda a pelo sobre el video en
- * contacto: la escena de contacto llega tarde en el recorrido (mas tiempo de
- * reproduccion, mas probabilidad de caer en un tramo saturado del video/
- * fixture SMPTE). Medido con `check_contrast_wcag`: 3.90:1 sobre un frame
- * cian — por debajo del 4.5:1 minimo, aunque el color del texto en si (mezcla
- * de --color-paper, el mismo token que ya se lee bien en el hero) es
- * correcto. El scrim propio, calcado del recibo de `.credits-list`/
- * `.about-card`, acota el riesgo sin depender de que frame le toque.
- */
-.contacto-corner {
-  background: linear-gradient(
-    0deg,
-    color-mix(in srgb, var(--color-ink) 55%, transparent) 0%,
-    transparent 100%
-  );
-  padding: 0.6rem 0.9rem;
-  border-radius: var(--radius-card);
 }
 
 /*

@@ -569,12 +569,12 @@ git commit -m "feat(contacto): carta de ajuste — cuatro vias desde content.ts"
 - Consume: las clases de la Tarea 3.
 - Produce: la escena con la geometría que miden las Tareas 7 y 8.
 
-- [ ] **Paso 1: borra el bloque viejo**
+- [x] **Paso 1: borra el bloque viejo**
 
 En `src/themes/themes.css`, elimina las reglas de `.contacto-mail`, `.contacto-status`,
 `.contacto-corner` y `.contacto .hero-surface`. Son la piel de un DOM que ya no existe.
 
-- [ ] **Paso 1b: y el estilo base huérfano de `src/style.css`**
+- [x] **Paso 1b: y el estilo base huérfano de `src/style.css`**
 
 Añadido el 2026-07-31: lo levantó el implementador de la Tarea 3 al correr el grep del Paso 5.
 La Tarea 3 se llevó por delante el DOM que producía `.contacto-mail`, `.contacto-github`,
@@ -606,7 +606,7 @@ Comprobación del paso: `npm run build` verde, y una captura del hero con foco e
 correo (`page.focus(".hero-mail")`) que enseñe el outline. Si el outline no está, has borrado de
 más.
 
-- [ ] **Paso 2: escribe la piel nueva**
+- [x] **Paso 2: escribe la piel nueva**
 
 ```css
 /*
@@ -887,7 +887,7 @@ más.
 }
 ```
 
-- [ ] **Paso 3: mira la escena de verdad**
+- [x] **Paso 3: mira la escena de verdad**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -909,10 +909,10 @@ with sync_playwright() as p:
 
 Ábrelas. Un `tsc` verde no garantiza que el encuadre esté bien.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
-git add src/themes/themes.css
+git add src/themes/themes.css src/style.css
 git commit -m "feat(vice): piel de la carta de ajuste con barras-gelatina"
 ```
 
