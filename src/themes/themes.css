@@ -2031,6 +2031,17 @@
     font-size: var(--t-2);
   }
 
+  /*
+   * Hueco al pie para el rail numerado, que en movil va fijo abajo a la
+   * izquierda (ver `.scene-nav` mas abajo). Sin esto se pinta sobre el valor
+   * de la ultima via — medido: el rail ocupa y 788-832 y el valor de GitHub
+   * caia justo ahi. Va en la ultima barra y no en el contenedor porque las
+   * barras son a sangre y un margen se veria como un corte en el color.
+   */
+  :root[data-theme="vice"] .contacto-bar:last-child {
+    padding-bottom: 4.25rem;
+  }
+
   :root[data-theme="vice"] .contacto-bar-mark {
     display: none;
   }
@@ -2367,5 +2378,56 @@
 @media (prefers-reduced-motion: reduce) {
   .scene-nav a {
     transition: none;
+  }
+}
+
+/*
+ * En vertical el rail de palabras no cabe en ningun sitio del borde derecho.
+ * Se probaron tres posiciones y las tres pisaban algo distinto a 390px:
+ * `bottom: 1.5rem` ponia "FUNDIDO" sobre "VICE CITY"; `bottom: 3.5rem` cruzaba
+ * las dianas de 44px con la del correo del hero; y centrado se pintaba encima
+ * del h1 (que se parte en tres lineas y llega a x=314) y del lead. No es que
+ * faltara con encontrar el hueco: cinco dianas de 44px apiladas no caben en
+ * ese margen.
+ *
+ * Asi que en movil la navegacion cambia de forma, no de sitio: se colapsa a
+ * cinco dianas numeradas en horizontal. 5x44 = 220px de los 390, alineadas a
+ * la izquierda para dejar libre la esquina de la firma. Los numeros hablan el
+ * mismo idioma que el contador de escena del cromo ("01 · TITULO").
+ *
+ * El rotulo NO se borra, se oculta con `font-size: 0` y se repone en el
+ * `::before`: asi el enlace conserva su nombre accesible ("Obra", no "03")
+ * para quien navegue con lector de pantalla.
+ */
+@media (max-width: 900px) {
+  .scene-nav {
+    top: auto;
+    bottom: 0.75rem;
+    right: auto;
+    left: 1.5rem;
+    transform: none;
+  }
+
+  .scene-nav ul {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    counter-reset: escena;
+  }
+
+  .scene-nav li {
+    counter-increment: escena;
+  }
+
+  .scene-nav a {
+    justify-content: center;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .scene-nav a::before {
+    content: "0" counter(escena);
+    font-size: var(--t-1, 0.75rem);
+    letter-spacing: 0.12em;
   }
 }
