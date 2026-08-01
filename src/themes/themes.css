@@ -2288,22 +2288,31 @@
 }
 
 /*
- * Navegacion: fija abajo a la derecha, fuera del cromo de cine. Diana de
+ * Navegacion: fija al borde derecho, fuera del cromo de cine. Diana de
  * 44x44 px, holgada sobre los 24x24 que exige WCAG 2.2 AA SC 2.5.8 — el pie
  * anterior media 14,4 px de alto y lo incumplia.
+ */
+/*
+ * Centrada en vertical, NO anclada abajo. Anclada abajo se disputa la esquina
+ * inferior derecha con dos vecinos que ya estaban ahi: la firma de tema
+ * (`fixed bottom-5 right-5`) y el pie del hero (`.hero-corner`, con el enlace
+ * de correo en su extremo derecho). Se probaron dos alturas y las dos movian
+ * el problema en vez de resolverlo: a 1.5rem "FUNDIDO" se pintaba sobre
+ * "VICE CITY"; a 3.5rem eso se arreglaba pero la diana de 44px de un ancla
+ * invadia la del correo (9,6px en 390x844) — y subirla mas solo cambiaba
+ * QUE ancla chocaba. Con cinco dianas de 44px apiladas no hay altura buena en
+ * esa esquina: hay que salir de ella.
  *
- * `bottom: 3.5rem` (no 1.5rem): la firma de tema (`.theme-signature`) es
- * `fixed bottom-5 right-5` (20px) con ~24px de alto, asi que su borde
- * superior queda a 44px del fondo del viewport. Con 1.5rem (24px) la caja
- * del nav invadia esos 44px y "FUNDIDO" se pintaba sobre "VICE CITY" — medido
- * en 1440x900 y 390x844 (misma superposicion de 20px en los dos anchos,
- * porque ambos elementos son `fixed` y la diferencia no depende del
- * viewport). 3.5rem deja 12px de aire entre las dos cajas.
+ * Centrada, la barra queda en la franja media del borde derecho, que en las
+ * cinco escenas esta vacia. Medido sin solape contra la firma, contra
+ * `.hero-mail` y contra el texto de las barras de contacto, en 1440x900 y
+ * 390x844.
  */
 .scene-nav {
   position: fixed;
   right: 1.5rem;
-  bottom: 3.5rem;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 40;
 }
 
