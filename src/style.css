@@ -173,9 +173,7 @@ body {
   gap: 1rem;
   font-weight: 700;
   /* `--t-1` solo existe en Vice; respaldo = 0.6rem medido en Hyprland/
-     Caelestia antes de la escala, idem `.hero-kick` arriba. Comparte esta
-     clase el pie de contacto (`.contacto-corner`), asi que fija tambien
-     los rotulos de telefono/GitHub/LinkedIn a un unico tamano ahi. */
+     Caelestia antes de la escala, idem `.hero-kick` arriba. */
   font-size: var(--t-1, 0.6rem);
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -462,7 +460,7 @@ body {
  * de la firma (medido en 390x844: filas de `.credit` cruzando su banda
  * vertical durante la transicion de entrada de la escena). Sin superficie
  * propia, texto de credito y texto de la firma se mezclaban en el mismo
- * plano. Mismo remedio que `.contacto-corner`/`.rail`: un scrim propio detras
+ * plano. Mismo remedio que `.rail`: un scrim propio detras
  * de la firma para que, pase lo que pase debajo, siga siendo legible sin
  * tapar el contenido real (el pill es pequeno y sigue dejando ver el resto
  * de la fila).
