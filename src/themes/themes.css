@@ -1829,7 +1829,13 @@
 :root[data-theme="vice"] .contacto-estado-sep {
   margin: 0 0.95rem;
   font-size: var(--t-2);
-  color: rgb(255 244 232 / 0.34);
+  /*
+   * 0.72, no 0.34. El separador es texto pequeno (`--t-2`), asi que le aplica
+   * el 4,5:1 de AA, no el 3,0:1 del texto grande — y a 0.34 daba 2,80:1 sobre
+   * la banda (medido por `scripts/verify.py`). Es un punto de puntuacion, pero
+   * un punto ilegible no separa nada.
+   */
+  color: rgb(255 244 232 / 0.72);
   transition: color 340ms ease-out;
 }
 
@@ -1949,13 +1955,21 @@
   font-size: var(--t-5);
   font-weight: 700;
   letter-spacing: 0.34em;
-  color: rgb(255 244 232 / 0.34);
+  /*
+   * 0.62, no el 0.34 de la maqueta. A 0.34 el rotulo daba entre 2,48:1 y
+   * 2,91:1 contra su propia gelatina (medido por `scripts/verify.py` sobre el
+   * pixel renderizado, n>2700 por rotulo), por debajo del 3,0:1 que pide AA
+   * para texto grande. La gelatina no se puede opacar mas sin tapar el fondo
+   * generativo, que es lo que caracteriza la escena, asi que sube la tinta del
+   * rotulo. Sigue leyendose como una marca de agua, que era su papel.
+   */
+  color: rgb(255 244 232 / 0.62);
   opacity: 1;
   transition: color 420ms ease-out;
 }
 
 :root[data-theme="vice"] .contacto-bar:hover .contacto-bar-label {
-  color: rgb(255 244 232 / 0.55);
+  color: rgb(255 244 232 / 0.82);
 }
 
 :root[data-theme="vice"] .contacto-bar-value {
