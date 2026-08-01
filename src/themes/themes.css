@@ -1960,7 +1960,7 @@
 
 :root[data-theme="vice"] .contacto-bar-value {
   margin: 0 1.75rem;
-  font-size: var(--t-4);
+  font-size: var(--t-3);
   font-weight: 600;
   white-space: nowrap;
   color: rgb(255 244 232 / 1);
@@ -2291,11 +2291,19 @@
  * Navegacion: fija abajo a la derecha, fuera del cromo de cine. Diana de
  * 44x44 px, holgada sobre los 24x24 que exige WCAG 2.2 AA SC 2.5.8 — el pie
  * anterior media 14,4 px de alto y lo incumplia.
+ *
+ * `bottom: 3.5rem` (no 1.5rem): la firma de tema (`.theme-signature`) es
+ * `fixed bottom-5 right-5` (20px) con ~24px de alto, asi que su borde
+ * superior queda a 44px del fondo del viewport. Con 1.5rem (24px) la caja
+ * del nav invadia esos 44px y "FUNDIDO" se pintaba sobre "VICE CITY" — medido
+ * en 1440x900 y 390x844 (misma superposicion de 20px en los dos anchos,
+ * porque ambos elementos son `fixed` y la diferencia no depende del
+ * viewport). 3.5rem deja 12px de aire entre las dos cajas.
  */
 .scene-nav {
   position: fixed;
   right: 1.5rem;
-  bottom: 1.5rem;
+  bottom: 3.5rem;
   z-index: 40;
 }
 
