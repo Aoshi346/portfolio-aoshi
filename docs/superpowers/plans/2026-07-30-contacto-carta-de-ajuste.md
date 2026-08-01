@@ -927,7 +927,7 @@ git commit -m "feat(vice): piel de la carta de ajuste con barras-gelatina"
 - Consume: las clases de la Tarea 3.
 - Produce: `scene5Contact` sin un solo `gsap.from`.
 
-- [ ] **Paso 1: comprueba la deuda antes de tocar nada**
+- [x] **Paso 1: comprueba la deuda antes de tocar nada**
 
 ```bash
 grep -n "gsap.from(" src/themes/vice.choreography.ts
@@ -935,7 +935,7 @@ grep -n "gsap.from(" src/themes/vice.choreography.ts
 
 Esperado ahora mismo: tres apariciones dentro de `scene5Contact` (kick, status, mail).
 
-- [ ] **Paso 2: reescribe la escena**
+- [x] **Paso 2: reescribe la escena**
 
 Sustituye el cuerpo de `scene5Contact` por:
 
@@ -1029,7 +1029,7 @@ function scene5Contact(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEl
 }
 ```
 
-- [ ] **Paso 3: comprueba que la deuda está saldada**
+- [x] **Paso 3: comprueba que la deuda está saldada**
 
 ```bash
 grep -c "gsap.from(" src/themes/vice.choreography.ts
@@ -1037,7 +1037,7 @@ grep -c "gsap.from(" src/themes/vice.choreography.ts
 
 Esperado: `0`.
 
-- [ ] **Paso 4: comprueba que la escena se compone y que llegar por navegación no la deja invisible**
+- [x] **Paso 4: comprueba que la escena se compone y que llegar por navegación no la deja invisible**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -1067,7 +1067,7 @@ with sync_playwright() as p:
 Esperado: **todas las opacidades a 1**. Una sola en `0` significa que quien llega por el menú se
 encuentra la escena vacía, que es exactamente el fallo que los `gsap.from` hacían posible.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add src/themes/vice.choreography.ts

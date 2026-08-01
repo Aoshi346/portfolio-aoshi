@@ -1238,68 +1238,80 @@ function scene5Contact(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEl
 
   const base = { trigger: contacto, start: "top 68%", toggleActions: "play none none reverse" } as const;
   const kick = contacto.querySelector<HTMLElement>(".hero-kick");
-  const title = contacto.querySelector<HTMLElement>("h2");
-  const status = contacto.querySelector<HTMLElement>(".contacto-status");
-  // El envoltorio del CTA, no el enlace: ver el comentario de `contacto.ts`.
-  const mail = contacto.querySelector<HTMLElement>(".contacto-cta");
-  const corner = contacto.querySelector<HTMLElement>(".contacto-corner");
+  const title = contacto.querySelector<HTMLElement>(".contacto-title");
+  const lead = contacto.querySelector<HTMLElement>(".contacto-lead");
+  const estado = contacto.querySelector<HTMLElement>(".contacto-estado");
+  const bars = contacto.querySelectorAll<HTMLElement>(".contacto-bar");
 
+  /*
+   * `fromTo` con los dos extremos escritos a mano, nunca `from`: `from` deduce
+   * el extremo final leyendo el DOM y ya dejo los tres enlaces del pie
+   * invisibles para siempre en esta misma escena. Y ahora hay un camino de
+   * ejecucion nuevo — llegar desde la navegacion con el trigger ya pasado —
+   * donde ese error seria permanente.
+   */
   if (kick) {
-    gsap.from(kick, {
-      opacity: 0,
-      y: 14,
-      duration: 0.5,
-      ease: "power2.out",
-      scrollTrigger: { ...base, id: CONTACT_TRIGGER_IDS[0] },
-    });
-  }
-  if (title) {
-    // "Hablemos" se monta letra a letra: cierra la pieza con el mismo gesto
-    // con el que se abrio el nombre, que es lo que lo hace leer como final y
-    // no como una seccion mas.
-    composeTitle(gsap, title, base, CONTACT_TRIGGER_IDS[1], 0.08);
-  }
-  if (status) {
-    gsap.from(status, {
-      opacity: 0,
-      y: 14,
-      duration: 0.5,
-      ease: "power2.out",
-      delay: 0.22,
-      scrollTrigger: { ...base, id: CONTACT_TRIGGER_IDS[2] },
-    });
-  }
-  if (mail) {
-    // El CTA entra el ultimo y con un punto de escala: es la accion, tiene que
-    // ser lo ultimo que se posa en el encuadre.
-    gsap.from(mail, {
-      opacity: 0,
-      y: 18,
-      scale: 0.94,
-      duration: 0.6,
-      ease: "back.out(1.6)",
-      delay: 0.32,
-      scrollTrigger: { ...base, id: CONTACT_TRIGGER_IDS[3] },
-    });
-  }
-  if (corner) {
-    /*
-     * `fromTo` con los dos extremos escritos a mano, no `from`. Con `from`,
-     * GSAP toma el valor final leyendo el DOM y aqui registraba `opacity: 0`
-     * como destino: el tween corria (la `y` si llegaba a 0) pero los tres
-     * enlaces del pie se quedaban invisibles para siempre. Es la misma clase
-     * de fallo que la regresion del gesto 1, documentada en `scene1Title`.
-     */
     gsap.fromTo(
-      Array.from(corner.children),
+      kick,
       { opacity: 0, y: 14 },
       {
         opacity: 1,
         y: 0,
         duration: 0.5,
         ease: "power2.out",
-        stagger: 0.08,
-        delay: 0.44,
+        scrollTrigger: { ...base, id: CONTACT_TRIGGER_IDS[0] },
+      },
+    );
+  }
+  if (title) {
+    // "Hablemos" se monta letra a letra: cierra la pieza con el mismo gesto
+    // con el que se abrio el nombre.
+    composeTitle(gsap, title, base, CONTACT_TRIGGER_IDS[1], 0.08);
+  }
+  if (lead) {
+    gsap.fromTo(
+      lead,
+      { opacity: 0, y: 14 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: "power2.out",
+        delay: 0.22,
+        scrollTrigger: { ...base, id: CONTACT_TRIGGER_IDS[2] },
+      },
+    );
+  }
+  if (estado) {
+    gsap.fromTo(
+      estado,
+      { opacity: 0, y: 12 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: "power2.out",
+        delay: 0.3,
+        scrollTrigger: { ...base, id: CONTACT_TRIGGER_IDS[3] },
+      },
+    );
+  }
+  if (bars.length) {
+    /*
+     * Las barras suben desde el suelo, escalonadas. Se anima `yPercent` y no
+     * `flex-grow`: el hover ya usa `flex-grow`, y animar la misma propiedad
+     * desde dos sitios deja la barra encallada a mitad de camino.
+     */
+    gsap.fromTo(
+      Array.from(bars),
+      { opacity: 0, yPercent: 12 },
+      {
+        opacity: 1,
+        yPercent: 0,
+        duration: 0.62,
+        ease: "power3.out",
+        stagger: 0.07,
+        delay: 0.38,
         scrollTrigger: { ...base, id: CONTACT_TRIGGER_IDS[4] },
       },
     );
