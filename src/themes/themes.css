@@ -2156,11 +2156,20 @@
  * fila de escritorio como la pila heredada de movil comparten el mismo
  * problema geometrico.
  */
-@media (min-width: 901px) {
-  :root[data-theme="vice"] .contacto-bars {
-    padding-right: 150px;
-  }
-}
+/*
+ * La navegacion NO tiene carril reservado. Antes se le apartaban 150px de
+ * `padding-right` en el contenedor, y el precio era un corte vertical de color
+ * a 150px del borde — justo lo que la regla del sangrado prohibe mas abajo
+ * ("las barras son a sangre y un margen se veria como un corte en el color").
+ * A 1440 el corte no cantaba solo porque la cuarta barra era invisible; en
+ * cuanto se le dio color real, cantaba.
+ *
+ * Ahora el color llega al borde y lo unico que se aparta es el CONTENIDO de la
+ * ultima via, via `min-width` (ver el bloque de suelos): su ancho garantiza que
+ * el valor y el rotulo terminan antes de donde empieza `.scene-nav`. Fondo a
+ * sangre, texto despejado. Y como la navegacion pasa a flotar sobre color en
+ * vez de sobre hueco, lleva superficie propia igual que el rail de movil.
+ */
 
 /*
  * Suelo de ancho por via, y con el mismo numero que su umbral de `@container`.
@@ -2174,33 +2183,42 @@
  * pinta nada; y en un movil estrecho un minimo de 316px provocaria scroll
  * horizontal.
  *
- * Cabe: 318 + 246 + 236 + 157 = 957 sobre 1160 utiles a 1310px, el ancho mas
- * estrecho del tramo. Quedan 203 para repartir en el gesto.
- *
  * Dos pixeles POR ENCIMA del umbral, no el umbral clavado: `@container
  * (max-width: 316px)` es inclusivo, asi que un suelo de exactamente 316
  * aterriza dentro de su propia consulta y dispara la bajada que venia a
  * evitar. Se midio asi la primera vez — 24 combinaciones seguian cambiando de
  * tamano con el suelo ya puesto.
+ *
+ * GitHub es la excepcion: su suelo no sale de su texto (95 + 56 = 151) sino de
+ * la navegacion que ahora flota sobre ella. `.scene-nav` ocupa ~130px contando
+ * su offset, y el contenido de la via termina a 123px de su borde izquierdo,
+ * asi que por debajo de ~253px de barra el texto quedaria debajo del menu. 270
+ * deja 17px de aire.
+ *
+ * Suma: 318 + 246 + 236 + 270 = 1070. Ese numero ES el breakpoint de la fila
+ * (1080, con 10px de margen): por debajo no caben cuatro columnas y se apila.
+ * Al quitarle a las barras el carril de 150px que se le reservaba al menu, la
+ * fila baja de 1310 a 1080 — o sea que 1152 y 1280, que son anchos de portatil
+ * de verdad, recuperan las cuatro gelatinas.
  */
-@media (min-width: 1310px) {
+@media (min-width: 1080px) {
   :root[data-theme="vice"] .contacto-bar--correo { min-width: 318px; }
   :root[data-theme="vice"] .contacto-bar--linkedin { min-width: 246px; }
   :root[data-theme="vice"] .contacto-bar--telefono { min-width: 236px; }
-  :root[data-theme="vice"] .contacto-bar--github { min-width: 157px; }
+  :root[data-theme="vice"] .contacto-bar--github { min-width: 270px; }
 }
 
 /*
- * Entre 901 y 1309px cuatro columnas no caben: incluso repartiendo el hueco
- * de la navegacion sobre todo hacia GitHub (ver `.contacto-bar--github` mas
- * arriba), el peor caso — una barra vecina en hover Y GitHub necesitando su
- * propio suelo a la vez — deja a alguno de los dos por debajo del suelo
- * legible (--t-2, 16px) antes de este ancho. Se apila igual que en movil real
- * (<=900px) pero SIN el paso extra del correo a --t-2: aqui la barra ya tiene
- * sitio de sobra (incluso a 901px, con el hueco de 150px de arriba restado,
- * quedan ~700px utiles) porque `.scene-nav` esta al lado, no encima.
+ * Por debajo de 1080px cuatro columnas no caben: la suma de los suelos de las
+ * cuatro vias es 1070 (ver el bloque de arriba), y por debajo de eso alguna
+ * cruza su umbral y baja del suelo legible o se recorta. Se apila, como en
+ * movil, pero SIN el paso extra del correo a --t-2 y CON las cuatro rayas
+ * ambar: aqui hay ancho de sobra y no hay nada que ahorrar.
+ *
+ * El limite era 1309 mientras las barras le reservaban 150px a la navegacion.
+ * Quitado el carril, baja a 1080.
  */
-@media (min-width: 901px) and (max-width: 1309px) {
+@media (min-width: 901px) and (max-width: 1079px) {
   :root[data-theme="vice"] .contacto-bars {
     flex-direction: column;
   }
@@ -2593,7 +2611,18 @@
   align-items: flex-end;
   gap: 0.15rem;
   margin: 0;
-  padding: 0;
+  /*
+   * Superficie propia. Al quitarle a la escena de contacto el carril de 150px
+   * que se le reservaba, el menu pasa a flotar SOBRE las barras de color en
+   * vez de sobre hueco vacio, y sin fondo quedaba a merced de lo que hubiera
+   * debajo — que ademas se mueve, porque el fondo es generativo. Mismo remedio
+   * que `.rail` y `.theme-signature`, y que el rail numerado de movil.
+   */
+  padding: 0.6rem 0.9rem;
+  border-radius: 14px;
+  background: rgb(11 5 19 / 0.62);
+  box-shadow: inset 0 0 0 1px rgb(255 244 232 / 0.12);
+  backdrop-filter: blur(7px);
   list-style: none;
 }
 

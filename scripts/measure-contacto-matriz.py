@@ -31,7 +31,7 @@ HOLGURA = 1.0  # px, redondeo subpixel
 
 # 390 (movil real) + el tramo 901..1440 en pasos de ~64, mas los dos anchos
 # que abrazan el breakpoint de 1310 para ver el salto en si.
-ANCHOS = [390, 901, 965, 1029, 1093, 1157, 1221, 1285, 1305, 1315, 1349, 1413, 1440]
+ANCHOS = [390, 901, 965, 1029, 1075, 1085, 1093, 1157, 1221, 1285, 1349, 1413, 1440]
 BARRAS = ["correo", "linkedin", "telefono", "github"]
 
 MEDIDA = """() => {
@@ -118,6 +118,36 @@ def main() -> int:
                                 left: Math.round(r.left * 10) / 10,
                                 visible: r.width > 0}; })};
             }""")
+            # Nada de texto de las barras puede quedar bajo `.scene-nav`. Es el
+            # riesgo que aparece al quitarle su carril: el menu pasa a flotar
+            # sobre color, y lo que antes era hueco reservado ahora es la caja
+            # de la cuarta via. Se comprueba contra el rectangulo real del menu,
+            # no contra el numero que se supuso al elegir su `min-width`.
+            tapados = pg.evaluate("""() => {
+                const nav = document.querySelector('.scene-nav').getBoundingClientRect();
+                const out = [];
+                for (const n of document.querySelectorAll('.contacto-bar-value, .contacto-bar-label')) {
+                    if (!n.firstChild) continue;
+                    // La caja de los GLIFOS, no la del elemento. Apilado, el
+                    // valor es un bloque que se estira hasta el borde derecho
+                    // aunque su texto acabe a la izquierda: medir el elemento
+                    // da 16 solapes que no existen.
+                    const rango = document.createRange();
+                    rango.selectNodeContents(n);
+                    const r = rango.getBoundingClientRect();
+                    if (r.width === 0) continue;
+                    const ox = Math.min(nav.right, r.right) - Math.max(nav.left, r.left);
+                    const oy = Math.min(nav.bottom, r.bottom) - Math.max(nav.top, r.top);
+                    if (ox > 0 && oy > 0) {
+                        out.push((n.textContent || '').trim().slice(0, 14) +
+                                 ' ' + Math.round(ox) + 'x' + Math.round(oy));
+                    }
+                }
+                return out;
+            }""")
+            for t in tapados:
+                fallos.append(f"{ancho}px reposo: la navegacion tapa \"{t}\"")
+
             eje = "top" if marcas["fila"] else "left"
             bordes = [c[eje] for c in marcas["cajas"] if c["visible"]]
             if bordes and max(bordes) - min(bordes) > HOLGURA:
