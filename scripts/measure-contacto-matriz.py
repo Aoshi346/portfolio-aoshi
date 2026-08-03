@@ -95,8 +95,37 @@ def main() -> int:
             }""")
             pg.wait_for_timeout(3500)
 
-            revisa(pg.evaluate(MEDIDA), f"{ancho}px reposo", fallos)
+            reposo = pg.evaluate(MEDIDA)
+            revisa(reposo, f"{ancho}px reposo", fallos)
             combinaciones += 1
+            tam_reposo = {d["via"]: d["tam"] for d in reposo}
+
+            # El friso: las cuatro rayas ambar alineadas. No es un criterio
+            # estetico blando — 8px de desnivel en la cuarta fue un fallo real,
+            # y ningun criterio de recorte podia verlo porque no se recortaba
+            # nada. Se mide en reposo, que es donde se ve.
+            #
+            # El eje depende de la disposicion, y de no mirarlo salieron 8
+            # falsos positivos: en columna las cuatro marcas estan a distinta
+            # altura POR DEFINICION, una debajo de otra. Ahi lo que tiene que
+            # coincidir es el borde izquierdo.
+            marcas = pg.evaluate("""() => {
+                const fila = getComputedStyle(document.querySelector('.contacto-bars'))
+                    .flexDirection !== 'column';
+                return {fila, cajas: [...document.querySelectorAll('.contacto-bar-mark')]
+                    .map(n => { const r = n.getBoundingClientRect();
+                        return {top: Math.round(r.top * 10) / 10,
+                                left: Math.round(r.left * 10) / 10,
+                                visible: r.width > 0}; })};
+            }""")
+            eje = "top" if marcas["fila"] else "left"
+            bordes = [c[eje] for c in marcas["cajas"] if c["visible"]]
+            if bordes and max(bordes) - min(bordes) > HOLGURA:
+                como = "en fila" if marcas["fila"] else "apilado"
+                fallos.append(
+                    f"{ancho}px reposo ({como}): el friso esta desalineado, "
+                    f"{eje} {sorted(set(bordes))}"
+                )
 
             for via in BARRAS:
                 sel = f".contacto-bar--{via}"
@@ -105,7 +134,19 @@ def main() -> int:
                     continue
                 pg.hover(sel)
                 pg.wait_for_timeout(900)  # la transicion de flex-grow dura 520 ms
-                revisa(pg.evaluate(MEDIDA), f"{ancho}px hover:{via}", fallos)
+                datos = pg.evaluate(MEDIDA)
+                revisa(datos, f"{ancho}px hover:{via}", fallos)
+                # Estabilidad: senalar una barra no puede cambiar el tamano del
+                # texto de las OTRAS. Pasaba: apuntar a Telefono bajaba la
+                # direccion de correo de 21.33 a 16 px, un 25% menos, por estar
+                # el raton en otro sitio.
+                for d in datos:
+                    otra = d["via"].replace("contacto-bar--", "")
+                    if otra != via and tam_reposo.get(d["via"]) != d["tam"]:
+                        fallos.append(
+                            f"{ancho}px hover:{via}: {otra} cambia de "
+                            f"{tam_reposo.get(d['via'])} a {d['tam']} sin que la senalen"
+                        )
                 combinaciones += 1
             pg.close()
         b.close()

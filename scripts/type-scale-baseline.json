@@ -1,0 +1,33 @@
+{
+  "fallos": [
+    "1024x900 about about-claim-in -> 30.72px",
+    "1024x900 about about-name-first -> 65.536px",
+    "1024x900 about about-name-rest -> 65.536px",
+    "1024x900 about lead text-paper/90 -> 22.528px",
+    "1024x900 credits hero-kick -> 61.44px",
+    "1024x900 hero display-xl mt-4 text-[clamp(2.8rem,11vw,9.5rem)] -> 122.88px",
+    "1093x900 about about-claim-in -> 32.79px",
+    "1093x900 about about-name-first -> 69.952px",
+    "1093x900 about about-name-rest -> 69.952px",
+    "1093x900 about lead text-paper/90 -> 24.046px",
+    "1093x900 credits hero-kick -> 65.58px",
+    "1093x900 hero display-xl mt-4 text-[clamp(2.8rem,11vw,9.5rem)] -> 131.16px",
+    "1123x900 about about-claim-in -> 33.69px",
+    "1123x900 about about-name-first -> 71.872px",
+    "1123x900 about about-name-rest -> 71.872px",
+    "1123x900 about lead text-paper/90 -> 24.706px",
+    "1123x900 hero display-xl mt-4 text-[clamp(2.8rem,11vw,9.5rem)] -> 134.76px",
+    "1310x900 about about-name-first -> 83.84px",
+    "1310x900 about about-name-rest -> 83.84px",
+    "1310x900 hero display-xl mt-4 text-[clamp(2.8rem,11vw,9.5rem)] -> 157.2px",
+    "843x900 about about-name-first -> 53.952px",
+    "843x900 about about-name-rest -> 53.952px",
+    "843x900 hero display-xl mt-4 text-[clamp(2.8rem,11vw,9.5rem)] -> 101.16px",
+    "900x900 about about-claim-in -> 27px",
+    "900x900 about about-name-first -> 57.6px",
+    "900x900 about about-name-rest -> 57.6px",
+    "900x900 credits credit-name -> 18.45px",
+    "900x900 credits hero-kick -> 54px",
+    "900x900 hero display-xl mt-4 text-[clamp(2.8rem,11vw,9.5rem)] -> 108px"
+  ]
+}

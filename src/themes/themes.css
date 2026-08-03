@@ -1224,12 +1224,29 @@
   font-size: clamp(var(--t-7), 12vw, var(--t-10));
 }
 
-:root[data-theme="vice"] [data-scene="obra"] h2.display-lg {
-  font-size: clamp(var(--t-6), 6vw, var(--t-7));
+/*
+ * Salto discreto, no `clamp(var(--t-6), 6vw, var(--t-7))`. El termino central
+ * en `vw` es CONTINUO y su tramo util cae entre 843px de viewport (donde 6vw
+ * alcanza --t-6) y 1123px (donde alcanza --t-7): dentro de esa banda el
+ * titulo mide 54.00, 60.00, 65.58... ninguno escalon de nada. Es el mismo
+ * defecto que `.contacto-bar-value` documenta mas abajo, y aqui pesa mas
+ * porque cae sobre el tipo MAS GRANDE de la escena. Se colo porque los dos
+ * anchos de referencia, 390 y 1440, aterrizan justo en los topes limpios.
+ *
+ * 1123px es la frontera exacta del clamp anterior, asi que ni el movil ni el
+ * escritorio ancho cambian de tamano: lo unico que cambia es que la banda
+ * intermedia deja de inventarse tamanos y se queda en --t-6.
+ */
+:root[data-theme="vice"] [data-scene="obra"] h2.display-lg,
+:root[data-theme="vice"] [data-scene="contacto"] h2.display-xl {
+  font-size: var(--t-6);
 }
 
-:root[data-theme="vice"] [data-scene="contacto"] h2.display-xl {
-  font-size: clamp(var(--t-6), 6vw, var(--t-7));
+@media (min-width: 1123px) {
+  :root[data-theme="vice"] [data-scene="obra"] h2.display-lg,
+  :root[data-theme="vice"] [data-scene="contacto"] h2.display-xl {
+    font-size: var(--t-7);
+  }
 }
 
 /*
@@ -1968,7 +1985,7 @@
  * tres, es la propia GitHub la que mas ensancha el denominador del reparto y
  * empeora el peor caso para el correo (medido: con 1.8 parejo el peor caso es
  * "GitHub en hover", no "LinkedIn/Telefono en hover"). 0.9 sigue siendo un
- * gesto de foco visible, solo que menor — coherente con que su base (0.35)
+ * gesto de foco visible, solo que menor — coherente con que su base (0.55)
  * ya es la mas pequena de las cuatro.
  */
 :root[data-theme="vice"] .contacto-bar--github:hover,
@@ -1979,7 +1996,18 @@
 :root[data-theme="vice"] .contacto-bar--correo { background: rgb(255 46 136 / 0.3); }
 :root[data-theme="vice"] .contacto-bar--linkedin { background: rgb(255 209 102 / 0.26); }
 :root[data-theme="vice"] .contacto-bar--telefono { background: rgb(255 244 232 / 0.15); }
-:root[data-theme="vice"] .contacto-bar--github { background: rgb(11 5 19 / 0.55); }
+/*
+ * La cuarta via cierra la escala descendente de luminancia (magenta -> ambar
+ * -> crema -> el negro de una carta de ajuste), pero NO puede cerrarla con
+ * tinta: `rgb(11 5 19 / 0.55)` es `--color-ink` al 55% sobre un fondo que ya
+ * es ink, y medido daba 1.005:1 contra la franja vacia de al lado. Es decir,
+ * no habia cuarta gelatina — habia tres barras y un agujero, y el unico
+ * motivo de que a 1440 no cantara era que el hueco del nav lo tapaba.
+ * Se cierra con la misma crema del telefono a la mitad de alfa: sigue siendo
+ * el escalon mas oscuro de los cuatro y la progresion se mantiene, pero
+ * existe.
+ */
+:root[data-theme="vice"] .contacto-bar--github { background: rgb(255 244 232 / 0.075); }
 
 /*
  * La tinta bajo el valor NO es adorno: sobre un fondo generativo la luminancia
@@ -2051,18 +2079,42 @@
 }
 
 /*
- * Umbral 316px: el correo mide 256px de texto a `--t-3` y sus margenes
- * laterales suman 56, luego pide 312px de barra. Por debajo baja un escalon
- * entero a `--t-2`, donde pide 249. Cada barra es su propio contenedor, asi
- * que en un hover la que crece se queda arriba y las que se estrechan bajan:
- * dos tamanos en la fila, los dos de la escala.
+ * UN UMBRAL POR VIA, no uno solo para las cuatro. Cada valor baja de escalon
+ * cuando no cabe SU texto, no cuando no cabria el mas largo de los cuatro.
  *
- * El ajuste de movil del correo (`max-width: 900px`, mas abajo) lleva dos
- * clases en el selector y gana a este por especificidad, no por orden. No
- * depende de donde este escrito este bloque.
+ * El primer intento fue un unico `@container (max-width: 316px)`, calculado
+ * sobre el correo (256px de tinta + 56 de margenes = 312 de barra). Cabe en
+ * una linea y parece elegante, pero es un proxy: pregunta "cabria el correo
+ * aqui" a barras que no llevan el correo. GitHub lo disparaba teniendo 71px
+ * de sobra, y de ahi salian 8px exactos de desnivel entre su marca ambar y
+ * las otras tres — el friso de la carta de ajuste roto en reposo, sin que
+ * nadie tocase nada. Un fallo de composicion nacido de una simplificacion
+ * que ningun arnes de recorte podia ver: no se recortaba nada.
+ *
+ * Tinta medida a `--t-3` y umbral = tinta + 56 + 4 de holgura:
+ *   correo 256 -> 316   linkedin 184 -> 244
+ *   telefono 174 -> 234   github 95 -> 155
  */
 @container (max-width: 316px) {
-  :root[data-theme="vice"] .contacto-bar-value {
+  :root[data-theme="vice"] .contacto-bar--correo .contacto-bar-value {
+    font-size: var(--t-2);
+  }
+}
+
+@container (max-width: 244px) {
+  :root[data-theme="vice"] .contacto-bar--linkedin .contacto-bar-value {
+    font-size: var(--t-2);
+  }
+}
+
+@container (max-width: 234px) {
+  :root[data-theme="vice"] .contacto-bar--telefono .contacto-bar-value {
+    font-size: var(--t-2);
+  }
+}
+
+@container (max-width: 155px) {
+  :root[data-theme="vice"] .contacto-bar--github .contacto-bar-value {
     font-size: var(--t-2);
   }
 }
@@ -2111,6 +2163,34 @@
 }
 
 /*
+ * Suelo de ancho por via, y con el mismo numero que su umbral de `@container`.
+ * Sin esto el reparto de flex se come el ancho de las barras en reposo cuando
+ * una vecina crece, y el valor cruza su umbral y baja de escalon: senalar
+ * Telefono encogia la direccion de correo un 25%, que es el dato central de la
+ * escena cambiando de tamano porque el raton esta en otro sitio. Con el suelo,
+ * el hover crece contra el SOBRANTE y no contra el texto de los hermanos.
+ *
+ * Solo en fila (>=1310). Apilado cada barra ocupa el ancho entero y esto no
+ * pinta nada; y en un movil estrecho un minimo de 316px provocaria scroll
+ * horizontal.
+ *
+ * Cabe: 318 + 246 + 236 + 157 = 957 sobre 1160 utiles a 1310px, el ancho mas
+ * estrecho del tramo. Quedan 203 para repartir en el gesto.
+ *
+ * Dos pixeles POR ENCIMA del umbral, no el umbral clavado: `@container
+ * (max-width: 316px)` es inclusivo, asi que un suelo de exactamente 316
+ * aterriza dentro de su propia consulta y dispara la bajada que venia a
+ * evitar. Se midio asi la primera vez — 24 combinaciones seguian cambiando de
+ * tamano con el suelo ya puesto.
+ */
+@media (min-width: 1310px) {
+  :root[data-theme="vice"] .contacto-bar--correo { min-width: 318px; }
+  :root[data-theme="vice"] .contacto-bar--linkedin { min-width: 246px; }
+  :root[data-theme="vice"] .contacto-bar--telefono { min-width: 236px; }
+  :root[data-theme="vice"] .contacto-bar--github { min-width: 157px; }
+}
+
+/*
  * Entre 901 y 1309px cuatro columnas no caben: incluso repartiendo el hueco
  * de la navegacion sobre todo hacia GitHub (ver `.contacto-bar--github` mas
  * arriba), el peor caso — una barra vecina en hover Y GitHub necesitando su
@@ -2132,10 +2212,17 @@
     padding: 1rem 3rem;
   }
 
+  /*
+   * `--t-2` y no `--t-1`: este tramo empezo copiando el bloque de movil
+   * palabra por palabra, y por eso se leia como movil en vez de como la carta
+   * de ajuste tumbada. `--t-1` es el tamano que cabe en 390px de ancho; aqui
+   * hay 847 utiles y no hay razon para pagar ese precio. Sigue por debajo del
+   * valor, que es lo que se viene a leer.
+   */
   :root[data-theme="vice"] .contacto-bar-label {
     position: static;
     writing-mode: horizontal-tb;
-    font-size: var(--t-1);
+    font-size: var(--t-2);
     letter-spacing: 0.2em;
   }
 
@@ -2144,8 +2231,14 @@
     font-size: var(--t-3);
   }
 
+  /*
+   * La raya ambar SE QUEDA. Estaba en `display: none` por herencia del bloque
+   * de movil, donde el sitio es escaso; con 847px de ancho util no hay nada
+   * que ahorrar, y las cuatro rayas son la sena de identidad del motivo. Sin
+   * ellas un portatil de 13" no ve la carta de ajuste, ve una lista.
+   */
   :root[data-theme="vice"] .contacto-bar-mark {
-    display: none;
+    margin: 0.6rem 0 0;
   }
 }
 
@@ -2176,16 +2269,15 @@
   }
 
   /*
-   * El correo baja un paso mas, y SOLO el correo. A 390px la navegacion es
-   * `fixed` sobre el borde derecho y su caja empieza en x=260; el correo es el
-   * unico de los cuatro valores que llega hasta ahi (256px de texto desde
-   * x=24, o sea hasta 280 — 20px por dentro del nav). Los otros tres miden
-   * 184, 174 y 95, asi que encogerlos seria pagar por un problema que no
-   * tienen. A `--t-2` el correo mide ~192px y acaba en 216, con 44px de aire.
+   * Aqui vivia un paso extra del correo a `--t-2`, y se ha retirado: su motivo
+   * era que la navegacion iba `fixed` contra el borde derecho con la caja
+   * empezando en x=260, y el correo era el unico valor que llegaba hasta ahi.
+   * En movil la navegacion ya no esta ahi — es el rail numerado del pie, abajo
+   * a la izquierda. Desaparecida la causa, el paso sobraba y ademas invertia la
+   * jerarquia: dejaba el dato que se viene a copiar (el correo, 16px) por
+   * debajo del handle de GitHub (21.33px), que es el terciario. A `--t-3` el
+   * correo mide 256px de texto contra 334 de hueco util en 390px de ancho.
    */
-  :root[data-theme="vice"] .contacto-bar--correo .contacto-bar-value {
-    font-size: var(--t-2);
-  }
 
   /*
    * Hueco al pie para el rail numerado, que en movil va fijo abajo a la
@@ -2564,11 +2656,30 @@
     transform: none;
   }
 
+  /*
+   * Superficie propia bajo el rail. No es adorno: el rail va `fixed` sobre un
+   * contenido que se mueve, asi que en algun momento del scroll SIEMPRE queda
+   * sobre algo pulsable, y en la escena de contacto ese algo son franjas que
+   * ocupan el ancho entero. Medido barriendo el scroll en 390x844: en todos
+   * los offsets de la escena hay puntos dentro de una franja donde el toque se
+   * lo lleva un enlace del rail (`elementFromPoint` devuelve el `a` del nav).
+   *
+   * Interceptar es inherente a cualquier capa fija y no se puede quitar sin
+   * dejar el rail inservible. Lo que si se puede quitar es la SORPRESA: con
+   * fondo propio el rail se lee como una capa aparte y deja de parecer que el
+   * dedo cae sobre la franja. Mismo remedio, y por el mismo motivo, que `.rail`
+   * y `.theme-signature` en `src/style.css`.
+   */
   .scene-nav ul {
     flex-direction: row;
     align-items: center;
     gap: 0;
     counter-reset: escena;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: rgb(11 5 19 / 0.72);
+    box-shadow: inset 0 0 0 1px rgb(255 244 232 / 0.14);
+    backdrop-filter: blur(7px);
   }
 
   .scene-nav li {

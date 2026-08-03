@@ -421,7 +421,13 @@ body {
   justify-content: space-between;
   padding: 0.75rem 1.5rem;
   font-weight: 700;
-  font-size: 0.58rem;
+  /* `--t-1` solo en Vice; respaldo = 0.58rem medido en Hyprland/Caelestia
+     antes de la escala, mismo patron que `.gallery-caption`. Paso mas cercano
+     en Vice: 9.28px -> 12px, el suelo duro de la escala.
+     Esta linea se quedo fuera del barrido que migro a sus siete hermanas, y
+     era la unica del grupo visible en las cinco escenas y a todo ancho: el
+     unico tamano fuera de escala que un visitante tiene delante siempre. */
+  font-size: var(--t-1, 0.58rem);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-paper) 70%, transparent);
