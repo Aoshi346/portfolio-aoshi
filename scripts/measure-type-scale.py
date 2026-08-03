@@ -11,6 +11,14 @@ from playwright.sync_api import sync_playwright
 
 BASE = pathlib.Path(__file__).resolve().parent / "type-scale-baseline.json"
 
+# Se importa de verify.py en vez de reescribirla: es exactamente la misma
+# normalizacion y dos copias derivarian, que es la clase de fallo que este
+# proyecto ya ha pagado tres veces.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from importlib import import_module  # noqa: E402
+
+_clave_fallo = import_module("verify")._clave_fallo
+
 
 def cargar_base() -> list[str]:
     """Fallos ya conocidos, para que el arnes pueda salir en verde.
@@ -119,9 +127,16 @@ def main() -> int:
         print(f"\nlinea base actualizada con {len(vistos)} fallos -> {BASE.name}")
         return 0
 
-    base = cargar_base()
-    nuevos = [f for f in vistos if f not in base]
-    resueltos = [f for f in base if f not in vistos]
+    # La comparacion va por la etiqueta SIN sus numeros. Las 29 entradas de la
+    # base guardan medidas que salen de terminos continuos en `vw` (30.72,
+    # 65.536, 122.88, 157.2...): comparando la cadena cruda, un cambio de
+    # redondeo daria 29 NUEVOS y 29 RESUELTOS a la vez y la base dejaria de
+    # decir nada. Es la salvaguarda que hace util a `verify-baseline.json`, y
+    # copiar el patron sin ella era copiar el argumento y no el mecanismo.
+    base = {_clave_fallo(f) for f in cargar_base()}
+    nuevos = [f for f in vistos if _clave_fallo(f) not in base]
+    claves_vistas = {_clave_fallo(f) for f in vistos}
+    resueltos = [f for f in cargar_base() if _clave_fallo(f) not in claves_vistas]
 
     # "Maximo cuatro tamanos por encuadre" es parte de la escala tanto como
     # los numeros (ver el comentario de la escala en themes.css), pero hasta

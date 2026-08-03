@@ -1963,8 +1963,22 @@
  * propia caja) justo en el tramo donde una barra vecina esta en hover —
  * medido con el arnes de esta tarea.
  */
+/*
+ * El reposo de cada via se escribe UNA vez, en `--bar-grow`, y de ahi lo leen
+ * todos los que lo necesitan. No es cosmetica: estaba escrito dos veces, y la
+ * segunda copia se quedo atras. El bloque de `prefers-reduced-motion` devolvia
+ * las barras a `flex-grow: 1` —correcto cuando las cuatro valian 1— y desde
+ * que GitHub vale 0.55, "volver al reposo" le hacia CRECER un 33% de golpe y
+ * encoger 30px a cada una de las otras tres, sin transicion y en el modo que
+ * promete no moverse. Misma familia que la trampa de OBRA_TRANSIT/OBRA_REST
+ * que avisa CLAUDE.md: dos sitios con el mismo numero y solo uno actualizado.
+ */
+:root[data-theme="vice"] .contacto-bar {
+  flex-grow: var(--bar-grow, 1);
+}
+
 :root[data-theme="vice"] .contacto-bar--github {
-  flex-grow: 0.55;
+  --bar-grow: 0.55;
 }
 
 :root[data-theme="vice"] .contacto-bar:hover,
@@ -2145,18 +2159,6 @@
 }
 
 /*
- * A partir de 901px `.scene-nav` deja el rail de moviles (su propio
- * breakpoint, mas abajo, en `max-width: 900px` — es una decision distinta y
- * NO se toca junto con esta) y vuelve a la lista vertical fija del borde
- * derecho (`right: 1.5rem`, ~106px de caja). Este hueco es SIEMPRE el mismo
- * en cualquier ancho >=901: el rail escala con el viewport igual que las
- * barras, asi que la franja de solape es constante. 150px = 106 de caja +
- * 24 del offset + 20 de aire, medido contra `.scene-nav` en 901..1440.
- * Va en el contenedor (no en la ultima barra) porque en este rango tanto la
- * fila de escritorio como la pila heredada de movil comparten el mismo
- * problema geometrico.
- */
-/*
  * La navegacion NO tiene carril reservado. Antes se le apartaban 150px de
  * `padding-right` en el contenedor, y el precio era un corte vertical de color
  * a 150px del borde — justo lo que la regla del sangrado prohibe mas abajo
@@ -2190,10 +2192,18 @@
  * tamano con el suelo ya puesto.
  *
  * GitHub es la excepcion: su suelo no sale de su texto (95 + 56 = 151) sino de
- * la navegacion que ahora flota sobre ella. `.scene-nav` ocupa ~130px contando
- * su offset, y el contenido de la via termina a 123px de su borde izquierdo,
- * asi que por debajo de ~253px de barra el texto quedaria debajo del menu. 270
- * deja 17px de aire.
+ * la navegacion, que en fila flota sobre esta via. Y lo que lo ata NO es el
+ * valor: el valor vive abajo del todo, el menu esta centrado en vertical, y no
+ * llegan a compartir franja — se cruzarian por 11,8px si la compartieran, pero
+ * no la comparten. Quien manda es el ROTULO vertical, que si recorre el alto
+ * de la banda: de su borde derecho al de la pildora quedan 28,3px. El minimo
+ * que sale de esa restriccion es ~242; 270 lo redondea con margen.
+ *
+ * La version anterior de este comentario justificaba el 270 con el valor y con
+ * "17px de aire", y las dos cosas eran falsas — el numero era bueno por
+ * casualidad. Queda escrito porque un comentario que miente sobre la causa
+ * sobrevive al refactor que lo invalida: el siguiente que toque esto creeria
+ * poder bajar el suelo mirando el texto del valor.
  *
  * Suma: 318 + 246 + 236 + 270 = 1070. Ese numero ES el breakpoint de la fila
  * (1080, con 10px de margen): por debajo no caben cuatro columnas y se apila.
@@ -2297,19 +2307,26 @@
    * correo mide 256px de texto contra 334 de hueco util en 390px de ancho.
    */
 
-  /*
-   * Hueco al pie para el rail numerado, que en movil va fijo abajo a la
-   * izquierda (ver `.scene-nav` mas abajo). Sin esto se pinta sobre el valor
-   * de la ultima via — medido: el rail ocupa y 788-832 y el valor de GitHub
-   * caia justo ahi. Va en la ultima barra y no en el contenedor porque las
-   * barras son a sangre y un margen se veria como un corte en el color.
-   */
-  :root[data-theme="vice"] .contacto-bar:last-child {
-    padding-bottom: 4.25rem;
-  }
-
   :root[data-theme="vice"] .contacto-bar-mark {
     display: none;
+  }
+}
+
+/*
+ * Hueco al pie para el rail numerado, en TODO el rango en que el rail vive
+ * abajo — o sea el mismo `max-width: 1079px` del rail y del apilado, no el 900
+ * en el que estaba metido. Sin esto el rail se pinta sobre el valor de la
+ * ultima via: medido tras bajar el rail al pie, tapaba "Aoshi346" en 901, 965,
+ * 1029 y 1075. El hueco se quedo atras cuando el rail bajo, que es exactamente
+ * la deriva de la que va este ciclo — el numero estaba escrito en tres sitios
+ * y solo se movio en dos.
+ *
+ * Va en la ultima barra y no en el contenedor porque las barras son a sangre y
+ * un margen se veria como un corte en el color.
+ */
+@media (max-width: 1079px) {
+  :root[data-theme="vice"] .contacto-bar:last-child {
+    padding-bottom: 4.25rem;
   }
 }
 
@@ -2322,9 +2339,10 @@
     transition: none;
   }
 
+  /* Cada via vuelve a SU reposo, no al 1 de nadie. Ver `--bar-grow`. */
   :root[data-theme="vice"] .contacto-bar:hover,
   :root[data-theme="vice"] .contacto-bar:focus-visible {
-    flex-grow: 1;
+    flex-grow: var(--bar-grow, 1);
   }
 
   :root[data-theme="vice"] .contacto-bar:hover .contacto-bar-value {
@@ -2656,6 +2674,15 @@
   .scene-nav a {
     transition: none;
   }
+
+  /* Solo la vuelta deja de animarse. El rail SIGUE apartandose y siguiendo
+     devolviendo el toque con movimiento reducido: eso no es decoracion, es lo
+     que arregla el robo, y quitarlo aqui lo dejaria roto justo para quien mas
+     lo necesita. Va aqui, al final, para ganar por orden a la transicion que
+     el bloque de movil declara mas abajo. */
+  .scene-nav ul {
+    transition: none;
+  }
 }
 
 /*
@@ -2675,8 +2702,20 @@
  * El rotulo NO se borra, se oculta con `font-size: 0` y se repone en el
  * `::before`: asi el enlace conserva su nombre accesible ("Obra", no "03")
  * para quien navegue con lector de pantalla.
+ *
+ * 1079 y no 900, que es el mismo numero que el apilado de las barras: van
+ * juntos porque SON la misma decision, aunque este comentario dijera durante
+ * un tiempo justo lo contrario. Mientras las vias son columnas, el menu cabe a
+ * su derecha; en cuanto se apilan, van a sangre de borde a borde y no queda
+ * lateral donde ponerse — el menu cae ENCIMA, y encima de la primera banda,
+ * que es la del correo. Medido a 1029 y 1075: la pildora tapaba el alto
+ * completo de esa banda a lo largo de 135px, y se quedaba la pulsacion en 25
+ * de 25 puntos muestreados. Con el carril de 150px que habia antes no pasaba,
+ * porque entonces las barras acababan antes; se destapo al quitarlo.
+ * Lo que va al pie es la CTA primaria del sitio: no hay ancho al que valga la
+ * pena taparla.
  */
-@media (max-width: 900px) {
+@media (max-width: 1079px) {
   .scene-nav {
     top: auto;
     bottom: 0.75rem;
@@ -2699,7 +2738,29 @@
    * dedo cae sobre la franja. Mismo remedio, y por el mismo motivo, que `.rail`
    * y `.theme-signature` en `src/style.css`.
    */
+  /*
+   * El rail cede el paso mientras la pagina se mueve (ver `sceneNav.ts`).
+   *
+   * `pointer-events` va en el ELEMENTO `.scene-nav`, no en su `ul`. Puesto en
+   * el `ul` no sirve de nada: el `nav` es el que esta `fixed`, tiene su propia
+   * caja de 231x44 y es el que `elementFromPoint` devuelve — el toque se lo
+   * seguia llevando el rail con el `ul` ya desactivado. Se vio midiendo quien
+   * hay bajo el punto, no leyendo el CSS.
+   *
+   * Y la transicion vive en la regla BASE, no en esta: aqui gobernaria la IDA,
+   * que es justo lo que tiene que ser inmediato. Llegar tarde a apartarse es
+   * el fallo entero.
+   */
+  .scene-nav--transito {
+    pointer-events: none;
+  }
+
+  .scene-nav--transito ul {
+    opacity: 0;
+  }
+
   .scene-nav ul {
+    transition: opacity 260ms ease-out;
     flex-direction: row;
     align-items: center;
     gap: 0;
