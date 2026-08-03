@@ -1819,8 +1819,17 @@
   cursor: default;
 }
 
+/*
+ * `--t-2` y no `--t-1`: el rotulo y su valor son una sola linea de lectura
+ * ("Estado · Disponible para proyectos") y partirla en dos escalones la hacia
+ * sonar a dos cosas. Sube el rotulo en vez de bajar el valor porque el valor
+ * es el dato que se viene a leer. Pedido por la revision visual para quitar un
+ * tamano del encuadre; ojo, no lo consigue por si solo — el escalon `--t-1`
+ * sigue en pantalla por `.hero-kick`, que es el patron comun de las cinco
+ * escenas y no se toca desde aqui.
+ */
 :root[data-theme="vice"] .contacto-estado-label {
-  font-size: var(--t-1);
+  font-size: var(--t-2);
   font-weight: 700;
   color: rgb(255 244 232 / 0.5);
   transition: color 340ms ease-out;
@@ -1917,12 +1926,54 @@
   padding: 0 0 1.9rem;
   box-shadow: inset 1px 0 0 rgb(255 244 232 / 0.16);
   backdrop-filter: saturate(1.25);
+  /* Consulta de contenedor: el valor de la barra escala con el hueco real de
+     CADA barra (no del viewport), asi que reacciona igual a un viewport
+     estrecho que a un vecino que crece por hover. Ver `.contacto-bar-value`. */
+  container-type: inline-size;
   transition: flex-grow 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * La via de GitHub es la que menos texto lleva (95px de los cuatro valores) y
+ * es la que vive pegada al borde donde flota `.scene-nav` (ver el hueco de
+ * `.contacto-bars` mas abajo). Le baja el reparto base de espacio para que el
+ * hueco de la navegacion salga de su propio sobrante en vez de repartirse
+ * entre las cuatro — asi correo/linkedin/telefono no pierden aire por un
+ * problema que no es suyo. Medido: a 901px sin este ajuste el hueco de la
+ * navegacion (150px) restaba lo mismo a las cuatro vias y correo quedaba por
+ * debajo del ancho minimo legible. 0.55 y no mas abajo: a 0.35 GitHub se
+ * recorta a si mismo (su propio texto, aunque corto, deja de caber en su
+ * propia caja) justo en el tramo donde una barra vecina esta en hover —
+ * medido con el arnes de esta tarea.
+ */
+:root[data-theme="vice"] .contacto-bar--github {
+  flex-grow: 0.55;
 }
 
 :root[data-theme="vice"] .contacto-bar:hover,
 :root[data-theme="vice"] .contacto-bar:focus-visible {
-  flex-grow: 2.6;
+  /*
+   * 1.8, no 2.6: a 2.6 la barra vecina del correo baja de 304px de caja a
+   * 201 en 1440x900 (medido), por debajo de los 256px que pide el texto
+   * intrinseco de "a.blanco1501@gmail.com" a --t-3. El valor ahora tambien
+   * respira con `clamp()` + `cqi` (ver `.contacto-bar-value`), pero el gesto
+   * de hover se baja igualmente: es la mitad de la causa, no solo un parche
+   * en el sintoma.
+   */
+  flex-grow: 1.8;
+}
+
+/*
+ * GitHub tambien se baja del 1.8 compartido: si crece igual que las otras
+ * tres, es la propia GitHub la que mas ensancha el denominador del reparto y
+ * empeora el peor caso para el correo (medido: con 1.8 parejo el peor caso es
+ * "GitHub en hover", no "LinkedIn/Telefono en hover"). 0.9 sigue siendo un
+ * gesto de foco visible, solo que menor — coherente con que su base (0.35)
+ * ya es la mas pequena de las cuatro.
+ */
+:root[data-theme="vice"] .contacto-bar--github:hover,
+:root[data-theme="vice"] .contacto-bar--github:focus-visible {
+  flex-grow: 0.9;
 }
 
 :root[data-theme="vice"] .contacto-bar--correo { background: rgb(255 46 136 / 0.3); }
@@ -1974,12 +2025,46 @@
 
 :root[data-theme="vice"] .contacto-bar-value {
   margin: 0 1.75rem;
+  /*
+   * DOS escalones, no una interpolacion. El correo se corta por dos causas
+   * independientes (viewport estrecho en reposo, barra vecina creciendo por
+   * hover) y las dos mueven el ancho de ESTA barra, no el del viewport: de ahi
+   * la consulta de contenedor sobre `.contacto-bar` (ver `container-type` mas
+   * arriba) en vez de una media query.
+   *
+   * Lo que NO sirve aqui es `clamp(var(--t-2), 6.2cqi, var(--t-3))`, que fue
+   * el primer intento y parecia razonable: un `clamp` es CONTINUO, asi que
+   * entre sus dos topes devuelve cualquier numero real. Medido con
+   * `scripts/measure-contacto-matriz.py`: 46 de 65 combinaciones caian en
+   * 17.09, 18.39 o 20.51 px, que no son escalones de nada. Y no se veia
+   * mirando 390 y 1440 en reposo — justo ahi da los topes limpios. Los
+   * tamanos rotos vivian en el hover de escritorio.
+   *
+   * El salto va abajo, en `@container`.
+   */
   font-size: var(--t-3);
   font-weight: 600;
   white-space: nowrap;
   color: rgb(255 244 232 / 1);
   transform-origin: left bottom;
   transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * Umbral 316px: el correo mide 256px de texto a `--t-3` y sus margenes
+ * laterales suman 56, luego pide 312px de barra. Por debajo baja un escalon
+ * entero a `--t-2`, donde pide 249. Cada barra es su propio contenedor, asi
+ * que en un hover la que crece se queda arriba y las que se estrechan bajan:
+ * dos tamanos en la fila, los dos de la escala.
+ *
+ * El ajuste de movil del correo (`max-width: 900px`, mas abajo) lleva dos
+ * clases en el selector y gana a este por especificidad, no por orden. No
+ * depende de donde este escrito este bloque.
+ */
+@container (max-width: 316px) {
+  :root[data-theme="vice"] .contacto-bar-value {
+    font-size: var(--t-2);
+  }
 }
 
 :root[data-theme="vice"] .contacto-bar:hover .contacto-bar-value {
@@ -2005,6 +2090,63 @@
 :root[data-theme="vice"] .contacto-bar:focus-visible {
   outline: 3px solid var(--accent-amber, #ffd166);
   outline-offset: -6px;
+}
+
+/*
+ * A partir de 901px `.scene-nav` deja el rail de moviles (su propio
+ * breakpoint, mas abajo, en `max-width: 900px` — es una decision distinta y
+ * NO se toca junto con esta) y vuelve a la lista vertical fija del borde
+ * derecho (`right: 1.5rem`, ~106px de caja). Este hueco es SIEMPRE el mismo
+ * en cualquier ancho >=901: el rail escala con el viewport igual que las
+ * barras, asi que la franja de solape es constante. 150px = 106 de caja +
+ * 24 del offset + 20 de aire, medido contra `.scene-nav` en 901..1440.
+ * Va en el contenedor (no en la ultima barra) porque en este rango tanto la
+ * fila de escritorio como la pila heredada de movil comparten el mismo
+ * problema geometrico.
+ */
+@media (min-width: 901px) {
+  :root[data-theme="vice"] .contacto-bars {
+    padding-right: 150px;
+  }
+}
+
+/*
+ * Entre 901 y 1309px cuatro columnas no caben: incluso repartiendo el hueco
+ * de la navegacion sobre todo hacia GitHub (ver `.contacto-bar--github` mas
+ * arriba), el peor caso — una barra vecina en hover Y GitHub necesitando su
+ * propio suelo a la vez — deja a alguno de los dos por debajo del suelo
+ * legible (--t-2, 16px) antes de este ancho. Se apila igual que en movil real
+ * (<=900px) pero SIN el paso extra del correo a --t-2: aqui la barra ya tiene
+ * sitio de sobra (incluso a 901px, con el hueco de 150px de arriba restado,
+ * quedan ~700px utiles) porque `.scene-nav` esta al lado, no encima.
+ */
+@media (min-width: 901px) and (max-width: 1309px) {
+  :root[data-theme="vice"] .contacto-bars {
+    flex-direction: column;
+  }
+
+  :root[data-theme="vice"] .contacto-bar {
+    flex: 1 1 auto;
+    min-height: 5.5rem;
+    justify-content: center;
+    padding: 1rem 3rem;
+  }
+
+  :root[data-theme="vice"] .contacto-bar-label {
+    position: static;
+    writing-mode: horizontal-tb;
+    font-size: var(--t-1);
+    letter-spacing: 0.2em;
+  }
+
+  :root[data-theme="vice"] .contacto-bar-value {
+    margin: 0.4rem 0 0;
+    font-size: var(--t-3);
+  }
+
+  :root[data-theme="vice"] .contacto-bar-mark {
+    display: none;
+  }
 }
 
 /* En vertical las barras no caben en fila: se apilan y el rotulo vuelve a
