@@ -1,6 +1,7 @@
 # La cortinilla — la navegación deja de ocupar sitio y pasa a llamarse
 
 Estado: pendiente de plan
+Plan: `docs/superpowers/plans/2026-08-03-nav-cortinilla.md`
 Fecha: 2026-08-03
 Alcance: la navegación de escenas en los tres temas. La escena de contacto se toca solo para
 retirar lo que sostenía al rail. Hyprland y Caelestia no se rediseñan: se comprueba que no se
@@ -45,12 +46,18 @@ Cada escena se compone en un renglón con cuatro piezas sobre un mismo eje:
 05   FUNDIDO     ···························   Contacto            <- escena en curso
 ```
 
-El **descriptor de la derecha no es copy nuevo**: es el rótulo que cada escena ya lleva en su
-`hero-kick` ("Quién es", "Con qué construyo", "Contacto") o, en el hero, `identity.role`. El menú
-solo los reúne. Esto cierra un hallazgo abierto en tres revisiones consecutivas de usuario: los
-nombres de cine ("Fundido", "Créditos") no comunican su contenido a quien llega de fuera, y hasta
-ahora la única salida planteada era renunciar a ellos. Con el índice, la personalidad se queda
-entera y deja de costar comprensión.
+El **descriptor de la derecha** dice en llano lo que la escena contiene. Esto cierra un hallazgo
+abierto en tres revisiones consecutivas de usuario: los nombres de cine ("Fundido", "Créditos") no
+comunican su contenido a quien llega de fuera, y hasta ahora la única salida planteada era
+renunciar a ellos. Con el índice, la personalidad se queda entera y deja de costar comprensión.
+
+Los descriptores se declaran en `src/data/content.ts`, junto a los destinos, y **no se leen del
+DOM**. La primera versión de este spec decía lo contrario —tomarlos del `hero-kick` de cada
+escena, que ya existe— y se cayó al comprobarlo: `#obra .hero-kick` devuelve **"Gestión de
+campañas"**, que es el rótulo del primer proyecto, no de la escena. El índice habría mostrado
+"OBRA ···· Gestión de campañas", falso y además cambiante al reordenar los proyectos. Tres de los
+cinco coinciden con su `hero-kick` ("Quién es", "Con qué construyo", "Contacto") y eso es
+deliberado, pero la coincidencia no puede ser el mecanismo.
 
 La escena en curso va en ámbar, nombre y número. El resto en crema al 55%.
 
@@ -148,9 +155,12 @@ línea que hoy lo actualiza en `vice.choreography.ts` desaparece con él.
 
 ## Riesgos
 
-**El descriptor duplica un texto que vive en cada sección.** Si mañana cambia un `hero-kick` y el
-menú no, el índice miente. Debe leerse del DOM en el momento de montar, no copiarse a mano — misma
-familia que la trampa de `OBRA_TRANSIT`/`OBRA_REST` que ya documenta CLAUDE.md.
+**Los descriptores pueden envejecer.** Al declararse en `content.ts` y no leerse del DOM, si una
+escena cambia de contenido y el índice no, el menú miente en silencio. Es el mismo trato que ya
+tienen `OBRA_TRANSIT`/`OBRA_REST`: se acepta la copia y se vigila con un arnés. El de navegación
+debe comprobar que hay exactamente cinco descriptores y que ninguno está vacío; que digan la
+verdad es responsabilidad de quien cambie la escena, y por eso viven en `content.ts`, que es donde
+se mira al cambiarla.
 
 **Es una capa a pantalla completa sobre una página con pines de ScrollTrigger.** Hay que
 comprobar que abrirla y cerrarla no dispara un `refresh` que descoloque el carril de obra.
