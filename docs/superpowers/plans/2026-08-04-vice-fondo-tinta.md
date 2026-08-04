@@ -90,13 +90,19 @@ El instrumento va primero: sin él, "se ve oscuro" es una opinión.
 
 ### Tarea 3: El techo, verificado en el sitio real
 
-- [ ] Correr `scripts/measure-bg-luma.py` contra el fondo nuevo, a 1440x900 y 390x844.
-- [ ] Si se pasa: **bajar el brillo en la fuente**, no subir el techo. La palanca correcta por
+- [x] Correr `scripts/measure-bg-luma.py` contra el fondo nuevo, a 1440x900 y 390x844.
+- [x] Si se pasa: **bajar el brillo en la fuente**, no subir el techo. La palanca correcta por
       orden es (a) los factores de mezcla de las tintas, (b) `LUMA_MAX`, (c) mover el foco ámbar
       —la tinta más luminosa— fuera de la franja del texto. En el prototipo esa tercera fue la que
       cerró el último punto.
-- [ ] Anotar los números finales en el registro de implementación del spec.
-- [ ] Commit.
+      No hizo falta: el fondo ya pasaba con margen (~8 puntos sobre el techo de banda) sin tocar
+      ninguna palanca. Lo que sí tuvo un bug real fue el propio arnés de la Tarea 1 (`#app {
+      visibility: hidden }` ocultaba también el canvas, hijo de `#app`): la primera corrida daba
+      falso verde midiendo `--color-ink` (12.21 constante), no el shader. Corregido a `#app > *:not(.bg-theme):not(.bg-noise)`, techos sin tocar.
+- [x] Anotar los números finales en el registro de implementación del spec.
+      1440x900: banda 53.75/62, fotograma 53.54/82, pixel 55.75/150.
+      390x844: banda 54.01/62, fotograma 53.82/82, pixel 55.25/150.
+- [x] Commit. (`096838a`)
 
 ### Tarea 4: Contraste y capas de CSS
 
