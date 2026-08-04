@@ -18,6 +18,16 @@
   --color-accent-2: #ff2e88;
   --color-line: rgb(255 209 102 / 0.32);
 
+  /*
+   * Atenuacion del indice de escenas. NO es un numero global: es una constante
+   * calibrada contra el telon, y el telon cambia de piel con el tema. Sobre el
+   * oscuro de Vice, 55% da 5,74:1 en los numeros y 50% da 4,92:1 en los
+   * descriptores. Sobre el telon CLARO de Caelestia esos mismos porcentajes
+   * caen a 3,72 y 3,20 — por debajo del 4,5:1 de AA. Medido en el build.
+   */
+  --nav-dim: 55%;
+  --nav-dim-soft: 50%;
+
   --font-display: "Passion One", system-ui, sans-serif;
   --font-body: "Manrope", system-ui, sans-serif;
   --font-lead: "Manrope", system-ui, sans-serif;
@@ -1080,6 +1090,10 @@
   --color-accent-2: #00ff99;
   --color-line: #13303a;
 
+  /* Telon oscuro, como Vice: mismos porcentajes. Medido: 5,27 y 4,79:1. */
+  --nav-dim: 55%;
+  --nav-dim-soft: 50%;
+
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Space Grotesk", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -1100,6 +1114,16 @@
   --color-accent: #6c4fd8;
   --color-accent-2: #2f9e79;
   --color-line: #d9d0e4;
+
+  /*
+   * Tema CLARO: el telon es `--color-ink` (#f4f0f9) y el texto `--color-paper`
+   * (#1c1b1f), al reves que en Vice. Tinta oscura atenuada sobre fondo claro
+   * pierde mucho mas contraste que crema atenuada sobre fondo oscuro, asi que
+   * los porcentajes de Vice no valen aqui: con 55% los numeros median 3,72:1.
+   * El umbral aritmetico esta en 61,7%; 70% deja margen y mide 5,97:1.
+   */
+  --nav-dim: 70%;
+  --nav-dim-soft: 66%;
 
   --font-display: "Outfit", system-ui, sans-serif;
   --font-body: "Outfit", system-ui, sans-serif;
@@ -1848,7 +1872,7 @@
 :root[data-theme="vice"] .contacto-estado-label {
   font-size: var(--t-2);
   font-weight: 700;
-  color: color-mix(in srgb, var(--color-paper) 50%, transparent);
+  color: color-mix(in srgb, var(--color-paper) var(--nav-dim-soft, 50%), transparent);
   transition: color 340ms ease-out;
 }
 
@@ -2703,7 +2727,7 @@
   /* Mismo caso que `.scene-index-num`: 0.42 medía 3,80:1 y AA pide 4,5:1 a
      12px. Los elementos tenues del panel necesitan 0.55 para cumplir; por
      debajo de eso, sobre este telon, ninguno llega. */
-  color: color-mix(in srgb, var(--color-paper) 55%, transparent);
+  color: color-mix(in srgb, var(--color-paper) var(--nav-dim, 55%), transparent);
 }
 
 .scene-index-row {
@@ -2752,7 +2776,7 @@
      pide 4,5:1 para 12px. Lo cazo `verify.py`, que muestrea el pixel
      RENDERIZADO y no el color declarado — por eso ve lo que el ojo perdona y
      la norma no. Sigue siendo el elemento mas tenue de la fila. */
-  color: color-mix(in srgb, var(--color-paper) 55%, transparent);
+  color: color-mix(in srgb, var(--color-paper) var(--nav-dim, 55%), transparent);
 }
 
 .scene-index-name {
@@ -2796,7 +2820,7 @@
   font-size: var(--t-2, 1rem);
   font-weight: 600;
   line-height: 1;
-  color: color-mix(in srgb, var(--color-paper) 50%, transparent);
+  color: color-mix(in srgb, var(--color-paper) var(--nav-dim-soft, 50%), transparent);
   transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
