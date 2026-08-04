@@ -1872,7 +1872,15 @@
 :root[data-theme="vice"] .contacto-estado-label {
   font-size: var(--t-2);
   font-weight: 700;
-  color: color-mix(in srgb, var(--color-paper) var(--nav-dim-soft, 50%), transparent);
+  /*
+   * 50% escrito aqui, NO `var(--nav-dim-soft)`. Da el mismo pixel, pero ese
+   * token se calibra contra el telon de la cortinilla y este rotulo vive sobre
+   * el fondo generativo de la escena: compartirlo significaria que mover el
+   * indice mueve el estado de contacto, sin que nada en el nombre lo avise.
+   * Es la trampa de constante acoplada que este repo ya documenta, y aqui se
+   * colo sola al migrar los literales.
+   */
+  color: color-mix(in srgb, var(--color-paper) 50%, transparent);
   transition: color 340ms ease-out;
 }
 
