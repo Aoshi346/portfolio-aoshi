@@ -122,6 +122,15 @@ export function mountShaderBackground(
 
   const timeLocation = gl.getUniformLocation(program, "uTime");
   const resolutionLocation = gl.getUniformLocation(program, "uResolution");
+  /*
+   * Opcional: solo lo consume Vice (viceInk.ts), para escalar su paso de
+   * trama con el ratio REAL buffer/CSS en vez de fijarlo en pixeles de
+   * buffer. Los otros dos fondos (hyprGradient, caelestiaBlobs) no declaran
+   * `uPixelRatio` en su fragment shader, asi que aqui vuelve null y
+   * `gl.uniform1f(null, ...)` es un no-op silencioso: cero cambio de
+   * comportamiento para ellos.
+   */
+  const pixelRatioLocation = gl.getUniformLocation(program, "uPixelRatio");
 
   /*
    * Las localizaciones se resuelven UNA vez, no por fotograma:
@@ -169,6 +178,7 @@ export function mountShaderBackground(
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+    if (pixelRatioLocation) gl.uniform1f(pixelRatioLocation, ratio);
     if (prefersReducedMotion) draw(STATIC_FRAME_TIME);
   }
   const resizeObserver = new ResizeObserver(resize);

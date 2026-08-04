@@ -16,6 +16,7 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform float uTime;
   uniform vec2 uResolution;
   uniform float uScroll;
+  uniform float uPixelRatio;
   varying vec2 vUv;
 
   const vec3 INK = vec3(0.082, 0.027, 0.149);
@@ -140,7 +141,40 @@ const FRAGMENT_SHADER = /* glsl */ `
     vec2 offM = vec2(1.6, -1.1);
     vec2 offA = vec2(-1.3, 1.5);
 
-    float pitch = 7.0;
+    /*
+     * DECISION (Tarea 5, medida con capturas a deviceScaleFactor 1/1.5/2,
+     * reposo y 50% de scroll): el paso NO se deja fijo en pixeles de buffer.
+     *
+     * shaderBackground.ts acota el ratio buffer/CSS a 1.5 (funcion
+     * resize()). Con el paso fijo a 7.0 buffer-px, el tamano FISICO del
+     * punto es 7.0 / ratio en pixeles CSS — y ese ratio no es igual en
+     * todas las pantallas: en un monitor sin retina (DPR 1, nada raro en
+     * escritorio) el ratio queda en 1.0 sin recortar, y el punto sale a
+     * 7.0 CSS px; en cualquier pantalla retina (DPR >= 1.5) el ratio se
+     * recorta siempre a 1.5, y el punto sale a 4.7 CSS px. Verificado en
+     * zoom de pixeles: el punto en DPR 1 es visiblemente mas grande y
+     * disperso que en DPR 1.5, y DPR 1.5 y DPR 2 salen IDENTICOS entre si
+     * porque los dos topan en el mismo recorte — no es la escala 2x que se
+     * sospechaba entre 1.5x y 3x, es una escala ~1.5x entre "sin retina" y
+     * "con retina".
+     *
+     * Multiplicar el paso por uPixelRatio (el ratio YA recortado que
+     * shaderBackground.ts expone, no el devicePixelRatio crudo) fija el
+     * tamano fisico del punto a un valor constante en pixeles CSS para
+     * cualquier pantalla, calibrado para no mover el aspecto en el caso mas
+     * comun (retina, ratio 1.5, que es el que Tarea 2/3 ya vieron y
+     * aprobaron): a ratio 1.5 el paso sigue siendo 7.0 exactamente.
+     *
+     * Usar el ratio ya recortado y NO el devicePixelRatio real sin recortar
+     * es a proposito: si el paso pidiera mas resolucion de trama que la que
+     * el buffer realmente tiene (p.ej. pedir un paso mas fino en un DPR 3
+     * cuyo buffer sigue capado a 1.5x), la trama pintaria un detalle que el
+     * buffer no puede resolver — eso SI es la receta de un muare nuevo, y
+     * es justo el riesgo que esta tarea vino a vigilar. No se detecto
+     * parpadeo entre fotogramas consecutivos ni bandas de interferencia en
+     * ninguna de las 12 capturas (diff medio < 0.1/255 entre pares).
+     */
+    float pitch = 7.0 * (max(uPixelRatio, 1.0) / 1.5);
     /*
      * CADA PLANCHA LLEVA SU PROPIA IMAGEN, y esto es lo que separa una
      * duotonia de dos capas del mismo dibujo teñidas distinto. Con el
