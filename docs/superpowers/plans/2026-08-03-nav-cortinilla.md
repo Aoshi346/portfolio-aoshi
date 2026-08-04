@@ -66,7 +66,7 @@ tarea el sitio se ve y se comporta **exactamente igual**.
   `export const TARGETS: SceneTarget[]`, `export function destinationFor(id: string): number | null`,
   y las constantes `OBRA_SETTLED_U`, `OBRA_TOTAL_U`.
 
-- [ ] **Paso 1: Crear el módulo con el contenido actual, movido tal cual**
+- [x] **Paso 1: Crear el módulo con el contenido actual, movido tal cual**
 
 Copiar de `sceneNav.ts` las líneas de `TARGETS`, `OBRA_SETTLED_U`, `OBRA_TOTAL_U` y
 `destinationFor()`, **incluidos sus comentarios completos** — el de `OBRA_TOTAL_U` explica por qué
@@ -103,7 +103,7 @@ export function destinationFor(id: string): number | null {
 }
 ```
 
-- [ ] **Paso 2: Que `sceneNav.ts` lo importe y borre sus copias**
+- [x] **Paso 2: Que `sceneNav.ts` lo importe y borre sus copias**
 
 ```ts
 import { TARGETS, destinationFor } from "./sceneNav.destino";
@@ -111,7 +111,7 @@ import { TARGETS, destinationFor } from "./sceneNav.destino";
 
 Borrar de `sceneNav.ts` las definiciones que acaban de moverse. No tocar nada más todavía.
 
-- [ ] **Paso 3: Apuntar el guardarraíl del arnés al fichero nuevo**
+- [x] **Paso 3: Apuntar el guardarraíl del arnés al fichero nuevo**
 
 En `scripts/measure-nav.py`, dentro de `comprueba_acoplamiento()`:
 
@@ -119,7 +119,7 @@ En `scripts/measure-nav.py`, dentro de `comprueba_acoplamiento()`:
 total = _constante("src/components/sceneNav.destino.ts", "OBRA_TOTAL_U")
 ```
 
-- [ ] **Paso 4: Comprobar que el guardarraíl sigue vivo**
+- [x] **Paso 4: Comprobar que el guardarraíl sigue vivo**
 
 Este arnés falla ruidosamente si no encuentra la constante, así que si la ruta quedó mal, lo dice.
 
@@ -131,7 +131,7 @@ python3 scripts/measure-nav.py
 Esperado: `OK acoplamiento: OBRA_TOTAL_U 6.25 coincide con la coreografia` y
 `0 anclas fuera de tolerancia` (15 de 15, tres temas).
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add src/components/sceneNav.destino.ts src/components/sceneNav.ts scripts/measure-nav.py
@@ -151,7 +151,7 @@ git commit -m "refactor(nav): aislar la logica de destino antes de rehacer la na
 - Produce: `export const sceneIndex: SceneEntry[]` en `content.ts`, con
   `interface SceneEntry { id: string; label: string; blurb: string }`.
 
-- [ ] **Paso 1: Declarar el índice en el contenido**
+- [x] **Paso 1: Declarar el índice en el contenido**
 
 Va en `content.ts` porque es la fuente única de verdad del proyecto y es donde mira quien cambia
 una escena. **No se lee del DOM**: se comprobó y `#obra .hero-kick` devuelve "Gestión de campañas",
@@ -176,7 +176,7 @@ export const sceneIndex: SceneEntry[] = [
 ];
 ```
 
-- [ ] **Paso 2: Que el módulo de destino consuma el índice**
+- [x] **Paso 2: Que el módulo de destino consuma el índice**
 
 En `sceneNav.destino.ts`, sustituir `TARGETS` por una reexportación, para que no haya dos listas.
 `SceneEntry` sustituye a `SceneTarget`: **borrar la interfaz `SceneTarget` y su lista literal** que
@@ -190,7 +190,7 @@ export type { SceneEntry };
 export const TARGETS: SceneEntry[] = sceneIndex;
 ```
 
-- [ ] **Paso 3: Añadir la aserción de integridad al arnés**
+- [x] **Paso 3: Añadir la aserción de integridad al arnés**
 
 En `scripts/measure-nav.py`, junto a `comprueba_acoplamiento()`:
 
@@ -216,13 +216,13 @@ def comprueba_indice() -> list[str]:
 
 Y llamarla en `main()`: `fallos = comprueba_acoplamiento() + comprueba_indice()`.
 
-- [ ] **Paso 4: Verla fallar antes de creerle**
+- [x] **Paso 4: Verla fallar antes de creerle**
 
 Cambiar temporalmente un `blurb` a `""` en `content.ts`, correr el arnés y confirmar que reporta
 `descriptores vacios en las posiciones [0]`. Restaurar con `git checkout -- src/data/content.ts`.
 Un arnés que nunca se ha visto en rojo no ha demostrado que mida nada.
 
-- [ ] **Paso 5: Build y arnés en verde, y commit**
+- [x] **Paso 5: Build y arnés en verde, y commit**
 
 ```bash
 npm run build && python3 scripts/measure-nav.py
@@ -244,7 +244,7 @@ git commit -m "feat(nav): el indice de escenas y su descriptor, en el contenido"
 - Consume: `TARGETS`, `destinationFor` (Tarea 1); `sceneIndex` (Tarea 2).
 - Produce: en el DOM, `button.scene-nav-trigger` con `aria-expanded` y `aria-controls="scene-index"`.
 
-- [ ] **Paso 1: Montar el disparador**
+- [x] **Paso 1: Montar el disparador**
 
 Reemplaza la construcción de la lista en `mountSceneNav`. **Fuera de `.cinema-chrome`**: ese
 contenedor es `aria-hidden="true"` y, medido, con `prefers-reduced-motion` pasa a `display: none`
@@ -264,7 +264,7 @@ triggerLabel.className = "scene-nav-trigger-label";
 trigger.append(triggerLabel);
 ```
 
-- [ ] **Paso 2: Mantener la escena en curso por observación, no por coreografía**
+- [x] **Paso 2: Mantener la escena en curso por observación, no por coreografía**
 
 Tiene que funcionar en Hyprland y Caelestia, donde no hay coreografía que lo actualice.
 
@@ -294,14 +294,14 @@ for (const t of TARGETS) {
 }
 ```
 
-- [ ] **Paso 3: Retirar `.rail-now` del cromo y su actualización**
+- [x] **Paso 3: Retirar `.rail-now` del cromo y su actualización**
 
 En `cinemaChrome.ts`, borrar el `el("span", "rail-now", ["01 · Título"])` de la barra. En
 `vice.choreography.ts` (~1332, función `cinemaChrome`), borrar la línea que hace
 `document.querySelector<HTMLElement>(".rail-now")` y todo lo que dependa de ella. Un elemento, una
 verdad: quien dice en qué escena estás es ahora el disparador.
 
-- [ ] **Paso 4: Estilos del disparador**
+- [x] **Paso 4: Estilos del disparador**
 
 En `themes.css`. Tamaños de la escala, nunca literales.
 
@@ -343,7 +343,7 @@ En `themes.css`. Tamaños de la escala, nunca literales.
 }
 ```
 
-- [ ] **Paso 5: Comprobar que sobrevive donde el cromo no**
+- [x] **Paso 5: Comprobar que sobrevive donde el cromo no**
 
 ```bash
 npm run build
@@ -371,7 +371,7 @@ PY
 Esperado: seis líneas, todas con caja ≥44×44 y texto "01 · Título". Es el criterio 7 del spec, y
 lo que hoy mide 0×0 en el cromo con movimiento reducido.
 
-- [ ] **Paso 6: Commit**
+- [x] **Paso 6: Commit**
 
 ```bash
 git add src/components/ src/themes/ 
@@ -391,7 +391,7 @@ git commit -m "feat(nav): el disparador vive fuera del cromo y sobrevive a movim
 - Produce: en el DOM, `div#scene-index.scene-index` con cinco `a.scene-index-row`; la clase
   `.is-open` en el mismo nodo gobierna abierto/cerrado.
 
-- [ ] **Paso 1: Construir el panel**
+- [x] **Paso 1: Construir el panel**
 
 ```ts
 const panel = document.createElement("div");
@@ -433,7 +433,7 @@ for (const [i, entry] of sceneIndex.entries()) {
 }
 ```
 
-- [ ] **Paso 2: Abrir, cerrar y navegar**
+- [x] **Paso 2: Abrir, cerrar y navegar**
 
 ```ts
 let abierto = false;
@@ -461,7 +461,7 @@ panel.addEventListener("click", (event: MouseEvent) => {
 });
 ```
 
-- [ ] **Paso 3: Estilos de la cortinilla**
+- [x] **Paso 3: Estilos de la cortinilla**
 
 El detalle que **no** se puede perder: los números **cuelgan** (posición absoluta) para que el
 rótulo y los cinco nombres compartan borde izquierdo, y la fila es `align-items: center` para que
@@ -589,7 +589,7 @@ del nombre —que en Passion One grande cae muy abajo— y cae por debajo de sus
 .scene-index-row[aria-current="true"] .scene-index-num { color: var(--accent-amber, #ffd166); }
 ```
 
-- [ ] **Paso 4: Marcar la escena en curso también en el índice**
+- [x] **Paso 4: Marcar la escena en curso también en el índice**
 
 Dentro de `pinta(i)`, añadir:
 
@@ -600,7 +600,7 @@ panel.querySelectorAll<HTMLElement>(".scene-index-row").forEach((row, j) => {
 });
 ```
 
-- [ ] **Paso 5: Medir la alineación, que es lo que se rompe solo**
+- [x] **Paso 5: Medir la alineación, que es lo que se rompe solo**
 
 ```bash
 npm run build
@@ -633,7 +633,7 @@ PY
 Esperado: un único valor de borde izquierdo para el rótulo y los cinco nombres, y desfase vertical
 ≤1 px entre guía y descriptor. Es el criterio 4 del spec.
 
-- [ ] **Paso 6: Comprobar los tiempos**
+- [x] **Paso 6: Comprobar los tiempos**
 
 Criterio 5 del spec. Se comprueba la duración DECLARADA, que es determinista; el cronómetro va
 detrás, solo como comprobación de sanidad y con margen explícito. La primera versión de este paso
@@ -677,7 +677,7 @@ EOF
 ```
 Esperado: declarado `0.46s` y `0.14s` exactos, y el cronómetro dentro del margen.
 
-- [ ] **Paso 7: Commit**
+- [x] **Paso 7: Commit**
 
 ```bash
 git add src/components/sceneNav.ts src/themes/themes.css
@@ -695,7 +695,7 @@ git commit -m "feat(nav): la cortinilla con el indice de escenas"
 **Interfaces:**
 - Consume: `setAbierto`, `panel`, `trigger` (Tarea 4).
 
-- [ ] **Paso 1: Foco al abrir, devuelto al cerrar, y Esc**
+- [x] **Paso 1: Foco al abrir, devuelto al cerrar, y Esc**
 
 ```ts
 const filas = (): HTMLAnchorElement[] =>
@@ -728,7 +728,7 @@ if (v) filas()[0]?.focus();
 else trigger.focus();
 ```
 
-- [ ] **Paso 2: Cerrar al pulsar fuera**
+- [x] **Paso 2: Cerrar al pulsar fuera**
 
 ```ts
 const onDocClick = (event: MouseEvent): void => {
@@ -740,7 +740,7 @@ const onDocClick = (event: MouseEvent): void => {
 document.addEventListener("click", onDocClick);
 ```
 
-- [ ] **Paso 3: Degradar el viaje, no la función**
+- [x] **Paso 3: Degradar el viaje, no la función**
 
 En `themes.css`, al final del bloque global (no dentro de ningún `@media` de ancho):
 
@@ -758,7 +758,7 @@ En `themes.css`, al final del bloque global (no dentro de ningún `@media` de an
 }
 ```
 
-- [ ] **Paso 4: Completar el `destroy()`**
+- [x] **Paso 4: Completar el `destroy()`**
 
 Sin esto se filtran un observador y dos escuchadores de documento en cada cambio de página.
 
@@ -774,7 +774,7 @@ return {
 };
 ```
 
-- [ ] **Paso 5: Medir teclado y foco de verdad**
+- [x] **Paso 5: Medir teclado y foco de verdad**
 
 ```bash
 npm run build
@@ -804,7 +804,7 @@ PY
 ```
 Esperado: dos líneas `teclado OK`. Es el criterio 6 del spec, y el 7 en la pasada con `reduce`.
 
-- [ ] **Paso 6: Commit**
+- [x] **Paso 6: Commit**
 
 ```bash
 git add src/components/sceneNav.ts src/themes/themes.css
@@ -823,26 +823,26 @@ es la que de verdad cobra el rediseño.
 - Modificar: `src/components/sceneNav.ts` (mecanismo de tránsito)
 - Modificar: `scripts/measure-contacto-matriz.py`
 
-- [ ] **Paso 1: Borrar los estilos de la navegación vieja**
+- [x] **Paso 1: Borrar los estilos de la navegación vieja**
 
 En `themes.css`, borrar `.scene-nav`, `.scene-nav ul`, `.scene-nav li`, `.scene-nav a` y sus
 estados, el bloque `@media (max-width: 1079px)` del rail numerado con su `counter-reset`, y las
 reglas de `.scene-nav--transito`. Buscar `scene-nav` y no dejar ninguna que no sea
 `.scene-nav-trigger` o `.scene-index`.
 
-- [ ] **Paso 2: Borrar el mecanismo de tránsito**
+- [x] **Paso 2: Borrar el mecanismo de tránsito**
 
 En `sceneNav.ts`, borrar los escuchadores de `scroll`, `touchmove` y `wheel`, el `matchMedia`, el
 temporizador `quieto` y la clase `scene-nav--transito`. Existían porque una capa fija sobre
 contenido en movimiento roba el toque; sin capa fija, no hay de qué apartarse. Quitar también sus
 `removeEventListener` del `destroy()`.
 
-- [ ] **Paso 3: Devolver su hueco a la última vía de contacto**
+- [x] **Paso 3: Devolver su hueco a la última vía de contacto**
 
 Borrar de `themes.css` el bloque `@media (max-width: 1079px)` con
 `.contacto-bar:last-child { padding-bottom: 4.25rem; }`. Reservaba sitio al rail del pie.
 
-- [ ] **Paso 4: Dar la vuelta al criterio de la matriz**
+- [x] **Paso 4: Dar la vuelta al criterio de la matriz**
 
 En `measure-contacto-matriz.py`, el bloque que comprueba que la navegación no tape texto ya no
 aplica: en reposo no hay navegación que pueda tapar nada. Sustituirlo por lo contrario, que es lo
@@ -873,7 +873,7 @@ que el rediseño promete:
                 fallos.append(f"{ancho}px reposo: {invasion}")
 ```
 
-- [ ] **Paso 5: Los dos arneses que prueban que el rediseño valió la pena**
+- [x] **Paso 5: Los dos arneses que prueban que el rediseño valió la pena**
 
 ```bash
 npm run build
@@ -922,7 +922,7 @@ PY
 ```
 Esperado: 0 robados en los dos anchos.
 
-- [ ] **Paso 6: Commit**
+- [x] **Paso 6: Commit**
 
 ```bash
 git add src/ scripts/
@@ -933,7 +933,7 @@ git commit -m "refactor(nav): retirar el rail, su hueco reservado y su mecanismo
 
 ### Tarea 7: Cierre — arneses completos y gate
 
-- [ ] **Paso 1: Los cinco arneses y el build**
+- [x] **Paso 1: Los cinco arneses y el build**
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use 22
@@ -949,13 +949,13 @@ reducido —comprueba que `.cinema-chrome` no aparece—, **no silenciarla**: el
 ocultándose, lo que cambió es que la navegación ya no depende de él. Comprobar que la aserción
 sigue midiendo lo que dice y ajustar su texto si nombra `.rail-now`, que ya no existe.
 
-- [ ] **Paso 2: Contraste de la cortinilla sobre el fondo generativo**
+- [x] **Paso 2: Contraste de la cortinilla sobre el fondo generativo**
 
 Añadir a `scripts/measure-contacto.py` el muestreo de `.scene-index-name` y `.scene-index-blurb`
 con la cortinilla abierta, con los mismos umbrales que ya usa: 4,5:1 el texto normal y 3,0:1 el de
 ≥24 px, sobre el píxel renderizado y en tres fotogramas separados 2 s. Es el criterio 9 del spec.
 
-- [ ] **Paso 3: Que la cortinilla no descoloque el carril de obra**
+- [x] **Paso 3: Que la cortinilla no descoloque el carril de obra**
 
 Riesgo del spec: es una capa a pantalla completa sobre una página con pines de ScrollTrigger. Si
 abrirla dispara un `refresh`, el carril de obra se recoloca y la escena queda mal. Se comprueba
@@ -989,7 +989,7 @@ Esperado: misma posición antes y después. Si difiere, hay un `ScrollTrigger.re
 y hay que evitar que abrir la cortinilla cambie la altura del documento (revisar `overflow` en
 `body` mientras está abierta).
 
-- [ ] **Paso 4: Capturas en los tres anchos**
+- [x] **Paso 4: Capturas en los tres anchos**
 
 390×844, 1029×900 y 1440×900, con la cortinilla cerrada y abierta, en `?theme=vice`. Mirarlas: un
 arnés en verde no prueba que se vea bien.

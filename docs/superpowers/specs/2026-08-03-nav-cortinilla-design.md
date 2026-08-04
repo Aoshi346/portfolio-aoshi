@@ -1,6 +1,6 @@
 # La cortinilla — la navegación deja de ocupar sitio y pasa a llamarse
 
-Estado: pendiente de plan
+Estado: en ejecucion
 Plan: `docs/superpowers/plans/2026-08-03-nav-cortinilla.md`
 Fecha: 2026-08-03
 Alcance: la navegación de escenas en los tres temas. La escena de contacto se toca solo para
