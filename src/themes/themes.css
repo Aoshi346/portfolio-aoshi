@@ -2694,6 +2694,37 @@
 }
 
 /*
+ * Vice quita la caja del disparador: un recuadro es justo lo que esta
+ * direccion elimina (misma nota en `.credits-used-list`, arriba). Con la
+ * serigrafia de tinta detras, el marco cuadrado cortaba el flujo del
+ * recorrido en vez de leerse como cromo de cartel — se prueba primero a
+ * subirle el radio y se ve igual de ajeno, asi que se retira la caja entera
+ * y quedan solo las letras, subrayadas como cualquier otro enlace del tema
+ * (mismo `text-decoration` que `.credit-name`). Hyprland y Caelestia
+ * conservan la caja compartida (5px, fondo y borde falso via box-shadow).
+ */
+:root[data-theme="vice"] .scene-nav-trigger {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="vice"] .scene-nav-trigger:hover,
+:root[data-theme="vice"] .scene-nav-trigger[aria-expanded="true"] {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="vice"] .scene-nav-trigger-label {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+
+:root[data-theme="vice"] .scene-nav-trigger:hover .scene-nav-trigger-label {
+  color: color-mix(in srgb, var(--color-accent) 85%, transparent);
+}
+
+/*
  * Cortinilla del indice de escenas. `z-index: 41`, por DEBAJO del disparador
  * (42) a proposito: el disparador sigue pulsable con la cortinilla abierta.
  * Los numeros cuelgan en `position: absolute` para que el rotulo y los
