@@ -20,16 +20,24 @@ export const viceTheme: Theme = {
     "https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Manrope:wght@200;300;400;600;700&family=Pathway+Gothic+One&display=swap",
   motion: { style: "cinematic", ease: "expo.out", duration: 1.15, stagger: 0.07 },
   /*
-   * Bruma generativa, no video. El backdrop de video servia el fixture
+   * Serigrafia de cartel, no bruma. El backdrop de video servia el fixture
    * sintetico de barras SMPTE (`public/media/vice-hero.*`), cuyas franjas de
    * color primario puro obligaban a tapar hero y contacto con un scrim casi
-   * opaco solo para poder medir contraste. Con una base propia, oscura y de
-   * brillo acotado, ese parche desaparece y ademas el fondo puede responder
-   * al scroll, que un fichero de video no puede.
+   * opaco solo para poder medir contraste. La bruma generativa que lo
+   * sustituyo (`viceHaze`) resolvio eso: base propia, oscura, de brillo
+   * acotado, capaz de responder al scroll.
+   *
+   * Este es el capitulo siguiente, no una vuelta atras: la bruma seguia
+   * siendo atmosfera — algo que el fondo *representaba* detras del texto. La
+   * serigrafia (`viceInk`) deja de representar y pasa a ser la materia: el
+   * fondo es el pliego de papel sobre el que el cartel de Vice estaria
+   * impreso a dos tintas, con su trama, su rasqueta y su desregistro. El tema
+   * ya hablaba en clave de cartel (Passion One, tipografia de reparto); el
+   * fondo ahora es literalmente eso.
    */
   async mountBackground(container) {
-    const { mountViceHaze } = await import("../backgrounds/viceHaze");
-    return mountViceHaze(container);
+    const { mountViceInk } = await import("../backgrounds/viceInk");
+    return mountViceInk(container);
   },
   async choreography() {
     const { viceChoreography } = await import("./vice.choreography");
