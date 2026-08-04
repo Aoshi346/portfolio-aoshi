@@ -111,8 +111,18 @@ Cada uno dice con qué instrumento se mide y a qué umbral.
 4. **Alineación del índice.** Rótulo de sección y los cinco nombres comparten borde izquierdo;
    número, guía y descriptor comparten centro vertical. Instrumento: `getBoundingClientRect`.
    Umbral: ≤1 px de desviación en ambos ejes.
-5. **Tiempos.** Apertura ≤480 ms, cierre ≤160 ms. Instrumento: `transitionend` cronometrado desde
-   el clic.
+5. **Tiempos.** Lo que se comprueba es la duración **declarada**, que es determinista:
+   `transitionDuration` de `.scene-index` debe ser `0.46s` abierta y `0.14s` cerrada. El cronómetro
+   desde el clic hasta `transitionend` es solo comprobación de sanidad, con margen explícito:
+   ≤ declarado + 150 ms.
+
+   La primera versión de este criterio decía "apertura ≤480 ms, cierre ≤160 ms" cronometrados, y
+   **se cayó al medirlo**: el código declaraba exactamente 460 y 140, y el cronómetro daba
+   609–684 y 343–418 en un equipo con carga media de 4 y 1 GiB libre; con el shader bloqueado,
+   471–526 y 160–230. Es decir, 20 ms de margen sobre una animación de 460 es menos de dos
+   fotogramas, así que el criterio medía la carga de la máquina, no la animación. Un umbral que
+   solo pasa en un equipo descargado no es un umbral. El de ahora sigue cazando el error que
+   importa —que alguien ponga 900 ms— sin depender de quién más esté usando el procesador.
 6. **Foco.** Al abrir, `document.activeElement` es la primera escena; con Tab recorre las cinco y
    vuelve a la primera; Esc cierra; al cerrar, `activeElement` es el disparador. `aria-expanded`
    refleja el estado. Instrumento: Playwright con teclado real.
