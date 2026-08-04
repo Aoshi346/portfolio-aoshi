@@ -106,16 +106,25 @@ El instrumento va primero: sin él, "se ve oscuro" es una opinión.
 
 ### Tarea 4: Contraste y capas de CSS
 
-- [ ] Correr `python3 scripts/verify.py --url http://127.0.0.1:4173`. **Solo y sin editar nada**:
+- [x] Correr `python3 scripts/verify.py --url http://127.0.0.1:4173`. **Solo y sin editar nada**:
       cualquier edición dispara el HMR y se lleva por delante el contexto de la página.
-- [ ] Si aparecen fallos de contraste, **arreglarlos, no meterlos en la línea base**. Sospechoso
+      Resultado: EXIT 0, 12 fallos conocidos de la linea base (assets de galeria/fixtures de
+      video, no relacionados), 0 nuevos. Cero fallos de contraste.
+- [x] Si aparecen fallos de contraste, **arreglarlos, no meterlos en la línea base**. Sospechoso
       número uno: `--nav-dim` de Vice. Es un porcentaje calibrado contra una superficie y cambiar
       el fondo lo invalida sin que nadie toque el token — con el vídeo cayó de 5,74:1 a 4,17:1.
-- [ ] Revisar `:root[data-theme="vice"] .bg-theme::before` y `::after` en `src/style.css`. El
+      No hizo falta tocarlo: midio 4.74:1-9.63:1 en todas las escenas contra el fondo nuevo — el
+      shader de tinta ya paso el techo de brillo con margen (Tarea 3), asi que el telon sigue
+      siendo oscuro.
+- [x] Revisar `:root[data-theme="vice"] .bg-theme::before` y `::after` en `src/style.css`. El
       `::before` es un lavado magenta-ámbar en `soft-light` al 48% que se puso cuando el fondo era
       un fixture sin color propio. Con dos tintas que ya deciden el color, **la hipótesis de
       partida es retirarlo**; decidir con el gate delante, no a ojo.
-- [ ] Commit.
+      Decidido con evidencia (A/B de pixeles + verify.py con y sin cada regla): `::before`
+      retirado (diferencia <0.01/255, mismas 276 comprobaciones de contraste). `::after` se
+      mantiene: sin el, "Telefono" en contacto cae de 4.28:1 a 3.67:1 (pasa AA large-text pero con
+      mucho menos margen).
+- [x] Commit. (`70c4ec4`)
 
 ### Tarea 5: Muaré
 
