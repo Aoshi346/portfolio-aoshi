@@ -24,6 +24,19 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   trigger.setAttribute("aria-controls", "scene-index");
   trigger.setAttribute("aria-haspopup", "dialog");
 
+  /*
+   * Marca decorativa: sin caja, el disparador y el resto de enlaces
+   * subrayados del tema (email, creditos) se leian igual de "solo texto".
+   * `aria-hidden` porque no aporta nada al arbol de accesibilidad — el
+   * boton ya se anuncia via `aria-haspopup`/`aria-expanded` — y vacia de
+   * estilo propio en Hyprland/Caelestia, que se quedan con su caja
+   * compartida (ver themes.css).
+   */
+  const triggerMark = document.createElement("span");
+  triggerMark.className = "scene-nav-trigger-mark";
+  triggerMark.setAttribute("aria-hidden", "true");
+  trigger.append(triggerMark);
+
   const triggerLabel = document.createElement("span");
   triggerLabel.className = "scene-nav-trigger-label";
   trigger.append(triggerLabel);

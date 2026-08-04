@@ -2725,6 +2725,48 @@
 }
 
 /*
+ * Marca de registro en miniatura: el mismo motivo (cruz dentro de un
+ * anillo) que `viceInk.ts` pinta en las cuatro esquinas del fondo, aqui a
+ * escala de icono. Es lo que distingue al UNICO control de navegacion
+ * primaria del sitio de un enlace subrayado cualquiera (correo, creditos) —
+ * hallazgo de vera-art-director: sin caja, el subrayado por si solo no
+ * bastaba para leerse como algo mas que texto. `currentColor` para que
+ * herede el ambar del reposo y el tono atenuado del hover, sin declarar su
+ * propio color.
+ */
+:root[data-theme="vice"] .scene-nav-trigger-mark {
+  position: relative;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+}
+
+:root[data-theme="vice"] .scene-nav-trigger-mark::before,
+:root[data-theme="vice"] .scene-nav-trigger-mark::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+
+:root[data-theme="vice"] .scene-nav-trigger-mark::before {
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+:root[data-theme="vice"] .scene-nav-trigger-mark::after {
+  top: 50%;
+  left: -3px;
+  right: -3px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+/*
  * Cortinilla del indice de escenas. `z-index: 41`, por DEBAJO del disparador
  * (42) a proposito: el disparador sigue pulsable con la cortinilla abierta.
  * Los numeros cuelgan en `position: absolute` para que el rotulo y los
