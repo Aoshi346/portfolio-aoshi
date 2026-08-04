@@ -54,17 +54,21 @@ añade sobre él es la integración, el techo verificado en el sitio real y el m
 
 El instrumento va primero: sin él, "se ve oscuro" es una opinión.
 
-- [ ] Crear `scripts/measure-bg-luma.py`. Carga el sitio con `?theme=vice`, **oculta el contenido**
+- [x] Crear `scripts/measure-bg-luma.py`. Carga el sitio con `?theme=vice`, **oculta el contenido**
       (`page.add_style_tag` con `#app { visibility: hidden }`) para aislar el fondo, recorre al
       menos 12 posiciones de scroll y mide en cada una el p99.5 de luminancia de la franja
       vertical 0.06–0.74, más el p99.5 del fotograma entero y el píxel más claro.
-- [ ] Techos: **62** en la franja, **82** en el fotograma, **150** el píxel. Salir 1 si se pasa.
-- [ ] Correrlo contra `viceHaze` (el fondo actual) y anotar sus números como línea de partida. Si
+- [x] Techos: **62** en la franja, **82** en el fotograma, **150** el píxel. Salir 1 si se pasa.
+- [x] Correrlo contra `viceHaze` (el fondo actual) y anotar sus números como línea de partida. Si
       el arnés no da verde con el fondo que HOY pasa el gate de contraste, el arnés está mal
       calibrado y hay que arreglarlo antes de seguir.
-- [ ] Usar `executable_path="/usr/bin/google-chrome"`: el chromium propio de Playwright no está
+      Resultado: verde — 12/12 posiciones a 12.21/12.21/12.21 (franja/fotograma/pixel) contra
+      techos 62/82/150. Riesgo anotado: swiftshader colapsa el ruido hash/fbm en headless, por lo
+      que este numero de linea de partida puede no capturar el peor caso real en GPU real — a
+      verificar tambien en browser real en la Tarea 3.
+- [x] Usar `executable_path="/usr/bin/google-chrome"`: el chromium propio de Playwright no está
       descargado en esta máquina.
-- [ ] Commit.
+- [x] Commit. (`add4e33`)
 
 ### Tarea 2: Portar el fragmento del prototipo
 
