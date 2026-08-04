@@ -2806,3 +2806,29 @@
     filter: none;
   }
 }
+
+/*
+ * En pantalla estrecha el renglon del indice no cabe en una linea: el nombre en
+ * Passion One a `--t-5` mas su descriptor se salen. Medido a 390px: tres de los
+ * cinco descriptores acababan 3, 12 y 23px POR FUERA del viewport, con el texto
+ * cortado por el borde. Se apila, como ya hacen las vias de contacto cuando no
+ * caben en fila.
+ *
+ * La guia punteada se retira aqui a proposito: une dos extremos de una misma
+ * linea, y apilados no hay dos extremos que unir — seria un adorno colgando.
+ */
+@media (max-width: 640px) {
+  .scene-index-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+  }
+
+  .scene-index-guide {
+    display: none;
+  }
+
+  .scene-index-blurb {
+    line-height: 1.3;
+  }
+}
