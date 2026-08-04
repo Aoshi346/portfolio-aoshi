@@ -47,8 +47,27 @@ def comprueba_acoplamiento() -> list[str]:
     return []
 
 
+def comprueba_indice() -> list[str]:
+    """Cinco entradas, ninguna vacia. Que digan la VERDAD es cosa de quien
+    cambie la escena; por eso viven en content.ts, que es donde se mira al
+    cambiarla. Lo que si se puede comprobar aqui es que no falte ninguna ni
+    se quede en blanco."""
+    texto = (RAIZ / "src/data/content.ts").read_text(encoding="utf-8")
+    bloque = re.search(r"sceneIndex: SceneEntry\[\] = \[(.*?)\];", texto, re.S)
+    if bloque is None:
+        return ["no encuentro sceneIndex en content.ts"]
+    entradas = re.findall(r'blurb:\s*"([^"]*)"', bloque.group(1))
+    if len(entradas) != 5:
+        return [f"sceneIndex tiene {len(entradas)} descriptores, esperaba 5"]
+    vacios = [i for i, e in enumerate(entradas) if not e.strip()]
+    if vacios:
+        return [f"descriptores vacios en las posiciones {vacios}"]
+    print(f"OK indice: 5 descriptores, ninguno vacio")
+    return []
+
+
 def main() -> int:
-    fallos = comprueba_acoplamiento()
+    fallos = comprueba_acoplamiento() + comprueba_indice()
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
         for tema in TEMAS:

@@ -381,3 +381,20 @@ export const contactChannels: ContactChannel[] = [
     external: true,
   },
 ];
+
+export interface SceneEntry {
+  id: string;
+  /** Nombre de cine. Es lo que se lee grande en el indice. */
+  label: string;
+  /** Lo que la escena contiene, en llano. Cierra el hallazgo de que
+   *  "Fundido" no comunica "contacto" a quien llega de fuera. */
+  blurb: string;
+}
+
+export const sceneIndex: SceneEntry[] = [
+  { id: "hero", label: "Título", blurb: "Desarrollador full stack" },
+  { id: "quien-es", label: "Quién es", blurb: "Trayectoria y cifras" },
+  { id: "obra", label: "Obra", blurb: "Cinco proyectos" },
+  { id: "creditos", label: "Créditos", blurb: "Con qué construyo" },
+  { id: "contacto", label: "Fundido", blurb: "Contacto" },
+];

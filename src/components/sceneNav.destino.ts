@@ -1,15 +1,7 @@
-export interface SceneTarget {
-  id: string;
-  label: string;
-}
+import { sceneIndex, type SceneEntry } from "../data/content";
 
-export const TARGETS: SceneTarget[] = [
-  { id: "hero", label: "Título" },
-  { id: "quien-es", label: "Quién es" },
-  { id: "obra", label: "Obra" },
-  { id: "creditos", label: "Créditos" },
-  { id: "contacto", label: "Fundido" },
-];
+export type { SceneEntry };
+export const TARGETS: SceneEntry[] = sceneIndex;
 
 /*
  * El carril de obra se recorre en horizontal dentro de un pin. Su borde de
