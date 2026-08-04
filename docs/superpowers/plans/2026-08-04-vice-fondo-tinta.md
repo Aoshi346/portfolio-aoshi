@@ -130,14 +130,21 @@ El instrumento va primero: sin él, "se ve oscuro" es una opinión.
 
 Es el riesgo propio de esta dirección. Requiere ojo, no solo números.
 
-- [ ] Capturar el fondo a `deviceScaleFactor` 1, 1.5 y 2, en reposo y a media travesía.
-- [ ] Mirar las capturas. Buscar bandas de interferencia, rejillas fantasma y puntos que cambian
+- [x] Capturar el fondo a `deviceScaleFactor` 1, 1.5 y 2, en reposo y a media travesía.
+- [x] Mirar las capturas. Buscar bandas de interferencia, rejillas fantasma y puntos que cambian
       de tamaño de una zona a otra sin motivo.
-- [ ] Decidir con esas capturas si el paso se fija en píxeles de búfer o se escala con el
+      Sin muare ni parpadeo en 24 capturas (antes/despues). dsf 1.5 y 2 topan al mismo recorte de
+      `shaderBackground.ts` (ratio 1.5) y salen identicos; la diferencia real esta entre DPR 1 (sin
+      retina) y cualquier DPR>=1.5, no entre 1.5x y 3x.
+- [x] Decidir con esas capturas si el paso se fija en píxeles de búfer o se escala con el
       `devicePixelRatio` real. Recordar que `shaderBackground.ts` acota el DPR a 1.5, así que en
       una pantalla de 3x el punto se ve el doble de grande que en una de 1.5x.
-- [ ] Anotar la decisión y su porqué en un comentario del fragmento.
-- [ ] Commit.
+      Decisión: escalar con el ratio buffer/CSS YA RECORTADO (no el DPR crudo) — `pitch = 7.0 *
+      (ratio/1.5)`. A ratio=1.5 (caso retina, el mas comun) da pitch=7.0 exacto, preservando la
+      calibracion de brillo de las Tareas 2/3 sin tener que re-medirla. `uPixelRatio` anadido a
+      `shaderBackground.ts` de forma aditiva (no-op para hyprGradient/caelestiaBlobs).
+- [x] Anotar la decisión y su porqué en un comentario del fragmento.
+- [x] Commit. (`2e0eb18`)
 
 ### Tarea 6: Movimiento reducido
 
