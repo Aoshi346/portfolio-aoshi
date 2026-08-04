@@ -205,15 +205,17 @@ proyecto ya arrastró con los fixtures `vice-hero.*` durante una semana.
 
 ### Tarea 9: Gates finales
 
-- [ ] `npm run build` y `npm run lint` verdes.
-- [ ] `scripts/verify.py` verde contra su línea base, sin fallos nuevos.
-- [ ] Capturas reales de las cinco escenas a 1440x900 y 390x844 con `?theme=vice`, cero errores
+- [x] `npm run build` y `npm run lint` verdes.
+- [x] `scripts/verify.py` verde contra su línea base, sin fallos nuevos.
+- [x] Capturas reales de las cinco escenas a 1440x900 y 390x844 con `?theme=vice`, cero errores
       de consola.
-- [ ] Actualizar `PROGRESS.json` conforme se avanza, no al final.
-- [ ] Escribir el registro de implementación al final del spec: los números finales de luminancia,
+- [x] Actualizar `PROGRESS.json` conforme se avanza, no al final. <!-- el PROGRESS.json de la raiz
+      pertenece a un plan distinto ya cerrado (Remotion, descartado); no se pisa, ver task-9-report.md -->
+- [x] Escribir el registro de implementación al final del spec: los números finales de luminancia,
       la decisión de muaré y cualquier divergencia respecto a este plan.
-- [ ] Poner el spec en `Estado: implementado`.
-- [ ] **→ PEDIR REVISIÓN A AOSHI** sobre el sitio real, moviéndose, antes de proponer el merge.
+- [x] Poner el spec en `Estado: implementado`.
+- [!] **→ PEDIR REVISIÓN A AOSHI** sobre el sitio real, moviéndose, antes de proponer el merge.
       Es la lección del intento anterior: se enseñaron capturas durante toda una tarde y lo que
-      decidió el rechazo fue verlo scrollear.
-- [ ] Gate `lidia-naive-tester` y `vera-art-director`.
+      decidió el rechazo fue verlo scrollear. <!-- fuera de alcance de la Tarea 9 mecanica: lo
+      hace el controlador de la sesion directamente con Aoshi -->
+- [!] Gate `lidia-naive-tester` y `vera-art-director`. <!-- fuera de alcance de la Tarea 9 mecanica -->
