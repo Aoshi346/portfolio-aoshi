@@ -110,11 +110,11 @@
  * detras del titulo, que es exactamente lo que un plano "a sangre" no debe
  * tener.
  *
- * El fondo generativo (`backgrounds/viceHaze.ts`) acota su brillo por shader,
- * asi que la base ya es oscura y plana por diseno: el scrim deja de hacer
- * falta y el texto se apoya directamente sobre la bruma. Si algun dia vuelve
- * un fondo de alta varianza, la solucion correcta es acotarlo en su shader,
- * no volver a tapar el texto.
+ * El fondo generativo (hoy `backgrounds/viceInk.ts`; antes `viceHaze.ts`, que
+ * cubria el mismo papel) acota su brillo por shader, asi que la base ya es
+ * oscura y plana por diseno: el scrim deja de hacer falta y el texto se apoya
+ * directamente sobre el fondo. Si algun dia vuelve un fondo de alta varianza,
+ * la solucion correcta es acotarlo en su shader, no volver a tapar el texto.
  */
 :root[data-theme="vice"] .hero-surface {
   background: none;
@@ -1328,9 +1328,10 @@
  * El cartel: una sola columna centrada. El rodillo pierde su scrim de tarjeta
  * (fondo + radio + blur) porque un recuadro es justo lo que esta direccion
  * elimina. Ese scrim nacio cuando el fondo era el fixture SMPTE de barras de
- * color, donde "React" caia a 1.19:1; hoy el fondo es la bruma de `viceHaze`,
- * que acota su brillo por shader. Remedido con `check_contrast_wcag` tras
- * quitarlo — no se dio por hecho.
+ * color, donde "React" caia a 1.19:1; hoy el fondo es la serigrafia de
+ * `viceInk` (antes fue la bruma de `viceHaze`), que acota su brillo por
+ * shader. Remedido con `check_contrast_wcag` tras quitarlo — no se dio por
+ * hecho.
  */
 :root[data-theme="vice"] .credits-grid {
   display: block;

@@ -1320,12 +1320,13 @@ def run(
             check_theme_identity(page, theme)
 
             if theme == "vice":
-                # El backdrop de Vice ya no es video+poster: es la bruma
-                # generativa de `src/backgrounds/viceHaze.ts`, un canvas WebGL
-                # como el de los otros dos temas. El cambio fue deliberado —
-                # el video servia el fixture SMPTE, cuyas franjas de color
-                # primario obligaban a tapar hero y contacto con un scrim casi
-                # opaco para poder medir contraste. Con la bruma (brillo
+                # El backdrop de Vice ya no es video+poster: es la serigrafia
+                # generativa de `src/backgrounds/viceInk.ts` (antes fue la
+                # bruma de `viceHaze.ts`, retirada), un canvas WebGL como el
+                # de los otros dos temas. El cambio fue deliberado — el video
+                # servia el fixture SMPTE, cuyas franjas de color primario
+                # obligaban a tapar hero y contacto con un scrim casi opaco
+                # para poder medir contraste. Con el fondo generativo (brillo
                 # acotado en el propio shader) el scrim desaparecio; lo que
                 # este gate vigila ahora es que el canvas exista y pinte.
                 backdrop = page.evaluate("""(() => {

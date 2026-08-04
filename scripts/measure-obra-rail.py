@@ -456,7 +456,7 @@ def main() -> int:
         if not args.shader:
             # A/B barato: sin el shader el rAF respira y el ritmo medido es el
             # de la coreografia, no el del software rasterizer.
-            page.route("**/viceHaze*", lambda r: r.abort())
+            page.route("**/viceInk*", lambda r: r.abort())
 
         page.goto(args.url, wait_until="domcontentloaded", timeout=30000)
         # Leader de apertura (~1,6s) + GSAP + refresh de ScrollTrigger.

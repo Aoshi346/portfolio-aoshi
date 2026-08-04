@@ -115,4 +115,4 @@ por fotograma pintado.
   no alcanza al punto de clic y parece descentrada. No lo es: medido con el
   raton quieto, punto en (315.0, 416.1) y marca en (316.0, 416.0).
 - Para depurar sin que el shader lo haga inviable:
-  `page.route("**/viceHaze*", r => r.abort())`.
+  `page.route("**/viceInk*", r => r.abort())` (antes `viceHaze`, retirado).
