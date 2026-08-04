@@ -19,10 +19,7 @@ export function createCinemaChrome(): HTMLElement {
   const bottom = el("div", "letterbox letterbox-bottom", []);
   bottom.setAttribute("data-letterbox", "");
 
-  const rail = el("div", "rail", [
-    el("span", "", [identity.name]),
-    el("span", "rail-now", ["01 · Título"]),
-  ]);
+  const rail = el("div", "rail", [el("span", "", [identity.name])]);
   rail.setAttribute("data-rail", "");
   rail.setAttribute("aria-hidden", "true");
 

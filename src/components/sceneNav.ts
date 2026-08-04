@@ -53,6 +53,56 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   root.append(nav);
 
   /*
+   * Disparador: vive FUERA de `.cinema-chrome` a proposito (ver cabecera del
+   * fichero) y es quien dice ahora en que escena esta el visitante. Antes lo
+   * hacia `.rail-now`, dentro del cromo — con `prefers-reduced-motion` ese
+   * contenedor pasa a `display: none` y el rail queda en 0x0, dejando sin
+   * indicador a quien pide movimiento reducido. Medido.
+   */
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "scene-nav-trigger";
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.setAttribute("aria-controls", "scene-index");
+  trigger.setAttribute("aria-haspopup", "dialog");
+
+  const triggerLabel = document.createElement("span");
+  triggerLabel.className = "scene-nav-trigger-label";
+  trigger.append(triggerLabel);
+
+  /*
+   * La escena "en curso" se mantiene por `IntersectionObserver`, no por la
+   * coreografia de Vice: Hyprland y Caelestia no tienen coreografia que la
+   * actualice, y el disparador vive en los tres temas.
+   */
+  const pinta = (i: number): void => {
+    const n = String(i + 1).padStart(2, "0");
+    triggerLabel.textContent = `${n} · ${TARGETS[i].label}`;
+  };
+  pinta(0);
+
+  // La escena "en curso" es la ultima cuyo borde superior ya cruzo el tercio
+  // alto del viewport. Con `rootMargin` negativo arriba, una escena solo
+  // cuenta como actual cuando de verdad esta ocupando la pantalla, no cuando
+  // asoma.
+  const observer = new IntersectionObserver(
+    (entradas) => {
+      for (const e of entradas) {
+        if (!e.isIntersecting) continue;
+        const i = TARGETS.findIndex((t) => t.id === e.target.id);
+        if (i >= 0) pinta(i);
+      }
+    },
+    { rootMargin: "-33% 0px -60% 0px", threshold: 0 },
+  );
+  for (const t of TARGETS) {
+    const s = document.getElementById(t.id);
+    if (s) observer.observe(s);
+  }
+
+  root.append(trigger);
+
+  /*
    * El rail se aparta mientras la pagina se mueve, y solo en su forma de movil.
    *
    * Ahi va `fixed` sobre el pie, y las vias de contacto ocupan el ancho entero:
@@ -109,7 +159,9 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
       window.removeEventListener("touchmove", onScroll);
       window.removeEventListener("wheel", onScroll);
       clearTimeout(quieto);
+      observer.disconnect();
       nav.remove();
+      trigger.remove();
       delete (window as unknown as { __navDestino__?: unknown }).__navDestino__;
     },
   };

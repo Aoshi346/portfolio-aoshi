@@ -1331,7 +1331,6 @@ function chromeTriggerId(index: number): string {
  */
 function cinemaChrome(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLElement): void {
   const bars = Array.from(document.querySelectorAll<HTMLElement>("[data-letterbox]"));
-  const now = document.querySelector<HTMLElement>(".rail-now");
   const dim = document.querySelector<HTMLElement>("[data-dim]");
   // La firma del tema vive fija abajo a la derecha, justo donde la escena de
   // contacto despliega su barra de pie: en esa escena estorba al enlace de
@@ -1359,13 +1358,6 @@ function cinemaChrome(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEle
     );
     scenes.splice(firstObraIndex < 0 ? scenes.length : firstObraIndex, 0, rail);
   }
-  const labels: Record<string, string> = {
-    hero: "Título",
-    about: "Ficha",
-    obra: "Cartela",
-    credits: "Créditos",
-    contacto: "Fundido",
-  };
   /** Solo hero y contacto a plena luz; el resto atenuado para que el texto lea. */
   const brightScenes = new Set(["hero", "contacto"]);
 
@@ -1443,31 +1435,6 @@ function cinemaChrome(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEle
       invalidateOnRefresh: true,
       onToggle: (self) => {
         if (!self.isActive) return;
-        if (now) {
-          const label = `${String(index + 1).padStart(2, "0")} · ${labels[kind] ?? ""}`;
-          /*
-           * La barra corta entre escenas en vez de saltar: fundido de salida
-           * corto, cambio de texto, fundido de entrada.
-           *
-           * `killTweensOf` antes de montar el nuevo fundido NO es adorno. Al
-           * saltar muchos pixeles de golpe (volver arriba desde el final, un
-           * ancla, restaurar scroll al recargar) se cruzan varios toggles en
-           * pocos milisegundos, y como el texto se escribe A MITAD del
-           * fundido, el rotulo que quedaba era el del ultimo fundido en
-           * TERMINAR, no el de la escena en la que estas. Medido: la barra
-           * anunciaba "01 · Titulo" con el carril de obra llenando la
-           * pantalla. Al matar el anterior, su callback intermedio ya no
-           * llega a ejecutarse y solo escribe el vigente.
-           */
-          gsap.killTweensOf(now);
-          gsap
-            .timeline()
-            .to(now, { opacity: 0, duration: 0.15, ease: "power1.in" })
-            .add(() => {
-              now.textContent = label;
-            })
-            .to(now, { opacity: 1, duration: 0.25, ease: "power1.out" });
-        }
         // Las franjas entran solo durante la obra: dicen "esto es la pelicula".
         // `overwrite` por el mismo motivo que el `killTweensOf` de arriba: en
         // un salto largo se encadenan varios toggles y sin el gana el ultimo
