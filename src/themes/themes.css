@@ -2735,6 +2735,17 @@
 .scene-index-name {
   flex: none;
   font-family: var(--font-display, "Passion One"), sans-serif;
+  /*
+   * El peso y la caja NO se heredan de `--font-display`: sin estas dos lineas
+   * el nombre salia en Passion One a peso 400 y en caja baja ("Título"), que no
+   * es la voz de los titulos de este sitio — los rotulos de escena usan
+   * `--display-weight: 900` y `--display-transform: uppercase`. Se ve al lado
+   * de "HABLEMOS" en la misma pantalla: la familia era la misma y la letra no.
+   * Aqui va 700 y no 900 a proposito: el indice acompana, no compite con el
+   * titulo que hay detras.
+   */
+  font-weight: 700;
+  text-transform: var(--display-transform, uppercase);
   font-size: var(--t-5);
   line-height: 1.05;
   color: rgb(255 244 232 / 0.55);
