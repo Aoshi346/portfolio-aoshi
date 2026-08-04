@@ -35,10 +35,27 @@ def compone(css, fondo):
     crema mezclada con el pixel que haya debajo, que ademas se mueve porque el
     fondo es generativo. Medir el color declarado en vez del compuesto da un
     contraste inventado — siempre mejor del real.
+
+    Dos formatos, porque el navegador devuelve uno u otro segun como este
+    escrito el color:
+      - `rgb(255 244 232 / 0.62)` para los literales.
+      - `color(srgb 1 0.956863 0.909804 / 0.5)` para lo que sale de un
+        `color-mix()`, con los canales en 0..1 en vez de 0..255.
+    El arnes solo entendia el primero y reventaba con un `ValueError` en cuanto
+    el CSS migro a tokens. Un arnes tiene que medir lo que hay, no lo que habia.
     """
-    partes = css.replace("rgba(", "").replace("rgb(", "").replace(")", "").split(",")
-    rgb = [float(v) for v in partes[:3]]
-    alfa = float(partes[3]) if len(partes) > 3 else 1.0
+    texto = css.strip()
+    escala = 1.0
+    if texto.startswith("color("):
+        cuerpo = texto[len("color("):-1].replace("srgb", "")
+        escala = 255.0  # `color(srgb ...)` da los canales en 0..1
+    else:
+        cuerpo = texto[texto.index("(") + 1:-1]
+    # Las dos sintaxis, la de comas (`rgba(255, 244, 232, 0.5)`) y la moderna
+    # con espacios y barra (`rgb(255 244 232 / 0.5)`), se normalizan igual.
+    piezas = cuerpo.replace(",", " ").replace("/", " ").split()
+    rgb = [float(v) * escala for v in piezas[:3]]
+    alfa = float(piezas[3]) if len(piezas) > 3 else 1.0
     return tuple(round(c * alfa + f * (1 - alfa)) for c, f in zip(rgb, fondo))
 
 
