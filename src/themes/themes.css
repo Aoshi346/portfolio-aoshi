@@ -1952,7 +1952,7 @@
 
 /*
  * La via de GitHub es la que menos texto lleva (95px de los cuatro valores) y
- * es la que vive pegada al borde donde flota `.scene-nav` (ver el hueco de
+ * es la que vive pegada al borde donde flota `.scene-nav-trigger` (ver el hueco de
  * `.contacto-bars` mas abajo). Le baja el reparto base de espacio para que el
  * hueco de la navegacion salga de su propio sobrante en vez de repartirse
  * entre las cuatro — asi correo/linkedin/telefono no pierden aire por un
@@ -2168,7 +2168,7 @@
  *
  * Ahora el color llega al borde y lo unico que se aparta es el CONTENIDO de la
  * ultima via, via `min-width` (ver el bloque de suelos): su ancho garantiza que
- * el valor y el rotulo terminan antes de donde empieza `.scene-nav`. Fondo a
+ * el valor y el rotulo terminan antes de donde empieza `.scene-nav-trigger`. Fondo a
  * sangre, texto despejado. Y como la navegacion pasa a flotar sobre color en
  * vez de sobre hueco, lleva superficie propia igual que el rail de movil.
  */
@@ -2309,24 +2309,6 @@
 
   :root[data-theme="vice"] .contacto-bar-mark {
     display: none;
-  }
-}
-
-/*
- * Hueco al pie para el rail numerado, en TODO el rango en que el rail vive
- * abajo — o sea el mismo `max-width: 1079px` del rail y del apilado, no el 900
- * en el que estaba metido. Sin esto el rail se pinta sobre el valor de la
- * ultima via: medido tras bajar el rail al pie, tapaba "Aoshi346" en 901, 965,
- * 1029 y 1075. El hueco se quedo atras cuando el rail bajo, que es exactamente
- * la deriva de la que va este ciclo — el numero estaba escrito en tres sitios
- * y solo se movio en dos.
- *
- * Va en la ultima barra y no en el contenedor porque las barras son a sangre y
- * un margen se veria como un corte en el color.
- */
-@media (max-width: 1079px) {
-  :root[data-theme="vice"] .contacto-bar:last-child {
-    padding-bottom: 4.25rem;
   }
 }
 
@@ -2786,180 +2768,6 @@
 
 .scene-index-row[aria-current="true"] .scene-index-name,
 .scene-index-row[aria-current="true"] .scene-index-num { color: var(--accent-amber, #ffd166); }
-
-.scene-nav {
-  position: fixed;
-  right: 1.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 40;
-}
-
-.scene-nav ul {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.15rem;
-  margin: 0;
-  /*
-   * Superficie propia. Al quitarle a la escena de contacto el carril de 150px
-   * que se le reservaba, el menu pasa a flotar SOBRE las barras de color en
-   * vez de sobre hueco vacio, y sin fondo quedaba a merced de lo que hubiera
-   * debajo — que ademas se mueve, porque el fondo es generativo. Mismo remedio
-   * que `.rail` y `.theme-signature`, y que el rail numerado de movil.
-   */
-  padding: 0.6rem 0.9rem;
-  border-radius: 14px;
-  background: rgb(11 5 19 / 0.62);
-  box-shadow: inset 0 0 0 1px rgb(255 244 232 / 0.12);
-  backdrop-filter: blur(7px);
-  list-style: none;
-}
-
-.scene-nav a {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 0.9rem;
-  font-size: var(--t-1, 0.75rem);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  text-decoration: none;
-  color: currentColor;
-  opacity: 0.55;
-  transition: opacity 260ms ease-out;
-}
-
-.scene-nav a:hover,
-.scene-nav a:focus-visible {
-  opacity: 1;
-}
-
-:root[data-theme="vice"] .scene-nav a:hover,
-:root[data-theme="vice"] .scene-nav a:focus-visible {
-  color: var(--accent-amber, #ffd166);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scene-nav a {
-    transition: none;
-  }
-
-  /* Solo la vuelta deja de animarse. El rail SIGUE apartandose y siguiendo
-     devolviendo el toque con movimiento reducido: eso no es decoracion, es lo
-     que arregla el robo, y quitarlo aqui lo dejaria roto justo para quien mas
-     lo necesita. Va aqui, al final, para ganar por orden a la transicion que
-     el bloque de movil declara mas abajo. */
-  .scene-nav ul {
-    transition: none;
-  }
-}
-
-/*
- * En vertical el rail de palabras no cabe en ningun sitio del borde derecho.
- * Se probaron tres posiciones y las tres pisaban algo distinto a 390px:
- * `bottom: 1.5rem` ponia "FUNDIDO" sobre "VICE CITY"; `bottom: 3.5rem` cruzaba
- * las dianas de 44px con la del correo del hero; y centrado se pintaba encima
- * del h1 (que se parte en tres lineas y llega a x=314) y del lead. No es que
- * faltara con encontrar el hueco: cinco dianas de 44px apiladas no caben en
- * ese margen.
- *
- * Asi que en movil la navegacion cambia de forma, no de sitio: se colapsa a
- * cinco dianas numeradas en horizontal. 5x44 = 220px de los 390, alineadas a
- * la izquierda para dejar libre la esquina de la firma. Los numeros hablan el
- * mismo idioma que el contador de escena del cromo ("01 · TITULO").
- *
- * El rotulo NO se borra, se oculta con `font-size: 0` y se repone en el
- * `::before`: asi el enlace conserva su nombre accesible ("Obra", no "03")
- * para quien navegue con lector de pantalla.
- *
- * 1079 y no 900, que es el mismo numero que el apilado de las barras: van
- * juntos porque SON la misma decision, aunque este comentario dijera durante
- * un tiempo justo lo contrario. Mientras las vias son columnas, el menu cabe a
- * su derecha; en cuanto se apilan, van a sangre de borde a borde y no queda
- * lateral donde ponerse — el menu cae ENCIMA, y encima de la primera banda,
- * que es la del correo. Medido a 1029 y 1075: la pildora tapaba el alto
- * completo de esa banda a lo largo de 135px, y se quedaba la pulsacion en 25
- * de 25 puntos muestreados. Con el carril de 150px que habia antes no pasaba,
- * porque entonces las barras acababan antes; se destapo al quitarlo.
- * Lo que va al pie es la CTA primaria del sitio: no hay ancho al que valga la
- * pena taparla.
- */
-@media (max-width: 1079px) {
-  .scene-nav {
-    top: auto;
-    bottom: 0.75rem;
-    right: auto;
-    left: 1.5rem;
-    transform: none;
-  }
-
-  /*
-   * Superficie propia bajo el rail. No es adorno: el rail va `fixed` sobre un
-   * contenido que se mueve, asi que en algun momento del scroll SIEMPRE queda
-   * sobre algo pulsable, y en la escena de contacto ese algo son franjas que
-   * ocupan el ancho entero. Medido barriendo el scroll en 390x844: en todos
-   * los offsets de la escena hay puntos dentro de una franja donde el toque se
-   * lo lleva un enlace del rail (`elementFromPoint` devuelve el `a` del nav).
-   *
-   * Interceptar es inherente a cualquier capa fija y no se puede quitar sin
-   * dejar el rail inservible. Lo que si se puede quitar es la SORPRESA: con
-   * fondo propio el rail se lee como una capa aparte y deja de parecer que el
-   * dedo cae sobre la franja. Mismo remedio, y por el mismo motivo, que `.rail`
-   * y `.theme-signature` en `src/style.css`.
-   */
-  /*
-   * El rail cede el paso mientras la pagina se mueve (ver `sceneNav.ts`).
-   *
-   * `pointer-events` va en el ELEMENTO `.scene-nav`, no en su `ul`. Puesto en
-   * el `ul` no sirve de nada: el `nav` es el que esta `fixed`, tiene su propia
-   * caja de 231x44 y es el que `elementFromPoint` devuelve — el toque se lo
-   * seguia llevando el rail con el `ul` ya desactivado. Se vio midiendo quien
-   * hay bajo el punto, no leyendo el CSS.
-   *
-   * Y la transicion vive en la regla BASE, no en esta: aqui gobernaria la IDA,
-   * que es justo lo que tiene que ser inmediato. Llegar tarde a apartarse es
-   * el fallo entero.
-   */
-  .scene-nav--transito {
-    pointer-events: none;
-  }
-
-  .scene-nav--transito ul {
-    opacity: 0;
-  }
-
-  .scene-nav ul {
-    transition: opacity 260ms ease-out;
-    flex-direction: row;
-    align-items: center;
-    gap: 0;
-    counter-reset: escena;
-    padding: 0 0.35rem;
-    border-radius: 999px;
-    background: rgb(11 5 19 / 0.72);
-    box-shadow: inset 0 0 0 1px rgb(255 244 232 / 0.14);
-    backdrop-filter: blur(7px);
-  }
-
-  .scene-nav li {
-    counter-increment: escena;
-  }
-
-  .scene-nav a {
-    justify-content: center;
-    padding: 0;
-    font-size: 0;
-  }
-
-  .scene-nav a::before {
-    content: "0" counter(escena);
-    font-size: var(--t-1, 0.75rem);
-    letter-spacing: 0.12em;
-  }
-}
 
 /*
  * Cortinilla del indice de escenas bajo movimiento reducido: se degrada el

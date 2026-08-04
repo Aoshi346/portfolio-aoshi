@@ -118,35 +118,28 @@ def main() -> int:
                                 left: Math.round(r.left * 10) / 10,
                                 visible: r.width > 0}; })};
             }""")
-            # Nada de texto de las barras puede quedar bajo `.scene-nav`. Es el
-            # riesgo que aparece al quitarle su carril: el menu pasa a flotar
-            # sobre color, y lo que antes era hueco reservado ahora es la caja
-            # de la cuarta via. Se comprueba contra el rectangulo real del menu,
-            # no contra el numero que se supuso al elegir su `min-width`.
-            tapados = pg.evaluate("""() => {
-                const nav = document.querySelector('.scene-nav').getBoundingClientRect();
-                const out = [];
-                for (const n of document.querySelectorAll('.contacto-bar-value, .contacto-bar-label')) {
-                    if (!n.firstChild) continue;
-                    // La caja de los GLIFOS, no la del elemento. Apilado, el
-                    // valor es un bloque que se estira hasta el borde derecho
-                    // aunque su texto acabe a la izquierda: medir el elemento
-                    // da 16 solapes que no existen.
-                    const rango = document.createRange();
-                    rango.selectNodeContents(n);
-                    const r = rango.getBoundingClientRect();
-                    if (r.width === 0) continue;
-                    const ox = Math.min(nav.right, r.right) - Math.max(nav.left, r.left);
-                    const oy = Math.min(nav.bottom, r.bottom) - Math.max(nav.top, r.top);
-                    if (ox > 0 && oy > 0) {
-                        out.push((n.textContent || '').trim().slice(0, 14) +
-                                 ' ' + Math.round(ox) + 'x' + Math.round(oy));
+            # En reposo NO puede haber navegacion ocupando la escena. Antes se
+            # comprobaba que no tapase texto; ahora se comprueba que no este.
+            # El disparador es lo unico permitido, y vive en el cromo de arriba.
+            invasion = pg.evaluate("""() => {
+                const nav = document.querySelector('.scene-index');
+                if (!nav || getComputedStyle(nav).pointerEvents !== 'none') {
+                    return 'la cortinilla esta activa en reposo';
+                }
+                const t = document.querySelector('.scene-nav-trigger');
+                if (!t) return 'no hay disparador';
+                const r = t.getBoundingClientRect();
+                for (const bar of document.querySelectorAll('.contacto-bar')) {
+                    const b = bar.getBoundingClientRect();
+                    if (Math.min(r.right, b.right) - Math.max(r.left, b.left) > 0 &&
+                        Math.min(r.bottom, b.bottom) - Math.max(r.top, b.top) > 0) {
+                        return 'el disparador solapa una via de contacto';
                     }
                 }
-                return out;
+                return null;
             }""")
-            for t in tapados:
-                fallos.append(f"{ancho}px reposo: la navegacion tapa \"{t}\"")
+            if invasion:
+                fallos.append(f"{ancho}px reposo: {invasion}")
 
             eje = "top" if marcas["fila"] else "left"
             bordes = [c[eje] for c in marcas["cajas"] if c["visible"]]

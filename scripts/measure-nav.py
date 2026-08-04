@@ -75,7 +75,9 @@ def main() -> int:
                 pg = b.new_page(viewport={"width": 1440, "height": 900})
                 pg.goto(f"http://localhost:4173/?theme={tema}", wait_until="domcontentloaded", timeout=30000)
                 pg.wait_for_timeout(9000)  # leader de apertura + GSAP + shader
-                enlace = pg.query_selector(f'.scene-nav a[href="#{ancla}"]')
+                pg.click(".scene-nav-trigger")
+                pg.wait_for_timeout(700)  # la cortinilla abre en 460 ms
+                enlace = pg.query_selector(f'.scene-index-row[href="#{ancla}"]')
                 if enlace is None:
                     fallos.append(f"{tema} #{ancla}: no hay enlace")
                     pg.close()
