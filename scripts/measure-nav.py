@@ -18,7 +18,7 @@ RAIZ = pathlib.Path(__file__).resolve().parent.parent
 
 def _constante(fichero: str, nombre: str) -> float:
     texto = (RAIZ / fichero).read_text(encoding="utf-8")
-    hallazgo = re.search(rf"^const {nombre} = ([\d.]+);", texto, re.M)
+    hallazgo = re.search(rf"^(?:export )?const {nombre} = ([\d.]+);", texto, re.M)
     if hallazgo is None:
         raise SystemExit(f"no encuentro {nombre} en {fichero} — el guardarrail esta roto")
     return float(hallazgo.group(1))
@@ -34,7 +34,7 @@ def comprueba_acoplamiento() -> list[str]:
     """
     transit = _constante("src/themes/vice.choreography.ts", "OBRA_TRANSIT")
     rest = _constante("src/themes/vice.choreography.ts", "OBRA_REST")
-    total = _constante("src/components/sceneNav.ts", "OBRA_TOTAL_U")
+    total = _constante("src/components/sceneNav.destino.ts", "OBRA_TOTAL_U")
     saltos = 4  # cinco cartelas, cuatro transiciones entre ellas
     esperado = saltos * transit + (saltos + 1) * rest
     if abs(esperado - total) > 1e-9:
