@@ -148,13 +148,19 @@ Es el riesgo propio de esta dirección. Requiere ojo, no solo números.
 
 ### Tarea 6: Movimiento reducido
 
-- [ ] Comprobar que con `prefers-reduced-motion` se pinta un solo fotograma y no arranca RAF
+- [x] Comprobar que con `prefers-reduced-motion` se pinta un solo fotograma y no arranca RAF
       (lo da `mountShaderBackground`, pero hay que verlo, no suponerlo).
-- [ ] El fotograma estático se pinta en `STATIC_FRAME_TIME = 8.0` **con `uScroll` en su valor de
+      Confirmado: dos capturas del canvas con ~1.8s de diferencia, mismo scroll, mismo
+      `reduced_motion="reduce"`, son bit a bit idénticas (mismo SHA-256). No hay RAF activo.
+- [x] El fotograma estático se pinta en `STATIC_FRAME_TIME = 8.0` **con `uScroll` en su valor de
       ese instante**. Comprobar que ese fotograma es legible y representativo del tema, no un
       extremo del arco donde una sola tinta domina.
-- [ ] Capturas a 1440x900 y 390x844 con `reduced_motion="reduce"`.
-- [ ] Commit.
+      Confirmado en scroll=0 (carga inicial): `balA = mix(0.26, 1.0, 0) = 0.26`, el ámbar no
+      desaparece del todo — sampleo de píxeles del canvas aislado (sin overlay de DOM) muestra
+      un tinte cálido tenue pero real junto al blob magenta dominante. No es un extremo
+      degenerado (100%/0%); no hace falta ajustar `balM`/`balA`.
+- [x] Capturas a 1440x900 y 390x844 con `reduced_motion="reduce"`.
+- [x] Commit.
 
 ### Tarea 7: Limpieza de recursos
 
