@@ -1,6 +1,6 @@
 # Tinta de cartel — el fondo de Vice pasa a ser materia impresa
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-04-vice-fondo-tinta.md`
 Fecha: 2026-08-04
 Alcance: el fondo del tema Vice. Hyprland y Caelestia no se tocan — comparten
@@ -137,6 +137,102 @@ Las tres quedan montadas y funcionando en `.superpowers/brainstorm/3762734-17858
 recuperables si alguna vez se quiere volver.
 
 ## Verificación
+
+- `npm run build` y `npm run lint` verdes.
+- Luminancia del fondo **aislado** (con el contenido oculto) por debajo del techo en al menos 12
+  puntos del recorrido, a 1440x900 y 390x844.
+- `scripts/verify.py` en verde contra su línea base, sin fallos nuevos. Atención especial al gate
+  de contraste: `--nav-dim` es un porcentaje calibrado **contra una superficie**, así que cambiar
+  el fondo puede invalidarlo aunque nadie toque el token. Ya pasó con el vídeo: cayó de 5,74:1 a
+  4,17:1 sin editar una línea.
+- Sin muaré visible a DPR 1, 1.5 y 2, en reposo y durante el scroll.
+- Capturas reales a 1440x900 y 390x844, cero errores de consola.
+- Gate final: `lidia-naive-tester` y `vera-art-director`.
+
+## Registro de implementación (Tarea 9, cierre del plan)
+
+Las Tareas 1-8 quedaron cerradas y revisadas antes de esta tarea; lo que sigue son los números
+finales que el propio plan pedía dejar por escrito, más las divergencias reales respecto a lo
+previsto arriba.
+
+### Luminancia del fondo aislado (Tarea 3)
+
+Con el arnés `scripts/measure-bg-luma.py` corregido (ver más abajo), midiendo el fondo realmente
+aislado en 12 puntos del recorrido de scroll:
+
+| Viewport | peor banda | techo banda | peor fotograma | techo fotograma | peor pixel | techo pixel |
+|---|---|---|---|---|---|---|
+| 1440×900 | 53.75 | 62 (margen 8.25) | 53.54 | 82 (margen 28.46) | 55.75 | 150 (margen 94.25) |
+| 390×844  | 54.01 | 62 (margen 7.99) | 53.82 | 82 (margen 28.18) | 55.25 | 150 (margen 94.75) |
+
+Ambos viewports pasan sin tocar ninguna de las tres palancas previstas (mezcla de tintas /
+`LUMA_MAX` / posición del foco ámbar) — el shader tal como quedó de la Tarea 2 ya cumplía. El
+margen sobre el techo de banda (~8 puntos) no es enorme; queda documentado en el informe de la
+Tarea 3 como riesgo residual no confirmado ni descartado (posible colapso de ruido `fbm` en
+software rendering frente a GPU real), pendiente de una mirada en navegador real si algún día se
+audita de nuevo el brillo.
+
+### Bug de arnés descubierto y corregido en la Tarea 3
+
+El arnés de brillo entregado en la Tarea 1 (`scripts/measure-bg-luma.py`) no aislaba el fondo:
+usaba `#app { visibility: hidden }` para ocultar el contenido, pero el canvas del shader vive
+**dentro** de `#app` (como hijo de `.bg-theme`, igual que el resto del contenido), así que esa
+regla ocultaba también el fondo. El síntoma fue una lectura idéntica al 0.01 en las 12 posiciones
+de scroll (12.21 exacto), que resultó ser la luminancia plana de `--color-ink` pintada por
+`html { background-color }` cuando no hay nada más visible — es decir, el arnés daba un falso
+verde para cualquier fondo, incluso uno roto, porque no estaba midiendo el shader en absoluto. Se
+corrigió cambiando la regla de aislamiento a
+`#app > *:not(.bg-theme):not(.bg-noise) { visibility: hidden !important; }`, que sí deja visible
+el fondo y oculta solo el contenido real. El techo (62/82/150) no se movió — el fix hace que el
+instrumento mida lo que ya decía medir. Cualquier medida de brillo de las Tareas 1/2 apoyada en la
+versión vieja del arnés no midió el shader real y debe descartarse a favor de los números de la
+Tarea 3 de arriba.
+
+### Decisión de muaré (Tarea 5)
+
+Se detectó, con evidencia medida (no a ojo), una discrepancia real en el tamaño físico del punto
+de trama entre pantallas sin retina (DPR 1) y pantallas retina (DPR ≥ 1.5): a `pitch` fijo en
+píxeles de búfer, el punto salía ~1.5x más grande en DPR 1 que en DPR ≥ 1.5 (7.0px CSS vs 4.7px
+CSS), por el recorte que `shaderBackground.ts` ya aplica al ratio real (tope 1.5). No hubo
+hormigueo ni bandas de interferencia en ningún caso (diff de píxeles entre fotogramas consecutivos
+< 0.1/255 en todos los DPR probados).
+
+**Decisión: (b) — escalar el paso de trama con el ratio buffer/CSS**, usando el ratio ya recortado
+por `shaderBackground.ts` (`Math.min(devicePixelRatio, 1.5)`), no el `devicePixelRatio` crudo. La
+razón de usar el ratio recortado y no el crudo: pedirle al shader más finura de trama de la que el
+búfer real puede resolver (por ejemplo, escalar para un DPR 3 real cuando el búfer sigue capado a
+1.5x) sería la receta de un muaré nuevo — exactamente el riesgo que la tarea vino a vigilar.
+Implementado como un uniform aditivo `uPixelRatio` en `shaderBackground.ts` (no-op para Hyprland y
+Caelestia, que no lo declaran en su fragment shader) y `pitch = 7.0 * (max(uPixelRatio, 1.0) / 1.5)`
+en `viceInk.ts`, que deja el paso exactamente en 7.0 para el caso más común (cualquier pantalla
+retina) y lo reduce a ~4.67 para DPR 1, igualando el tamaño físico en pantalla. Verificado tras el
+fix: densidad de punto visualmente idéntica entre DPR 1, 1.5 y 2, sin parpadeo nuevo.
+
+### Divergencias respecto al plan original
+
+- Ninguna decisión de diseño (mezcla de tintas, `LUMA_MAX`, posición de foco, `--nav-dim`) tuvo
+  que recalibrarse — el plan preveía la posibilidad de tocar esas palancas en las Tareas 3 y 4 y
+  no hizo falta en ningún caso.
+- El único hallazgo no previsto por el plan fue el bug del arnés de brillo (arriba), que es una
+  corrección de instrumentación de la propia Tarea 1, no un cambio de dirección del shader.
+- La Tarea 4 retiró `.bg-theme::before` (el lavado magenta-ámbar en `soft-light`) por quedar
+  redundante con el color propio del nuevo fondo, decisión validada con diff de píxeles y
+  `verify.py` en dos estados (con/sin la regla), no solo por intuición. El `::after` se mantuvo
+  intacto porque sí aporta margen de contraste medible (4.28:1 → 3.67:1 en el chip de teléfono de
+  contacto al retirarlo).
+
+### Gates finales (Tarea 9)
+
+- `npm run build` (Node 22, `tsc && vite build`) — verde.
+- `npm run lint` — verde, sin salida.
+- `python3 scripts/verify.py --url http://127.0.0.1:4173` (build de producción servido con
+  `vite preview`) — `TODO OK — 12 fallos conocidos, 0 nuevos (verify-baseline.json)`. Los 12
+  fallos son los ya documentados en tareas anteriores: 9 assets de galería pendientes (Tarea 11
+  fuera de este plan) y 3 fixtures de vídeo SMPTE pendientes (Tarea 8 histórica de este plan,
+  cierre fuera de alcance). Ninguno relacionado con el fondo de tinta.
+- Capturas reales de las cinco escenas (hero, about, obra, credits, contacto) a 1440×900 y
+  390×844 con `?theme=vice`: canvas WebGL activo con la trama de semitono magenta/ámbar en las
+  diez, cero errores de consola en cada captura.
 
 - `npm run build` y `npm run lint` verdes.
 - Luminancia del fondo **aislado** (con el contenido oculto) por debajo del techo en al menos 12
