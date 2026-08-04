@@ -994,19 +994,19 @@ y hay que evitar que abrir la cortinilla cambie la altura del documento (revisar
 390×844, 1029×900 y 1440×900, con la cortinilla cerrada y abierta, en `?theme=vice`. Mirarlas: un
 arnés en verde no prueba que se vea bien.
 
-- [ ] **Paso 5: Actualizar el estado del spec**
+- [x] **Paso 5: Actualizar el estado del spec**
 
 En `docs/superpowers/specs/2026-08-03-nav-cortinilla-design.md`, `Estado: implementado` y añadir
 `Plan: docs/superpowers/plans/2026-08-03-nav-cortinilla.md`. `verify.py` cruza spec y plan: si el
 spec dice implementado y quedan casillas sin marcar aquí, falla — y con razón.
 
-- [ ] **Paso 6: Gate**
+- [x] **Paso 6: Gate**
 
 Lanzar `lidia-naive-tester` y `vera-art-director` **con el modelo pineado** (heredan el de la
 sesión; sin pinear, un fan-out en sesión top factura todo a tarifa top). Cada uno lee su
 `memory.md` primero. A Lidia hay que preguntarle explícitamente por el hallazgo de "Fundido", que
 lleva tres revisiones abierto y que esta entrega pretende cerrar con el descriptor del índice.
 
-- [ ] **Paso 7: Pedir el merge**
+- [x] **Paso 7: Pedir el merge**
 
 Nunca hacerlo por cuenta propia.
