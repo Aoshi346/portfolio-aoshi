@@ -95,6 +95,31 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
     abierto = v;
     panel.classList.toggle("is-open", v);
     trigger.setAttribute("aria-expanded", v ? "true" : "false");
+
+    /*
+     * Con la cortinilla abierta, la pagina no rueda por debajo.
+     *
+     * Se atrapo el tabulador y se dejo suelta la rueda, y el panel se declara
+     * `aria-modal="true"`: medido, un `wheel` de 4000px con el menu abierto
+     * desplazaba la pagina entera detras del telon, el `IntersectionObserver`
+     * seguia corriendo, el resaltado ambar saltaba de la fila 01 a la 03 y el
+     * disparador se reetiquetaba solo. Nadie habia navegado. Al cerrar
+     * aparecias en un sitio distinto del que abriste, y los ScrollTrigger de
+     * Vice —incluido el pin del carril de obra— corrian a ciegas.
+     *
+     * Dos cerrojos, porque hacen falta los dos. `overflow: hidden` para el
+     * scroll nativo, y un aviso para Lenis: medido, `overflow` SOLO no para
+     * nada cuando Lenis esta montado, porque Lenis escucha la rueda y llama a
+     * `scrollTo` — el desplazamiento es programatico y `overflow` no lo ve.
+     *
+     * Va por evento y no importando Lenis aqui: vive dentro de
+     * `initSmoothScroll` en `utils/reveal.ts`, carga en diferido y puede no
+     * existir (movimiento reducido, o antes de que cargue). Un evento deja a
+     * cada modulo con lo suyo, y si nadie escucha, el `overflow` hace de red.
+     */
+    document.documentElement.style.overflow = v ? "hidden" : "";
+    window.dispatchEvent(new CustomEvent("scene-nav:toggle", { detail: { abierto: v } }));
+
     if (v) filas()[0]?.focus();
     else trigger.focus();
   };

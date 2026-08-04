@@ -2606,13 +2606,27 @@
  */
 .scene-nav-trigger {
   position: fixed;
-  top: 1.05rem;
-  right: 1.5rem;
-  z-index: 42;
+  /* El marco del sitio es de 48px por la izquierda (`.rail`, `.hero-surface`,
+     `.hero-corner`): 3rem lo respeta, 1.5rem dejaba el disparador colgando 24px
+     fuera de la columna que cumple todo lo demas. Y `top: 0` alinea su rotulo
+     con el de la marca de la esquina opuesta, que estaban a 17,8px — una
+     interlinea entera — en la misma banda de 42px. */
+  top: 0;
+  right: 3rem;
+  /* 44: por encima del telon (43), para que siga pulsandose con el abierto. */
+  z-index: 44;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.45rem;
   min-height: 44px;
+  /* Ancho fijo al rotulo mas largo: anclado a la derecha, variaba de 103 a 136px
+     segun la escena y su borde izquierdo se deslizaba 32px mientras lees. Un
+     control fijo del cromo que cambia de tamano no llega a ser un objeto. */
+  min-width: 9.5rem;
+  /* Cifras de ancho fijo: "01" medía 16,4px y "02".."05" 18,4, y la columna de
+     numeros del cromo quedaba dentada. */
+  font-variant-numeric: tabular-nums;
   padding: 0.45rem 0.7rem;
   border: 0;
   border-radius: 5px;
@@ -2623,7 +2637,7 @@
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--accent-amber, #ffd166);
+  color: var(--color-accent, #ffd166);
   cursor: pointer;
   transition:
     background 200ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -2636,7 +2650,7 @@
 }
 
 .scene-nav-trigger:focus-visible {
-  outline: 3px solid var(--accent-amber, #ffd166);
+  outline: 3px solid var(--color-accent, #ffd166);
   outline-offset: 3px;
 }
 
@@ -2654,7 +2668,10 @@
   --sangria: 2.8rem;
   position: fixed;
   inset: 0;
-  z-index: 41;
+  /* 43, por encima de `.scroll-rail` (42): con 41 el hairline de progreso
+     atravesaba el telon y se veia a plena saturacion dentro del indice. Un
+     telon que algo perfora deja de ser un telon. */
+  z-index: 43;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2748,7 +2765,12 @@
   text-transform: var(--display-transform, uppercase);
   font-size: var(--t-5);
   line-height: 1.05;
-  color: rgb(255 244 232 / 0.55);
+  /* 0.85 y no 0.55: lo mas brillante del indice no puede ser la escena en la
+     que YA estas, que es el unico destino que no sirve para nada. Con todo al
+     0.55 y el actual en ambar, los cuatro sitios a los que se puede ir eran el
+     texto mas apagado de la pantalla. Ahora los destinos mandan y el actual se
+     marca por otra via (ver `aria-current`), no por intensidad. */
+  color: rgb(255 244 232 / 0.85);
   transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -2775,17 +2797,17 @@
 .scene-index-row:hover .scene-index-name,
 .scene-index-row:focus-visible .scene-index-name { color: var(--color-paper, #fff4e8); }
 .scene-index-row:hover .scene-index-blurb,
-.scene-index-row:focus-visible .scene-index-blurb { color: var(--accent-amber, #ffd166); }
+.scene-index-row:focus-visible .scene-index-blurb { color: var(--color-accent, #ffd166); }
 .scene-index-row:hover .scene-index-guide { opacity: 1; }
 
 .scene-index-row:focus-visible {
-  outline: 3px solid var(--accent-amber, #ffd166);
+  outline: 3px solid var(--color-accent, #ffd166);
   outline-offset: 4px;
   border-radius: 3px;
 }
 
 .scene-index-row[aria-current="true"] .scene-index-name,
-.scene-index-row[aria-current="true"] .scene-index-num { color: var(--accent-amber, #ffd166); }
+.scene-index-row[aria-current="true"] .scene-index-num { color: var(--color-accent, #ffd166); }
 
 /*
  * Cortinilla del indice de escenas bajo movimiento reducido: se degrada el
@@ -2796,6 +2818,18 @@
  * el criterio debe cumplirse tambien en escritorio.
  */
 @media (prefers-reduced-motion: reduce) {
+  /*
+   * Los `:nth-of-type` de la cascada pesan (0,4,0) y este bloque pesaba (0,3,0)
+   * — las media queries no aportan especificidad, asi que ganaban ellos.
+   * Medido: duracion 0s pero retardos intactos de 0.11s a 0.33s, o sea cinco
+   * chasquidos escalonados en vez de una aparicion. El comentario decia que
+   * degradaba "la cascada de retardos" y no la degradaba.
+   */
+  .scene-index.is-open .scene-index-row:nth-of-type(1),
+  .scene-index.is-open .scene-index-row:nth-of-type(2),
+  .scene-index.is-open .scene-index-row:nth-of-type(3),
+  .scene-index.is-open .scene-index-row:nth-of-type(4),
+  .scene-index.is-open .scene-index-row:nth-of-type(5),
   .scene-index,
   .scene-index.is-open,
   .scene-index .scene-index-row,
