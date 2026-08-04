@@ -116,14 +116,50 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
 
   let abierto = false;
 
+  // Las filas del indice, recalculadas en cada uso: son un `Array.from` sobre
+  // una NodeList viva, nunca una referencia guardada de antemano.
+  const filas = (): HTMLAnchorElement[] =>
+    Array.from(panel.querySelectorAll<HTMLAnchorElement>(".scene-index-row"));
+
   const setAbierto = (v: boolean): void => {
     abierto = v;
     panel.classList.toggle("is-open", v);
     trigger.setAttribute("aria-expanded", v ? "true" : "false");
+    if (v) filas()[0]?.focus();
+    else trigger.focus();
   };
 
   const onTriggerClick = (): void => setAbierto(!abierto);
   trigger.addEventListener("click", onTriggerClick);
+
+  /*
+   * Foco atrapado: mientras la cortinilla esta abierta, tabular no debe
+   * llevarte a la pagina que hay debajo, que esta tapada. Esc cierra y
+   * devuelve el foco al disparador que la abrio.
+   */
+  const onKeydown = (event: KeyboardEvent): void => {
+    if (!abierto) return;
+    if (event.key === "Escape") {
+      setAbierto(false);
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const f = filas();
+    if (f.length === 0) return;
+    const i = f.indexOf(document.activeElement as HTMLAnchorElement);
+    event.preventDefault();
+    f[(i + (event.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+  };
+  document.addEventListener("keydown", onKeydown);
+
+  // Cerrar al pulsar fuera del panel y del disparador.
+  const onDocClick = (event: MouseEvent): void => {
+    if (!abierto) return;
+    const t = event.target as HTMLElement;
+    if (t.closest(".scene-index") || t.closest(".scene-nav-trigger")) return;
+    setAbierto(false);
+  };
+  document.addEventListener("click", onDocClick);
 
   const onPanelClick = (event: MouseEvent): void => {
     const row = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[href^='#']");
@@ -235,6 +271,8 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("touchmove", onScroll);
       window.removeEventListener("wheel", onScroll);
+      document.removeEventListener("keydown", onKeydown);
+      document.removeEventListener("click", onDocClick);
       clearTimeout(quieto);
       observer.disconnect();
       nav.remove();

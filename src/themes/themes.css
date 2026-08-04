@@ -2960,3 +2960,23 @@
     letter-spacing: 0.12em;
   }
 }
+
+/*
+ * Cortinilla del indice de escenas bajo movimiento reducido: se degrada el
+ * VIAJE (la entrada/salida animada y su cascada de retardos por fila), nunca
+ * la FUNCION. El panel sigue abriendo y cerrando via `.is-open` — solo deja
+ * de deslizarse, difuminarse y escalonarse fila a fila. Fuera de cualquier
+ * `@media` de ancho a proposito: anidado ahi solo se aplicaria a ese ancho, y
+ * el criterio debe cumplirse tambien en escritorio.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .scene-index,
+  .scene-index.is-open,
+  .scene-index .scene-index-row,
+  .scene-index.is-open .scene-index-row {
+    transition: none;
+    transition-delay: 0ms;
+    transform: none;
+    filter: none;
+  }
+}
