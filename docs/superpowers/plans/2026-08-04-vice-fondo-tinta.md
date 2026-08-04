@@ -188,14 +188,20 @@ Es el riesgo propio de esta dirección. Requiere ojo, no solo números.
 **Solo con todo lo anterior en verde.** Dejar un fondo muerto en el repo es la deuda que este
 proyecto ya arrastró con los fixtures `vice-hero.*` durante una semana.
 
-- [ ] Borrar `src/backgrounds/viceHaze.ts`.
-- [ ] Buscar y actualizar todas sus menciones: `src/themes/themes.css` (dos comentarios),
+- [x] Borrar `src/backgrounds/viceHaze.ts`.
+- [x] Buscar y actualizar todas sus menciones: `src/themes/themes.css` (dos comentarios),
       `scripts/measure-obra-rail.py` (la ruta que bloquea para el A/B), `.claude/rules/verification.md`,
       `CLAUDE.md`, `MEMORY.md`, `.ai/memory.md`. `check_docs_references()` falla si sobrevive
       alguna.
-- [ ] `shaderBackground.ts` **se queda**: lo usan `caelestiaBlobs` y `hyprGradient`.
-- [ ] Comprobar que Hyprland y Caelestia siguen intactos (captura de los dos).
-- [ ] Commit.
+      `.claude/rules/verification.md`/`CLAUDE.md`/`MEMORY.md` ya no citaban `viceHaze` (limpio).
+      themes.css y measure-obra-rail.py actualizados a viceInk; tambien se encontro y actualizo
+      `.docs/CURSOR-VICE.md` y `scripts/verify.py` (mismo patron). `.ai/memory.md` re-fechado a
+      pasado, no borrado (registro historico).
+- [x] `shaderBackground.ts` **se queda**: lo usan `caelestiaBlobs` y `hyprGradient`. Confirmado
+      intacto, no aparece en el diff de esta tarea.
+- [x] Comprobar que Hyprland y Caelestia siguen intactos (captura de los dos).
+      Capturas 1440x900, canvas activo en ambos, 0 errores de consola.
+- [x] Commit. (`7a3c631`)
 
 ### Tarea 9: Gates finales
 
