@@ -71,6 +71,76 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   trigger.append(triggerLabel);
 
   /*
+   * La cortinilla: panel a pantalla completa con el indice de las cinco
+   * escenas. `id="scene-index"` porque el disparador ya apunta ahi via
+   * `aria-controls`.
+   */
+  const panel = document.createElement("div");
+  panel.className = "scene-index";
+  panel.id = "scene-index";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-label", "Selección de escenas");
+
+  const heading = document.createElement("p");
+  heading.className = "scene-index-title";
+  heading.textContent = "Selección de escenas";
+  panel.append(heading);
+
+  for (const [i, entry] of TARGETS.entries()) {
+    const row = document.createElement("a");
+    row.className = "scene-index-row";
+    // Ancla real en el href: sin JavaScript sigue navegando.
+    row.href = `#${entry.id}`;
+    row.dataset.scene = entry.id;
+
+    const num = document.createElement("span");
+    num.className = "scene-index-num";
+    num.textContent = String(i + 1).padStart(2, "0");
+
+    const name = document.createElement("span");
+    name.className = "scene-index-name";
+    name.textContent = entry.label;
+
+    const guide = document.createElement("span");
+    guide.className = "scene-index-guide";
+    guide.setAttribute("aria-hidden", "true"); // la guia es decorativa
+
+    const blurb = document.createElement("span");
+    blurb.className = "scene-index-blurb";
+    blurb.textContent = entry.blurb;
+
+    row.append(num, name, guide, blurb);
+    panel.append(row);
+  }
+
+  let abierto = false;
+
+  const setAbierto = (v: boolean): void => {
+    abierto = v;
+    panel.classList.toggle("is-open", v);
+    trigger.setAttribute("aria-expanded", v ? "true" : "false");
+  };
+
+  const onTriggerClick = (): void => setAbierto(!abierto);
+  trigger.addEventListener("click", onTriggerClick);
+
+  const onPanelClick = (event: MouseEvent): void => {
+    const row = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[href^='#']");
+    if (!row) return;
+    const id = row.hash.slice(1);
+    const destination = destinationFor(id);
+    if (destination === null) return;
+    event.preventDefault();
+    setAbierto(false);
+    // `instant` explicito: `html { scroll-behavior: smooth }` hace que "auto"
+    // resuelva a suave incluso con prefers-reduced-motion puesto.
+    window.scrollTo({ top: destination, behavior: "instant" });
+    history.replaceState(null, "", `#${id}`);
+  };
+  panel.addEventListener("click", onPanelClick);
+
+  /*
    * La escena "en curso" se mantiene por `IntersectionObserver`, no por la
    * coreografia de Vice: Hyprland y Caelestia no tienen coreografia que la
    * actualice, y el disparador vive en los tres temas.
@@ -78,6 +148,10 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   const pinta = (i: number): void => {
     const n = String(i + 1).padStart(2, "0");
     triggerLabel.textContent = `${n} · ${TARGETS[i].label}`;
+    panel.querySelectorAll<HTMLElement>(".scene-index-row").forEach((row, j) => {
+      if (j === i) row.setAttribute("aria-current", "true");
+      else row.removeAttribute("aria-current");
+    });
   };
   pinta(0);
 
@@ -101,6 +175,7 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   }
 
   root.append(trigger);
+  root.append(panel);
 
   /*
    * El rail se aparta mientras la pagina se mueve, y solo en su forma de movil.
@@ -155,6 +230,8 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   return {
     destroy: () => {
       list.removeEventListener("click", onClick);
+      trigger.removeEventListener("click", onTriggerClick);
+      panel.removeEventListener("click", onPanelClick);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("touchmove", onScroll);
       window.removeEventListener("wheel", onScroll);
@@ -162,6 +239,7 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
       observer.disconnect();
       nav.remove();
       trigger.remove();
+      panel.remove();
       delete (window as unknown as { __navDestino__?: unknown }).__navDestino__;
     },
   };
