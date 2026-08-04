@@ -2722,7 +2722,11 @@
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.14em;
-  color: rgb(255 244 232 / 0.38);
+  /* 0.55 y no 0.38: sobre el telon (tinta a 0.985) el 0.38 medía 3,26:1 y AA
+     pide 4,5:1 para 12px. Lo cazo `verify.py`, que muestrea el pixel
+     RENDERIZADO y no el color declarado — por eso ve lo que el ojo perdona y
+     la norma no. Sigue siendo el elemento mas tenue de la fila. */
+  color: rgb(255 244 232 / 0.55);
 }
 
 .scene-index-name {

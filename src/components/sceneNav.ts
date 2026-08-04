@@ -48,9 +48,21 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   for (const [i, entry] of TARGETS.entries()) {
     const row = document.createElement("a");
     row.className = "scene-index-row";
-    // Ancla real en el href: sin JavaScript sigue navegando.
+    /*
+     * Ancla real en el href: sin JavaScript sigue navegando. Y el id va SOLO
+     * ahi — nada de `dataset.scene`.
+     *
+     * `data-scene` es el atributo con el que este proyecto marca las escenas
+     * de verdad, y ponerselo a las filas del indice las metia en ese conjunto
+     * con dos consecuencias: heredaban `padding: calc(9rem + 6.5vh)` de la
+     * regla `:root[data-theme="vice"] [data-scene]` —202,5px arriba y abajo,
+     * medidos— con lo que cada fila pasaba a medir 405px de alto, las cinco no
+     * cabian en la pantalla y la primera quedaba en `top: -545`, fuera de
+     * viewport y sin poder pulsarse; y ademas la coreografia de Vice recorre
+     * `[data-scene]` para saber en que escena esta, asi que se le colaban
+     * cinco escenas fantasma.
+     */
     row.href = `#${entry.id}`;
-    row.dataset.scene = entry.id;
 
     const num = document.createElement("span");
     num.className = "scene-index-num";
