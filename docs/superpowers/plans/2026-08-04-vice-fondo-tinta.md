@@ -214,8 +214,11 @@ proyecto ya arrastró con los fixtures `vice-hero.*` durante una semana.
 - [x] Escribir el registro de implementación al final del spec: los números finales de luminancia,
       la decisión de muaré y cualquier divergencia respecto a este plan.
 - [x] Poner el spec en `Estado: implementado`.
-- [!] **→ PEDIR REVISIÓN A AOSHI** sobre el sitio real, moviéndose, antes de proponer el merge.
+- [x] **→ PEDIR REVISIÓN A AOSHI** sobre el sitio real, moviéndose, antes de proponer el merge.
       Es la lección del intento anterior: se enseñaron capturas durante toda una tarde y lo que
-      decidió el rechazo fue verlo scrollear. <!-- fuera de alcance de la Tarea 9 mecanica: lo
-      hace el controlador de la sesion directamente con Aoshi -->
-- [!] Gate `lidia-naive-tester` y `vera-art-director`. <!-- fuera de alcance de la Tarea 9 mecanica -->
+      decidió el rechazo fue verlo scrollear.
+      Aoshi revisó el sitio real en `http://127.0.0.1:4173/?theme=vice` scrolleando, pidió un
+      ajuste al disparador de navegación (quitar la caja del `.scene-nav-trigger`, dejar solo
+      texto subrayado — commit `a69a28d`) y tras verlo aplicado y verificado dio la aprobación:
+      "Excelente, todo listo y aprobado".
+- [ ] Gate `lidia-naive-tester` y `vera-art-director`.
