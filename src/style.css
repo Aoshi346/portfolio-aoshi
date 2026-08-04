@@ -520,24 +520,24 @@ body {
 }
 
 /*
- * Capas de tratamiento del backdrop fotografico. El scrim es obligatorio:
- * garantiza contraste del texto pase lo que pase en la imagen.
+ * Capa de tratamiento del backdrop. El scrim (::after) es obligatorio:
+ * garantiza contraste del texto pase lo que pase en el fondo generativo.
+ *
+ * historical: hasta la Tarea 4 (fondo de tinta) tambien habia un ::before —
+ * lavado magenta-ambar en soft-light al 48%, puesto cuando el backdrop era
+ * un fixture SMPTE sin color propio y necesitaba que algo le diera la paleta
+ * del tema. viceInk.ts (Tarea 2) ya pinta esa paleta en el propio shader (dos
+ * tintas tramadas), asi que el lavado quedo redundante: A/B con Playwright
+ * midio una diferencia media de <0.01/255 entre tenerlo y no tenerlo, y
+ * scripts/verify.py dio las mismas 276 comprobaciones OK con y sin el.
+ * Retirado en vez de dejarlo comentado: no aporta nada que el shader no
+ * de ya, y un blend-mode inerte seguia siendo una capa de pintado mas.
  */
-:root[data-theme="vice"] .bg-theme::before,
 :root[data-theme="vice"] .bg-theme::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-
-:root[data-theme="vice"] .bg-theme::before {
-  background: linear-gradient(200deg, #ff2e88 0%, #7b1d6b 45%, #ffb347 100%);
-  mix-blend-mode: soft-light;
-  opacity: 0.48;
-}
-
-:root[data-theme="vice"] .bg-theme::after {
   background: linear-gradient(
     180deg,
     rgb(10 2 20 / 0.5) 0%,
