@@ -122,6 +122,24 @@ async function initSmoothScroll(gsap: Gsap, scrollTrigger: ScrollTriggerApi): Pr
    */
   gsap.ticker.lagSmoothing(500, 33);
 
+  /*
+   * La cortinilla de escenas se declara `aria-modal`, asi que mientras esta
+   * abierta la pagina no puede rodar por debajo. `overflow: hidden` NO basta
+   * con Lenis montado: Lenis escucha la rueda y desplaza llamando a `scrollTo`,
+   * que es programatico y `overflow` no ve. Medido antes de esto: 4000px de
+   * rueda con el menu abierto movian la pagina entera detras del telon, el
+   * observador seguia corriendo y el indice se reetiquetaba solo — el
+   * resaltado saltaba de la escena 01 a la 03 sin que nadie navegase.
+   *
+   * `sceneNav` avisa por evento en vez de importar Lenis, para que este modulo
+   * siga siendo el unico dueno de la instancia.
+   */
+  window.addEventListener("scene-nav:toggle", (event) => {
+    const abierto = (event as CustomEvent<{ abierto: boolean }>).detail?.abierto;
+    if (abierto) lenis.stop();
+    else lenis.start();
+  });
+
   wireFocusScroll(lenis);
 }
 

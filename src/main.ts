@@ -2,6 +2,7 @@ import "./style.css";
 import type { BackgroundHandle } from "./backgrounds/shaderBackground";
 import { createCinemaChrome } from "./components/cinemaChrome";
 import { createIntroLeader } from "./components/introLeader";
+import { mountSceneNav } from "./components/sceneNav";
 import { createThemeSignature } from "./components/themeSignature";
 import { caseStudies } from "./data/content";
 import { createAbout } from "./sections/about";
@@ -109,6 +110,22 @@ const main = el("main", "relative", [
   createContacto(),
 ]);
 
+/*
+ * Ids de escena para las anclas de la navegacion. Se ponen aqui y no en cada
+ * factoria porque el carril de obra no es una escena sino un envoltorio de
+ * cinco, y su ancla tiene que apuntar al carril.
+ */
+const ANCHOR_IDS: Record<string, string> = {
+  hero: "hero",
+  about: "quien-es",
+  credits: "creditos",
+  contacto: "contacto",
+};
+for (const [scene, id] of Object.entries(ANCHOR_IDS)) {
+  main.querySelector<HTMLElement>(`[data-scene="${scene}"]`)?.setAttribute("id", id);
+}
+obraRail.id = "obra";
+
 app.append(
   backgroundHost,
   noise,
@@ -120,6 +137,10 @@ app.append(
 // El leader va el ultimo del arbol y con z-index propio: tapa todo lo demas
 // mientras dura, cromo de cine incluido.
 if (introLeader) app.append(introLeader);
+
+// Navegacion de escenas, comun a los tres temas: vive fuera del cromo de
+// cine (aria-hidden) para que quede en el arbol de accesibilidad.
+const sceneNavHandle = mountSceneNav(app);
 
 // Barra de progreso propia: solo Vice sustituye la del navegador. Los otros
 // dos temas son "pieles de interfaz" y ahi la barra nativa es lo correcto.
@@ -178,6 +199,7 @@ window.addEventListener(
     backgroundHandle?.destroy();
     scrollRailHandle?.destroy();
     cursorHandle?.destroy();
+    sceneNavHandle.destroy();
   },
   { once: true },
 );

@@ -18,6 +18,16 @@
   --color-accent-2: #ff2e88;
   --color-line: rgb(255 209 102 / 0.32);
 
+  /*
+   * Atenuacion del indice de escenas. NO es un numero global: es una constante
+   * calibrada contra el telon, y el telon cambia de piel con el tema. Sobre el
+   * oscuro de Vice, 55% da 5,74:1 en los numeros y 50% da 4,92:1 en los
+   * descriptores. Sobre el telon CLARO de Caelestia esos mismos porcentajes
+   * caen a 3,72 y 3,20 — por debajo del 4,5:1 de AA. Medido en el build.
+   */
+  --nav-dim: 55%;
+  --nav-dim-soft: 50%;
+
   --font-display: "Passion One", system-ui, sans-serif;
   --font-body: "Manrope", system-ui, sans-serif;
   --font-lead: "Manrope", system-ui, sans-serif;
@@ -53,7 +63,27 @@
 
   /* La linea de cartel: grande y ultraligera, nunca un parrafo pequeno. */
   --lead-weight: 200;
-  --lead-size: clamp(1.05rem, 2vw, 1.45rem);
+
+  /*
+   * Escala tipografica del tema: cuarta, razon 1,333, base 16, suelo duro 12.
+   * Existe porque los tamanos del tema iban por su tercera aparicion en la
+   * auditoria visual (10,56 y 9,6 en contacto; 152 / 73,6 / 64 / 57,6 en los
+   * titulos de escena, que eran cuatro tamanos para un mismo papel).
+   *
+   * Dos reglas, y son parte de la escala tanto como los numeros:
+   *   1. Todo clamp() lleva LOS DOS extremos en pasos de esta escala.
+   *   2. Maximo cuatro tamanos por encuadre.
+   */
+  --t-1: 12px;
+  --t-2: 16px;
+  --t-3: 21.33px;
+  --t-4: 28.43px;
+  --t-5: 37.9px;
+  --t-6: 50.52px;
+  --t-7: 67.4px;
+  --t-8: 89.85px;
+  --t-9: 119.77px;
+  --t-10: 159.66px;
 
   --bg-fallback: linear-gradient(180deg, #150726 0%, #4b1146 55%, #ff5c3d 100%);
 }
@@ -333,7 +363,9 @@
  */
 :root[data-theme="vice"] .about-name {
   margin: 0;
-  font-size: clamp(2.5rem, 6.4vw, 6.4rem);
+  /* Escala: 40px (movil) y 92.16px (desktop, el vw manda antes que llegar al
+     techo de 6.4rem) pasan a sus pasos mas cercanos, t-5 y t-8. */
+  font-size: clamp(var(--t-5), 6.4vw, var(--t-8));
   line-height: 0.84;
 }
 
@@ -371,7 +403,11 @@
   padding: 0.34rem 0.62rem;
   border: 1px solid color-mix(in srgb, var(--color-accent-2) 55%, transparent);
   background: color-mix(in srgb, var(--color-accent-2) 14%, transparent);
-  font-size: 0.62rem;
+  /* Este override, mas especifico que la regla base de style.css, era el
+     que de verdad ganaba en Vice — arreglar solo la base no bastaba.
+     9.92px -> 12px (+20.97%), mismo salto que `.about-h`, anotado en el
+     informe. */
+  font-size: var(--t-1);
   letter-spacing: 0.14em;
   /* Mezclado con paper por la misma razon que `.about-facts dt`: el magenta
      puro sobre el degradado de Vice se queda corto de contraste. */
@@ -402,7 +438,7 @@
 }
 
 :root[data-theme="vice"] .about-facts dd {
-  font-size: 0.8rem;
+  font-size: var(--t-1);
   font-weight: 500;
   color: color-mix(in srgb, var(--color-paper) 82%, transparent);
 }
@@ -438,7 +474,7 @@
   /* 34ch, no 22: con `aboutCopy[0]` (63 caracteres) 22ch da tres lineas y el
      lead se come 104px del presupuesto de altura. A 34ch entra en dos. */
   max-width: 34ch;
-  font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+  font-size: clamp(var(--t-3), 2.2vw, var(--t-4));
   font-weight: 200;
   line-height: 1.22;
 }
@@ -488,7 +524,9 @@
 
 :root[data-theme="vice"] .about-pairs-head .about-h {
   margin: 0;
-  font-size: 0.62rem;
+  /* 9.92px -> 12px (+20.97%), el mismo salto que `.about-h` de mas abajo:
+     anotado en el informe. */
+  font-size: var(--t-1);
   letter-spacing: 0.28em;
 }
 
@@ -591,7 +629,7 @@
   display: block;
   font-family: var(--font-billing);
   font-weight: 400;
-  font-size: 1.5rem;
+  font-size: var(--t-3);
   line-height: 1.1;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -609,7 +647,7 @@
 
 :root[data-theme="vice"] .about-proof-in b {
   display: block;
-  font-size: 0.96rem;
+  font-size: var(--t-2);
   font-weight: 600;
   line-height: 1.25;
   color: var(--color-paper);
@@ -619,7 +657,7 @@
 :root[data-theme="vice"] .about-proof-in > span {
   display: block;
   margin-top: 0.28rem;
-  font-size: 0.8rem;
+  font-size: var(--t-1);
   font-weight: 300;
   line-height: 1.45;
   color: color-mix(in srgb, var(--color-paper) 62%, transparent);
@@ -724,7 +762,12 @@
   :root[data-theme="vice"] .about-claim-in {
     font-family: var(--font-display);
     font-weight: var(--display-weight);
-    font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+    /* 3vw y no el 2.4vw original: con 2.4vw el termino preferido caia DENTRO
+       del clamp a 1440px (34.56px) sin llegar al techo `--t-5`, que es
+       justo el paso al que hay que llegar. Con 3vw el preferido supera el
+       techo a partir de ~1263px y el clamp lo satura ahi, asi que a 1440px
+       el resultado es exactamente `--t-5` (37.9px). */
+    font-size: clamp(var(--t-3), 3vw, var(--t-5));
     line-height: 0.92;
     letter-spacing: 0.005em;
     padding-right: 1rem;
@@ -855,7 +898,9 @@
 
 :root[data-theme="vice"] .about-h {
   margin-bottom: 0.7rem;
-  font-size: 0.62rem;
+  /* 9.92px -> 12px (+20.97%), mismo salto que `.about-pairs-head .about-h`:
+     anotado en el informe. */
+  font-size: var(--t-1);
   letter-spacing: 0.28em;
 }
 
@@ -866,13 +911,14 @@
 
 :root[data-theme="vice"] .about-item b {
   /* 0.96 y no 0.94: separados un 2,1%, costaban consistencia sin comprar
-     jerarquia. Mismo motivo en los detalles, que iban a 0.78 contra 0.8. */
-  font-size: 0.96rem;
+     jerarquia. Mismo motivo en los detalles, que iban a 0.78 contra 0.8.
+     Ahora en la escala: t-2 (16px). */
+  font-size: var(--t-2);
 }
 
 :root[data-theme="vice"] .about-item span {
   margin-top: 3px;
-  font-size: 0.8rem;
+  font-size: var(--t-1);
 }
 
 /*
@@ -904,7 +950,7 @@
 :root[data-theme="vice"] .about-body > [data-line="note"] > * {
   display: block;
   margin-top: 0;
-  font-size: 0.8rem;
+  font-size: var(--t-1);
   font-weight: 300;
   line-height: 1.5;
   color: color-mix(in srgb, var(--color-paper) 58%, transparent);
@@ -1044,6 +1090,10 @@
   --color-accent-2: #00ff99;
   --color-line: #13303a;
 
+  /* Telon oscuro, como Vice: mismos porcentajes. Medido: 5,27 y 4,79:1. */
+  --nav-dim: 55%;
+  --nav-dim-soft: 50%;
+
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Space Grotesk", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -1064,6 +1114,16 @@
   --color-accent: #6c4fd8;
   --color-accent-2: #2f9e79;
   --color-line: #d9d0e4;
+
+  /*
+   * Tema CLARO: el telon es `--color-ink` (#f4f0f9) y el texto `--color-paper`
+   * (#1c1b1f), al reves que en Vice. Tinta oscura atenuada sobre fondo claro
+   * pierde mucho mas contraste que crema atenuada sobre fondo oscuro, asi que
+   * los porcentajes de Vice no valen aqui: con 55% los numeros median 3,72:1.
+   * El umbral aritmetico esta en 61,7%; 70% deja margen y mide 5,97:1.
+   */
+  --nav-dim: 70%;
+  --nav-dim-soft: 66%;
 
   --font-display: "Outfit", system-ui, sans-serif;
   --font-body: "Outfit", system-ui, sans-serif;
@@ -1151,12 +1211,91 @@
   margin-bottom: clamp(1.5rem, 3vh, 2.6rem);
   font-family: var(--font-display);
   font-weight: var(--display-weight);
-  font-size: clamp(2rem, 5.5vw, 3.6rem);
+  /* Convergen aqui las tres apariciones de "titulo de escena" que la Tarea 1
+     cierra: obra 73.6px, contacto 64px y este, 57.6px. Un solo paso de la
+     escala (t-6..t-7) para las tres, ver comentario mas abajo. */
+  font-size: clamp(var(--t-6), 6vw, var(--t-7));
   line-height: var(--display-leading);
   letter-spacing: var(--display-tracking);
   text-align: center;
   text-wrap: balance;
   color: var(--color-paper);
+}
+
+/*
+ * Titulos de escena (hero, obra, contacto): la Tarea 1 los cierra sobre la
+ * escala en vez de tocar la clase base compartida `.display-lg`/`.display-xl`
+ * de `style.css`. Se probo directamente (`font-size: 999px` temporal en la
+ * base): un font-size ahi gana SIEMPRE al `text-[clamp(...)]` de Tailwind de
+ * cada instancia, en los tres temas — no hay capa CSS que lo proteja. Como
+ * `.display-lg`/`.display-xl` tienen valores distintos por uso (about-name y
+ * `.credits-panel-name` en 24px plano vs. el titulo de obra en un clamp
+ * 32-73.6px vs. el nombre del hero en 44.8-152px), no existe UN respaldo que
+ * mantenga a Hyprland/Caelestia identicos en los tres a la vez. La base
+ * queda intacta (sin font-size) y cada escena que de verdad necesitaba
+ * cambiar recibe su propio override aqui, con mayor especificidad, cero
+ * riesgo para los otros dos temas (no hay `var()` con respaldo: sencillamente
+ * no aplica fuera de Vice).
+ */
+:root[data-theme="vice"] [data-scene="hero"] h1.display-xl {
+  /* 12vw y no el 9vw del pliego: con 9vw el termino preferido caia DENTRO
+     del clamp a 1440px (129.6px), sin llegar a ninguno de los dos extremos
+     de la escala (nunca los toca entre 390 y 1440px). Con 12vw el preferido
+     ya supera el techo en todo el rango medido, asi que el resultado es
+     siempre uno de los dos extremos: 67.4px en movil, 159.66px en desktop.
+     44.8px -> 67.4px es un salto de +50.4%, anotado en el informe: viene del
+     pliego (fila `.display-xl`), no es una decision de esta tarea. */
+  font-size: clamp(var(--t-7), 12vw, var(--t-10));
+}
+
+/*
+ * Salto discreto, no `clamp(var(--t-6), 6vw, var(--t-7))`. El termino central
+ * en `vw` es CONTINUO y su tramo util cae entre 843px de viewport (donde 6vw
+ * alcanza --t-6) y 1123px (donde alcanza --t-7): dentro de esa banda el
+ * titulo mide 54.00, 60.00, 65.58... ninguno escalon de nada. Es el mismo
+ * defecto que `.contacto-bar-value` documenta mas abajo, y aqui pesa mas
+ * porque cae sobre el tipo MAS GRANDE de la escena. Se colo porque los dos
+ * anchos de referencia, 390 y 1440, aterrizan justo en los topes limpios.
+ *
+ * 1123px es la frontera exacta del clamp anterior, asi que ni el movil ni el
+ * escritorio ancho cambian de tamano: lo unico que cambia es que la banda
+ * intermedia deja de inventarse tamanos y se queda en --t-6.
+ */
+:root[data-theme="vice"] [data-scene="obra"] h2.display-lg,
+:root[data-theme="vice"] [data-scene="contacto"] h2.display-xl {
+  font-size: var(--t-6);
+}
+
+@media (min-width: 1123px) {
+  :root[data-theme="vice"] [data-scene="obra"] h2.display-lg,
+  :root[data-theme="vice"] [data-scene="contacto"] h2.display-xl {
+    font-size: var(--t-7);
+  }
+}
+
+/*
+ * Etiquetas "Problema"/"Solucion" de la ficha de obra (`projectScene.ts`,
+ * `column()`): traen su tamano inline como utilidad arbitraria de Tailwind
+ * (`text-[0.65rem]`), asi que el mismo motivo que arriba aplica — no hay
+ * capa que proteja esa utilidad de un override sin `var()`, y como aqui SI
+ * queremos cambiar Vice sin tocar el markup compartido, el override entra
+ * aqui, scopeado a Vice, en vez de editar `projectScene.ts`. 10.4px -> 12px
+ * (+15.4%).
+ */
+:root[data-theme="vice"] [data-scene="obra"] [data-mask] > p:first-child {
+  font-size: var(--t-1);
+}
+
+/*
+ * Flecha del CTA de obra (`project.link`): el span hereda el `text-sm` de
+ * Tailwind (14px) del ancla `.group/link` que lo envuelve. Se sube el
+ * ancla entera (no solo la flecha) para que la etiqueta y la flecha
+ * mantengan el mismo tamano — si solo se tocara la flecha, quedaria mas
+ * grande que su propio texto. 14px cae justo entre dos pasos (12 y 16,
+ * ambos a 2px); se elige 16 para no encoger una llamada a la accion.
+ */
+:root[data-theme="vice"] [data-scene="obra"] .group\/link {
+  font-size: var(--t-2);
 }
 
 /*
@@ -1173,7 +1312,9 @@
   border-bottom: 0;
   font-family: var(--font-billing);
   font-weight: 400;
-  font-size: 0.56rem;
+  /* 8.96px -> 12px (+33.9%), el salto mas grande de la tarea junto al de
+     `.obra-meta dt`: anotado en el informe. */
+  font-size: var(--t-1);
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--color-accent-legible);
@@ -1225,7 +1366,7 @@
   padding: 0.28rem 0.1rem;
   border-bottom: 0;
   font-family: var(--font-billing);
-  font-size: clamp(1rem, 2.05vw, 1.55rem);
+  font-size: clamp(var(--t-2), 2.05vw, var(--t-3));
   line-height: 1.24;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1372,7 +1513,7 @@
   margin: 0;
   font-family: var(--font-body);
   font-weight: 300;
-  font-size: 0.92rem;
+  font-size: var(--t-2);
   line-height: 1.5;
 }
 
@@ -1439,8 +1580,9 @@
    */
   font-weight: 400;
   /* Suelo de 11px: 8.8px estaba por debajo de lo legible para la unica
-     etiqueta que explica que son los nombres en ambar de al lado. */
-  font-size: 0.7rem;
+     etiqueta que explica que son los nombres en ambar de al lado. Ahora en
+     la escala: t-1 (12px). */
+  font-size: var(--t-1);
   color: color-mix(in srgb, var(--color-paper) 62%, transparent);
 }
 
@@ -1512,7 +1654,10 @@
  */
 @media (max-width: 859px) {
   :root[data-theme="vice"] .credit {
-    font-size: 1rem;
+    /* 1rem literal coincidia con un paso (16px = --t-2) y por eso el arnes
+       lo dejaba pasar, pero a partir de la Tarea 1 no hay tamanos literales:
+       token, no coincidencia. */
+    font-size: var(--t-2);
     line-height: 2.75;
     /*
      * Ancho minimo del objetivo, no solo alto. El comentario anterior daba
@@ -1672,177 +1817,574 @@
   }
 }
 
-/* ---------------------------------------------------- Vice: fundido de cierre */
-
 /*
- * El "pie" de contacto (telefono / LinkedIn / GitHub) usa `.hero-corner`, que
- * es `position: absolute; bottom: 9%` (style.css). Ese 9% se calcula sobre la
- * SECCION, no sobre el viewport, asi que "pegado al fondo" solo es cierto
- * mientras la seccion mida exactamente lo que la pantalla. La regla
- * `:root[data-theme="vice"] [data-scene]` de mas arriba le suma
- * `9rem + 6.5vh` de padding por lado y rompe justo esa suposicion: el pie se
- * queda flotando muy por encima del fondo real, con un hueco muerto debajo.
+ * Fundido de cierre — carta de ajuste. Termino la emision: cuatro barras a
+ * sangre con como localizar a quien emite.
  *
- * Se devuelve al flujo. En flujo no hay porcentaje que calcular: la superficie
- * central crece para ocupar el hueco disponible y el pie queda siempre al
- * final de la caja, mida lo que mida. El hero conserva su `.hero-corner`
- * absoluto — ahi funciona, y ademas la coreografia lo anima como bloque.
+ * Las barras son GELATINAS de iluminacion, no color opaco: filtros
+ * translucidos delante del foco. El fondo generativo sigue vivo debajo y se
+ * tine al pasar. Con barras opacas el shader quedaria tapado en el 56% de la
+ * pantalla final, que es tirar lo que mas caracteriza al sitio.
  */
 :root[data-theme="vice"] .contacto {
   justify-content: flex-start;
-  /*
-   * Espejo del padding lateral que Tailwind pone en la seccion
-   * (`px-6 md:px-12`, ver src/sections/contacto.ts). Se declara aqui como
-   * token para que la barra de pie pueda cancelarlo con margen negativo y
-   * cruzar la pantalla entera sin repetir el numero en dos sitios.
-   */
-  --scene-inline-pad: 1.5rem;
-  /*
-   * El padding de `[data-scene]` reserva `9rem + 6.5vh` abajo para el
-   * letterbox, pero el letterbox solo se despliega en la escena de obra: en
-   * contacto ese hueco es espacio muerto y empujaba el pie 200px por encima
-   * del borde real. Aqui se recorta al aire que necesita un pie de verdad,
-   * dejando sitio bajo el para la firma de tema (`.theme-signature`, fija
-   * abajo a la derecha). Misma especificidad que la regla de `[data-scene]`
-   * y posterior en el archivo, asi que gana por orden.
-   */
-  /*
-   * Sin aire abajo: el pie es una barra pegada al borde de la pantalla, no un
-   * bloque flotando dentro de la escena. El padding que reserva
-   * `[data-scene]` para el letterbox no aplica aqui (en contacto el letterbox
-   * vale 0) y era justo lo que dejaba el pie colgado a media altura.
-   */
-  padding-bottom: 0;
+  padding: 0;
 }
 
-:root[data-theme="vice"] .contacto .hero-surface {
+:root[data-theme="vice"] .contacto-band {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  width: 100%;
+  min-height: 39vh;
+  padding: 0 3rem 2.2rem;
+}
+
+:root[data-theme="vice"] .contacto-title {
+  font-size: clamp(var(--t-7), 9vw, var(--t-9));
+  line-height: 0.84;
+  margin-top: 0.9rem;
+}
+
+:root[data-theme="vice"] .contacto-lead {
+  font-size: var(--t-3);
+  font-weight: 300;
+  line-height: 1.42;
+  max-width: 46ch;
+  color: color-mix(in srgb, var(--color-paper) 85%, transparent);
+}
+
+:root[data-theme="vice"] .contacto-estado {
+  width: max-content;
+  margin-top: 2.1rem;
+  gap: 0;
+  cursor: default;
 }
 
 /*
- * El pie va enganchado al borde inferior de la PANTALLA, no a un punto de la
- * seccion. `sticky` con `bottom: 0` hace exactamente eso: mientras la escena
- * de contacto esta en cuadro la barra descansa sobre el borde del viewport, y
- * al terminar el documento se posa en el final de la seccion sin saltos.
- *
- * Se sale del padding lateral de la seccion con margenes negativos para que
- * la banda cruce la pantalla de lado a lado, como la barra de orientacion de
- * arriba: son las dos guias fijas del recorrido, una a cada extremo.
+ * `--t-2` y no `--t-1`: el rotulo y su valor son una sola linea de lectura
+ * ("Estado · Disponible para proyectos") y partirla en dos escalones la hacia
+ * sonar a dos cosas. Sube el rotulo en vez de bajar el valor porque el valor
+ * es el dato que se viene a leer. Pedido por la revision visual para quitar un
+ * tamano del encuadre; ojo, no lo consigue por si solo — el escalon `--t-1`
+ * sigue en pantalla por `.hero-kick`, que es el patron comun de las cinco
+ * escenas y no se toca desde aqui.
  */
-:root[data-theme="vice"] .contacto .contacto-corner {
-  position: sticky;
-  inset: auto;
-  bottom: 0;
-  z-index: 5;
+:root[data-theme="vice"] .contacto-estado-label {
+  font-size: var(--t-2);
+  font-weight: 700;
   /*
-   * La seccion es `items-center` (ver el markup), asi que por defecto cada
-   * hijo se encoge a su contenido y la barra salia como una caja centrada de
-   * 345px. `stretch` la devuelve al ancho completo del contenedor, que junto
-   * a los margenes negativos de abajo la hace cruzar la pantalla entera.
+   * 50% escrito aqui, NO `var(--nav-dim-soft)`. Da el mismo pixel, pero ese
+   * token se calibra contra el telon de la cortinilla y este rotulo vive sobre
+   * el fondo generativo de la escena: compartirlo significaria que mover el
+   * indice mueve el estado de contacto, sin que nada en el nombre lo avise.
+   * Es la trampa de constante acoplada que este repo ya documenta, y aqui se
+   * colo sola al migrar los literales.
    */
-  align-self: stretch;
-  width: auto;
-  margin-top: auto;
-  margin-left: calc(var(--scene-inline-pad) * -1);
-  margin-right: calc(var(--scene-inline-pad) * -1);
-  padding: 1rem var(--scene-inline-pad);
-  border-radius: 0;
-  border-top: 1px solid color-mix(in srgb, var(--color-paper) 12%, transparent);
-  background: linear-gradient(
-    0deg,
-    color-mix(in srgb, var(--color-ink) 92%, transparent) 0%,
-    color-mix(in srgb, var(--color-ink) 74%, transparent) 100%
-  );
-  backdrop-filter: blur(8px);
+  color: color-mix(in srgb, var(--color-paper) 50%, transparent);
+  transition: color 340ms ease-out;
 }
 
-@media (min-width: 768px) {
-  :root[data-theme="vice"] .contacto {
-    --scene-inline-pad: 3rem;
+:root[data-theme="vice"] .contacto-estado-sep {
+  margin: 0 0.95rem;
+  font-size: var(--t-2);
+  /*
+   * 0.72, no 0.34. El separador es texto pequeno (`--t-2`), asi que le aplica
+   * el 4,5:1 de AA, no el 3,0:1 del texto grande — y a 0.34 daba 2,80:1 sobre
+   * la banda (medido por `scripts/verify.py`). Es un punto de puntuacion, pero
+   * un punto ilegible no separa nada.
+   */
+  color: rgb(255 244 232 / 0.72);
+  transition: color 340ms ease-out;
+}
+
+:root[data-theme="vice"] .contacto-estado-value {
+  position: relative;
+  padding: 0.56rem 0.82rem;
+  margin: -0.56rem -0.82rem;
+  font-size: var(--t-2);
+  font-weight: 600;
+  color: var(--color-accent, #ffd166);
+}
+
+/*
+ * Al pasar por encima, el encuadre se cierra sobre el dato: las mismas marcas
+ * de esquina que enmarcan el hero, aqui alrededor de una sola linea. Se
+ * descarto la pastilla redondeada con punto latiendo — es el componente mas
+ * repetido de la web y no pertenece a este sitio.
+ */
+:root[data-theme="vice"] .contacto-estado-value::before,
+:root[data-theme="vice"] .contacto-estado-value::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-accent, #ffd166);
+  opacity: 0;
+  transition:
+    opacity 260ms ease-out,
+    top 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    right 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    bottom 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="vice"] .contacto-estado-value::before {
+  top: -7px;
+  left: -7px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+:root[data-theme="vice"] .contacto-estado-value::after {
+  bottom: -7px;
+  right: -7px;
+  border-left: 0;
+  border-top: 0;
+}
+
+:root[data-theme="vice"] .contacto-estado:hover .contacto-estado-value::before {
+  opacity: 1;
+  top: 0;
+  left: 0;
+}
+
+:root[data-theme="vice"] .contacto-estado:hover .contacto-estado-value::after {
+  opacity: 1;
+  bottom: 0;
+  right: 0;
+}
+
+:root[data-theme="vice"] .contacto-estado:hover .contacto-estado-label,
+:root[data-theme="vice"] .contacto-estado:hover .contacto-estado-sep {
+  color: var(--color-accent, #ffd166);
+}
+
+/* --- las barras --- */
+:root[data-theme="vice"] .contacto-bars {
+  flex: 1;
+  flex-direction: row;
+}
+
+:root[data-theme="vice"] .contacto-bar {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: 0 0 1.9rem;
+  box-shadow: inset 1px 0 0 rgb(255 244 232 / 0.16);
+  backdrop-filter: saturate(1.25);
+  /* Consulta de contenedor: el valor de la barra escala con el hueco real de
+     CADA barra (no del viewport), asi que reacciona igual a un viewport
+     estrecho que a un vecino que crece por hover. Ver `.contacto-bar-value`. */
+  container-type: inline-size;
+  transition: flex-grow 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * La via de GitHub es la que menos texto lleva (95px de los cuatro valores) y
+ * es la que vive pegada al borde donde flota `.scene-nav-trigger` (ver el hueco de
+ * `.contacto-bars` mas abajo). Le baja el reparto base de espacio para que el
+ * hueco de la navegacion salga de su propio sobrante en vez de repartirse
+ * entre las cuatro — asi correo/linkedin/telefono no pierden aire por un
+ * problema que no es suyo. Medido: a 901px sin este ajuste el hueco de la
+ * navegacion (150px) restaba lo mismo a las cuatro vias y correo quedaba por
+ * debajo del ancho minimo legible. 0.55 y no mas abajo: a 0.35 GitHub se
+ * recorta a si mismo (su propio texto, aunque corto, deja de caber en su
+ * propia caja) justo en el tramo donde una barra vecina esta en hover —
+ * medido con el arnes de esta tarea.
+ */
+/*
+ * El reposo de cada via se escribe UNA vez, en `--bar-grow`, y de ahi lo leen
+ * todos los que lo necesitan. No es cosmetica: estaba escrito dos veces, y la
+ * segunda copia se quedo atras. El bloque de `prefers-reduced-motion` devolvia
+ * las barras a `flex-grow: 1` —correcto cuando las cuatro valian 1— y desde
+ * que GitHub vale 0.55, "volver al reposo" le hacia CRECER un 33% de golpe y
+ * encoger 30px a cada una de las otras tres, sin transicion y en el modo que
+ * promete no moverse. Misma familia que la trampa de OBRA_TRANSIT/OBRA_REST
+ * que avisa CLAUDE.md: dos sitios con el mismo numero y solo uno actualizado.
+ */
+:root[data-theme="vice"] .contacto-bar {
+  flex-grow: var(--bar-grow, 1);
+}
+
+:root[data-theme="vice"] .contacto-bar--github {
+  --bar-grow: 0.55;
+}
+
+:root[data-theme="vice"] .contacto-bar:hover,
+:root[data-theme="vice"] .contacto-bar:focus-visible {
+  /*
+   * 1.8, no 2.6: a 2.6 la barra vecina del correo baja de 304px de caja a
+   * 201 en 1440x900 (medido), por debajo de los 256px que pide el texto
+   * intrinseco de "a.blanco1501@gmail.com" a --t-3. El valor ahora tambien
+   * respira con `clamp()` + `cqi` (ver `.contacto-bar-value`), pero el gesto
+   * de hover se baja igualmente: es la mitad de la causa, no solo un parche
+   * en el sintoma.
+   */
+  flex-grow: 1.8;
+}
+
+/*
+ * GitHub tambien se baja del 1.8 compartido: si crece igual que las otras
+ * tres, es la propia GitHub la que mas ensancha el denominador del reparto y
+ * empeora el peor caso para el correo (medido: con 1.8 parejo el peor caso es
+ * "GitHub en hover", no "LinkedIn/Telefono en hover"). 0.9 sigue siendo un
+ * gesto de foco visible, solo que menor — coherente con que su base (0.55)
+ * ya es la mas pequena de las cuatro.
+ */
+:root[data-theme="vice"] .contacto-bar--github:hover,
+:root[data-theme="vice"] .contacto-bar--github:focus-visible {
+  flex-grow: 0.9;
+}
+
+:root[data-theme="vice"] .contacto-bar--correo { background: rgb(255 46 136 / 0.3); }
+:root[data-theme="vice"] .contacto-bar--linkedin { background: rgb(255 209 102 / 0.26); }
+:root[data-theme="vice"] .contacto-bar--telefono { background: rgb(255 244 232 / 0.15); }
+/*
+ * La cuarta via cierra la escala descendente de luminancia (magenta -> ambar
+ * -> crema -> el negro de una carta de ajuste), pero NO puede cerrarla con
+ * tinta: `rgb(11 5 19 / 0.55)` es `--color-ink` al 55% sobre un fondo que ya
+ * es ink, y medido daba 1.005:1 contra la franja vacia de al lado. Es decir,
+ * no habia cuarta gelatina — habia tres barras y un agujero, y el unico
+ * motivo de que a 1440 no cantara era que el hueco del nav lo tapaba.
+ * Se cierra con la misma crema del telefono a la mitad de alfa: sigue siendo
+ * el escalon mas oscuro de los cuatro y la progresion se mantiene, pero
+ * existe.
+ */
+:root[data-theme="vice"] .contacto-bar--github { background: rgb(255 244 232 / 0.075); }
+
+/*
+ * La tinta bajo el valor NO es adorno: sobre un fondo generativo la luminancia
+ * se mueve, y sin ella el contraste del dato deja de estar garantizado. Es lo
+ * que hace que el criterio 4 del spec sea medible en vez de depender del
+ * fotograma que toque.
+ */
+:root[data-theme="vice"] .contacto-bar::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 190px;
+  z-index: -1;
+  background: linear-gradient(to top, rgb(11 5 19 / 0.82) 0%, rgb(11 5 19 / 0) 100%);
+}
+
+:root[data-theme="vice"] .contacto-bar-label {
+  position: absolute;
+  top: 2.1rem;
+  left: 1.75rem;
+  writing-mode: vertical-rl;
+  /* var(--t-5), no 34px: 34 no es un paso de la escala y la Tarea 1 acaba de
+     cerrarla. El valor de la maqueta se sube al paso mas cercano hacia arriba. */
+  font-size: var(--t-5);
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  /*
+   * 0.62, no el 0.34 de la maqueta. A 0.34 el rotulo daba entre 2,48:1 y
+   * 2,91:1 contra su propia gelatina (medido por `scripts/verify.py` sobre el
+   * pixel renderizado, n>2700 por rotulo), por debajo del 3,0:1 que pide AA
+   * para texto grande. La gelatina no se puede opacar mas sin tapar el fondo
+   * generativo, que es lo que caracteriza la escena, asi que sube la tinta del
+   * rotulo. Sigue leyendose como una marca de agua, que era su papel.
+   */
+  color: rgb(255 244 232 / 0.62);
+  opacity: 1;
+  transition: color 420ms ease-out;
+}
+
+:root[data-theme="vice"] .contacto-bar:hover .contacto-bar-label {
+  color: rgb(255 244 232 / 0.82);
+}
+
+:root[data-theme="vice"] .contacto-bar-value {
+  margin: 0 1.75rem;
+  /*
+   * DOS escalones, no una interpolacion. El correo se corta por dos causas
+   * independientes (viewport estrecho en reposo, barra vecina creciendo por
+   * hover) y las dos mueven el ancho de ESTA barra, no el del viewport: de ahi
+   * la consulta de contenedor sobre `.contacto-bar` (ver `container-type` mas
+   * arriba) en vez de una media query.
+   *
+   * Lo que NO sirve aqui es `clamp(var(--t-2), 6.2cqi, var(--t-3))`, que fue
+   * el primer intento y parecia razonable: un `clamp` es CONTINUO, asi que
+   * entre sus dos topes devuelve cualquier numero real. Medido con
+   * `scripts/measure-contacto-matriz.py`: 46 de 65 combinaciones caian en
+   * 17.09, 18.39 o 20.51 px, que no son escalones de nada. Y no se veia
+   * mirando 390 y 1440 en reposo — justo ahi da los topes limpios. Los
+   * tamanos rotos vivian en el hover de escritorio.
+   *
+   * El salto va abajo, en `@container`.
+   */
+  font-size: var(--t-3);
+  font-weight: 600;
+  white-space: nowrap;
+  color: rgb(255 244 232 / 1);
+  transform-origin: left bottom;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * UN UMBRAL POR VIA, no uno solo para las cuatro. Cada valor baja de escalon
+ * cuando no cabe SU texto, no cuando no cabria el mas largo de los cuatro.
+ *
+ * El primer intento fue un unico `@container (max-width: 316px)`, calculado
+ * sobre el correo (256px de tinta + 56 de margenes = 312 de barra). Cabe en
+ * una linea y parece elegante, pero es un proxy: pregunta "cabria el correo
+ * aqui" a barras que no llevan el correo. GitHub lo disparaba teniendo 71px
+ * de sobra, y de ahi salian 8px exactos de desnivel entre su marca ambar y
+ * las otras tres — el friso de la carta de ajuste roto en reposo, sin que
+ * nadie tocase nada. Un fallo de composicion nacido de una simplificacion
+ * que ningun arnes de recorte podia ver: no se recortaba nada.
+ *
+ * Tinta medida a `--t-3` y umbral = tinta + 56 + 4 de holgura:
+ *   correo 256 -> 316   linkedin 184 -> 244
+ *   telefono 174 -> 234   github 95 -> 155
+ */
+@container (max-width: 316px) {
+  :root[data-theme="vice"] .contacto-bar--correo .contacto-bar-value {
+    font-size: var(--t-2);
   }
 }
 
-/* Linea de disponibilidad: apoyo entre el titulo y la accion, no protagonista. */
-:root[data-theme="vice"] .contacto-status {
-  margin-top: 0.9rem;
-  font-size: clamp(0.85rem, 1.6vw, 1.05rem);
-  color: color-mix(in srgb, var(--color-paper) 78%, transparent);
+@container (max-width: 244px) {
+  :root[data-theme="vice"] .contacto-bar--linkedin .contacto-bar-value {
+    font-size: var(--t-2);
+  }
+}
+
+@container (max-width: 234px) {
+  :root[data-theme="vice"] .contacto-bar--telefono .contacto-bar-value {
+    font-size: var(--t-2);
+  }
+}
+
+@container (max-width: 155px) {
+  :root[data-theme="vice"] .contacto-bar--github .contacto-bar-value {
+    font-size: var(--t-2);
+  }
+}
+
+:root[data-theme="vice"] .contacto-bar:hover .contacto-bar-value {
+  transform: scale(1.14);
+}
+
+:root[data-theme="vice"] .contacto-bar-mark {
+  margin: 0 1.75rem 1rem;
+  width: 28px;
+  height: 2px;
+  background: var(--color-accent, #ffd166);
+  opacity: 0.8;
+  transition:
+    width 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 420ms ease-out;
+}
+
+:root[data-theme="vice"] .contacto-bar:hover .contacto-bar-mark {
+  width: 120px;
+  opacity: 1;
+}
+
+:root[data-theme="vice"] .contacto-bar:focus-visible {
+  outline: 3px solid var(--color-accent, #ffd166);
+  outline-offset: -6px;
 }
 
 /*
- * El email como accion, no como texto subrayado. Es el ultimo plano de la
- * pieza y el unico sitio donde alguien convierte: tiene que leerse como algo
- * que se pulsa. Pastilla con borde en acento, en linea con el lenguaje de
- * cartel del tema.
+ * La navegacion NO tiene carril reservado. Antes se le apartaban 150px de
+ * `padding-right` en el contenedor, y el precio era un corte vertical de color
+ * a 150px del borde — justo lo que la regla del sangrado prohibe mas abajo
+ * ("las barras son a sangre y un margen se veria como un corte en el color").
+ * A 1440 el corte no cantaba solo porque la cuarta barra era invisible; en
+ * cuanto se le dio color real, cantaba.
+ *
+ * Ahora el color llega al borde y lo unico que se aparta es el CONTENIDO de la
+ * ultima via, via `min-width` (ver el bloque de suelos): su ancho garantiza que
+ * el valor y el rotulo terminan antes de donde empieza `.scene-nav-trigger`. Fondo a
+ * sangre, texto despejado. Y como la navegacion pasa a flotar sobre color en
+ * vez de sobre hueco, lleva superficie propia igual que el rail de movil.
  */
-:root[data-theme="vice"] .contacto-mail {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.9rem 1.8rem;
-  border: 1px solid var(--color-accent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  text-decoration: none;
-  letter-spacing: 0.01em;
-  transition:
-    background 300ms ease-out,
-    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 300ms ease-out;
+
+/*
+ * Suelo de ancho por via, y con el mismo numero que su umbral de `@container`.
+ * Sin esto el reparto de flex se come el ancho de las barras en reposo cuando
+ * una vecina crece, y el valor cruza su umbral y baja de escalon: senalar
+ * Telefono encogia la direccion de correo un 25%, que es el dato central de la
+ * escena cambiando de tamano porque el raton esta en otro sitio. Con el suelo,
+ * el hover crece contra el SOBRANTE y no contra el texto de los hermanos.
+ *
+ * Solo en fila (>=1310). Apilado cada barra ocupa el ancho entero y esto no
+ * pinta nada; y en un movil estrecho un minimo de 316px provocaria scroll
+ * horizontal.
+ *
+ * Dos pixeles POR ENCIMA del umbral, no el umbral clavado: `@container
+ * (max-width: 316px)` es inclusivo, asi que un suelo de exactamente 316
+ * aterriza dentro de su propia consulta y dispara la bajada que venia a
+ * evitar. Se midio asi la primera vez — 24 combinaciones seguian cambiando de
+ * tamano con el suelo ya puesto.
+ *
+ * GitHub es la excepcion: su suelo no sale de su texto (95 + 56 = 151) sino de
+ * la navegacion, que en fila flota sobre esta via. Y lo que lo ata NO es el
+ * valor: el valor vive abajo del todo, el menu esta centrado en vertical, y no
+ * llegan a compartir franja — se cruzarian por 11,8px si la compartieran, pero
+ * no la comparten. Quien manda es el ROTULO vertical, que si recorre el alto
+ * de la banda: de su borde derecho al de la pildora quedan 28,3px. El minimo
+ * que sale de esa restriccion es ~242; 270 lo redondea con margen.
+ *
+ * La version anterior de este comentario justificaba el 270 con el valor y con
+ * "17px de aire", y las dos cosas eran falsas — el numero era bueno por
+ * casualidad. Queda escrito porque un comentario que miente sobre la causa
+ * sobrevive al refactor que lo invalida: el siguiente que toque esto creeria
+ * poder bajar el suelo mirando el texto del valor.
+ *
+ * Suma: 318 + 246 + 236 + 270 = 1070. Ese numero ES el breakpoint de la fila
+ * (1080, con 10px de margen): por debajo no caben cuatro columnas y se apila.
+ * Al quitarle a las barras el carril de 150px que se le reservaba al menu, la
+ * fila baja de 1310 a 1080 — o sea que 1152 y 1280, que son anchos de portatil
+ * de verdad, recuperan las cuatro gelatinas.
+ */
+@media (min-width: 1080px) {
+  :root[data-theme="vice"] .contacto-bar--correo { min-width: 318px; }
+  :root[data-theme="vice"] .contacto-bar--linkedin { min-width: 246px; }
+  :root[data-theme="vice"] .contacto-bar--telefono { min-width: 236px; }
+  :root[data-theme="vice"] .contacto-bar--github { min-width: 270px; }
 }
 
-:root[data-theme="vice"] .contacto-mail::after {
-  content: "→";
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+/*
+ * Por debajo de 1080px cuatro columnas no caben: la suma de los suelos de las
+ * cuatro vias es 1070 (ver el bloque de arriba), y por debajo de eso alguna
+ * cruza su umbral y baja del suelo legible o se recorta. Se apila, como en
+ * movil, pero SIN el paso extra del correo a --t-2 y CON las cuatro rayas
+ * ambar: aqui hay ancho de sobra y no hay nada que ahorrar.
+ *
+ * El limite era 1309 mientras las barras le reservaban 150px a la navegacion.
+ * Quitado el carril, baja a 1080.
+ */
+@media (min-width: 901px) and (max-width: 1079px) {
+  :root[data-theme="vice"] .contacto-bars {
+    flex-direction: column;
+  }
+
+  :root[data-theme="vice"] .contacto-bar {
+    flex: 1 1 auto;
+    min-height: 5.5rem;
+    justify-content: center;
+    padding: 1rem 3rem;
+  }
+
+  /*
+   * `--t-2` y no `--t-1`: este tramo empezo copiando el bloque de movil
+   * palabra por palabra, y por eso se leia como movil en vez de como la carta
+   * de ajuste tumbada. `--t-1` es el tamano que cabe en 390px de ancho; aqui
+   * hay 847 utiles y no hay razon para pagar ese precio. Sigue por debajo del
+   * valor, que es lo que se viene a leer.
+   */
+  :root[data-theme="vice"] .contacto-bar-label {
+    position: static;
+    writing-mode: horizontal-tb;
+    font-size: var(--t-2);
+    letter-spacing: 0.2em;
+  }
+
+  :root[data-theme="vice"] .contacto-bar-value {
+    margin: 0.4rem 0 0;
+    font-size: var(--t-3);
+  }
+
+  /*
+   * La raya ambar SE QUEDA. Estaba en `display: none` por herencia del bloque
+   * de movil, donde el sitio es escaso; con 847px de ancho util no hay nada
+   * que ahorrar, y las cuatro rayas son la sena de identidad del motivo. Sin
+   * ellas un portatil de 13" no ve la carta de ajuste, ve una lista.
+   */
+  :root[data-theme="vice"] .contacto-bar-mark {
+    margin: 0.6rem 0 0;
+  }
 }
 
-:root[data-theme="vice"] .contacto-mail:hover,
-:root[data-theme="vice"] .contacto-mail:focus-visible {
-  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
-  transform: translateY(-2px);
-  box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--color-accent-2) 65%, transparent);
-}
+/* En vertical las barras no caben en fila: se apilan y el rotulo vuelve a
+   horizontal, que en 390px de ancho es lo unico legible. */
+@media (max-width: 900px) {
+  :root[data-theme="vice"] .contacto-bars {
+    flex-direction: column;
+  }
 
-:root[data-theme="vice"] .contacto-mail:hover::after,
-:root[data-theme="vice"] .contacto-mail:focus-visible::after {
-  transform: translateX(5px);
-}
+  :root[data-theme="vice"] .contacto-bar {
+    flex: 1 1 auto;
+    min-height: 5.5rem;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+  }
 
-:root[data-theme="vice"] .contacto-mail:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 4px;
-}
+  :root[data-theme="vice"] .contacto-bar-label {
+    position: static;
+    writing-mode: horizontal-tb;
+    font-size: var(--t-1);
+    letter-spacing: 0.2em;
+  }
 
-:root[data-theme="vice"] .contacto-mail:active {
-  transform: translateY(0);
-  box-shadow: none;
+  :root[data-theme="vice"] .contacto-bar-value {
+    margin: 0.4rem 0 0;
+    font-size: var(--t-3);
+  }
+
+  /*
+   * Aqui vivia un paso extra del correo a `--t-2`, y se ha retirado: su motivo
+   * era que la navegacion iba `fixed` contra el borde derecho con la caja
+   * empezando en x=260, y el correo era el unico valor que llegaba hasta ahi.
+   * En movil la navegacion ya no esta ahi — es el rail numerado del pie, abajo
+   * a la izquierda. Desaparecida la causa, el paso sobraba y ademas invertia la
+   * jerarquia: dejaba el dato que se viene a copiar (el correo, 16px) por
+   * debajo del handle de GitHub (21.33px), que es el terciario. A `--t-3` el
+   * correo mide 256px de texto contra 334 de hueco util en 390px de ancho.
+   */
+
+  :root[data-theme="vice"] .contacto-bar-mark {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /*
-   * El cartel ya no desplaza nada al pasar por encima — el realce es solo de
-   * color, que no necesita degradarse. Lo que queda por acotar aqui es la
-   * duracion de esa transicion de color y la del friso, mas los gestos del
-   * CTA de contacto, que si mueve caja.
-   */
-  :root[data-theme="vice"] .credit,
-  :root[data-theme="vice"] .credits-mark,
-  :root[data-theme="vice"] .contacto-mail,
-  :root[data-theme="vice"] .contacto-mail::after {
-    transition: color 120ms ease-out;
+  :root[data-theme="vice"] .contacto-bar,
+  :root[data-theme="vice"] .contacto-bar-value,
+  :root[data-theme="vice"] .contacto-bar-mark,
+  :root[data-theme="vice"] .contacto-estado-value::before,
+  :root[data-theme="vice"] .contacto-estado-value::after {
+    transition: none;
   }
 
-  :root[data-theme="vice"] .contacto-mail:hover,
-  :root[data-theme="vice"] .contacto-mail:focus-visible,
-  :root[data-theme="vice"] .contacto-mail:hover::after,
-  :root[data-theme="vice"] .contacto-mail:focus-visible::after {
+  /* Cada via vuelve a SU reposo, no al 1 de nadie. Ver `--bar-grow`. */
+  :root[data-theme="vice"] .contacto-bar:hover,
+  :root[data-theme="vice"] .contacto-bar:focus-visible {
+    flex-grow: var(--bar-grow, 1);
+  }
+
+  :root[data-theme="vice"] .contacto-bar:hover .contacto-bar-value {
     transform: none;
-    box-shadow: none;
+  }
+
+  :root[data-theme="vice"] .contacto-estado:hover .contacto-estado-value::before {
+    top: -7px;
+    left: -7px;
+  }
+
+  :root[data-theme="vice"] .contacto-estado:hover .contacto-estado-value::after {
+    bottom: -7px;
+    right: -7px;
+  }
+}
+
+/*
+ * El realce del friso de creditos es solo de color (ver el comentario de
+ * `.credit` mas arriba); esta es la version acortada de esa transicion bajo
+ * `prefers-reduced-motion`. Vivia agrupada con `.contacto-mail` porque
+ * compartian duracion, no relacion — separada aqui tras retirar el CTA
+ * viejo de contacto en la Tarea 4.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="vice"] .credit,
+  :root[data-theme="vice"] .credits-mark {
+    transition: color 120ms ease-out;
   }
 }
 
@@ -2063,5 +2605,302 @@
     [data-scene]
     :is(button, a[href]:not([target="_blank"])) {
     cursor: auto;
+  }
+}
+
+/*
+ * Navegacion: fija al borde derecho, fuera del cromo de cine. Diana de
+ * 44x44 px, holgada sobre los 24x24 que exige WCAG 2.2 AA SC 2.5.8 — el pie
+ * anterior media 14,4 px de alto y lo incumplia.
+ */
+/*
+ * Centrada en vertical, NO anclada abajo. Anclada abajo se disputa la esquina
+ * inferior derecha con dos vecinos que ya estaban ahi: la firma de tema
+ * (`fixed bottom-5 right-5`) y el pie del hero (`.hero-corner`, con el enlace
+ * de correo en su extremo derecho). Se probaron dos alturas y las dos movian
+ * el problema en vez de resolverlo: a 1.5rem "FUNDIDO" se pintaba sobre
+ * "VICE CITY"; a 3.5rem eso se arreglaba pero la diana de 44px de un ancla
+ * invadia la del correo (9,6px en 390x844) — y subirla mas solo cambiaba
+ * QUE ancla chocaba. Con cinco dianas de 44px apiladas no hay altura buena en
+ * esa esquina: hay que salir de ella.
+ *
+ * Centrada, la barra queda en la franja media del borde derecho, que en las
+ * cinco escenas esta vacia. Medido sin solape contra la firma, contra
+ * `.hero-mail` y contra el texto de las barras de contacto, en 1440x900 y
+ * 390x844.
+ */
+/*
+ * Disparador de la cortinilla de escenas. Vive FUERA de `.cinema-chrome`
+ * (ver `sceneNav.ts`): ese contenedor pasa a `display: none` con
+ * `prefers-reduced-motion`, y un disparador ahi dentro dejaria sin
+ * navegacion a quien pide movimiento reducido. `z-index: 42`, por encima del
+ * cromo (41).
+ */
+.scene-nav-trigger {
+  position: fixed;
+  /* El marco del sitio es de 48px por la izquierda (`.rail`, `.hero-surface`,
+     `.hero-corner`): 3rem lo respeta, 1.5rem dejaba el disparador colgando 24px
+     fuera de la columna que cumple todo lo demas. Y `top: 0` alinea su rotulo
+     con el de la marca de la esquina opuesta, que estaban a 17,8px — una
+     interlinea entera — en la misma banda de 42px. */
+  top: 0;
+  right: 3rem;
+  /* 44: por encima del telon (43), para que siga pulsandose con el abierto. */
+  z-index: 44;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  /* Ancho fijo al rotulo mas largo: anclado a la derecha, variaba de 103 a 136px
+     segun la escena y su borde izquierdo se deslizaba 32px mientras lees. Un
+     control fijo del cromo que cambia de tamano no llega a ser un objeto. */
+  min-width: 9.5rem;
+  /* Cifras de ancho fijo: "01" medía 16,4px y "02".."05" 18,4, y la columna de
+     numeros del cromo quedaba dentada. */
+  font-variant-numeric: tabular-nums;
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  font-family: inherit;
+  font-size: var(--t-1, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-accent, #ffd166);
+  cursor: pointer;
+  transition:
+    background 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scene-nav-trigger:hover {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 85%, transparent);
+}
+
+/* Abierta la cortinilla, el disparador ES el boton de cerrar: se enciende para
+   que se vea que ha cambiado de funcion, no solo de estado accesible. */
+.scene-nav-trigger[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.scene-nav-trigger:focus-visible {
+  outline: 3px solid var(--color-accent, #ffd166);
+  outline-offset: 3px;
+}
+
+/*
+ * Cortinilla del indice de escenas. `z-index: 41`, por DEBAJO del disparador
+ * (42) a proposito: el disparador sigue pulsable con la cortinilla abierta.
+ * Los numeros cuelgan en `position: absolute` para que el rotulo y los
+ * cinco nombres compartan un unico borde izquierdo — si participaran del
+ * flujo, cada numero empujaria su nombre un ancho distinto. La fila es
+ * `align-items: center`, nunca `baseline`: con `baseline` el descriptor se
+ * sienta sobre la linea base del nombre, que en Passion One grande cae muy
+ * abajo, y queda por debajo de su propia linea de puntos.
+ */
+.scene-index {
+  --sangria: 2.8rem;
+  position: fixed;
+  inset: 0;
+  /* 43, por encima de `.scroll-rail` (42): con 41 el hairline de progreso
+     atravesaba el telon y se veia a plena saturacion dentro del indice. Un
+     telon que algo perfora deja de ser un telon. */
+  z-index: 43;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 5.5%;
+  background: var(--color-ink);
+  clip-path: inset(0 0 100% 0);
+  pointer-events: none;
+  transition: clip-path 140ms ease-in;
+}
+
+.scene-index.is-open {
+  clip-path: inset(0 0 0 0);
+  pointer-events: auto;
+  transition: clip-path 460ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scene-index-title {
+  margin: 0 0 1.1rem var(--sangria);
+  font-size: var(--t-1, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  /* Mismo caso que `.scene-index-num`: 0.42 medía 3,80:1 y AA pide 4,5:1 a
+     12px. Los elementos tenues del panel necesitan 0.55 para cumplir; por
+     debajo de eso, sobre este telon, ninguno llega. */
+  color: color-mix(in srgb, var(--color-paper) var(--nav-dim, 55%), transparent);
+}
+
+.scene-index-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.28rem 0 0.28rem var(--sangria);
+  min-height: 44px;
+  text-decoration: none;
+  opacity: 0;
+  transform: translateY(14px);
+  filter: blur(5px);
+  transition:
+    opacity 110ms ease-in,
+    transform 110ms ease-in,
+    filter 110ms ease-in;
+}
+
+.scene-index.is-open .scene-index-row {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition:
+    opacity 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scene-index.is-open .scene-index-row:nth-of-type(1) { transition-delay: 110ms; }
+.scene-index.is-open .scene-index-row:nth-of-type(2) { transition-delay: 165ms; }
+.scene-index.is-open .scene-index-row:nth-of-type(3) { transition-delay: 220ms; }
+.scene-index.is-open .scene-index-row:nth-of-type(4) { transition-delay: 275ms; }
+.scene-index.is-open .scene-index-row:nth-of-type(5) { transition-delay: 330ms; }
+
+.scene-index-num {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--t-1, 0.75rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  /* 0.55 y no 0.38: sobre el telon (tinta a 0.985) el 0.38 medía 3,26:1 y AA
+     pide 4,5:1 para 12px. Lo cazo `verify.py`, que muestrea el pixel
+     RENDERIZADO y no el color declarado — por eso ve lo que el ojo perdona y
+     la norma no. Sigue siendo el elemento mas tenue de la fila. */
+  color: color-mix(in srgb, var(--color-paper) var(--nav-dim, 55%), transparent);
+}
+
+.scene-index-name {
+  flex: none;
+  font-family: var(--font-display, "Passion One"), sans-serif;
+  /*
+   * El peso y la caja NO se heredan de `--font-display`: sin estas dos lineas
+   * el nombre salia en Passion One a peso 400 y en caja baja ("Título"), que no
+   * es la voz de los titulos de este sitio — los rotulos de escena usan
+   * `--display-weight: 900` y `--display-transform: uppercase`. Se ve al lado
+   * de "HABLEMOS" en la misma pantalla: la familia era la misma y la letra no.
+   * Aqui va 700 y no 900 a proposito: el indice acompana, no compite con el
+   * titulo que hay detras.
+   */
+  font-weight: 700;
+  text-transform: var(--display-transform, uppercase);
+  font-size: var(--t-5);
+  line-height: 1.05;
+  /* 0.85 y no 0.55: lo mas brillante del indice no puede ser la escena en la
+     que YA estas, que es el unico destino que no sirve para nada. Con todo al
+     0.55 y el actual en ambar, los cuatro sitios a los que se puede ir eran el
+     texto mas apagado de la pantalla. Ahora los destinos mandan y el actual se
+     marca por otra via (ver `aria-current`), no por intensidad. */
+  color: color-mix(in srgb, var(--color-paper) 85%, transparent);
+  transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scene-index-guide {
+  flex: 1;
+  height: 1px;
+  margin: 0 0.2rem;
+  opacity: 0.55;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--color-paper) 30%, transparent) 1px, transparent 1px);
+  background-size: 6px 1px;
+  background-repeat: repeat-x;
+  transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scene-index-blurb {
+  flex: none;
+  font-size: var(--t-2, 1rem);
+  font-weight: 600;
+  line-height: 1;
+  color: color-mix(in srgb, var(--color-paper) var(--nav-dim-soft, 50%), transparent);
+  transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scene-index-row:hover .scene-index-name,
+.scene-index-row:focus-visible .scene-index-name { color: var(--color-paper, #fff4e8); }
+.scene-index-row:hover .scene-index-blurb,
+.scene-index-row:focus-visible .scene-index-blurb { color: var(--color-accent, #ffd166); }
+.scene-index-row:hover .scene-index-guide { opacity: 1; }
+
+.scene-index-row:focus-visible {
+  outline: 3px solid var(--color-accent, #ffd166);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+.scene-index-row[aria-current="true"] .scene-index-name,
+.scene-index-row[aria-current="true"] .scene-index-num { color: var(--color-accent, #ffd166); }
+
+/*
+ * Cortinilla del indice de escenas bajo movimiento reducido: se degrada el
+ * VIAJE (la entrada/salida animada y su cascada de retardos por fila), nunca
+ * la FUNCION. El panel sigue abriendo y cerrando via `.is-open` — solo deja
+ * de deslizarse, difuminarse y escalonarse fila a fila. Fuera de cualquier
+ * `@media` de ancho a proposito: anidado ahi solo se aplicaria a ese ancho, y
+ * el criterio debe cumplirse tambien en escritorio.
+ */
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * Los `:nth-of-type` de la cascada pesan (0,4,0) y este bloque pesaba (0,3,0)
+   * — las media queries no aportan especificidad, asi que ganaban ellos.
+   * Medido: duracion 0s pero retardos intactos de 0.11s a 0.33s, o sea cinco
+   * chasquidos escalonados en vez de una aparicion. El comentario decia que
+   * degradaba "la cascada de retardos" y no la degradaba.
+   */
+  .scene-index.is-open .scene-index-row:nth-of-type(1),
+  .scene-index.is-open .scene-index-row:nth-of-type(2),
+  .scene-index.is-open .scene-index-row:nth-of-type(3),
+  .scene-index.is-open .scene-index-row:nth-of-type(4),
+  .scene-index.is-open .scene-index-row:nth-of-type(5),
+  .scene-index,
+  .scene-index.is-open,
+  .scene-index .scene-index-row,
+  .scene-index.is-open .scene-index-row {
+    transition: none;
+    transition-delay: 0ms;
+    transform: none;
+    filter: none;
+  }
+}
+
+/*
+ * En pantalla estrecha el renglon del indice no cabe en una linea: el nombre en
+ * Passion One a `--t-5` mas su descriptor se salen. Medido a 390px: tres de los
+ * cinco descriptores acababan 3, 12 y 23px POR FUERA del viewport, con el texto
+ * cortado por el borde. Se apila, como ya hacen las vias de contacto cuando no
+ * caben en fila.
+ *
+ * La guia punteada se retira aqui a proposito: une dos extremos de una misma
+ * linea, y apilados no hay dos extremos que unir — seria un adorno colgando.
+ */
+@media (max-width: 640px) {
+  .scene-index-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+  }
+
+  .scene-index-guide {
+    display: none;
+  }
+
+  .scene-index-blurb {
+    line-height: 1.3;
   }
 }

@@ -520,13 +520,55 @@ sleep 3
 python3 scripts/measure-obra-rail.py --json /tmp/rail-despues.json
 ```
 
-| métrica | antes | objetivo |
-|---|---|---|
-| adelanto cartela entera | ~800 px | **≤ 40 px**, y sin dispersión entre las tres velocidades |
-| adelanto del lead | 938-995 px | **≤ 260 px** |
-| v lateral en el encuadre | 220-245 px/s | **≤ 20 px/s** en las cinco piezas |
-| permanencia pieza 5 vs central | 33-40% | paridad |
-| `distance` reportado | 5760 | sigue 5760 (el recorrido no cambia) |
+| métrica | antes (pre-ritmo) | objetivo | medido tras la escala tipográfica (2026-07-30) |
+|---|---|---|---|
+| adelanto cartela entera | ~800 px | **≤ 40 px**, y sin dispersión entre las tres velocidades | 6 repeticiones (18 muestras, piezas 2-4, flick): media 77.3→70.5 px (91.2%, no <75%), ceros 5/18→6/18 (no dobla) — **ruido, con regla de decisión fijada de antemano** (ver nota) |
+| adelanto del lead | 938-995 px | **≤ 260 px** | 6 repeticiones (18 muestras): media 235.8→246.9 px (la post es mayor, no menor), 0 ceros en las dos series — **sin cambio real** (ver nota) |
+| v lateral en el encuadre | 220-245 px/s | **≤ 20 px/s** en las cinco piezas | métrica retirada (ver spec del ritmo, línea "se retira de la tabla": el instrumento no la mide bien; no se recalcula para no dar una cifra que invite a leerse) |
+| permanencia pieza 5 vs central | 33-40% | paridad | p1 68%, p5 71% (barrido lento; p1 sigue siendo un artefacto de la medida, ver spec) |
+| `distance` reportado | 5760 | sigue 5760 (el recorrido no cambia) | 5760 — **sin cambio** |
+
+> Re-medido el 2026-07-30 tras aplicar la escala tipográfica del tema
+> (`docs/superpowers/plans/2026-07-30-contacto-carta-de-ajuste.md`, Tarea 2). Se comprobó antes
+> que `OBRA_TRANSIT` (1) y `OBRA_REST` (0.45) siguen coincidiendo entre
+> `src/themes/vice.choreography.ts` y `scripts/measure-obra-rail.py`. Los valores de "antes" y
+> "objetivo" son el registro histórico de la Tarea 2 de este mismo plan (dimensionado del
+> ritmo) y no se han tocado; la comparación real "antes de la escala / después de la escala"
+> es contra el registro de la spec (`docs/superpowers/specs/2026-07-30-obra-rail-ritmo-design.md`,
+> tabla "hoy / objetivo / medido"). Deriva lateral tras soltar: de 46 px a 46.1 px (sin cambio
+> real). Permanencia: de p1 66%/p5 67% a p1 68%/p5 71%. **Esa cifra descansa en una sola
+> medición por lado**: a diferencia de la cartela y del lead, no se sometió a repeticiones ni a
+> regla de decisión, así que no distingue movimiento real de dispersión entre ejecuciones y no
+> autoriza a concluir nada en ninguno de los dos sentidos. Documento: de 11587 px a 11605 px (+18 px, real pero ajeno al
+> carril: `distance` y el presupuesto del pin no se movieron un solo píxel).
+>
+> **Cartela entera y lead en el barrido flick, comprobado contra un `git worktree` del commit
+> `eba1a72` (justo antes de la escala) — es ruido, no efecto de la escala. Zanjado en dos rondas.**
+>
+> Ronda 1 (3 repeticiones = 9 muestras por lado): un vistazo con una sola repetición por lado
+> daba 66-89 → 0-111 px (cartela) y 249-297 → 220-323 px (lead), que parecía un ensanchamiento
+> real. Con 9 muestras la amplitud del rango era similar a los dos lados, pero esa lectura
+> tenía un fallo — miraba solo el rango, ciego a un desplazamiento de toda la distribución y al
+> hecho de que "cartela entera" topa en 0 por definición. Con 9 muestras la media de "cartela
+> entera" caía de 90.9 a 60.8 px (-33%) y los ceros pasaban de 1/9 a 4/9: parecía efecto real, y
+> "ruido, confirmado" no estaba pagado con esos números.
+>
+> Ronda 2 (6 repeticiones = 18 muestras por lado, con una regla de decisión fijada **antes** de
+> mirar los números: efecto real si la media post cae por debajo del 75% de la pre **y** los
+> ceros post doblan a los pre; ninguna de las dos → ruido): media de "cartela entera" 77.3→70.5
+> px (91.2% de la pre, no <75%), ceros 5/18→6/18 (no doblan). Ninguna condición se cumple →
+> **ruido**. La caída pronunciada de la Ronda 1 (9 muestras) era el propio ruido de una muestra
+> pequeña regresando hacia la media al doblar el tamaño de muestra.
+>
+> El aviso más claro de eso está en el propio lado **pre**, que no cambió de código entre las dos
+> rondas: sus ceros pasaron de 1/9 a 5/18, es decir, las 9 muestras añadidas aportaron 4 ceros
+> ellas solas. Con el binario congelado, el recuento de ceros se movió tanto como el que se
+> estaba atribuyendo a la escala tipográfica. Por eso la regla exigía **las dos** condiciones a
+> la vez: a este tamaño de muestra, el recuento de ceros por sí solo no sostiene una conclusión. Para "lead": media
+> 235.8→246.9 px (la posterior es mayor, no menor) y cero muestras a cero en las dos series.
+>
+> El detalle completo, con las 18 muestras de cada lado y la aplicación de la regla, está en
+> `.superpowers/sdd/2026-07-30-contacto-carta-de-ajuste/tarea-2-report.md` del repo principal.
 
 El presupuesto del pin no lo imprime el instrumento; compruébalo aparte:
 
@@ -547,7 +589,9 @@ with sync_playwright() as p:
 "
 ```
 
-Esperado: `spacer` ~5940 (900 de viewport + 5040 de reserva) y `doc` ~11587.
+Esperado: `spacer` ~5940 (900 de viewport + 5040 de reserva) y `doc` ~11587 (11605 tras la escala
+tipográfica del 2026-07-30 — el spacer no se movió, el documento sí, 18 px, por layout ajeno al
+carril).
 
 - [x] **Paso 10: commit**
 

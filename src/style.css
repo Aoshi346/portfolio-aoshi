@@ -24,7 +24,7 @@
 /*
  * `--color-accent-legible`: el accent puro falla contraste AA en varios
  * puntos de los tres temas (medido con `scripts/verify.py::check_contrast_wcag`
- * — ver los comentarios de `.hero-kick`/`.contacto-mail`/`.credits-list` que
+ * — ver los comentarios de `.hero-kick`/`.credits-list` que
  * documentan cada caso concreto). Esta mezcla 55% accent / 45% paper es la
  * formula ya verificada que sube el margen sin perder el tinte del acento; se
  * repetia identica en ocho sitios de este fichero. Un solo token, no en
@@ -84,7 +84,14 @@ body {
 .lead {
   font-family: var(--font-lead, var(--font-body));
   font-weight: var(--lead-weight, 300);
-  font-size: var(--lead-size, 1.125rem);
+  /*
+   * `--t-3` solo existe bajo `[data-theme="vice"]`; el respaldo es el valor
+   * que ya rendia aqui para Hyprland/Caelestia antes de la escala (medido:
+   * 1.125rem via el extinto `--lead-size`), asi que los otros dos temas
+   * quedan identicos al pixel. Vice pierde el clamp por vw: la Tarea 1 lo deja
+   * en un solo paso de la escala, no en un rango.
+   */
+  font-size: var(--t-3, 1.125rem);
   line-height: 1.4;
 }
 
@@ -136,7 +143,10 @@ body {
 
 .hero-kick {
   font-weight: 700;
-  font-size: 0.66rem;
+  /* `--t-1` solo existe bajo `[data-theme="vice"]`; el respaldo es el
+     0.66rem que ya rendia aqui, medido en Hyprland/Caelestia antes de tocar
+     nada — los otros dos temas quedan identicos al pixel. */
+  font-size: var(--t-1, 0.66rem);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   /*
@@ -162,7 +172,9 @@ body {
   justify-content: space-between;
   gap: 1rem;
   font-weight: 700;
-  font-size: 0.6rem;
+  /* `--t-1` solo existe en Vice; respaldo = 0.6rem medido en Hyprland/
+     Caelestia antes de la escala, idem `.hero-kick` arriba. */
+  font-size: var(--t-1, 0.6rem);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   /*
@@ -186,7 +198,7 @@ body {
 }
 
 /*
- * No el accent puro: mismo motivo que `.hero-kick`/`.contacto-mail` — la
+ * No el accent puro: mismo motivo que `.hero-kick` — la
  * Task 11 sustituira el video de prueba por el real y el punto donde hoy
  * muestrea el gate de contraste (fondo no solido, stddev 41.6 > 18, exento)
  * dejara de ser exento en cuanto ese fondo sea el video definitivo. Mismo
@@ -200,38 +212,6 @@ body {
   text-decoration-thickness: 2px;
 }
 
-/* Contacto — cierre del portfolio, mismo tratamiento tipografico que el hero. */
-.contacto-mail {
-  font-size: clamp(1rem, 2.2vw, 1.4rem);
-  /*
-   * No el accent puro: en Caelestia el fondo animado (blobs) cae a veces en
-   * un tono lo bastante saturado como para dejar el accent a secas en
-   * 3.01:1 (medido con `check_contrast_wcag` en la escena de contacto) — el
-   * mismo motivo que `.hero-kick` de arriba.
-   */
-  color: var(--color-accent-legible);
-  text-decoration: underline;
-  text-underline-offset: 8px;
-  text-decoration-thickness: 2px;
-}
-
-/*
- * El enlace de GitHub vive dentro de `.hero-corner`, que fija su color via
- * `color-mix()` en el DIV padre (ver comentario de `.hero-corner`). Sin este
- * `color: inherit` explicito, el UA stylesheet del navegador le pone su azul
- * de enlace por defecto (mayor especificidad que la herencia): eso rompio el
- * contraste en la escena de contacto (3.90:1 medido con
- * `scripts/verify.py::check_contrast_wcag` sobre un frame del video con tinte
- * cian), el mismo tipo de defecto que ya rompio `.hero-corner` una vez.
- */
-.contacto-github,
-.contacto-phone,
-.contacto-corner a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
 /*
  * Estados de interaccion de los enlaces de contacto y del hero. Antes solo
  * tenian color estatico: ni hover, ni foco visible propio, ni active. El
@@ -240,40 +220,28 @@ body {
  *
  * El hover va a `--color-accent-legible`, no al accent puro: estas clases
  * las comparten los tres temas y el accent a secas ya fallo AA en Caelestia
- * varias veces (ver los comentarios de `.hero-kick`/`.contacto-mail`).
+ * varias veces (ver el comentario de `.hero-kick`).
  */
-.hero-mail,
-.contacto-github,
-.contacto-phone,
-.contacto-corner a {
+.hero-mail {
   transition:
     color 200ms ease-out,
     text-underline-offset 200ms ease-out,
     opacity 200ms ease-out;
 }
 
-.hero-mail:hover,
-.contacto-github:hover,
-.contacto-phone:hover,
-.contacto-corner a:hover {
+.hero-mail:hover {
   color: var(--color-accent-legible);
   text-underline-offset: 7px;
 }
 
-.hero-mail:focus-visible,
-.contacto-github:focus-visible,
-.contacto-phone:focus-visible,
-.contacto-corner a:focus-visible {
+.hero-mail:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 4px;
   border-radius: 2px;
   color: var(--color-accent-legible);
 }
 
-.hero-mail:active,
-.contacto-github:active,
-.contacto-phone:active,
-.contacto-corner a:active {
+.hero-mail:active {
   opacity: 0.72;
 }
 
@@ -292,9 +260,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-mail,
-  .contacto-github,
-  .contacto-phone,
-  .contacto-corner a,
   .credits-icon,
   .credits-panel-name,
   .credits-panel-role,
@@ -302,32 +267,75 @@ body {
     transition: none;
   }
 
-  .hero-mail:hover,
-  .contacto-github:hover,
-  .contacto-phone:hover,
-  .contacto-corner a:hover {
+  .hero-mail:hover {
     text-underline-offset: 4px;
   }
 }
 
 /*
- * `.hero-corner` (compartido con el hero) queda a pelo sobre el video en
- * contacto: la escena de contacto llega tarde en el recorrido (mas tiempo de
- * reproduccion, mas probabilidad de caer en un tramo saturado del video/
- * fixture SMPTE). Medido con `check_contrast_wcag`: 3.90:1 sobre un frame
- * cian — por debajo del 4.5:1 minimo, aunque el color del texto en si (mezcla
- * de --color-paper, el mismo token que ya se lee bien en el hero) es
- * correcto. El scrim propio, calcado del recibo de `.credits-list`/
- * `.about-card`, acota el riesgo sin depender de que frame le toque.
+ * Estilo base de la carta de ajuste: el que ven Hyprland y Caelestia. Aqui las
+ * barras no son barras, son una lista de vias apilada. La piel de Vice
+ * (themes.css) es la que las pone a sangre y en horizontal.
  */
-.contacto-corner {
-  background: linear-gradient(
-    0deg,
-    color-mix(in srgb, var(--color-ink) 55%, transparent) 0%,
-    transparent 100%
-  );
-  padding: 0.6rem 0.9rem;
-  border-radius: var(--radius-card);
+.contacto-band {
+  padding: 4rem 1.5rem 2rem;
+}
+
+.contacto-lead {
+  font-size: var(--t-3, 1.25rem);
+  margin-top: 1rem;
+}
+
+.contacto-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  font-size: var(--t-2, 1rem);
+}
+
+.contacto-estado-label {
+  font-size: var(--t-1, 0.75rem);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.contacto-bars {
+  display: flex;
+  flex-direction: column;
+}
+
+.contacto-bar {
+  display: block;
+  /* 24x24 CSS px es el minimo de WCAG 2.2 AA SC 2.5.8. El pie anterior media
+     14,4 px de alto y lo incumplia. */
+  min-height: 3.5rem;
+  padding: 1rem 1.5rem;
+  text-decoration: none;
+}
+
+.contacto-bar-label {
+  display: block;
+  font-size: var(--t-1, 0.75rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.contacto-bar-value {
+  display: block;
+  font-size: var(--t-3, 1.25rem);
+  margin-top: 0.25rem;
+}
+
+.contacto-bar-mark {
+  display: block;
+  width: 1.75rem;
+  height: 2px;
+  margin: 0.5rem 0;
+  background: currentColor;
+  opacity: 0.5;
 }
 
 /*
@@ -413,7 +421,13 @@ body {
   justify-content: space-between;
   padding: 0.75rem 1.5rem;
   font-weight: 700;
-  font-size: 0.58rem;
+  /* `--t-1` solo en Vice; respaldo = 0.58rem medido en Hyprland/Caelestia
+     antes de la escala, mismo patron que `.gallery-caption`. Paso mas cercano
+     en Vice: 9.28px -> 12px, el suelo duro de la escala.
+     Esta linea se quedo fuera del barrido que migro a sus siete hermanas, y
+     era la unica del grupo visible en las cinco escenas y a todo ancho: el
+     unico tamano fuera de escala que un visitante tiene delante siempre. */
+  font-size: var(--t-1, 0.58rem);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-paper) 70%, transparent);
@@ -452,7 +466,7 @@ body {
  * de la firma (medido en 390x844: filas de `.credit` cruzando su banda
  * vertical durante la transicion de entrada de la escena). Sin superficie
  * propia, texto de credito y texto de la firma se mezclaban en el mismo
- * plano. Mismo remedio que `.contacto-corner`/`.rail`: un scrim propio detras
+ * plano. Mismo remedio que `.rail`: un scrim propio detras
  * de la firma para que, pase lo que pase debajo, siga siendo legible sin
  * tapar el contenido real (el pill es pequeno y sigue dejando ver el resto
  * de la fila).
@@ -598,7 +612,12 @@ body {
   gap: 0.4rem;
   margin-top: 0.5rem;
   font-weight: 600;
-  font-size: 0.62rem;
+  /* `--t-1` solo en Vice; respaldo = 0.62rem medido en Hyprland/Caelestia
+     antes de la escala. Ronda de correcciones 1: el arnes original no lo
+     media (punto ciego de `n.children.length`, ver measure-type-scale.py).
+     Paso mas cercano en Vice: 9.92px -> 12px (+20.97%, mismo salto que
+     `.about-h`, anotado en el informe). */
+  font-size: var(--t-1, 0.62rem);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-accent);
@@ -803,7 +822,10 @@ body {
 
 .obra-meta dt {
   font-weight: 700;
-  font-size: 0.53rem;
+  /* `--t-1` solo en Vice; respaldo = 0.53rem medido en Hyprland/Caelestia
+     antes de la escala. Paso mas cercano en Vice: 8.48px -> 12px (+41.5%,
+     el salto mas grande de la tarea — anotado en el informe). */
+  font-size: var(--t-1, 0.53rem);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--color-accent-legible);
@@ -926,7 +948,10 @@ body {
     transparent
   );
   font-weight: 700;
-  font-size: 0.58rem;
+  /* `--t-1` solo en Vice; respaldo = 0.58rem medido en Hyprland/Caelestia
+     antes de la escala. Paso mas cercano en Vice: 9.28px -> 12px (+29.3%,
+     anotado en el informe). */
+  font-size: var(--t-1, 0.58rem);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-paper) 92%, transparent);

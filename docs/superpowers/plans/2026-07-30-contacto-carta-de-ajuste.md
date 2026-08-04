@@ -81,7 +81,7 @@ Copiadas literales del spec y de `CLAUDE.md`. Aplican a **todas** las tareas.
 - Produce: diez custom properties `--t-1` … `--t-10` en `:root[data-theme="vice"]`. Todas las
   tareas siguientes usan estos nombres y **ningún tamaño literal en píxeles**.
 
-- [ ] **Paso 1: escribe el arnés que falla**
+- [x] **Paso 1: escribe el arnés que falla**
 
 Crea `scripts/measure-type-scale.py`:
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: córrelo y comprueba que falla**
+- [x] **Paso 2: córrelo y comprueba que falla**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -159,7 +159,7 @@ escena a 152 / 73,6 / 64 / 57,6 px.
 
 Anota el número exacto de fallos: es la línea base de la tarea.
 
-- [ ] **Paso 3: declara los tokens**
+- [x] **Paso 3: declara los tokens**
 
 En `src/themes/themes.css`, dentro del bloque `:root[data-theme="vice"]` que ya declara los
 tokens del tema, añade:
@@ -187,7 +187,7 @@ tokens del tema, añade:
   --t-10: 159.66px;
 ```
 
-- [ ] **Paso 4: aplica la escala escena por escena**
+- [x] **Paso 4: aplica la escala escena por escena**
 
 Sustituye cada tamaño literal por su paso. Los que salen del arnés del paso 2 y sus destinos:
 
@@ -209,7 +209,7 @@ declara el respaldo en la propia función para no romper Hyprland ni Caelestia:
 }
 ```
 
-- [ ] **Paso 5: córrelo y comprueba que pasa**
+- [x] **Paso 5: córrelo y comprueba que pasa**
 
 ```bash
 npm run build && python3 scripts/measure-type-scale.py
@@ -221,7 +221,7 @@ Si queda alguno, arréglalo. **No amplíes `ESCALA` ni `TOLERANCIA` para que pas
 el arnés en un sello de goma, que es exactamente el modo de fallo que ya tuvo el gate documental
 de este proyecto.
 
-- [ ] **Paso 6: comprueba que los otros dos temas siguen en pie**
+- [x] **Paso 6: comprueba que los otros dos temas siguen en pie**
 
 ```bash
 python3 -c "
@@ -243,7 +243,7 @@ with sync_playwright() as p:
 
 Esperado: los dos con altura de documento distinta de cero y cero errores de consola.
 
-- [ ] **Paso 7: commit**
+- [x] **Paso 7: commit**
 
 ```bash
 git add src/themes/themes.css src/style.css scripts/measure-type-scale.py
@@ -263,7 +263,7 @@ carril, y una tabla de traspaso desactualizada no falla, miente.
 **Interfaces:**
 - Consume: la escala de la Tarea 1 ya aplicada.
 
-- [ ] **Paso 1: re-mide con el instrumento que ya existe**
+- [x] **Paso 1: re-mide con el instrumento que ya existe**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -274,12 +274,12 @@ python3 scripts/measure-obra-rail.py
 *debería* estar la pista. Si `OBRA_TRANSIT` u `OBRA_REST` de `vice.choreography.ts` cambian, hay
 que cambiarlos también ahí: desincronizados no fallan, mienten.
 
-- [ ] **Paso 2: comprueba las cinco mesetas**
+- [x] **Paso 2: comprueba las cinco mesetas**
 
 Las posiciones nominales son `u = 0,225 / 1,675 / 3,125 / 4,575 / 6,025`. Compara la salida con
 la tabla del plan del carril.
 
-- [ ] **Paso 3: actualiza la tabla con los números nuevos**
+- [x] **Paso 3: actualiza la tabla con los números nuevos**
 
 Sustituye los valores de la tabla y añade una línea debajo:
 
@@ -291,7 +291,7 @@ Sustituye los valores de la tabla y añade una línea debajo:
 Si algún número **no** cambió, déjalo y dilo. Reescribir a ojo lo que no se movió es igual de
 falso que dejar lo que sí.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add docs/superpowers/plans/2026-07-30-obra-rail-ritmo.md
@@ -317,7 +317,7 @@ git commit -m "docs(obra): mesetas del carril re-medidas tras la escala"
   `.contacto-bar-value`, y el modificador `.contacto-bar--<key>` con
   `key ∈ {correo, linkedin, telefono, github}`.
 
-- [ ] **Paso 1: añade el contenido**
+- [x] **Paso 1: añade el contenido**
 
 En `src/data/content.ts`, añade `invitation` a la interfaz `Identity` y al objeto:
 
@@ -383,7 +383,7 @@ export const contactChannels: ContactChannel[] = [
 ];
 ```
 
-- [ ] **Paso 2: reescribe la sección**
+- [x] **Paso 2: reescribe la sección**
 
 Sustituye `src/sections/contacto.ts` entero:
 
@@ -441,7 +441,7 @@ export function createContacto(): HTMLElement {
 }
 ```
 
-- [ ] **Paso 3: estilo base para los otros dos temas**
+- [x] **Paso 3: estilo base para los otros dos temas**
 
 En `src/style.css`, junto al resto de estilo base de secciones:
 
@@ -513,7 +513,7 @@ En `src/style.css`, junto al resto de estilo base de secciones:
 }
 ```
 
-- [ ] **Paso 4: comprueba que compila y que los tres temas montan la escena**
+- [x] **Paso 4: comprueba que compila y que los tres temas montan la escena**
 
 ```bash
 npm run build && npm run lint
@@ -541,7 +541,7 @@ with sync_playwright() as p:
 Esperado en los tres: `barras: 4`, `frase: 'Cuéntame tu idea.'`,
 `estado: 'Disponible para proyectos'`, cero errores.
 
-- [ ] **Paso 5: comprueba que no quedan restos del DOM viejo**
+- [x] **Paso 5: comprueba que no quedan restos del DOM viejo**
 
 ```bash
 grep -rn "contacto-mail\|contacto-status\|contacto-corner\|contacto-phone\|contacto-github" src/
@@ -550,7 +550,7 @@ grep -rn "contacto-mail\|contacto-status\|contacto-corner\|contacto-phone\|conta
 Esperado: solo aparecen en `themes.css` (los limpia la Tarea 4) y en
 `vice.choreography.ts` (los limpia la Tarea 5). **Cero apariciones en `src/sections/`.**
 
-- [ ] **Paso 6: commit**
+- [x] **Paso 6: commit**
 
 ```bash
 git add src/data/content.ts src/sections/contacto.ts src/style.css
@@ -563,17 +563,50 @@ git commit -m "feat(contacto): carta de ajuste — cuatro vias desde content.ts"
 
 **Ficheros:**
 - Modificar: `src/themes/themes.css` (sustituye el bloque "fundido de cierre", líneas ~1676-1850)
+- Modificar: `src/style.css` (retira el estilo base del DOM viejo — ver Paso 1b)
 
 **Interfaces:**
 - Consume: las clases de la Tarea 3.
 - Produce: la escena con la geometría que miden las Tareas 7 y 8.
 
-- [ ] **Paso 1: borra el bloque viejo**
+- [x] **Paso 1: borra el bloque viejo**
 
 En `src/themes/themes.css`, elimina las reglas de `.contacto-mail`, `.contacto-status`,
 `.contacto-corner` y `.contacto .hero-surface`. Son la piel de un DOM que ya no existe.
 
-- [ ] **Paso 2: escribe la piel nueva**
+- [x] **Paso 1b: y el estilo base huérfano de `src/style.css`**
+
+Añadido el 2026-07-31: lo levantó el implementador de la Tarea 3 al correr el grep del Paso 5.
+La Tarea 3 se llevó por delante el DOM que producía `.contacto-mail`, `.contacto-github`,
+`.contacto-phone` y `.contacto-corner`, pero **ninguna tarea tenía asignada la retirada de su
+estilo base**: la 4 solo hablaba de `themes.css` y la 5 solo de la coreografía. Es CSS muerto e
+inofensivo — selectores que ya no casan con nada — pero se retira aquí, junto a su gemelo de
+`themes.css`, en vez de dejarlo para que confunda a quien lea el fichero dentro de seis meses.
+
+**No es un borrado a ciegas, y aquí está la trampa:** cinco de esas reglas están *agrupadas* con
+`.hero-mail` / `.hero-corner`, que **siguen vivos** (`src/sections/hero.ts:26,29`). Son las que
+dan al hero su `transition`, su `:hover`, su `:focus-visible`, su `:active` y su degradación bajo
+`prefers-reduced-motion`. Borrar los bloques enteros dejaría al hero **sin foco visible sobre el
+vídeo**, que es justo el defecto de accesibilidad que esas reglas se escribieron para tapar (lo
+dicen sus propios comentarios). Retira **solo las líneas de selector `.contacto-*`** y deja el
+resto del bloque intacto.
+
+- Reglas de las que se quitan selectores, conservando `.hero-mail`: la de `transition`
+  (~línea 259), `:hover` (~269), `:focus-visible` (~277), `:active` (~287) y las dos del bloque
+  `@media (prefers-reduced-motion: reduce)` (~308 y ~319).
+- Reglas que se eliminan **enteras**, porque no las comparte nadie: `.contacto-mail` (~218,
+  con su comentario), el bloque `.contacto-github, .contacto-phone, .contacto-corner a`
+  (~241-247, con su comentario sobre el azul del UA stylesheet) y `.contacto-corner` (~337,
+  con su comentario del scrim).
+- Los comentarios de otras reglas que citan `.contacto-mail` como ejemplo (~27, ~203, ~257,
+  ~469) documentan un fallo de contraste real y su remedio: **no los borres**, reescribe la
+  referencia para que apunte a `.hero-kick`, que sigue existiendo y ejemplifica lo mismo.
+
+Comprobación del paso: `npm run build` verde, y una captura del hero con foco en el enlace de
+correo (`page.focus(".hero-mail")`) que enseñe el outline. Si el outline no está, has borrado de
+más.
+
+- [x] **Paso 2: escribe la piel nueva**
 
 ```css
 /*
@@ -744,7 +777,9 @@ En `src/themes/themes.css`, elimina las reglas de `.contacto-mail`, `.contacto-s
   top: 2.1rem;
   left: 1.75rem;
   writing-mode: vertical-rl;
-  font-size: 34px;
+  /* var(--t-5), no 34px: 34 no es un paso de la escala y la Tarea 1 acaba de
+     cerrarla. El valor de la maqueta se sube al paso mas cercano hacia arriba. */
+  font-size: var(--t-5);
   font-weight: 700;
   letter-spacing: 0.34em;
   color: rgb(255 244 232 / 0.34);
@@ -852,7 +887,7 @@ En `src/themes/themes.css`, elimina las reglas de `.contacto-mail`, `.contacto-s
 }
 ```
 
-- [ ] **Paso 3: mira la escena de verdad**
+- [x] **Paso 3: mira la escena de verdad**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -874,10 +909,10 @@ with sync_playwright() as p:
 
 Ábrelas. Un `tsc` verde no garantiza que el encuadre esté bien.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
-git add src/themes/themes.css
+git add src/themes/themes.css src/style.css
 git commit -m "feat(vice): piel de la carta de ajuste con barras-gelatina"
 ```
 
@@ -892,7 +927,7 @@ git commit -m "feat(vice): piel de la carta de ajuste con barras-gelatina"
 - Consume: las clases de la Tarea 3.
 - Produce: `scene5Contact` sin un solo `gsap.from`.
 
-- [ ] **Paso 1: comprueba la deuda antes de tocar nada**
+- [x] **Paso 1: comprueba la deuda antes de tocar nada**
 
 ```bash
 grep -n "gsap.from(" src/themes/vice.choreography.ts
@@ -900,7 +935,7 @@ grep -n "gsap.from(" src/themes/vice.choreography.ts
 
 Esperado ahora mismo: tres apariciones dentro de `scene5Contact` (kick, status, mail).
 
-- [ ] **Paso 2: reescribe la escena**
+- [x] **Paso 2: reescribe la escena**
 
 Sustituye el cuerpo de `scene5Contact` por:
 
@@ -994,7 +1029,7 @@ function scene5Contact(gsap: Gsap, ScrollTrigger: ScrollTriggerApi, root: HTMLEl
 }
 ```
 
-- [ ] **Paso 3: comprueba que la deuda está saldada**
+- [x] **Paso 3: comprueba que la deuda está saldada**
 
 ```bash
 grep -c "gsap.from(" src/themes/vice.choreography.ts
@@ -1002,7 +1037,7 @@ grep -c "gsap.from(" src/themes/vice.choreography.ts
 
 Esperado: `0`.
 
-- [ ] **Paso 4: comprueba que la escena se compone y que llegar por navegación no la deja invisible**
+- [x] **Paso 4: comprueba que la escena se compone y que llegar por navegación no la deja invisible**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -1032,7 +1067,7 @@ with sync_playwright() as p:
 Esperado: **todas las opacidades a 1**. Una sola en `0` significa que quien llega por el menú se
 encuentra la escena vacía, que es exactamente el fallo que los `gsap.from` hacían posible.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add src/themes/vice.choreography.ts
@@ -1053,7 +1088,7 @@ git commit -m "fix(vice): scene5Contact sin gsap.from y adaptada a la carta de a
 - Produce: `mountSceneNav(root: HTMLElement): { destroy: () => void }`.
 - Produce: ids de escena `#hero`, `#quien-es`, `#obra`, `#creditos`, `#contacto`.
 
-- [ ] **Paso 1: escribe el arnés que falla**
+- [x] **Paso 1: escribe el arnés que falla**
 
 Crea `scripts/measure-nav.py`:
 
@@ -1109,7 +1144,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: córrelo y comprueba que falla**
+- [x] **Paso 2: córrelo y comprueba que falla**
 
 ```bash
 python3 scripts/measure-nav.py
@@ -1118,7 +1153,7 @@ python3 scripts/measure-nav.py
 Esperado: FALLA con `no hay enlace` en las quince combinaciones. Hoy `nav a` es 0 en todo el
 documento.
 
-- [ ] **Paso 3: pon ids a las escenas**
+- [x] **Paso 3: pon ids a las escenas**
 
 En `src/main.ts`, tras componer `main` y antes de `app.append(...)`:
 
@@ -1140,7 +1175,7 @@ for (const [scene, id] of Object.entries(ANCHOR_IDS)) {
 obraRail.id = "obra";
 ```
 
-- [ ] **Paso 4: escribe el componente**
+- [x] **Paso 4: escribe el componente**
 
 Crea `src/components/sceneNav.ts`:
 
@@ -1251,7 +1286,7 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
 }
 ```
 
-- [ ] **Paso 5: móntala y desmóntala en `main.ts`**
+- [x] **Paso 5: móntala y desmóntala en `main.ts`**
 
 Junto al resto de handles, antes del `pagehide`:
 
@@ -1266,7 +1301,7 @@ Con su import arriba (`import { mountSceneNav } from "./components/sceneNav";`) 
     sceneNavHandle.destroy();
 ```
 
-- [ ] **Paso 6: dale piel**
+- [x] **Paso 6: dale piel**
 
 En `src/themes/themes.css`:
 
@@ -1326,7 +1361,7 @@ En `src/themes/themes.css`:
 }
 ```
 
-- [ ] **Paso 7: córrelo y comprueba que pasa**
+- [x] **Paso 7: córrelo y comprueba que pasa**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -1339,7 +1374,7 @@ Si falla solo `#obra`, el sospechoso es el presupuesto del pin: **comprueba que 
 midiendo la ventana del pin contra `distance`**. El pin reserva 5.040 px y el recorrido lateral
 es de 5.760: son cosas distintas y confundirlas ya costó una sesión.
 
-- [ ] **Paso 8: comprueba el camino sin ratón y el de movimiento reducido**
+- [x] **Paso 8: comprueba el camino sin ratón y el de movimiento reducido**
 
 ```bash
 python3 -c "
@@ -1364,7 +1399,30 @@ Esperado: `hash #contacto` y la escena en cuadro es `contacto`. Comprueba con
 `document.elementFromPoint`, no con un selector: Lenis sigue moviendo la página después de un
 `scrollTo` y anclar la comprobación a un selector da falsos positivos.
 
-- [ ] **Paso 9: commit**
+- [x] **Paso 9: commit**
+
+> Nota de ejecucion (no en el plan original). Durante la Tarea 6 se propuso ampliar el
+> Paso 6 con un chip de fondo en `.scene-nav a` (`color-mix`) alegando que el ancla
+> "Creditos" pisaba el texto de `.hero-corner .hero-mail` "de forma ilegible en
+> escritorio y movil". **Se descarto tras medirlo, porque esa premisa era falsa:** en
+> 1440x900 no habia solape ninguno (ancla bottom 797,6 contra correo top 801,0 — 3,4px
+> de aire), y el correo nunca dejo de recibir el clic (`document.elementFromPoint` sobre
+> su centro devuelve `.hero-mail` en los dos anchos). Lo unico cierto era un solape de
+> 9,6px en 390x844, y **entre DIANAS de 44px, no entre textos** — los dos rotulos se
+> leen en lineas distintas.
+>
+> El arreglo real fue otro: la esquina inferior derecha ya la ocupaban la firma de tema
+> y el pie del hero, y ninguna altura la libraba (a 1.5rem "FUNDIDO" caia sobre "VICE
+> CITY"; a 3.5rem chocaban las dianas). Con cinco dianas de 44px apiladas no hay altura
+> buena ahi, asi que la navegacion salio de esa esquina a `top: 50%` sobre el borde
+> derecho, que esta vacio en las cinco escenas. Confirmado con el usuario (1-ago-2026).
+> Comprobado sin solape contra la firma, `.hero-mail`, `.hero-corner` y el texto de las
+> barras de contacto en 1440x900 y 390x844.
+>
+> Segundo cambio de la misma tanda: `.contacto-bar-value` bajo de `--t-4` a `--t-3` (el
+> correo se recortaba 36px en escritorio, 340 de texto en 304 de hueco), y en el
+> breakpoint movil el correo baja un paso mas, a `--t-2`, porque es el unico de los
+> cuatro valores que alcanzaba la banda del nav (256px frente a 184, 174 y 95).
 
 ```bash
 git add src/components/sceneNav.ts src/main.ts src/themes/themes.css scripts/measure-nav.py
@@ -1382,7 +1440,7 @@ git commit -m "feat(nav): navegacion de escenas con corte seco y arnes de aterri
 - Consume: la escena terminada (Tareas 3-5).
 - Produce: los criterios 1, 2, 3, 4, 5 y 7 del spec, medidos.
 
-- [ ] **Paso 1: escribe el arnés**
+- [x] **Paso 1: escribe el arnés**
 
 Crea `scripts/measure-contacto.py`:
 
@@ -1514,7 +1572,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: córrelo**
+- [x] **Paso 2: córrelo**
 
 ```bash
 npm run build && (npm run preview &) && sleep 3
@@ -1523,7 +1581,9 @@ python3 scripts/measure-contacto.py
 
 Esperado: `0 criterios incumplidos`.
 
-- [ ] **Paso 3: si el contraste falla en algún fotograma**
+- [x] **Paso 3: si el contraste falla en algún fotograma** (no aplicó: los 15 puntos de contraste
+  de los 3 fotogramas dieron entre 13,8:1 y 18,5:1, todos por encima de 4.5:1 — no hizo falta
+  subir alfa de ninguna barra)
 
 La corrección es **subir el relleno de la gelatina a un valor opaco**, no oscurecer el ámbar:
 perder el ámbar es perder el tema. En `themes.css`, sube la alfa de la barra que falle y vuelve
@@ -1533,7 +1593,7 @@ Si el fondo de esta escena todavía no está decidido en `main`, **para aquí y 
 criterios 4 y 5 se miden con el shader real o no se miden. Deja la casilla en `[!]` con el
 motivo en línea y sigue con la Tarea 8.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add scripts/measure-contacto.py

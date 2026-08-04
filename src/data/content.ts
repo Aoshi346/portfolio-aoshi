@@ -23,6 +23,12 @@ export interface Identity {
    *  mayo de 2026 y esa entrada sigue siendo historial valido, no el presente. */
   now: string;
   since: string;
+  /**
+   * La frase de la escena de cierre. Elegida por el autor entre once
+   * alternativas: corta, en el lado de quien lee y sin prometer un plazo de
+   * respuesta, que es la promesa mas facil de incumplir.
+   */
+  invitation: string;
 }
 
 export const identity: Identity = {
@@ -39,6 +45,7 @@ export const identity: Identity = {
   availability: "Disponible para proyectos",
   now: "Freelancer",
   since: "2021",
+  invitation: "Cuéntame tu idea.",
 };
 
 export interface Stat {
@@ -328,4 +335,66 @@ export const caseStudies: CaseStudy[] = [
       href: "https://github.com/Aoshi346/Text-Editor-Application",
     },
   },
+];
+
+export interface ContactChannel {
+  key: "correo" | "linkedin" | "telefono" | "github";
+  label: string;
+  /** Lo que se lee en pantalla. No siempre es el href: LinkedIn muestra el nombre. */
+  value: string;
+  href: string;
+  external: boolean;
+}
+
+/**
+ * Las cuatro barras de la carta de ajuste, en orden de encuadre. El correo va
+ * primero porque es la via principal, y su barra es la unica en magenta.
+ */
+export const contactChannels: ContactChannel[] = [
+  {
+    key: "correo",
+    label: "Correo",
+    value: identity.email,
+    href: `mailto:${identity.email}`,
+    external: false,
+  },
+  {
+    key: "linkedin",
+    label: "LinkedIn",
+    value: identity.name,
+    href: identity.linkedin,
+    external: true,
+  },
+  {
+    key: "telefono",
+    label: "Teléfono",
+    value: identity.phone,
+    // Sin espacios ni guiones: el marcador del movil no los tolera.
+    href: `tel:${identity.phone.replace(/[^+\d]/g, "")}`,
+    external: false,
+  },
+  {
+    key: "github",
+    label: "GitHub",
+    value: "Aoshi346",
+    href: identity.github,
+    external: true,
+  },
+];
+
+export interface SceneEntry {
+  id: string;
+  /** Nombre de cine. Es lo que se lee grande en el indice. */
+  label: string;
+  /** Lo que la escena contiene, en llano. Cierra el hallazgo de que
+   *  "Fundido" no comunica "contacto" a quien llega de fuera. */
+  blurb: string;
+}
+
+export const sceneIndex: SceneEntry[] = [
+  { id: "hero", label: "Título", blurb: "Desarrollador full stack" },
+  { id: "quien-es", label: "Quién es", blurb: "Trayectoria y cifras" },
+  { id: "obra", label: "Obra", blurb: "Cinco proyectos" },
+  { id: "creditos", label: "Créditos", blurb: "Con qué construyo" },
+  { id: "contacto", label: "Fundido", blurb: "Contacto" },
 ];
