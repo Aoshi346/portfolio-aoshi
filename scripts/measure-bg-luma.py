@@ -46,6 +46,8 @@ from PIL import Image
 
 VIEWPORT = {"width": 1440, "height": 900}
 DEFAULT_URL = "http://127.0.0.1:4173/?theme=vice"
+DEFAULT_WIDTH = VIEWPORT["width"]
+DEFAULT_HEIGHT = VIEWPORT["height"]
 CHROME = "/usr/bin/google-chrome"
 
 BANDA_TOP = 0.06
@@ -113,7 +115,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default=DEFAULT_URL)
     parser.add_argument("--json", default=None, help="fichero opcional para volcar las medidas")
+    parser.add_argument(
+        "--width", type=int, default=DEFAULT_WIDTH, help="ancho de viewport (default 1440)"
+    )
+    parser.add_argument(
+        "--height", type=int, default=DEFAULT_HEIGHT, help="alto de viewport (default 900)"
+    )
     args = parser.parse_args()
+
+    viewport = {"width": args.width, "height": args.height}
 
     fallos: list[str] = []
     medidas: list[dict[str, object]] = []
@@ -124,16 +134,32 @@ def main() -> int:
             headless=True,
             args=["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
         )
-        pg = b.new_page(viewport=VIEWPORT)
+        pg = b.new_page(viewport=viewport)
         pg.goto(args.url, wait_until="domcontentloaded", timeout=30000)
         pg.wait_for_timeout(9000)  # leader de apertura + GSAP + arranque del shader
 
         # Aisla el fondo: sin esto se mide tipografia y tarjetas, no el shader.
-        pg.add_style_tag(content="#app { visibility: hidden !important; }")
+        #
+        # OJO (hallazgo Tarea 3, 2026-08-04): `#app { visibility: hidden }` a
+        # secas hide TODO #app, y el canvas WebGL (`.bg-theme`) es un HIJO de
+        # #app (ver `src/main.ts`, `app.append(backgroundHost, noise, main,
+        # ...)`) -- igual que sus overlays de gradiente (`.bg-theme::before`,
+        # `::after`) y el grano (`.bg-noise`). Con la regla original el canvas
+        # tambien queda oculto y lo unico que sobrevive en el screenshot es
+        # `html { background-color: var(--color-ink) }`: un plano solido sin
+        # ninguna variacion. Verificado con capturas de consola/DOM: el propio
+        # arnes lo confirmaba solo, dando *exactamente* la luminancia de
+        # --color-ink (12.21 en Vice) en las 12 posiciones de scroll, sin
+        # variar un decimal -- eso ya es la senal de que no habia shader en la
+        # imagen, no que el shader fuera uniforme. Se ocultan aqui los hijos de
+        # #app EXCEPTO `.bg-theme` y `.bg-noise`, que es donde vive el fondo.
+        pg.add_style_tag(
+            content="#app > *:not(.bg-theme):not(.bg-noise) { visibility: hidden !important; }"
+        )
         pg.wait_for_timeout(300)
 
         alto_total = pg.evaluate("document.documentElement.scrollHeight")
-        alto_viewport = VIEWPORT["height"]
+        alto_viewport = viewport["height"]
         max_scroll = max(alto_total - alto_viewport, 0)
 
         posiciones = [
