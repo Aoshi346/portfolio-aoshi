@@ -164,9 +164,24 @@ Es el riesgo propio de esta dirección. Requiere ojo, no solo números.
 
 ### Tarea 7: Limpieza de recursos
 
-- [ ] Comprobar que `destroy()` libera programa, búferes y RAF y que se llama en `pagehide`.
-- [ ] Navegar y volver varias veces midiendo el número de contextos WebGL vivos. Cero fugas.
-- [ ] Commit.
+- [x] Comprobar que `destroy()` libera programa, búferes y RAF y que se llama en `pagehide`.
+      Confirmado por lectura de código: `viceInk.ts` no envuelve nada — a diferencia de
+      `viceHaze.ts` (que tenía su propio listener `pointermove` que limpiar), `viceInk.ts`
+      solo lee `window.scrollY` desde una función pura (`readProgress`) que
+      `mountShaderBackground` invoca en su propio `draw()`, modelo *pull*, sin
+      `addEventListener` propio. La garantía de `mountShaderBackground` (borra buffer,
+      shaders, programa, `WEBGL_lose_context`, cancela RAF, desconecta observers) basta.
+      `src/main.ts:196-205` llama `backgroundHandle?.destroy()` en `pagehide`
+      (no `beforeunload`) de forma incondicional.
+- [x] Navegar y volver varias veces midiendo el número de contextos WebGL vivos. Cero fugas.
+      12 ciclos de navegación real (`page.goto` → fondo montado → `page.goto("about:blank")`,
+      que dispara `pagehide` de verdad) más un ciclo de `page.reload()`: siempre exactamente
+      1 `<canvas>` en el DOM tras cada montaje, sin acumulación. Consola sin avisos de
+      "too many active WebGL contexts" ni `CONTEXT_LOST_WEBGL` no intencionado (solo ruido
+      de rendimiento de swiftshader, "GPU stall due to ReadPixels"). No se encontró fuga;
+      no se tocó código. Detalle completo en
+      `.superpowers/sdd/2026-08-04-vice-fondo-tinta/task-7-report.md`.
+- [x] Commit.
 
 ### Tarea 8: Retirar `viceHaze`
 
