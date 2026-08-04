@@ -2677,7 +2677,10 @@
   font-weight: 700;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgb(255 244 232 / 0.42);
+  /* Mismo caso que `.scene-index-num`: 0.42 medía 3,80:1 y AA pide 4,5:1 a
+     12px. Los elementos tenues del panel necesitan 0.55 para cumplir; por
+     debajo de eso, sobre este telon, ninguno llega. */
+  color: rgb(255 244 232 / 0.55);
 }
 
 .scene-index-row {
