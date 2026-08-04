@@ -119,6 +119,7 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
      */
     document.documentElement.style.overflow = v ? "hidden" : "";
     window.dispatchEvent(new CustomEvent("scene-nav:toggle", { detail: { abierto: v } }));
+    pinta(escenaActual);   // la etiqueta conmuta entre la escena y "Cerrar"
 
     if (v) filas()[0]?.focus();
     else trigger.focus();
@@ -176,9 +177,20 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
    * coreografia de Vice: Hyprland y Caelestia no tienen coreografia que la
    * actualice, y el disparador vive en los tres temas.
    */
+  /** Ultima escena pintada, para poder volver a ella al cerrar la cortinilla. */
+  let escenaActual = 0;
+
   const pinta = (i: number): void => {
+    escenaActual = i;
     const n = String(i + 1).padStart(2, "0");
-    triggerLabel.textContent = `${n} · ${TARGETS[i].label}`;
+    /*
+     * Con la cortinilla abierta el disparador es el boton de CERRAR, y tiene
+     * que decirlo. Antes no cambiaba nada a la vista —misma caja, mismo borde,
+     * misma etiqueta— y seguia diciendo en que escena estas, que es describir
+     * donde te encuentras y no lo que va a pasar si lo pulsas. `aria-expanded`
+     * conmutaba para el lector de pantalla; para el ojo, no conmutaba nada.
+     */
+    triggerLabel.textContent = abierto ? "Cerrar" : `${n} · ${TARGETS[i].label}`;
     panel.querySelectorAll<HTMLElement>(".scene-index-row").forEach((row, j) => {
       if (j === i) row.setAttribute("aria-current", "true");
       else row.removeAttribute("aria-current");
