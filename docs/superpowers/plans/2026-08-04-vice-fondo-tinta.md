@@ -72,21 +72,21 @@ El instrumento va primero: sin él, "se ve oscuro" es una opinión.
 
 ### Tarea 2: Portar el fragmento del prototipo
 
-- [ ] Crear `src/backgrounds/viceInk.ts` con `mountViceInk(container): BackgroundHandle`.
-- [ ] Portar el fragmento `print` del prototipo **sin rediseñarlo**: `screenDot` sobre
+- [x] Crear `src/backgrounds/viceInk.ts` con `mountViceInk(container): BackgroundHandle`.
+- [x] Portar el fragmento `print` del prototipo **sin rediseñarlo**: `screenDot` sobre
       `gl_FragCoord`, `regMark`, los dos focos con caída 1.9/1.7, la rasqueta por tinta, el
       balance por scroll y el desregistro fijo.
-- [ ] Sustituir `ceilingClamp` por la versión de luminancia del spec. **No dejar el `min` por
+- [x] Sustituir `ceilingClamp` por la versión de luminancia del spec. **No dejar el `min` por
       canal**: es el bug que este cambio viene a cerrar.
-- [ ] `uScroll` se sirve como uniforme dinámico leyendo `window.scrollY` contra
+- [x] `uScroll` se sirve como uniforme dinámico leyendo `window.scrollY` contra
       `scrollHeight - innerHeight`, igual que hacía `viceHaze` y por el mismo motivo (el fondo no
       puede depender de Lenis ni de la coreografía).
-- [ ] `hash`, `noise` y `fbm` **ya los prefija `shaderBackground.ts`** en `NOISE_CHUNK`: no
+- [x] `hash`, `noise` y `fbm` **ya los prefija `shaderBackground.ts`** en `NOISE_CHUNK`: no
       duplicarlos.
-- [ ] Cambiar `mountBackground` en `src/themes/vice.ts` y reescribir su comentario: hoy explica
+- [x] Cambiar `mountBackground` en `src/themes/vice.ts` y reescribir su comentario: hoy explica
       por qué se abandonó el vídeo por la bruma, y la historia ya tiene un capítulo más.
-- [ ] `npm run build` y `npm run lint` verdes.
-- [ ] Commit.
+- [x] `npm run build` y `npm run lint` verdes.
+- [x] Commit. (`0342f12`)
 
 ### Tarea 3: El techo, verificado en el sitio real
 
