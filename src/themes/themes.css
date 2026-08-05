@@ -1338,6 +1338,336 @@
 }
 
 /*
+  Doble exposicion fusionada con el corte: el filete (Task siguiente) y el
+  corte de la PRIMERA palabra arrancan a la vez, mismo trazo — se leen como
+  un solo gesto. El fantasma se sostiene visible hasta el 35% de su recorrido
+  y solo entonces empieza a apagarse, para que de tiempo a leerlo antes de
+  que desaparezca. Duraciones de corte en `--hard` (techo del rango ya
+  documentado por la spec de Ascua, 400-500ms) y el fantasma en `--slow`
+  extendido a 1.4s (mismo precedente que `hypr-ignite`, que ya dura 1.1s como
+  leader de apertura del sitio).
+  Spec: docs/superpowers/specs/2026-08-05-hyprland-hero-lomo-design.md
+*/
+:root[data-theme="hyprland"] .hero-name-wrap {
+  position: relative;
+}
+:root[data-theme="hyprland"] .hero-name-ghost {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  line-height: var(--display-leading);
+  font-size: clamp(var(--t-6), 8.2vw, var(--t-9));
+  color: var(--l2);
+  opacity: 0;
+  transform: translate(0.35em, -0.28em);
+  filter: blur(1px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .hero-name-wrap .display-xl {
+  position: relative;
+  z-index: 1;
+}
+:root[data-theme="hyprland"] .hero-name-word {
+  display: inline-block;
+  clip-path: inset(0 100% 0 0);
+  /*
+    Fix no contemplado en el brief: `background`, `background-clip` y
+    `-webkit-background-clip` NO se heredan por defecto. El degradado que
+    "recoge color" vive en la regla `.display-xl` de la Task 2 (arriba),
+    puesta sobre el `<h1>`. Mientras las palabras eran texto plano (sin caja
+    propia) pintaban dentro de la caja de linea del h1 y el recorte de texto
+    les llegaba igual. En cuanto se convierten en `inline-block` (necesario
+    para que `clip-path` corte cada palabra por separado, en vez de fragmentos
+    de linea impredecibles) cada span abre su propio contexto de pintado: sin
+    esto el nombre queda con `color: transparent` heredado y NINGUN fondo que
+    mostrar a traves — invisible. Medido: sin este bloque el `<h1>` completo
+    desaparece del hero nada mas aplicar el Step 1 de este task.
+  */
+  background: inherit;
+  -webkit-background-clip: inherit;
+  background-clip: inherit;
+}
+:root[data-theme="hyprland"] .is-lit .hero-name-word {
+  animation: hypr-hero-cut 0.5s var(--hard) forwards;
+}
+:root[data-theme="hyprland"] .is-lit .hero-name-word:nth-of-type(1) {
+  animation-delay: 0ms;
+}
+:root[data-theme="hyprland"] .is-lit .hero-name-word:nth-of-type(2) {
+  animation-delay: 300ms;
+}
+:root[data-theme="hyprland"] .is-lit .hero-name-word:nth-of-type(3) {
+  animation-delay: 600ms;
+}
+:root[data-theme="hyprland"] .is-lit .hero-name-ghost {
+  animation: hypr-hero-ghost 1.4s var(--slow) forwards;
+}
+@keyframes hypr-hero-cut {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes hypr-hero-ghost {
+  0% {
+    opacity: 0.75;
+    transform: translate(0.35em, -0.28em);
+  }
+  35% {
+    opacity: 0.68;
+    transform: translate(0.22em, -0.17em);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+
+/*
+  Antes: solo fade de opacidad, sola — no se leia como parte del mismo gesto
+  que el filete. Ahora se descubre con el mismo lenguaje de corte
+  (clip-path), sincronizada con el arranque del filete.
+*/
+:root[data-theme="hyprland"] .hero-kick {
+  clip-path: inset(100% 0 0 0);
+}
+:root[data-theme="hyprland"] .is-lit .hero-kick {
+  animation: hypr-hero-spine 0.5s var(--hard) forwards;
+  animation-delay: 220ms;
+}
+@keyframes hypr-hero-spine {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@media (max-width: 900px) {
+  :root[data-theme="hyprland"] .hero-kick {
+    /* Solo cambia el punto de partida del corte (de arriba a la izquierda);
+       el destino es el mismo `inset(0 0 0 0)` en los dos casos, asi que
+       `hypr-hero-spine` (definida arriba, un solo `to`) no necesita
+       redefinirse aqui — una animacion de un solo `to` arranca siempre
+       desde el `clip-path` estatico vigente en el elemento. */
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+/*
+  El filete ya no solo crece: una chispa viaja en la punta mientras se
+  dibuja, y al llegar abajo hay un destello breve — el mismo vocabulario de
+  "canto" que el resto de Ascua, ahora literal en el propio hero.
+*/
+:root[data-theme="hyprland"] .hero-divider::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--l1);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.5s var(--hard);
+}
+:root[data-theme="hyprland"] .is-lit .hero-divider::after {
+  transform: scaleY(1);
+}
+:root[data-theme="hyprland"] .hero-divider-spark {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--l3);
+  opacity: 0;
+  filter: blur(2px) drop-shadow(0 0 6px var(--l1));
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .is-lit .hero-divider-spark {
+  animation: hypr-hero-spark 0.5s var(--hard) forwards;
+}
+@keyframes hypr-hero-spark {
+  0% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  92% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(100cqh);
+    opacity: 0;
+  }
+}
+:root[data-theme="hyprland"] .hero-divider-landing {
+  position: absolute;
+  left: 50%;
+  bottom: -3px;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--l1) 70%, transparent) 0%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .is-lit .hero-divider-landing {
+  animation: hypr-hero-landing 0.4s var(--slow) forwards;
+  animation-delay: 450ms;
+}
+@keyframes hypr-hero-landing {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  40% {
+    opacity: 0.9;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+@media (max-width: 900px) {
+  :root[data-theme="hyprland"] .hero-divider::after {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  :root[data-theme="hyprland"] .is-lit .hero-divider::after {
+    transform: scaleX(1);
+  }
+  :root[data-theme="hyprland"] .hero-divider-spark {
+    left: 0;
+    top: 50%;
+    margin-left: -5px;
+    margin-top: -5px;
+  }
+  /*
+    Nombre de animacion DISTINTO (no redefinir `hypr-hero-spark` con el mismo
+    nombre bajo el media query): a diferencia del spine, aqui el eje de
+    `transform` cambia de verdad (Y a X) a lo largo de varios keyframes, no
+    solo el punto de partida, asi que no vale la abreviatura de un solo `to`.
+    Redeclarar el mismo nombre dentro de un `@media` es CSS valido (gana la
+    ultima regla en efecto), pero mas fragil de leer/mantener que dos nombres
+    separados — se prefiere explicito.
+  */
+  :root[data-theme="hyprland"] .is-lit .hero-divider-spark {
+    animation-name: hypr-hero-spark-mobile;
+  }
+  @keyframes hypr-hero-spark-mobile {
+    0% {
+      transform: translateX(0);
+      opacity: 0.9;
+    }
+    92% {
+      opacity: 0.9;
+    }
+    100% {
+      transform: translateX(100cqw);
+      opacity: 0;
+    }
+  }
+  :root[data-theme="hyprland"] .hero-divider-landing {
+    left: auto;
+    right: -3px;
+    bottom: auto;
+    top: 50%;
+    margin-left: 0;
+    margin-top: -13px;
+  }
+}
+
+:root[data-theme="hyprland"] .lead {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 1s var(--slow),
+    transform 1s var(--slow);
+}
+:root[data-theme="hyprland"] .is-lit .lead {
+  opacity: 0.85;
+  transform: none;
+  transition-delay: 1050ms;
+}
+
+/*
+  El corner deja el fade+translateY generico: en el primer mockup, con la
+  linea base ya pintada desde el frame 0 y solo un overlay de color
+  cambiando encima, no se leia como animacion. Ahora el filete se DIBUJA
+  (scaleX) y "Caracas, Venezuela"/el correo se descubren con el mismo
+  clip-path que las palabras del nombre, en cadena.
+*/
+:root[data-theme="hyprland"] .hero-corner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--l1);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s var(--hard);
+}
+:root[data-theme="hyprland"] .is-lit .hero-corner::before {
+  transform: scaleX(1);
+  transition-delay: 1300ms;
+}
+:root[data-theme="hyprland"] .hero-corner > span,
+:root[data-theme="hyprland"] .hero-corner > a {
+  display: inline-block;
+  clip-path: inset(0 100% 0 0);
+}
+:root[data-theme="hyprland"] .is-lit .hero-corner > span {
+  animation: hypr-hero-cut 0.42s var(--hard) forwards;
+  animation-delay: 1550ms;
+}
+:root[data-theme="hyprland"] .is-lit .hero-corner > a {
+  animation: hypr-hero-cut 0.42s var(--hard) forwards;
+  animation-delay: 1720ms;
+}
+
+/*
+  Un solo pulso de opacidad (no el brightness descartado: filtraria sobre un
+  degradado ya calibrado en contraste). Gateado a :hover/:focus-within, no
+  infinito desde la carga — evita el problema de WCAG 2.2.2 (movimiento
+  automatico sostenido sin mecanismo de pausa) sin perder el gesto para quien
+  interactua con el hero.
+*/
+:root[data-theme="hyprland"] .hero:hover .hero-name-wrap .display-xl,
+:root[data-theme="hyprland"] .hero:focus-within .hero-name-wrap .display-xl {
+  animation: hypr-hero-idle 6s ease-in-out infinite;
+}
+@keyframes hypr-hero-idle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+:root[data-theme="hyprland"] .hero-mail::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 1px;
+  width: 0;
+  background: var(--l1);
+  transition: width 0.5s var(--hard);
+}
+:root[data-theme="hyprland"] .hero-mail:hover::after,
+:root[data-theme="hyprland"] .hero-mail:focus-visible::after {
+  width: 100%;
+}
+
+/*
   Gramatica de revelado. Tres gestos, no uno repetido: el defecto de las
   propuestas descartadas era que TODO iba lento y suave, que es un ajuste
   global y no una coreografia. Los cortes son rapidos y sin rebote.
