@@ -33,8 +33,7 @@ MEMORY.md
 PROGRESS.json
 audit.jsonl
 PROGRESS.log
-.docs/feedback/*/screenshots/
-.docs/feedback/**/screenshots/
+.docs/feedback/
 
 # Secrets
 .env
