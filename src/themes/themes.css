@@ -2795,12 +2795,10 @@
  * principio "un DOM, presentacion por tema" se cumple en CSS, sin ramificar
  * `credits.ts`.
  */
-:root[data-theme="hyprland"] .credits-grid,
 :root[data-theme="caelestia"] .credits-grid {
   grid-template-columns: 1fr;
 }
 
-:root[data-theme="hyprland"] .credits-list,
 :root[data-theme="caelestia"] .credits-list {
   display: flex;
   flex-direction: row;
@@ -2808,7 +2806,6 @@
   gap: 0.5rem;
 }
 
-:root[data-theme="hyprland"] .credit,
 :root[data-theme="caelestia"] .credit {
   width: auto;
   justify-content: flex-start;
@@ -2820,12 +2817,10 @@
 
 /* El rol sobra en formato pildora: manda el nombre (sigue disponible en el
  * panel de detalle al seleccionar la pildora). */
-:root[data-theme="hyprland"] .credit-role,
 :root[data-theme="caelestia"] .credit-role {
   display: none;
 }
 
-:root[data-theme="hyprland"] .credit-name,
 :root[data-theme="caelestia"] .credit-name {
   font-family: var(--font-body);
   font-size: 0.8rem;
@@ -2835,14 +2830,136 @@
 
 /* Pildora activa: mismo gancho que `.chip` de Caelestia (fondo tonal sobre
  * el accent), consistente con el resto del design system. */
-:root[data-theme="hyprland"] .credit:hover,
-:root[data-theme="hyprland"] .credit:focus-visible,
-:root[data-theme="hyprland"] .credit.is-active,
 :root[data-theme="caelestia"] .credit:hover,
 :root[data-theme="caelestia"] .credit:focus-visible,
 :root[data-theme="caelestia"] .credit.is-active {
   background: color-mix(in srgb, var(--color-accent) 14%, transparent);
   border-color: var(--color-accent);
+}
+
+/* ---------------------------------------------------- Hyprland: el reparto */
+/*
+  EL REPARTO — equivale al cartel de reparto de Vice: el rol aparece UNA vez
+  como rotulo y los nombres fluyen como prosa atribuida, no como rejilla de
+  fichas. Aqui el rol va a la izquierda en su columna y los nombres a la
+  derecha, separados por filete.
+*/
+:root[data-theme="hyprland"] .credits-grid {
+  grid-template-columns: 1fr;
+  max-width: 1000px;
+}
+:root[data-theme="hyprland"] .credits-list {
+  display: block;
+}
+/* Base: `display: none` en style.css:1094 — solo Vice lo enciende hoy. Sin
+   este `display: block` el rotulo del grupo seguiria oculto. */
+:root[data-theme="hyprland"] .credit-group-label {
+  display: block;
+  margin-top: 1.1rem;
+  font-family: var(--font-body);
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .credit-group-label:first-child {
+  margin-top: 0;
+}
+:root[data-theme="hyprland"] .credit {
+  /* Sin esto el navegador ignora `display: inline` en un `<button>` con
+     `appearance: auto` y lo computa como `inline-block` — comprobado en
+     Chrome real, no un artefacto de swiftshader. */
+  appearance: none;
+  display: inline;
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-display);
+  font-size: clamp(var(--t-3), 2.2vw, var(--t-4));
+  font-weight: 500;
+  letter-spacing: -0.014em;
+  line-height: 1.3;
+  color: var(--color-paper);
+  transition: color 0.3s var(--slow);
+}
+:root[data-theme="hyprland"] .credit:hover,
+:root[data-theme="hyprland"] .credit:focus-visible,
+:root[data-theme="hyprland"] .credit.is-active {
+  color: var(--l1);
+  background: none;
+  border: 0;
+}
+:root[data-theme="hyprland"] .credit:not(:last-child)::after {
+  content: "  /  ";
+  color: var(--rule);
+}
+/* El rol se muestra una vez como cabecera de grupo, no por fila. */
+:root[data-theme="hyprland"] .credit-role {
+  display: none;
+}
+
+/* ------------------------------------------------- Hyprland: las bandas */
+/*
+  LAS BANDAS — equivale a la carta de ajuste de Vice: el cierre. Alli eran
+  geles de color; aqui son bandas a sangre con filete, rotulo a la izquierda y
+  valor grande a la derecha. Al apuntar, la luz inunda la banda de izquierda a
+  derecha con un corte duro.
+*/
+:root[data-theme="hyprland"] .contacto-bars {
+  flex-direction: column;
+  border-top: 1px solid var(--rule);
+}
+:root[data-theme="hyprland"] [class*="contacto-bar--"] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 0 0 auto;
+  padding: 1.4rem 7vw;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  overflow: hidden;
+}
+:root[data-theme="hyprland"] [class*="contacto-bar--"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--l1) 20%, transparent), transparent 70%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s var(--hard);
+}
+:root[data-theme="hyprland"] [class*="contacto-bar--"]:hover::before,
+:root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible::before {
+  transform: scaleX(1);
+}
+:root[data-theme="hyprland"] .contacto-bar-label {
+  writing-mode: horizontal-tb;
+  transform: none;
+  width: 9rem;
+  flex: 0 0 auto;
+  font-size: var(--t-1);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--haze);
+  position: relative;
+  z-index: 1;
+}
+:root[data-theme="hyprland"] .contacto-bar-value {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(var(--t-3), 2.4vw, var(--t-4));
+  letter-spacing: -0.02em;
+  position: relative;
+  z-index: 1;
+}
+:root[data-theme="hyprland"] .contacto-bar-mark {
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+  background: var(--l1);
 }
 
 /* =====================================================================
