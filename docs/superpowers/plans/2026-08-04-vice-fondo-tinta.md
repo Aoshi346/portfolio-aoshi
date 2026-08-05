@@ -221,4 +221,15 @@ proyecto ya arrastró con los fixtures `vice-hero.*` durante una semana.
       ajuste al disparador de navegación (quitar la caja del `.scene-nav-trigger`, dejar solo
       texto subrayado — commit `a69a28d`) y tras verlo aplicado y verificado dio la aprobación:
       "Excelente, todo listo y aprobado".
-- [ ] Gate `lidia-naive-tester` y `vera-art-director`.
+- [x] Gate `lidia-naive-tester` y `vera-art-director`.
+      lidia-naive-tester: 7.1/10, "Contactaría", sin bloqueantes (v7). Único hallazgo P2 no
+      bloqueante: el disparador sin caja se nota algo menos clicable a primera vista.
+      vera-art-director: BLOCK persistente, 6.95 → 7.12/10 (gate 7.5) tras dos rondas de ajuste
+      sobre el disparador (marca de registro de v1.10, tamaño --t-2 de v1.11). El fondo `viceInk`
+      en si mismo puntua bien (color 7.5, contraste 7.5, densidad 7.5, smell test 7.5); lo que
+      arrastra el promedio es el disparador: el cursor tematico de Vice sigue ocluyendo su propio
+      rotulo en hover (P1, 3 rondas seguidas, fuera de alcance — toca el motor de cursor global
+      `viceCursor.ts`, compartido por todo el sitio) y el patron de "el rotulo se reescribe solo
+      con el scroll" no se resolvio (heredado del extinto `.rail-now`, resolverlo de verdad
+      implicaria redisenar el componente, no un ajuste de CSS). Aoshi revisó ambos veredictos y
+      aceptó el BLOCK documentado: "Acepto y avancemos con el merge."
