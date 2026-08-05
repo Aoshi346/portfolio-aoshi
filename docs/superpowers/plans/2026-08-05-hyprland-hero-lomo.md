@@ -226,7 +226,7 @@ git commit -m "feat(hero): nodos del 'lomo' en el DOM compartido, ocultos salvo 
 - Produces: layout final en reposo (sin animación todavía — eso es la Task 3). Deja el hero
   visualmente correcto a 1440px y a <900px, aunque estático.
 
-- [ ] **Step 1: Reemplazar el bloque `.hero`/`.hero-kick`/`.hero-corner`/`.hero-mail`**
+- [x] **Step 1: Reemplazar el bloque `.hero`/`.hero-kick`/`.hero-corner`/`.hero-mail`**
 
 Sustituir desde `:root[data-theme="hyprland"] .hero {` (línea 1158) hasta el cierre de
 `:root[data-theme="hyprland"] .hero-mail:hover, ... :focus-visible { color: var(--l1); }`
@@ -368,12 +368,12 @@ Sustituir desde `:root[data-theme="hyprland"] .hero {` (línea 1158) hasta el ci
 }
 ```
 
-- [ ] **Step 2: Build y lint**
+- [x] **Step 2: Build y lint**
 
 Run: `npm run build && npm run lint`
 Expected: verde. CSS puro, no debería tocar `tsc` en absoluto.
 
-- [ ] **Step 3: Verificar visualmente el layout en reposo**
+- [x] **Step 3: Verificar visualmente el layout en reposo**
 
 ```bash
 python3 -c "
@@ -395,7 +395,7 @@ separándola del nombre/lead/correo a la derecha. En mobile, la etiqueta vuelve 
 se apila en una columna. Revisa las capturas — si el nombre no cabe o el filete se ve cortado,
 ajustar `grid-template-columns` antes de seguir.
 
-- [ ] **Step 4: Confirmar Vice/Caelestia intactos**
+- [x] **Step 4: Confirmar Vice/Caelestia intactos**
 
 ```bash
 python3 scripts/verify.py --theme vice
@@ -404,7 +404,7 @@ python3 scripts/verify.py --theme caelestia
 
 Expected: sin cambios respecto al Task 1 (esta tarea solo toca el bloque `[data-theme="hyprland"]`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css
