@@ -1565,18 +1565,18 @@ cambiar `Estado: pendiente de plan` por `Estado: implementado` y añadir al fina
 `## Registro de implementación` con los números finales medidos y cualquier divergencia
 respecto a este plan.
 
-- [ ] **Paso 8: → PEDIR REVISIÓN A AOSHI**
+- [x] **Paso 8: → PEDIR REVISIÓN A AOSHI**
 
 Sobre el **sitio real haciendo scroll**, no sobre capturas. Es la lección que costó una tarde
 en Vice.
 
-- [ ] **Paso 9: Gates de crítica**
+- [x] **Paso 9: Gates de crítica**
 
 Lanzar `lidia-naive-tester` (flujo y primera impresión) y `vera-art-director` (ejecución
 visual, umbral 7,5/10). Los dos leen el mismo build estático, así que **se pueden lanzar a la
 vez** — en la sesión de la cortinilla eso ahorró veinte minutos.
 
-- [ ] **Paso 10: Commit final**
+- [x] **Paso 10: Commit final**
 
 ```bash
 git add PROGRESS.json docs/superpowers/specs/2026-08-05-hyprland-ascua-design.md

@@ -1,6 +1,6 @@
 # Ascua — Hyprland deja de ser una piel de color y pasa a ser luz con canto
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-05-hyprland-ascua.md`
 Fecha: 2026-08-05
 Alcance: solo el tema Hyprland — tokens, tipografía, dispositivos de escena, fondo,
@@ -178,8 +178,9 @@ Las tres tonalidades quedan en el fichero, recuperables si alguna vez se quiere 
 
 ## Registro de implementación
 
-Tareas 1-8 y tarea 9 (pasos 1-7) completadas el 2026-08-05. Pendiente: revisión de
-Aoshi sobre el sitio real, gates `lidia-naive-tester`/`vera-art-director`, commit final.
+Cerrado el 2026-08-05. Nueve tareas completas, revisión de Aoshi sobre el sitio real
+en los checkpoints de la tarea 3 (fondo) y la tarea 7 (coreografía), gates de crítica
+lanzados y commit final.
 
 ### Números medidos (Tarea 9, paso 4 — recorte ajustado al glifo)
 
@@ -236,3 +237,54 @@ previo a esta rama:
   igualmente CERRADO contra lo que hay detrás. Afectaba a los tres temas por
   igual — confirmado en Caelestia con el commit `28eec96` (11 fallos antes del
   fix, 9 después, todos preexistentes y ajenos a esta rama).
+
+### Gates de crítica
+
+Los dos agentes se lanzaron en paralelo dos veces: una primera pasada que encontró
+tres P0 reales (no cubiertos por el plan ni por el arnés automático), y una segunda
+tras arreglarlos.
+
+**Primera pasada** — `vera-art-director` 5,70/10 BLOCK, `lidia-naive-tester` 6,9/10:
+
+1. `.about-proof-in b`/`span` sin `display: block` propio — el mismo hueco de
+   "hereda `display: none`/estilos base sin cubrir" que ya había aparecido en
+   `.about-pairs` y `.credit-group-label`. Confirmado por los dos agentes de forma
+   independiente.
+2. Título de obra recortado a media palabra pese al `ellipsis` de la tarea 4: a
+   `--t-3` una palabra de 11 caracteres ("HyprFinance") seguía sin caber en 168px.
+3. `.contacto-bar-value` desbordado en contacto móvil (390px): un flex item con
+   contenido sin puntos de ruptura (el correo) no encoge por debajo de su
+   min-content sin `min-width: 0`. Mismo patrón que un P0 ya conocido en Vice — el
+   fix se aplicó **solo** al material de Hyprland, sin tocar el componente
+   compartido (Vice no se toca).
+
+**Arreglos**: `display: block` + margen en `.about-proof-in b`/`span` (mismo patrón
+que Vice, en el material propio de Ascua); título de obra a `-webkit-line-clamp: 2`
+con tamaño más pequeño (`clamp(--t-1, 1.7vw, --t-3)`) en vez de una sola línea con
+ellipsis; `.contacto-bar-value` con `min-width: 0` + `overflow-wrap: anywhere`, y
+bajo 520px el rótulo se apila encima del valor.
+
+**Segunda pasada** — `vera-art-director` 6,55/10 BLOCK (+0,85), `lidia-naive-tester`
+7,0/10 (+0,1): los tres P0 verificados cerrados por medición directa
+(`getBoundingClientRect`, `scrollWidth`/`clientWidth`), no solo por captura. El
+residual que mantiene a Vera bajo el gate es un solo eje: las 9 imágenes de
+`public/media/obra/*.webp` (fixtures compartidas por los tres temas, pendientes de
+fotografía real — Task 11) siguen mostrando la paleta y tipografía de Vice. Ancla
+matemáticamente dos de los diez ejes (color 5,0, iconografía 3,5) sin margen para
+que el promedio cruce 7,5 aunque el resto sea perfecto.
+
+**Decisión de Aoshi**: aceptar el BLOCK, mismo patrón que el 7,12/10 aceptado en
+Vice — el residual es un hallazgo de contenido conocido y compartido por los tres
+temas, no un defecto de esta implementación. Task 11 lo resuelve para los tres a la
+vez cuando haya fotografía real.
+
+Lidia señala además, sin bloquear, que el disparador de navegación (badge fijo,
+esquina superior derecha) pasa transitoriamente sobre el título de sección y el
+nombre del hero durante el scroll en móvil, reconfirmado en la segunda pasada. Es
+el mismo tipo de oclusión que produce cualquier elemento `position: fixed` sobre
+contenido que se desplaza por debajo — con la caja opaca que ya lleva el
+disparador (arreglada en la tarea 8), ocluye limpiamente en vez de mezclarse de
+forma ilegible, y se autocorrige en cuanto el scroll asienta. No se ha tocado: un
+mecanismo de ocultar/mostrar el disparador según dirección de scroll cambiaría el
+comportamiento del componente compartido en los tres temas, fuera del alcance de
+esta rama.

@@ -1373,9 +1373,25 @@
   color: var(--color-paper);
 }
 :root[data-theme="hyprland"] .about-proof-in {
+  display: block;
   font-family: var(--font-body);
-  font-size: var(--t-2);
   color: var(--haze);
+}
+/* `b` (organizacion/cifra) y `span` (detalle) son hermanos, no un solo
+   nodo de texto: sin `display: block` en cada uno corren pegados en la
+   misma linea ("Telefónica VenezuelaDesarrollé..."). Mismo patron que
+   Vice, en el material propio de Hyprland. */
+:root[data-theme="hyprland"] .about-proof-in b {
+  display: block;
+  font-size: var(--t-2);
+  font-weight: 600;
+  color: var(--color-paper);
+}
+:root[data-theme="hyprland"] .about-proof-in > span {
+  display: block;
+  margin-top: 0.28rem;
+  font-size: var(--t-1);
+  line-height: 1.45;
 }
 :root[data-theme="hyprland"] .about-portrait {
   border-radius: 0;
@@ -1437,24 +1453,36 @@
   }
 
   /* El titulo NUNCA se corta a media palabra: comprimido a la anchura minima
-     de un escalon (~168px medido), una sola palabra larga ("HyprFinance")
-     desbordaba el ancho y `overflow: hidden` del panel lo chapaba en seco a
-     mitad de glifo -- ademas de ilegible, eso dejaba una franja sin
-     poligonos de texto que el arnes de contraste media como fg=bg exacto.
+     de un escalon (~168px medido), una sola palabra larga ("HyprFinance",
+     "WatchDog") desbordaba el ancho y `overflow: hidden` del panel lo
+     chapaba en seco a mitad de glifo -- ademas de ilegible, eso dejaba una
+     franja sin poligonos de texto que el arnes de contraste media como
+     fg=bg exacto.
+
+     Un solo `nowrap` + `ellipsis` no basta: a --t-3 (21.33px) una palabra de
+     11 caracteres ("HyprFinance") sigue sin caber en 168px y el ellipsis
+     recorta la palabra igual (medido en la revision de Vera). Dos cambios:
+     tamano de cierre mas pequeno (--t-1..--t-3) y DOS lineas de wrap antes
+     del ellipsis (`-webkit-line-clamp`), no una -- entre las dos, la
+     mayoria de los titulos del sitio caben enteros sin recortar nada.
      Abierto vuelve a su tamano de firma (tarea 2). */
   :root[data-theme="hyprland"] [data-scene="obra"] .display-lg {
-    font-size: clamp(var(--t-3), 2.6vw, var(--t-5));
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: clamp(var(--t-1), 1.7vw, var(--t-3));
+    line-height: 1.1;
+    white-space: normal;
     max-width: 100%;
     transition: font-size 0.5s var(--slow);
   }
   :root[data-theme="hyprland"] [data-scene="obra"].is-open .display-lg {
+    display: block;
+    -webkit-line-clamp: unset;
     font-size: clamp(var(--t-5), 5.2vw, var(--t-7));
-    white-space: normal;
+    line-height: var(--display-leading);
     overflow: visible;
-    text-overflow: clip;
   }
 
   /* el escalon: cada uno recibe mas luz que el anterior. Factor bajado de
@@ -3021,12 +3049,40 @@
   letter-spacing: -0.02em;
   position: relative;
   z-index: 1;
+  /* Sin `min-width: 0` un item flex no encoge por debajo del min-content de
+     su contenido, y una cadena sin espacios (el correo) no tiene ningun
+     punto de ruptura -- se salia del viewport en movil (medido: 483px de
+     right contra 390px de ancho). `overflow-wrap: anywhere` la deja partir
+     donde haga falta cuando de verdad no cabe. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 :root[data-theme="hyprland"] .contacto-bar-mark {
   margin-left: auto;
   position: relative;
   z-index: 1;
   background: var(--l1);
+}
+
+/* Rotulo encima del valor en movil: en fila, "a.blanco1501@gmail.com" solo
+   tenia sitio para partirse en 4 lineas estrechas contra el rotulo fijo de
+   9rem (medido). Apilado le da el ancho completo de la banda. */
+@media (max-width: 520px) {
+  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 0.4rem;
+  }
+  :root[data-theme="hyprland"] .contacto-bar-label {
+    width: auto;
+  }
+  :root[data-theme="hyprland"] .contacto-bar-value {
+    flex: 1 1 100%;
+    font-size: var(--t-3);
+  }
+  :root[data-theme="hyprland"] .contacto-bar-mark {
+    margin-left: 0;
+  }
 }
 
 /* =====================================================================
