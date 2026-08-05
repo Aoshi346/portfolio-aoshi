@@ -103,14 +103,19 @@ Esa diferencia es lo que hace que el movimiento parezca decidido. Todo degrada c
 
 ## Restricciones
 
-### `check_theme_identity` hay que reescribirlo, no borrarlo
+### `check_theme_identity`: el que rompe es el marcador 2, no el 3
 
-`scripts/verify.py:1146-1157` afirma que en Hyprland `.hero-surface` tiene `boxShadow: none` y
-`borderWidth: 0px` — es el discriminador contra la tarjeta Material You de Caelestia. El diseño
-nuevo no usa tarjetas, así que el marcador deja de decir nada útil. Se sustituye por
-discriminadores que sí separan los tres temas con el diseño actual: Caelestia sigue siendo
-tarjeta opaca con borde sólido y sombra difusa; Hyprland es superficie sin radio con filete de
-1px. El marcador 2 (píldoras de créditos, `flex-direction: row`, rol oculto) **se conserva**.
+Corregido tras cruzar el gate contra el diseño aprobado, no contra el de tiles que se descartó:
+
+- **Marcador 3** (`scripts/verify.py:1146-1157`, `.hero-surface` con `boxShadow: none` y
+  `borderWidth: 0px`) **sigue pasando**: el hero de Ascua es texto a sangre sin chrome, así que
+  no hereda la tarjeta de Caelestia. No hay que tocarlo. Sí hay que **añadir** marcadores
+  propios de Hyprland, porque hoy el gate no protege nada suyo: radio 0 y filete de 1px donde
+  Caelestia lleva radio y sombra.
+- **Marcador 2** (`scripts/verify.py:1159-1174`, `.credits-list` en `flex-direction: row` con
+  `.credit-role` oculto) **se rompe por diseño**. El reparto de Ascua es rol a la izquierda como
+  rótulo y nombres fluyendo a la derecha, en filas con filete: ni es fila de píldoras ni oculta
+  el rol. Hay que partir la aserción en dos, una por tema, no relajarla para los dos.
 
 ### Caelestia sale del bloque compartido sin cambiar
 
