@@ -1082,28 +1082,66 @@
 }
 
 /* ----------------------------------------------------------------- Hyprland */
-
+/*
+  Ascua. El tema es luz EMISIVA sobre negro con sesgo rojo, de canto duro.
+  Se eligio frente a Sodio (ambar) porque Vice ya es ambar miel #ffd166 sobre
+  tinta purpura #150726 y el rojo no le roza por ningun lado.
+  Detalle y descartes: docs/superpowers/specs/2026-08-05-hyprland-ascua-design.md
+*/
 :root[data-theme="hyprland"] {
-  --color-ink: #05070a;
-  --color-paper: #e6f4f1;
-  --color-accent: #33ccff;
-  --color-accent-2: #00ff99;
-  --color-line: #13303a;
+  --color-ink: #0b0404;
+  --color-paper: #ffeae6;
+  --color-accent: #ff5a34;
+  --color-accent-2: #e01d3c;
+  --color-line: #3d1c1c;
 
-  /* Telon oscuro, como Vice: mismos porcentajes. Medido: 5,27 y 4,79:1. */
-  --nav-dim: 55%;
-  --nav-dim-soft: 50%;
+  /* las tres luces y el tono que recoge el blanco del display */
+  --l1: #ff5a34;
+  --l2: #e01d3c;
+  --l3: #ffa03c;
+  --catch: #ffd9cc;
+  --rule: #3d1c1c;
+  --haze: #b18c86;
 
-  --font-display: "Space Grotesk", system-ui, sans-serif;
-  --font-body: "Space Grotesk", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* Medir contra ESTE fondo antes de cerrar la tarea 8. Heredar el 55% de
+     Vice fue el error del tema anterior: una opacidad se calibra contra un
+     scrim concreto. */
+  --nav-dim: 58%;
+  --nav-dim-soft: 52%;
 
-  --radius-card: 4px;
-  --display-tracking: -0.03em;
-  --display-weight: 900;
-  --display-transform: uppercase;
-  --display-leading: 0.86;
-  --bg-fallback: linear-gradient(140deg, #05070a 0%, #0a2b38 55%, #063c30 100%);
+  /* Escala cerrada: los MISMOS diez pasos que Vice (base 16, razon 1,333).
+     Espejar el sistema numerico es parte de organizarse como Vice. */
+  --t-1: 12px;
+  --t-2: 16px;
+  --t-3: 21.33px;
+  --t-4: 28.43px;
+  --t-5: 37.9px;
+  --t-6: 50.52px;
+  --t-7: 67.4px;
+  --t-8: 89.85px;
+  --t-9: 119.77px;
+  --t-10: 159.66px;
+
+  --slow: cubic-bezier(0.16, 0.84, 0.28, 1);
+  --hard: cubic-bezier(0.7, 0, 0.2, 1);
+
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "Instrument Sans", system-ui, sans-serif;
+  /* Reservada a UN solo trabajo: lo hablado, las frases en primera persona.
+     Es el equivalente de Pathway Gothic One en Vice, que solo aparece en lo
+     acreditado. */
+  --font-said: "Instrument Serif", Georgia, serif;
+  /* Red de seguridad, igual que en Vice: sin esto las utilidades `font-mono`
+     de Tailwind filtran `ui-monospace`, y la monoespaciada es justo el tic que
+     hacia que el tema se leyera como una herramienta de desarrollador. */
+  --font-mono: "Instrument Sans", system-ui, sans-serif;
+
+  --radius-card: 0px;
+  --display-tracking: -0.032em;
+  --display-weight: 600;
+  --display-transform: none;
+  --display-leading: 0.94;
+  --bg-fallback: radial-gradient(120% 90% at 52% 26%, #3a1008 0%, #150605 46%, #0b0404 100%);
 }
 
 /* ---------------------------------------------------------------- Caelestia */
