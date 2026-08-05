@@ -728,6 +728,18 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
         const text = (el.textContent || '').trim();
         if (!text) continue;
         if (el.closest('[data-decorative]')) continue; // decorativo, exento por WCAG 1.4.3
+        /*
+         * `.scene-index` (el menu de navegacion) se OCULTA con
+         * `clip-path: inset(0 0 100% 0)`, no con `display`/`visibility`: su
+         * fondo solido (`--color-ink`) deja de pintarse pero el texto sigue
+         * teniendo un rect valido y `opacity: 1`, asi que el filtro de mas
+         * abajo no lo atrapaba. El resultado era medir el rotulo del menu
+         * CERRADO contra lo que hay detras en la pagina (fondo Ascua, muy
+         * variable) en vez de contra su propio telon opaco cuando esta
+         * abierto — encontrado al instrumentar Ascua, con el fondo animado
+         * nuevo exponiendo un hueco que ya existia para los tres temas.
+         */
+        if (el.closest('.scene-index') && !el.closest('.scene-index.is-open')) continue;
         const style = getComputedStyle(el);
         if (style.visibility === 'hidden' || style.display === 'none') continue;
         if (parseFloat(style.opacity) < 0.2) continue;
@@ -748,10 +760,28 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
         const strokeC = style.webkitTextStrokeColor;
         const pintaSoloElTrazo =
           /^(transparent|rgba\(0,\s*0,\s*0,\s*0\))$/.test(style.color.trim()) && strokeW > 0;
+        /*
+         * Mismo defecto, otra tecnica: `background-clip: text` (Hyprland,
+         * tarea 2 de Ascua) tambien deja `color: transparent` en el
+         * elemento, y el pixel real que se ve es un degradado recortado al
+         * glifo, no un solido. Componer `transparent` sobre el fondo da
+         * fg == bg exacto — el mismo fallo fantasma que el contorno, medido
+         * aparte en 14.4:1 (ver Tarea 9). Sin forma fiable de reducir un
+         * degradado a un unico par fg/bg, se excluye aqui igual que un fondo
+         * de video/canvas no solido, no se inventa un color.
+         */
+        const colorTransparente = /^(transparent|rgba\(0,\s*0,\s*0,\s*0\))$/.test(
+          style.color.trim(),
+        );
+        const recortadoAGlifo =
+          (style.backgroundClip === "text" || style.webkitBackgroundClip === "text") &&
+          colorTransparente &&
+          strokeW === 0;
         out.push({
           tag: el.tagName.toLowerCase(),
           text: text.slice(0, 40),
           color: pintaSoloElTrazo ? strokeC : style.color,
+          recortadoAGlifo,
           fontSize: parseFloat(style.fontSize),
           fontWeight: style.fontWeight,
           rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
@@ -776,6 +806,16 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
         samples += _sample_strip(img, x + w + gap, y, x + w + gap + thick, y + h)  # derecha
 
         label_base = f"contraste AA — {theme}: {c['tag']} \"{c['text']}\""
+
+        if c.get("recortadoAGlifo"):
+            # `background-clip: text` no tiene un fg solido que leer de
+            # `color` (ver comentario en el evaluate de arriba): excluido del
+            # gate automatico, igual que un fondo de video/canvas no solido.
+            # La medida real de este texto la hace la Tarea 9, paso 4, con
+            # recorte ajustado al glifo.
+            excluded += 1
+            print(f"  SKIP {label_base} (background-clip:text — medido aparte, ver Tarea 9)")
+            continue
 
         if len(samples) < 8:
             excluded += 1
@@ -1099,7 +1139,14 @@ def check_theme_identity(page, theme: str) -> None:
          Caelestia (`border: 1px solid ...` + `box-shadow` real; el scrim de
          Vice no lleva ninguno de los dos). Protege contra el error inverso
          al (1): ampliar el selector de Caelestia para que tambien alcance a
-         Hyprland (o a Vice)."""
+         Hyprland (o a Vice).
+
+    El marcador 2 se parte por tema con el rediseno "Ascua" (2026-08-05):
+    Hyprland dejo de re-skinear los creditos en pildoras (compartido con
+    Caelestia) y paso a su propio reparto — rol una vez como rotulo de grupo,
+    nombres fluyendo como prosa con filete. Caelestia sigue en pildoras
+    exactamente igual que antes; separar el marcador es lo que permite que
+    el cambio de Hyprland no fuerce relajar (o mentir) el de Caelestia."""
     hero_surface = page.evaluate("""(() => {
       const el = document.querySelector('.hero-surface');
       if (!el) return null;
@@ -1156,7 +1203,7 @@ def check_theme_identity(page, theme: str) -> None:
             f"borderWidth={hero_surface['borderWidth'] if hero_surface else None})",
         )
 
-    if theme in ("hyprland", "caelestia"):
+    if theme == "caelestia":
         credits_layout = page.evaluate("""(() => {
           const list = document.querySelector('.credits-list');
           const role = document.querySelector('.credit-role');
@@ -1176,6 +1223,52 @@ def check_theme_identity(page, theme: str) -> None:
             credits_layout is not None and credits_layout["roleDisplay"] == "none",
             f"{theme}: el rol se oculta en formato pildora "
             f"(roleDisplay={credits_layout['roleDisplay'] if credits_layout else None})",
+        )
+
+    if theme == "hyprland":
+        # Ascua NO son pildoras: el rol va una vez como cabecera de grupo y los
+        # nombres fluyen como prosa atribuida, igual que el cartel de reparto de
+        # Vice pero en su propio material. Si alguien reintroduce el bloque
+        # compartido con Caelestia, esto salta.
+        reparto = page.evaluate("""(() => {
+          const credit = document.querySelector('.credit');
+          const label = document.querySelector('.credit-group-label');
+          if (!credit) return null;
+          const s = getComputedStyle(credit);
+          return {
+            display: s.display,
+            borderWidth: s.borderTopWidth,
+            radius: s.borderTopLeftRadius,
+            tieneRotulo: Boolean(label),
+          };
+        })()""")
+        check(
+            reparto is not None and reparto["display"] == "inline",
+            f"hyprland: .credit fluye como prosa, no como pildora "
+            f"(display={reparto['display'] if reparto else None})",
+        )
+        check(
+            reparto is not None and reparto["borderWidth"] == "0px",
+            f"hyprland: .credit no lleva caja "
+            f"(borderWidth={reparto['borderWidth'] if reparto else None})",
+        )
+        check(
+            reparto is not None and reparto["tieneRotulo"],
+            "hyprland: el rol aparece una vez como .credit-group-label",
+        )
+
+        # Radio 0 es la decision estructural del tema: Ascua es luz con CANTO.
+        # Caelestia lleva radio y sombra; si Hyprland empieza a redondear,
+        # los dos temas convergen y se pierde la identidad.
+        canto = page.evaluate("""(() => {
+          const s = document.querySelector('.scene-surface') || document.querySelector('.hero-surface');
+          if (!s) return null;
+          const cs = getComputedStyle(s);
+          return { radius: cs.borderTopLeftRadius, shadow: cs.boxShadow };
+        })()""")
+        check(
+            canto is not None and canto["radius"] == "0px",
+            f"hyprland: las superficies no redondean (radius={canto['radius'] if canto else None})",
         )
 
 

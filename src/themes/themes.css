@@ -1302,6 +1302,11 @@
   display: block;
   border-top: 1px solid var(--rule);
   margin-top: 6vh;
+  padding: 1.4rem 1.6rem;
+  /* Scrim de legibilidad: sin el, el texto secundario (--haze) se mide
+     contra el fondo de brasa directamente y cae por debajo de 4.5:1 donde
+     el haz pasa por detras (medido: 3.20:1 en "Telefónica Venezuela"). */
+  background: color-mix(in srgb, var(--color-ink) 78%, transparent);
 }
 :root[data-theme="hyprland"] .about-pairs-head {
   display: flex;
@@ -1415,7 +1420,11 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: linear-gradient(180deg, rgba(26, 10, 10, 0.2), rgba(26, 10, 10, 0.65));
+    /* Scrim de legibilidad: casi opaco. Medido con el arnes de contraste —
+       a 0.2/0.65 el haz brillante de fondo se colaba por debajo del texto
+       secundario (dt/dd/p) y tumbaba varias filas de metadatos por debajo
+       de 4.5:1. */
+    background: linear-gradient(180deg, rgba(11, 4, 4, 0.82), rgba(11, 4, 4, 0.94));
     transition:
       flex-grow 0.5s var(--hard),
       background 0.5s var(--slow);
@@ -1424,7 +1433,32 @@
     border-right: 0;
   }
 
-  /* el escalon: cada uno recibe mas luz que el anterior */
+  /* El titulo NUNCA se corta a media palabra: comprimido a la anchura minima
+     de un escalon (~168px medido), una sola palabra larga ("HyprFinance")
+     desbordaba el ancho y `overflow: hidden` del panel lo chapaba en seco a
+     mitad de glifo -- ademas de ilegible, eso dejaba una franja sin
+     poligonos de texto que el arnes de contraste media como fg=bg exacto.
+     Abierto vuelve a su tamano de firma (tarea 2). */
+  :root[data-theme="hyprland"] [data-scene="obra"] .display-lg {
+    font-size: clamp(var(--t-3), 2.6vw, var(--t-5));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    transition: font-size 0.5s var(--slow);
+  }
+  :root[data-theme="hyprland"] [data-scene="obra"].is-open .display-lg {
+    font-size: clamp(var(--t-5), 5.2vw, var(--t-7));
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  /* el escalon: cada uno recibe mas luz que el anterior. Factor bajado de
+     *1% a *0.35%: al *1% el ultimo panel llegaba a 68% de --l1 y tumbaba el
+     * texto secundario del propio panel por debajo de 4.5:1 (medido con el
+     * arnes de contraste) -- el escalon es un acento, no debe competir con
+     * la legibilidad del contenido que anuncia. */
   :root[data-theme="hyprland"] [data-scene="obra"]::before {
     content: "";
     position: absolute;
@@ -1432,14 +1466,14 @@
     pointer-events: none;
     background: linear-gradient(
       180deg,
-      color-mix(in oklab, var(--l1) calc(var(--hypr-e, 16) * 1%), transparent),
+      color-mix(in oklab, var(--l1) calc(var(--hypr-e, 16) * 0.35%), transparent),
       transparent 62%
     );
   }
 
   :root[data-theme="hyprland"] [data-scene="obra"].is-open {
     flex-grow: 3.1;
-    background: linear-gradient(180deg, rgba(26, 10, 10, 0.35), rgba(26, 10, 10, 0.8));
+    background: linear-gradient(180deg, rgba(11, 4, 4, 0.68), rgba(11, 4, 4, 0.9));
   }
   :root[data-theme="hyprland"] [data-scene="obra"].is-open::after {
     content: "";
@@ -1499,6 +1533,18 @@
     opacity: 1;
     pointer-events: auto;
   }
+}
+
+/* El disparador de escena flota sobre el fondo generativo directamente (sin
+   `.scene-surface` de por medio): base `.scene-nav-trigger` es transparente
+   y el haz brillante pasando por detras tumbaba "03 · Obra" a 1.95:1
+   (medido). Radio 5px heredado: la navegacion es la unica excepcion al
+   radio 0 del tema (spec). */
+:root[data-theme="hyprland"] .scene-nav-trigger {
+  background: color-mix(in srgb, var(--color-ink) 82%, transparent);
+}
+:root[data-theme="hyprland"] .scene-nav-trigger:hover {
+  background: color-mix(in srgb, var(--color-ink) 70%, var(--l1) 14%);
 }
 
 :root[data-theme="hyprland"] .hypr-ignition {
