@@ -2706,6 +2706,14 @@
 :root[data-theme="vice"] .scene-nav-trigger {
   background: transparent;
   box-shadow: none;
+  /*
+   * Hallazgo de vera-art-director (re-auditoria tras la marca de registro):
+   * el 12px base (`--t-1`) es el escalon mas pequeno de la escala del
+   * proyecto, y este es el unico control de navegacion primaria del sitio.
+   * Hyprland/Caelestia se quedan en --t-1: su caja compartida ya les da
+   * peso propio, la que Vice acaba de retirar.
+   */
+  font-size: var(--t-2, 1rem);
 }
 
 :root[data-theme="vice"] .scene-nav-trigger:hover,
