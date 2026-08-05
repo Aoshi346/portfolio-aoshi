@@ -97,8 +97,10 @@ de verdad, y conviene atacarlo en el brainstorm en vez de re-maquetar lo mismo.
    (`caelestiaBlobs`) y sin superficie el texto cae por debajo de 3:1 / 4.5:1
    — medido con el arnes de contraste. **No lo quites de esos tres sitios.**
 3. **`scripts/verify.py` mide contraste WCAG sobre esta escena.** Si el rediseno
-   quita una superficie o cambia el peso del texto sobre la bruma de
-   `viceHaze.ts`, vuelve a correr `check_contrast_wcag`. No lo des por hecho.
+   quita una superficie o cambia el peso del texto sobre el fondo de Vice
+   (`viceHaze.ts` en el momento de este handoff; hoy es `viceInk.ts`, la
+   serigrafia de tinta — ver `2026-08-04-vice-fondo-tinta-design.md`), vuelve a
+   correr `check_contrast_wcag`. No lo des por hecho.
 4. **`gsap.from` esta prohibido en este repo** — deduce un extremo leyendo el DOM
    y ha causado tres regresiones reales. **`scene2Card` lo usa hoy CUATRO veces**
    (card, lines, stats, track): es deuda preexistente en la seccion exacta que
@@ -148,7 +150,8 @@ de verdad, y conviene atacarlo en el brainstorm en vez de re-maquetar lo mismo.
 - **`page.screenshot()` en headless perturba GSAP**: para medir ritmo, muestrea
   `tl.progress()` desde dentro de la pagina.
 - Bloquea el shader mientras depuras layout:
-  `page.route("**/viceHaze*", r => r.abort())`.
+  `page.route("**/viceInk*", r => r.abort())` (era `viceHaze` en el momento de
+  este handoff; el fondo de Vice cambio de modulo en `2026-08-04-vice-fondo-tinta`).
 
 ## Arnes
 

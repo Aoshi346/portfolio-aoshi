@@ -158,15 +158,18 @@ problema no es el ritmo de la timeline, es como se pinta el iris.**
   `.progress(x)` antes de cada `screenshot()`. AVISO: con el shader de fondo
   activo en headless (`--use-gl=swiftshader`) esto tarda muchisimo; a mi me
   agoto un timeout de 5 minutos. Bloquea el shader con
-  `page.route("**/viceHaze*", r => r.abort())` mientras depuras el iris.
+  `page.route("**/viceInk*", r => r.abort())` (era `viceHaze` en el momento de
+  este handoff; el fondo de Vice cambio de modulo en `2026-08-04-vice-fondo-tinta`)
+  mientras depuras el iris.
 
 ## Estado del arnes
 
 `python3 scripts/verify.py` deja **12 fallos, todos preexistentes** y ninguno
 relacionado con el leader: 9 son rellenos de galeria en `public/media/obra/` y
 3 son los ficheros `public/media/vice-*` (el video de fixture, que ya no se usa
-porque el fondo pasó a ser el shader `src/backgrounds/viceHaze.ts` — se pueden
-borrar, esta pendiente de decision del usuario). Cualquier fallo distinto de
+porque el fondo de Vice es un shader — `viceInk.ts` hoy, `viceHaze.ts` en el
+momento de este handoff — se pueden borrar, sigue pendiente de decision del
+usuario a fecha de `2026-08-04-vice-fondo-tinta`). Cualquier fallo distinto de
 esos 12 lo has introducido tu.
 
 `npm run build` y `npm run lint` estan en verde. Manten ambos en verde.

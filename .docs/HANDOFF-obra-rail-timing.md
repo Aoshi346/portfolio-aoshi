@@ -121,7 +121,9 @@ Estas son las que aplican DIRECTAMENTE a este encargo. Leerlas antes de medir:
   despues de haberla arreglado en el arnes.
 - **Con `--use-gl=swiftshader` el rAF va lentisimo** y las animaciones parecen ir por
   detras del raton o quedarse cortas. Eso es el headless, no el codigo. Para depurar layout
-  sin ese coste, bloquea el shader: `page.route("**/viceHaze*", r => r.abort())`.
+  sin ese coste, bloquea el shader: `page.route("**/viceInk*", r => r.abort())`
+  (era `viceHaze` en el momento de este handoff; el fondo de Vice cambio de
+  modulo en `2026-08-04-vice-fondo-tinta`).
 - **A/B antes que hipotesis.** Si sospechas de un modulo, bloquealo con `page.route(...)` y
   vuelve a medir. Descarta o confirma en un minuto, sin tocar codigo.
 - **Para comparar contra `HEAD` usa `git worktree add`, NUNCA `git stash`.** Un

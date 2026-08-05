@@ -174,7 +174,8 @@ enseñarlo en el companion antes de dar por bueno:
 - El icono de la tecnologia es decorativo: `aria-hidden` + `data-decorative`
   (esto ultimo lo exime del gate de contraste; nunca uses `aria-hidden` para
   eximir del contraste).
-- Contraste AA. El fondo es la bruma generativa de `viceHaze.ts`, que acota su
+- Contraste AA. El fondo es el generativo de Vice (`viceHaze.ts` en el momento
+  de este handoff; hoy es `viceInk.ts`, la serigrafia de tinta), que acota su
   brillo por shader: la escena actual mide entre 7:1 y 15:1. Si el cartel
   prescinde del scrim de `.credits-list`, vuelve a medir con
   `scripts/verify.py::check_contrast_wcag` — no lo des por hecho.
@@ -198,7 +199,8 @@ usuario). Cualquier fallo distinto de esos 12 lo has introducido tu.
   capturar fotogramas concretos, `tl.pause()` y `tl.progress(x)`.
 - El shader de fondo hace que headless con `--use-gl=swiftshader` vaya
   lentisimo. Mientras depuras la seccion, bloquealo:
-  `page.route("**/viceHaze*", r => r.abort())`.
+  `page.route("**/viceInk*", r => r.abort())` (era `viceHaze` en el momento de
+  este handoff; el fondo de Vice cambio de modulo en `2026-08-04-vice-fondo-tinta`).
 - Verificacion visual obligatoria en 1440x900 y 390x844 antes de dar nada por
   hecho.
 

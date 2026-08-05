@@ -25,6 +25,17 @@
 - `git push --force` / `git push origin main` without approval
 - Declare DONE without a build + a real browser screenshot
 
+## Theme Status
+- **Vice: DONE.** Closed with the `2026-08-04-vice-fondo-tinta` plan (background `viceInk.ts`, a
+  two-ink halftone poster; the scene-nav trigger lost its box, gained a register mark). Reviewed
+  live by Aoshi, `lidia-naive-tester` gate green, `vera-art-director` gate BLOCK explicitly
+  accepted (7.12/10 against a 7.5 gate — the residual is a known, accepted product finding, not a
+  defect). **Do not touch Vice** (background, nav trigger, choreography, typography) unless Aoshi
+  asks for it explicitly. Full record in `docs/superpowers/specs/2026-08-04-vice-fondo-tinta-design.md`.
+- **Hyprland and Caelestia: IN PROGRESS.** Current focus. They share `shaderBackground.ts` with
+  Vice (don't touch that module without confirming Vice still renders) but each has its own
+  background (`hyprGradient.ts` / `caelestiaBlobs.ts`), palette, and typography — see `src/themes/themes.css`.
+
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**
 - Three themes over one DOM, switched by `data-theme` (vice / hyprland / caelestia). The skin is decided by CSS, never by the markup. The theme is picked at random per visit: to verify, always use `?theme=vice`
