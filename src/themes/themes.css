@@ -1501,6 +1501,24 @@
   }
 }
 
+:root[data-theme="hyprland"] .hypr-ignition {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--color-ink);
+  pointer-events: none;
+  animation: hypr-ignite 1.1s var(--hard) forwards;
+}
+@keyframes hypr-ignite {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 /* ---------------------------------------------------------------- Caelestia */
 
 :root[data-theme="caelestia"] {

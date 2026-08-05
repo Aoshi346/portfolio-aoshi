@@ -138,6 +138,15 @@ app.append(
 // mientras dura, cromo de cine incluido.
 if (introLeader) app.append(introLeader);
 
+// El encendido de Hyprland: equivalente de la cortinilla de Vice en el
+// material de Ascua. Import diferido, igual que el resto de modulos de tema.
+let ignitionHandle: { destroy: () => void } | null = null;
+if (!prefersReducedMotion && theme.id === "hyprland") {
+  void import("./components/hyprIgnition").then(({ mountHyprIgnition }) => {
+    ignitionHandle = mountHyprIgnition(app);
+  });
+}
+
 // Navegacion de escenas, comun a los tres temas: vive fuera del cromo de
 // cine (aria-hidden) para que quede en el arbol de accesibilidad.
 const sceneNavHandle = mountSceneNav(app);
@@ -199,6 +208,7 @@ window.addEventListener(
     backgroundHandle?.destroy();
     scrollRailHandle?.destroy();
     cursorHandle?.destroy();
+    ignitionHandle?.destroy();
     sceneNavHandle.destroy();
   },
   { once: true },
