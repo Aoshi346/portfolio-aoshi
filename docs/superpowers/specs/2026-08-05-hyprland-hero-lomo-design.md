@@ -1,6 +1,7 @@
 # El lomo — el hero de Ascua gana dispositivo propio y coreografía bespoke
 
-Estado: pendiente de plan
+Estado: en ejecucion
+Plan: `docs/superpowers/plans/2026-08-05-hyprland-hero-lomo.md`
 Fecha: 2026-08-05
 Alcance: solo el hero del tema Hyprland — `src/sections/hero.ts` (estructura compartida por los
 tres temas, con nodos nuevos que solo Hyprland muestra), el bloque Hyprland de

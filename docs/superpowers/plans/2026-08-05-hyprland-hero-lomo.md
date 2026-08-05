@@ -63,7 +63,7 @@ Spec de referencia: `docs/superpowers/specs/2026-08-05-hyprland-hero-lomo-design
 - Consumes: `identity` de `src/data/content.ts` (`name`, `role`, `subheadline`, `location`,
   `email` — ya existen, sin cambios de tipo).
 
-- [ ] **Step 1: Reescribir `hero.ts`**
+- [x] **Step 1: Reescribir `hero.ts`**
 
 ```ts
 import { identity } from "../data/content";
@@ -149,7 +149,7 @@ export function createHero(): HTMLElement {
 }
 ```
 
-- [ ] **Step 2: Ocultar los nodos nuevos por defecto en `style.css`**
+- [x] **Step 2: Ocultar los nodos nuevos por defecto en `style.css`**
 
 Cerca de `.hero-kick`/`.hero-corner` (línea ~166), añadir:
 
@@ -167,13 +167,13 @@ Cerca de `.hero-kick`/`.hero-corner` (línea ~166), añadir:
 }
 ```
 
-- [ ] **Step 3: Build y lint**
+- [x] **Step 3: Build y lint**
 
 Run: `npm run build && npm run lint`
 Expected: ambos en verde. `tsc` no debe quejarse — `el()` ya acepta `(Node | string)[]`, y
 `flatMap` sobre `string[]` produce `(HTMLSpanElement | string)[]`, compatible.
 
-- [ ] **Step 4: Confirmar que Vice y Caelestia no cambiaron**
+- [x] **Step 4: Confirmar que Vice y Caelestia no cambiaron**
 
 ```bash
 python3 scripts/verify.py --theme vice
@@ -183,7 +183,7 @@ python3 scripts/verify.py --theme caelestia
 Expected: mismo resultado que antes de este cambio (compara contra la baseline existente — si
 algo nuevo aparece, es una regresión de este task, no un fallo preexistente).
 
-- [ ] **Step 5: Captura rápida de los tres temas**
+- [x] **Step 5: Captura rápida de los tres temas**
 
 ```bash
 python3 -c "
@@ -205,7 +205,7 @@ antes de este task (el fantasma/divisor están ahí en el DOM pero `display: non
 todavía se ve como el hero viejo (sin grid, sin recorte) — normal, la piel nueva llega en las
 tareas siguientes.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/sections/hero.ts src/style.css
