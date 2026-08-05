@@ -1144,6 +1144,240 @@
   --bg-fallback: radial-gradient(120% 90% at 52% 26%, #3a1008 0%, #150605 46%, #0b0404 100%);
 }
 
+/* Escenas a sangre: el padding lateral es del tema, no de la maqueta comun. */
+:root[data-theme="hyprland"] [data-scene] {
+  padding-top: 15vh;
+  padding-bottom: 17vh;
+  padding-left: 7vw;
+  padding-right: 7vw;
+}
+
+:root[data-theme="hyprland"] .hero {
+  align-items: flex-start;
+  text-align: left;
+}
+
+:root[data-theme="hyprland"] .hero-kick {
+  font-family: var(--font-body);
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+
+/*
+  LA FIRMA: el display es blanco que RECOGE color, no texto en degradado.
+  La saturacion se mantiene baja a proposito — un arcoiris en el titular es
+  el tic que hacia que el tema se leyera como generado.
+  El degradado va anclado a la pantalla (`fixed`) para que al desplazarte la
+  luz pase POR DENTRO de las palabras en vez de viajar con ellas.
+  Medido en el prototipo: 14,4:1 sobre el campo.
+*/
+:root[data-theme="hyprland"] .display-xl,
+:root[data-theme="hyprland"] .display-lg,
+:root[data-theme="hyprland"] .contacto-title,
+:root[data-theme="hyprland"] .about-name {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  line-height: var(--display-leading);
+  text-transform: none;
+  background: radial-gradient(
+      64vw 64vw at var(--bx, 52%) var(--by, 30%),
+      #ffffff 0%,
+      var(--catch) 44%,
+      color-mix(in oklab, var(--catch) 70%, var(--l2)) 100%
+    )
+    fixed;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:root[data-theme="hyprland"] .display-xl,
+:root[data-theme="hyprland"] .contacto-title {
+  font-size: clamp(var(--t-6), 8.2vw, var(--t-9));
+}
+:root[data-theme="hyprland"] .display-lg,
+:root[data-theme="hyprland"] .about-name {
+  font-size: clamp(var(--t-5), 5.2vw, var(--t-7));
+}
+
+/* Lo hablado. Unico gesto de calidez conseguido por FORMA, no por color. */
+:root[data-theme="hyprland"] .lead,
+:root[data-theme="hyprland"] .contacto-lead {
+  font-family: var(--font-said);
+  font-style: italic;
+  font-size: clamp(var(--t-3), 2.2vw, var(--t-4));
+  line-height: 1.3;
+  font-weight: 400;
+  color: color-mix(in oklab, var(--color-paper) 84%, transparent);
+}
+
+/* El pie del hero: filete, no caja. */
+:root[data-theme="hyprland"] .hero-corner {
+  border-top: 1px solid var(--rule);
+  padding-top: 1rem;
+  font-size: var(--t-1);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .hero-mail {
+  color: var(--haze);
+  transition: color 0.3s var(--slow);
+}
+:root[data-theme="hyprland"] .hero-mail:hover,
+:root[data-theme="hyprland"] .hero-mail:focus-visible {
+  color: var(--l1);
+}
+
+/*
+  Gramatica de revelado. Tres gestos, no uno repetido: el defecto de las
+  propuestas descartadas era que TODO iba lento y suave, que es un ajuste
+  global y no una coreografia. Los cortes son rapidos y sin rebote.
+*/
+:root[data-theme="hyprland"] .hypr-cut {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 0.42s var(--hard);
+  transition-delay: var(--hypr-d, 0ms);
+}
+:root[data-theme="hyprland"] .is-lit .hypr-cut,
+:root[data-theme="hyprland"] .hypr-cut.is-lit {
+  clip-path: inset(0 0 0 0);
+}
+:root[data-theme="hyprland"] .hypr-up {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.9s var(--slow),
+    transform 0.9s var(--slow);
+  transition-delay: var(--hypr-d, 0ms);
+}
+:root[data-theme="hyprland"] .is-lit .hypr-up,
+:root[data-theme="hyprland"] .hypr-up.is-lit {
+  opacity: 1;
+  transform: none;
+}
+:root[data-theme="hyprland"] .hypr-rule {
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.4s var(--hard);
+  transition-delay: var(--hypr-d, 0ms);
+}
+:root[data-theme="hyprland"] .is-lit .hypr-rule {
+  transform: scaleY(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .hypr-cut,
+  :root[data-theme="hyprland"] .hypr-up,
+  :root[data-theme="hyprland"] .hypr-rule {
+    clip-path: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/*
+  "QUIEN ES" — el bloque de afirmacion y prueba, en filas con filete.
+  El DOM ya existe (`src/sections/about.ts`): `.about-pair` > `.about-claim` >
+  `.about-claim-in`, y `.about-proof` > `.about-proof-in`. Vice lo maqueta como
+  cartel de cine; aqui es una tabla editorial de dos columnas.
+
+  El filete que se pinta al apuntar es el equivalente de las marcas de esquina
+  de Vice: el dato que recibe atencion se marca, y se marca con un canto.
+*/
+:root[data-theme="hyprland"] .about-grid {
+  grid-template-columns: 1fr;
+}
+/*
+  Base: `.about-pairs { display: none }` en style.css:803 — solo Vice lo
+  enciende hoy. Sin este `display: block` el bloque entero seguiria oculto
+  bajo Hyprland pese a llevar sus propias reglas.
+*/
+:root[data-theme="hyprland"] .about-pairs {
+  display: block;
+  border-top: 1px solid var(--rule);
+  margin-top: 6vh;
+}
+:root[data-theme="hyprland"] .about-pairs-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+:root[data-theme="hyprland"] .about-pairs-head .about-h {
+  margin: 0;
+  font-size: var(--t-1);
+  letter-spacing: 0.28em;
+}
+:root[data-theme="hyprland"] .about-pairs-rule {
+  display: none;
+}
+:root[data-theme="hyprland"] .about-pair {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem 1.2rem;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+/* El conector decorativo de Vice (linea + cabeza de flecha) no tiene trabajo
+   aqui: el filete de `.about-pair::before` ya marca el apuntado. */
+:root[data-theme="hyprland"] .about-link {
+  display: none;
+}
+@media (min-width: 760px) {
+  :root[data-theme="hyprland"] .about-pair {
+    grid-template-columns: 0.9fr 1.1fr;
+    align-items: baseline;
+  }
+  :root[data-theme="hyprland"] .about-claim {
+    grid-column: 1;
+  }
+  :root[data-theme="hyprland"] .about-proof {
+    grid-column: 2;
+  }
+}
+:root[data-theme="hyprland"] .about-pair::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 1px;
+  width: 0;
+  background: var(--l1);
+  transition: width 0.5s var(--hard);
+}
+:root[data-theme="hyprland"] .about-pair:hover::before,
+:root[data-theme="hyprland"] .about-pair:focus-within::before {
+  width: 100%;
+}
+:root[data-theme="hyprland"] .about-claim-in {
+  font-family: var(--font-display);
+  font-size: var(--t-3);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-transform: none;
+  color: var(--color-paper);
+}
+:root[data-theme="hyprland"] .about-proof-in {
+  font-family: var(--font-body);
+  font-size: var(--t-2);
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .about-portrait {
+  border-radius: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .about-pair::before {
+    transition: none;
+  }
+}
+
 /* ---------------------------------------------------------------- Caelestia */
 
 :root[data-theme="caelestia"] {
