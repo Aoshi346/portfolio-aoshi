@@ -55,6 +55,30 @@ nuevo.
 `max-width: 900px` — el mismo umbral que ya usa `.contacto-bar-label` (Vice) para el mismo
 problema (etiqueta rotada que deja de caber). No se introduce un breakpoint nuevo.
 
+**Hallazgos de móvil, encontrados verificando el mockup a escala real (390×844) — no estaban en
+la primera versión de este spec**, porque las capturas anteriores se tomaban antes de que el
+bloque `.hero` pasara a `display: grid`:
+
+1. **`align-content` no puede quedar en su valor por defecto.** CSS Grid resuelve `normal` a
+   `stretch` (a diferencia de flexbox, donde resuelve a `start`) — con `min-height: 100vh` y filas
+   de contenido mucho más cortas que la pantalla, el navegador reparte el sobrante *entre* filas
+   en vez de agruparlas, dejando huecos enormes y desiguales entre la etiqueta, el filete y el
+   contenido. Fija explícito: `align-content: center` (no `start`) — el hero **ya** ocupa la
+   pantalla completa hoy en los tres temas (`min-h-screen` compartido) y su contenido ya se
+   centra verticalmente por la clase `justify-center` compartida; `center` conserva ese mismo
+   reparto de aire arriba/abajo en vez de amontonarlo todo abajo.
+2. **El tamaño mínimo del nombre en móvil ya era grande antes de este rediseño** (`clamp(var(--t-6),
+   8.2vw, var(--t-9))`, mínimo 50,52px, heredado de Ascua) — no es una regresión de este spec,
+   pero como se está tocando el hero de todas formas, el breakpoint `max-width: 900px` fija un
+   tope propio y más comedido para el nombre: `clamp(2rem, 9.5vw, 2.6rem)` (32-41,6px). El resto
+   de usos de `.display-xl` (about, contacto) no se tocan.
+3. **El corner (ubicación + correo) se apila en vez de ir en fila** dentro del mismo breakpoint de
+   900px. En fila, "Caracas, Venezuela" partía en dos líneas apretado contra el ancho que dejaba
+   el correo, mientras el correo quedaba en una sola línea — desalineados verticalmente y con un
+   corte de línea justo después de la coma. Apilar (`flex-direction: column`) es el mismo patrón
+   que ya usa el sitio para el mismo problema en las barras de contacto (rótulo encima del valor
+   bajo 520px), aplicado aquí en el breakpoint del propio dispositivo del "lomo".
+
 ### La entrada — doble exposición fusionada con el corte
 
 El nombre entra con una copia fantasma desfasada detrás (`--l2`, blur 1px, `mix-blend-mode:

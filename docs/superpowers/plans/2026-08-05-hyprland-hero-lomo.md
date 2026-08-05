@@ -245,6 +245,20 @@ Sustituir desde `:root[data-theme="hyprland"] .hero {` (línea 1158) hasta el ci
   grid-template-columns: 3.4rem 1px 1fr;
   column-gap: 2rem;
   align-items: center;
+  /*
+    `align-content` no puede quedar en su valor por defecto: CSS Grid
+    resuelve `normal` a `stretch` (a diferencia de flexbox, donde resuelve a
+    `start`) — con `min-h-screen` (heredado, ver hero.ts) y filas de
+    contenido mas cortas que la pantalla, el navegador REPARTE el sobrante
+    entre filas en vez de agruparlas. En desktop hay una sola fila (no se
+    nota); en el colapso a columna unica (900px, mas abajo) son 3 filas y el
+    bug se ve como huecos enormes y desiguales. `center` conserva el mismo
+    reparto de aire arriba/abajo que ya tenia el hero via `justify-center`
+    (la clase compartida en `hero.ts`), no lo amontona todo abajo.
+    Encontrado verificando el mockup a 390x844 real, no en el diseno
+    original — ver spec, seccion "Hallazgos de movil".
+  */
+  align-content: center;
   text-align: left;
 }
 
@@ -326,6 +340,30 @@ Sustituir desde `:root[data-theme="hyprland"] .hero {` (línea 1158) hasta el ci
     width: 100%;
     height: 1px;
     align-self: auto;
+  }
+  /*
+    El clamp heredado de Ascua para `.display-xl` (min 50.52px, `--t-6`) ya
+    era grande en movil ANTES de este rediseno — no es una regresion de esta
+    tarea, pero como se esta tocando el hero de todas formas, se le fija un
+    tope propio y mas comedido aqui. El resto de usos de `.display-xl`
+    (about, contacto) NO se tocan.
+  */
+  :root[data-theme="hyprland"] [data-scene="hero"] .display-xl {
+    font-size: clamp(2rem, 9.5vw, 2.6rem);
+  }
+  :root[data-theme="hyprland"] [data-scene="hero"] .hero-name-ghost {
+    font-size: clamp(2rem, 9.5vw, 2.6rem);
+  }
+  /*
+    El corner se apila: en fila, "Caracas, Venezuela" partia en dos lineas
+    apretado contra el ancho que dejaba el correo, mientras el correo
+    quedaba en una sola linea — desalineados, con un corte de linea justo
+    despues de la coma. Mismo patron que ya usa el sitio para el mismo
+    problema en las barras de contacto (rotulo encima del valor bajo 520px).
+  */
+  :root[data-theme="hyprland"] .hero-corner {
+    flex-direction: column;
+    gap: 0.4rem;
   }
 }
 ```
