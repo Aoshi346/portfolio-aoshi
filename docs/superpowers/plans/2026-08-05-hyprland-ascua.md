@@ -93,7 +93,7 @@ Aplican a **todas** las tareas:
   `--font-mono`, `--display-weight`, `--display-tracking`, `--display-leading`, `--radius-card`,
   `--nav-dim`, `--nav-dim-soft`, `--bg-fallback`. Todas las tareas siguientes los consumen.
 
-- [ ] **Paso 1: Sustituir el bloque de tokens**
+- [x] **Paso 1: Sustituir el bloque de tokens**
 
 Reemplazar íntegro `:root[data-theme="hyprland"] { … }` en `src/themes/themes.css:1084-1107` por:
 
@@ -162,7 +162,7 @@ Reemplazar íntegro `:root[data-theme="hyprland"] { … }` en `src/themes/themes
 }
 ```
 
-- [ ] **Paso 2: Actualizar el descriptor del tema**
+- [x] **Paso 2: Actualizar el descriptor del tema**
 
 En `src/themes/hyprland.ts`, sustituir el objeto entero por:
 
@@ -188,7 +188,7 @@ export const hyprlandTheme: Theme = {
 > a propósito. Si prefieres commits verdes uno a uno, deja el import apuntando a
 > `hyprGradient` en esta tarea y cámbialo en la tarea 3, paso 4.
 
-- [ ] **Paso 3: Sincronizar el mapa de fuentes de `index.html`**
+- [x] **Paso 3: Sincronizar el mapa de fuentes de `index.html`**
 
 En el `<script>` del `<head>`, sustituir la entrada `hyprland` de `fontHrefs` por la **misma
 cadena literal** del paso 2. El fichero avisa de que la duplicación es deliberada: una
@@ -197,7 +197,7 @@ desincronización degrada a la vía lenta en silencio, sin error.
 Y actualizar `<meta name="theme-color" content="#05070a" />` **no** — ese valor lo reescribe
 `applyTheme()` en tiempo de ejecución desde `theme.themeColor`. Dejarlo como está.
 
-- [ ] **Paso 4: Comprobar que las tres fuentes existen antes de seguir**
+- [x] **Paso 4: Comprobar que las tres fuentes existen antes de seguir**
 
 ```bash
 for f in "Bricolage+Grotesque:opsz,wght@12..96,400..800" "Instrument+Sans:wght@400;500;600" "Instrument+Serif:ital@0;1"; do
@@ -207,7 +207,7 @@ done
 
 Esperado: `200` en las tres.
 
-- [ ] **Paso 5: Verificar que Vice y Caelestia no se han movido**
+- [x] **Paso 5: Verificar que Vice y Caelestia no se han movido**
 
 ```bash
 git diff --stat src/themes/themes.css
@@ -216,7 +216,7 @@ git diff --stat src/themes/themes.css
 Esperado: sólo el rango del bloque de Hyprland. Si aparece cualquier línea de los bloques
 `vice` o `caelestia`, revertir y rehacer.
 
-- [ ] **Paso 6: Commit**
+- [x] **Paso 6: Commit**
 
 ```bash
 git add src/themes/themes.css src/themes/hyprland.ts index.html
@@ -236,7 +236,7 @@ git commit -m "feat(hyprland): tokens, tipografia y escala de Ascua"
   `.hero`, `.hero-kick`, `.display-xl`, `.display-lg`, `.lead`, `.hero-corner`. La tarea 7
   anima exactamente esos tres nombres de clase.
 
-- [ ] **Paso 1: Escribir las reglas de escena y tipografía**
+- [x] **Paso 1: Escribir las reglas de escena y tipografía**
 
 Añadir en `src/themes/themes.css`, después del bloque de tokens de Hyprland:
 
@@ -444,7 +444,7 @@ Añadir en `src/themes/themes.css`, después del bloque de tokens de Hyprland:
 }
 ```
 
-- [ ] **Paso 2: Levantar el dev server y mirar el hero**
+- [x] **Paso 2: Levantar el dev server y mirar el hero**
 
 ```bash
 npm run dev
@@ -455,7 +455,7 @@ claro, frase en itálica de serif, pie con filete. **Si el titular sale transpar
 invisible**, el `background-clip: text` no está aplicando — comprobar que no hay un `color`
 posterior ganando la cascada.
 
-- [ ] **Paso 3: Captura de comprobación**
+- [x] **Paso 3: Captura de comprobación**
 
 ```bash
 python3 - <<'PY'
@@ -479,13 +479,13 @@ PY
 Esperado: `display` contiene `Bricolage Grotesque`, `lead` contiene `Instrument Serif`,
 `radius` es `0px`.
 
-- [ ] **Paso 4: Mirar también la escena "quién es"**
+- [x] **Paso 4: Mirar también la escena "quién es"**
 
 En el navegador, ir a la sección de about y comprobar: las filas de afirmación/prueba están en
 dos columnas con filete entre ellas, y al pasar el ratón por una fila el filete inferior se
 pinta de izquierda a derecha con corte duro. El retrato es cuadrado, sin redondear.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -506,7 +506,7 @@ git commit -m "feat(hyprland): escenas a sangre, display de luz y bloque de afir
   `BackgroundHandle` de `src/backgrounds/shaderBackground.ts`.
 - Produce: `export function mountHyprEmber(container: HTMLElement): BackgroundHandle`.
 
-- [ ] **Paso 1: Leer el contrato antes de escribir nada**
+- [x] **Paso 1: Leer el contrato antes de escribir nada**
 
 ```bash
 sed -n '1,60p' src/backgrounds/shaderBackground.ts
@@ -515,7 +515,7 @@ sed -n '1,60p' src/backgrounds/shaderBackground.ts
 Anotar: qué uniforms inyecta siempre (`uTime`, `uResolution`), qué chunk de ruido prepende, y
 la forma exacta del handle. **No modificar el fichero**: lo comparte Vice.
 
-- [ ] **Paso 2: Escribir el fondo**
+- [x] **Paso 2: Escribir el fondo**
 
 Crear `src/backgrounds/hyprEmber.ts`:
 
@@ -587,7 +587,7 @@ export function mountHyprEmber(container: HTMLElement): BackgroundHandle {
 }
 ```
 
-- [ ] **Paso 3: Borrar el fondo viejo**
+- [x] **Paso 3: Borrar el fondo viejo**
 
 ```bash
 git rm src/backgrounds/hyprGradient.ts
@@ -597,11 +597,11 @@ grep -rn "hyprGradient" src/ scripts/ || echo "sin referencias colgando"
 Esperado: `sin referencias colgando`. Si aparece alguna en `scripts/verify.py` o en un
 comentario de `shaderBackground.ts`, actualizar **sólo el texto del comentario**.
 
-- [ ] **Paso 4: Confirmar el import en el descriptor**
+- [x] **Paso 4: Confirmar el import en el descriptor**
 
 `src/themes/hyprland.ts` debe importar `../backgrounds/hyprEmber` y llamar a `mountHyprEmber`.
 
-- [ ] **Paso 5: Verificar que Vice sigue pintando**
+- [x] **Paso 5: Verificar que Vice sigue pintando**
 
 Esto es el punto de fallo real de esta tarea: `shaderBackground.ts` es compartido.
 
@@ -635,7 +635,7 @@ PY
 Esperado: los tres con `canvas con contexto` y sin errores. **Mirar las tres capturas**: Vice
 tiene que seguir siendo su serigrafía de tinta.
 
-- [ ] **Paso 6: Commit**
+- [x] **Paso 6: Commit**
 
 ```bash
 git add src/backgrounds/hyprEmber.ts src/themes/hyprland.ts
@@ -656,7 +656,7 @@ git commit -m "feat(hyprland): fondo de brasa con haz de canto duro"
   `dl.obra-meta`.
 - Produce: la clase de estado `.is-open` sobre `[data-scene="obra"]`, que la tarea 7 conmuta.
 
-- [ ] **Paso 1: Escribir la tira**
+- [x] **Paso 1: Escribir la tira**
 
 Añadir al bloque de Hyprland en `src/themes/themes.css`:
 
@@ -782,7 +782,7 @@ Añadir al bloque de Hyprland en `src/themes/themes.css`:
 }
 ```
 
-- [ ] **Paso 2: Confirmar que no se ha tocado el bloque de Vice**
+- [x] **Paso 2: Confirmar que no se ha tocado el bloque de Vice**
 
 ```bash
 git diff src/themes/themes.css | grep -c 'data-theme="vice"'
@@ -791,14 +791,14 @@ git diff src/themes/themes.css | grep -c 'data-theme="vice"'
 Esperado: `0`. Vice tiene sus propias reglas de `.obra-track` en `themes.css:1741-1752` y son
 las que mueven su bobina; si aparecen en el diff, se ha editado su bloque por error.
 
-- [ ] **Paso 3: Verificar en el navegador que no se corta texto**
+- [x] **Paso 3: Verificar en el navegador que no se corta texto**
 
 Con `npm run dev` y `?theme=hyprland`, comprobar en la sección de obra:
 - los cinco paneles caben sin barra de scroll horizontal en 1440px;
 - el panel abierto muestra lead y meta, los cerrados no;
 - ningún texto queda cortado a media palabra.
 
-- [ ] **Paso 4: Commit**
+- [x] **Paso 4: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -819,7 +819,7 @@ git commit -m "feat(hyprland): la tira de exposicion sustituye al carril de tarj
   `src/sections/contacto.ts` (`.contacto-band`, `.contacto-bars`, `.contacto-bar-label`,
   `.contacto-bar-mark`, `.contacto-bar-value`, `.contacto-estado`).
 
-- [ ] **Paso 1: Guardar la referencia de Caelestia ANTES de tocar nada**
+- [x] **Paso 1: Guardar la referencia de Caelestia ANTES de tocar nada**
 
 ```bash
 npm run build && npm run preview &
@@ -839,14 +839,14 @@ with sync_playwright() as p:
 PY
 ```
 
-- [ ] **Paso 2: Partir el bloque compartido**
+- [x] **Paso 2: Partir el bloque compartido**
 
 En `src/themes/themes.css:2403-2445`, cada regla tiene hoy dos selectores
 (`:root[data-theme="hyprland"] .x, :root[data-theme="caelestia"] .x`). **Borrar de cada una el
 selector de `hyprland`**, dejando el de `caelestia` intacto. No reescribir sus declaraciones:
 copiar el bloque tal cual y quitar selectores es lo único que garantiza render idéntico.
 
-- [ ] **Paso 3: Escribir el reparto y las bandas de Hyprland**
+- [x] **Paso 3: Escribir el reparto y las bandas de Hyprland**
 
 Añadir al bloque de Hyprland:
 
@@ -964,7 +964,7 @@ Añadir al bloque de Hyprland:
 }
 ```
 
-- [ ] **Paso 4: Comprobar que Caelestia no se ha movido ni un píxel**
+- [x] **Paso 4: Comprobar que Caelestia no se ha movido ni un píxel**
 
 Repetir el script del paso 1 guardando en `/tmp/caelestia-creditos-DESPUES.png` y comparar:
 
@@ -989,7 +989,7 @@ el paso 2 y rehacerlo quitando **sólo** selectores.
 > esperable. Si `getbbox()` no es `None`, comprobar que la caja cae **fuera** del bloque de
 > créditos antes de darlo por bueno.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -1008,7 +1008,7 @@ git commit -m "feat(hyprland): reparto y bandas de contacto propias, Caelestia s
 - Produce: `export function mountHyprIgnition(host: HTMLElement): { destroy: () => void }`.
 - Consume: `el()` de `src/utils/dom.ts`.
 
-- [ ] **Paso 1: Leer el helper de DOM que ya existe**
+- [x] **Paso 1: Leer el helper de DOM que ya existe**
 
 ```bash
 sed -n '1,40p' src/utils/dom.ts
@@ -1016,7 +1016,7 @@ sed -n '1,40p' src/utils/dom.ts
 
 Usar `el()` — no reescribir creación de nodos a mano (`.claude/rules/code-style.md`).
 
-- [ ] **Paso 2: Escribir el módulo**
+- [x] **Paso 2: Escribir el módulo**
 
 Crear `src/components/hyprIgnition.ts`:
 
@@ -1060,7 +1060,7 @@ export function mountHyprIgnition(host: HTMLElement): IgnitionHandle {
 }
 ```
 
-- [ ] **Paso 3: Añadir su CSS al bloque de Hyprland**
+- [x] **Paso 3: Añadir su CSS al bloque de Hyprland**
 
 En `src/themes/themes.css`:
 
@@ -1084,7 +1084,7 @@ En `src/themes/themes.css`:
 }
 ```
 
-- [ ] **Paso 4: Engancharlo en `main.ts`**
+- [x] **Paso 4: Engancharlo en `main.ts`**
 
 Junto a la puerta que ya existe para el leader de Vice (`src/main.ts:51`), añadir la de
 Hyprland, siguiendo el mismo patrón de import diferido:
@@ -1101,7 +1101,7 @@ if (!prefersReducedMotion && theme.id === "hyprland") {
 Y en el listener de `pagehide` (`src/main.ts:197`), junto a `backgroundHandle?.destroy()`,
 añadir `ignitionHandle?.destroy();`.
 
-- [ ] **Paso 5: Comprobar que no queda un velo capturando clics**
+- [x] **Paso 5: Comprobar que no queda un velo capturando clics**
 
 Con `npm run dev` y `?theme=hyprland`, esperar 3s y ejecutar en la consola del navegador:
 
@@ -1111,7 +1111,7 @@ document.querySelectorAll(".hypr-ignition").length;
 
 Esperado: `0`. Y comprobar que los enlaces del pie del hero se pueden pulsar.
 
-- [ ] **Paso 6: Commit**
+- [x] **Paso 6: Commit**
 
 ```bash
 git add src/components/hyprIgnition.ts src/main.ts src/themes/themes.css
@@ -1131,7 +1131,7 @@ git commit -m "feat(hyprland): el encendido, con velo que se autodestruye"
   `.hypr-cut`, `.hypr-up`, `.hypr-rule`, `.is-lit`, `.is-open` de las tareas 2 y 4.
 - Produce: `export const hyprChoreography: Choreography`.
 
-- [ ] **Paso 1: Leer el contrato de coreografía y el de Vice como referencia de forma**
+- [x] **Paso 1: Leer el contrato de coreografía y el de Vice como referencia de forma**
 
 ```bash
 cat src/themes/choreography.ts
@@ -1140,7 +1140,7 @@ grep -n "export const viceChoreography" -A 12 src/themes/vice.choreography.ts
 
 **No copiar código de Vice.** Sólo se mira la forma del export y cómo mata sus triggers.
 
-- [ ] **Paso 2: Escribir la coreografía**
+- [x] **Paso 2: Escribir la coreografía**
 
 Crear `src/themes/hypr.choreography.ts`:
 
@@ -1262,7 +1262,7 @@ export default hyprChoreography;
 > Si `Choreography` no expone `root` como `HTMLElement` con esa forma, ajustar la firma a lo que
 > declare `src/themes/choreography.ts` — ese fichero manda.
 
-- [ ] **Paso 3: Registrarla en el descriptor**
+- [x] **Paso 3: Registrarla en el descriptor**
 
 En `src/themes/hyprland.ts`, añadir dentro del objeto:
 
@@ -1273,7 +1273,7 @@ En `src/themes/hyprland.ts`, añadir dentro del objeto:
   },
 ```
 
-- [ ] **Paso 4: Verificar que no queda nada sin revelar tras un recorrido con rueda**
+- [x] **Paso 4: Verificar que no queda nada sin revelar tras un recorrido con rueda**
 
 ```bash
 npm run build && npm run preview &
@@ -1326,12 +1326,12 @@ PY
 
 Esperado: `conGramatica` bien por encima de 10, y `conRetardo` igual al número de `.hypr-up`.
 
-- [ ] **Paso 5: Verificar con movimiento reducido**
+- [x] **Paso 5: Verificar con movimiento reducido**
 
 Repetir el script anterior añadiendo `reduced_motion="reduce"` al `new_page(...)`. Esperado:
 todo visible desde el primer fotograma, la obra en pila vertical, sin `is-open`.
 
-- [ ] **Paso 6: Commit**
+- [x] **Paso 6: Commit**
 
 ```bash
 git add src/themes/hypr.choreography.ts src/themes/hyprland.ts
@@ -1349,7 +1349,7 @@ git commit -m "feat(hyprland): coreografia propia con contraste de tiempos"
 **Interfaces:**
 - Consume: la función `check(cond, etiqueta)` que ya existe en el arnés.
 
-- [ ] **Paso 1: Leer la función entera antes de tocarla**
+- [x] **Paso 1: Leer la función entera antes de tocarla**
 
 ```bash
 sed -n '1066,1180p' scripts/verify.py
@@ -1359,7 +1359,7 @@ El docstring explica por qué existe cada marcador. **Ampliarlo, no vaciarlo**: 
 que protege —una tarea que reescribe una sección compartida y rompe la identidad de otro tema—
 ya ha ocurrido tres veces en este proyecto.
 
-- [ ] **Paso 2: Partir el marcador 2 en dos, uno por tema**
+- [x] **Paso 2: Partir el marcador 2 en dos, uno por tema**
 
 El bloque actual `if theme in ("hyprland", "caelestia"):` afirma píldoras horizontales con el
 rol oculto. Ascua ya no es píldoras: es rol como cabecera y nombres fluyendo. Sustituirlo por:
@@ -1415,7 +1415,7 @@ rol oculto. Ascua ya no es píldoras: es rol como cabecera y nombres fluyendo. S
         )
 ```
 
-- [ ] **Paso 3: Añadir el marcador de canto duro**
+- [x] **Paso 3: Añadir el marcador de canto duro**
 
 Dentro del mismo `if theme == "hyprland":`, añadir:
 
@@ -1435,7 +1435,7 @@ Dentro del mismo `if theme == "hyprland":`, añadir:
         )
 ```
 
-- [ ] **Paso 4: Correr el gate en los tres temas**
+- [x] **Paso 4: Correr el gate en los tres temas**
 
 ```bash
 npm run build && npm run preview &
@@ -1449,7 +1449,7 @@ done
 Esperado: los tres salen con código 0 contra la línea base. Vice y Caelestia **no pueden**
 haber cambiado su recuento de fallos.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add scripts/verify.py
@@ -1464,7 +1464,7 @@ git commit -m "test(hyprland): el gate de identidad protege el reparto y el cant
 - Modificar: `docs/superpowers/specs/2026-08-05-hyprland-ascua-design.md` (estado y registro)
 - Modificar: `PROGRESS.json`
 
-- [ ] **Paso 1: Build y lint**
+- [x] **Paso 1: Build y lint**
 
 ```bash
 npm run build && npm run lint
@@ -1472,7 +1472,7 @@ npm run build && npm run lint
 
 Esperado: cero errores de TypeScript, cero de ESLint.
 
-- [ ] **Paso 2: Anti-mock**
+- [x] **Paso 2: Anti-mock**
 
 ```bash
 grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|lorem ipsum|Lorem" \
@@ -1481,7 +1481,7 @@ grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|l
 
 Esperado: sin resultados en secciones publicadas.
 
-- [ ] **Paso 3: El arnés en los tres temas, más la pasada de movimiento reducido**
+- [x] **Paso 3: El arnés en los tres temas, más la pasada de movimiento reducido**
 
 ```bash
 npm run build && npm run preview &
@@ -1495,7 +1495,7 @@ python3 scripts/verify.py --theme hyprland --reduced --url http://localhost:4173
 Correrlo **solo y sin editar nada**: el arnés cae con "Execution context was destroyed" si se
 toca el árbol mientras corre, y no admite dos instancias contra el mismo servidor.
 
-- [ ] **Paso 4: Contraste medido, con recorte ajustado al glifo**
+- [x] **Paso 4: Contraste medido, con recorte ajustado al glifo**
 
 Trampa ya pagada: medir la caja de un bloque ancho y casi vacío devuelve la variación del
 fondo, no la del texto — dio 1,5:1 sobre un texto que estaba realmente en 7,9:1. Y el
@@ -1545,20 +1545,20 @@ PY
 Esperado: todo ≥ 4,5:1. Referencia del prototipo aprobado: display 14,4 · hablada 11,6 ·
 rótulo 6,03.
 
-- [ ] **Paso 5: Capturas reales, escritorio y móvil**
+- [x] **Paso 5: Capturas reales, escritorio y móvil**
 
 1440×900 y 390×844 con `?theme=hyprland`, `--use-gl=swiftshader`, esperando a que el shader
 pinte. **Mirar las capturas**, no sólo guardarlas. Confirmar canvas no negro, cero errores de
 consola, cero avisos de context lost.
 
-- [ ] **Paso 6: Recalibrar `--nav-dim` contra el fondo nuevo**
+- [x] **Paso 6: Recalibrar `--nav-dim` contra el fondo nuevo**
 
 El valor puesto en la tarea 1 (58% / 52%) es una estimación. Medir el contraste real del
 telón de navegación sobre el fondo de Ascua y ajustar hasta que pase AA, anotando en el
 comentario del token **contra qué scrim se midió**. Heredar un porcentaje sin medirlo es
 exactamente el error que traía el tema.
 
-- [ ] **Paso 7: Actualizar `PROGRESS.json` y el estado del spec**
+- [x] **Paso 7: Actualizar `PROGRESS.json` y el estado del spec**
 
 Marcar los items del checklist, poner `"status": "completed"` y `completedAt`. En el spec,
 cambiar `Estado: pendiente de plan` por `Estado: implementado` y añadir al final una sección

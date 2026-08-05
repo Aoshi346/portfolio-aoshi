@@ -1,6 +1,6 @@
 # Ascua — Hyprland deja de ser una piel de color y pasa a ser luz con canto
 
-Estado: pendiente de plan
+Estado: en ejecucion
 Plan: `docs/superpowers/plans/2026-08-05-hyprland-ascua.md`
 Fecha: 2026-08-05
 Alcance: solo el tema Hyprland — tokens, tipografía, dispositivos de escena, fondo,
@@ -175,3 +175,64 @@ tiene el suyo. Una desincronización degrada a la vía lenta en silencio.
 **Prototipo de referencia, aprobado y medido:**
 `.superpowers/brainstorm/689488-1785939513/content/hyprland-v5-canto.html`, tonalidad `ascua`.
 Las tres tonalidades quedan en el fichero, recuperables si alguna vez se quiere volver.
+
+## Registro de implementación
+
+Tareas 1-8 y tarea 9 (pasos 1-7) completadas el 2026-08-05. Pendiente: revisión de
+Aoshi sobre el sitio real, gates `lidia-naive-tester`/`vera-art-director`, commit final.
+
+### Números medidos (Tarea 9, paso 4 — recorte ajustado al glifo)
+
+| Elemento | Ratio | Umbral |
+|---|---|---|
+| `.display-xl` | 17,5:1 | 4,5:1 |
+| `.lead` | 8,71:1 | 4,5:1 |
+| `.hero-kick` | 6,12:1 | 4,5:1 |
+| `.hero-corner` | 6,86:1 | 4,5:1 |
+| `.credit` | 17,1:1 | 4,5:1 |
+| `.scene-index-title` (menú abierto, fondo sólido `--color-ink`) | 5,75:1 | 4,5:1 |
+| `.scene-index-num`/`.scene-index-name` | 6,55:1 | 4,5:1 |
+| `.scene-index-blurb` (el más ajustado) | 4,74:1 | 4,5:1 |
+
+`--nav-dim: 58%` / `--nav-dim-soft: 52%` (estimación de la tarea 1) se midieron contra
+el fondo real y pasan AA con margen — no hizo falta recalibrar.
+
+### Divergencias respecto al plan
+
+El plan traía la CSS/TS casi lista para copiar, pero cuatro huecos no cubiertos
+aparecieron al verificar contra el sitio real (no al leer el plan):
+
+1. **`.about-pairs` y `.credit-group-label` parten de `display: none`** en
+   `style.css` (solo Vice los enciende). El plan no incluía el `display: block`
+   necesario para Hyprland — sin él, el bloque de afirmación/prueba y el rótulo
+   del reparto seguían invisibles pese a llevar CSS propia.
+2. **`<button>.credit` con `appearance: auto`**: Chrome computa `display: inline`
+   como `inline-block` en un botón salvo que se añada `appearance: none`
+   (confirmado en Chrome real, no artefacto de swiftshader). Sin esto el marcador
+   de identidad de la tarea 8 (`display === "inline"`) no podía pasar nunca.
+3. **Títulos de obra cortados a media palabra**: en un panel comprimido a ~168px,
+   una palabra larga sin espacios (p. ej. "HyprFinance") desborda el `display-lg`
+   y `overflow: hidden` la chapa en seco. Arreglado con `clamp` + `nowrap` +
+   `text-overflow: ellipsis` cuando el panel está cerrado, tamaño de firma al
+   abrir. El fallo lo destapó el arnés de contraste (medía `fg == bg` exacto
+   donde no había ningún glifo visible que muestrear).
+4. **Scrims insuficientes contra el fondo animado**: los paneles de obra
+   (0.2–0.65 de opacidad), `.about-pairs` (sin scrim) y `.scene-nav-trigger`
+   (transparente) dejaban pasar el haz brillante bajo el texto secundario. Subidos
+   a 0.82–0.94 (obra), 78% (about-pairs) y 82% (nav-trigger). El escalón de
+   exposición (`--hypr-e`) también se bajó de intensidad (`*1%` → `*0.35%`): a
+   máxima intensidad competía con la legibilidad del panel que anuncia.
+
+Dos falsos positivos encontrados en el arnés mismo (`scripts/verify.py`), no
+defectos del tema — confirmados visualmente y con un `git worktree` del commit
+previo a esta rama:
+
+- `background-clip: text` dejaba `color: transparent`, que el arnés componía
+  literalmente sobre el fondo (dando `fg == bg`, 1,00:1) para texto que en
+  realidad renderiza en alto contraste. Mismo defecto ya conocido del contorno
+  `-webkit-text-stroke`; se excluye del gate igual que un fondo no sólido.
+- `.scene-index` (menú de navegación) se oculta con `clip-path`, no con
+  `display`/`visibility`, así que el filtro de candidatos del arnés lo media
+  igualmente CERRADO contra lo que hay detrás. Afectaba a los tres temas por
+  igual — confirmado en Caelestia con el commit `28eec96` (11 fallos antes del
+  fix, 9 después, todos preexistentes y ajenos a esta rama).

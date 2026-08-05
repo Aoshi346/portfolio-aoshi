@@ -1103,9 +1103,12 @@
   --rule: #3d1c1c;
   --haze: #b18c86;
 
-  /* Medir contra ESTE fondo antes de cerrar la tarea 8. Heredar el 55% de
-     Vice fue el error del tema anterior: una opacidad se calibra contra un
-     scrim concreto. */
+  /* Medido contra `.scene-index` abierto (fondo SOLIDO --color-ink, no el
+     shader — el menu no es translucido): .scene-index-title 5.75:1,
+     .scene-index-num/-name 6.55:1, .scene-index-blurb 4.74:1 (el mas
+     ajustado). Los tres pasan AA. Heredar el 55% de Vice fue el error del
+     tema anterior: una opacidad se calibra contra un scrim concreto, y este
+     ya es el propio. */
   --nav-dim: 58%;
   --nav-dim-soft: 52%;
 
