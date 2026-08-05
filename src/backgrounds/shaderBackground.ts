@@ -125,7 +125,7 @@ export function mountShaderBackground(
   /*
    * Opcional: solo lo consume Vice (viceInk.ts), para escalar su paso de
    * trama con el ratio REAL buffer/CSS en vez de fijarlo en pixeles de
-   * buffer. Los otros dos fondos (hyprGradient, caelestiaBlobs) no declaran
+   * buffer. Los otros dos fondos (hyprEmber, caelestiaBlobs) no declaran
    * `uPixelRatio` en su fragment shader, asi que aqui vuelve null y
    * `gl.uniform1f(null, ...)` es un no-op silencioso: cero cambio de
    * comportamiento para ellos.
