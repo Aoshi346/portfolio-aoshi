@@ -1378,6 +1378,129 @@
   }
 }
 
+/*
+  LA TIRA DE EXPOSICION — el dispositivo de la obra.
+  Equivale al carril horizontal de Vice (la bobina), pero aqui no hay
+  tarjetas: es una banda a sangre partida en escalones de la misma luz, sin
+  radio, con filete de 1px entre ellos y exposicion creciente. El apuntado se
+  abre y los demas se comprimen.
+
+  NADA de scroll-snap. Medido con A/B en el prototipo: con snap, fijar
+  `scrollLeft = 400` aterriza en 477 porque los anclajes caen cada ~477px, asi
+  que cada incremento de rueda volvia al origen; el carril se quedaba clavado
+  en 34 de 954 y ademas bloqueaba la pagina.
+*/
+@media (min-width: 821px) {
+  /* `.obra-rail` > `.obra-track` los crea `src/main.ts:98-103` para los TRES
+     temas, no la coreografia de Vice: el contenedor existe siempre y el padre
+     directo de las escenas es `.obra-track`. */
+  :root[data-theme="hyprland"] .obra-rail {
+    overflow: hidden;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  :root[data-theme="hyprland"] .obra-track {
+    display: flex;
+    width: 100%;
+    transform: none;
+  }
+
+  :root[data-theme="hyprland"] .obra-track > [data-scene="obra"] {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 56vh;
+    padding: 1.7rem 1.5rem;
+    border-right: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(26, 10, 10, 0.2), rgba(26, 10, 10, 0.65));
+    transition:
+      flex-grow 0.5s var(--hard),
+      background 0.5s var(--slow);
+  }
+  :root[data-theme="hyprland"] [data-scene="obra"]:last-child {
+    border-right: 0;
+  }
+
+  /* el escalon: cada uno recibe mas luz que el anterior */
+  :root[data-theme="hyprland"] [data-scene="obra"]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--l1) calc(var(--hypr-e, 16) * 1%), transparent),
+      transparent 62%
+    );
+  }
+
+  :root[data-theme="hyprland"] [data-scene="obra"].is-open {
+    flex-grow: 3.1;
+    background: linear-gradient(180deg, rgba(26, 10, 10, 0.35), rgba(26, 10, 10, 0.8));
+  }
+  :root[data-theme="hyprland"] [data-scene="obra"].is-open::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--l1);
+    box-shadow: 0 0 22px var(--l1);
+  }
+
+  /* el pliegue: solo el abierto muestra su contenido. En un panel comprimido
+     el texto se cortaba a media palabra. */
+  :root[data-theme="hyprland"] [data-scene="obra"] .lead,
+  :root[data-theme="hyprland"] [data-scene="obra"] .obra-meta,
+  :root[data-theme="hyprland"] [data-scene="obra"] [data-mask],
+  :root[data-theme="hyprland"] [data-scene="obra"] [data-gallery] {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.38s var(--slow) 0.1s;
+  }
+  :root[data-theme="hyprland"] [data-scene="obra"].is-open .lead,
+  :root[data-theme="hyprland"] [data-scene="obra"].is-open .obra-meta,
+  :root[data-theme="hyprland"] [data-scene="obra"].is-open [data-mask],
+  :root[data-theme="hyprland"] [data-scene="obra"].is-open [data-gallery] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* el ordinal, grande y al fondo: el eco del de Vice */
+  :root[data-theme="hyprland"] [data-scene="obra"] [data-ord] {
+    position: absolute;
+    right: 1rem;
+    bottom: 0.2rem;
+    font-family: var(--font-display);
+    font-size: var(--t-8);
+    font-weight: 700;
+    line-height: 1;
+    color: color-mix(in oklab, var(--color-paper) 7%, transparent);
+  }
+}
+
+/* Bajo 821px o con movimiento reducido: pila vertical, como el resto de temas.
+   Mismo contrato de breakpoint que usa la coreografia (tarea 7). */
+@media (max-width: 820px), (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .obra-rail {
+    display: block;
+  }
+  :root[data-theme="hyprland"] [data-scene="obra"] {
+    border-bottom: 1px solid var(--rule);
+  }
+  :root[data-theme="hyprland"] [data-scene="obra"] .lead,
+  :root[data-theme="hyprland"] [data-scene="obra"] .obra-meta,
+  :root[data-theme="hyprland"] [data-scene="obra"] [data-mask],
+  :root[data-theme="hyprland"] [data-scene="obra"] [data-gallery] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* ---------------------------------------------------------------- Caelestia */
 
 :root[data-theme="caelestia"] {
