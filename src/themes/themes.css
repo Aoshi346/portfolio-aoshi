@@ -2694,6 +2694,17 @@
 }
 
 /*
+ * `.scene-nav-trigger-mark` (ver mas abajo) solo tiene estilo dentro de Vice,
+ * pero `sceneNav.ts` lo añade incondicionalmente en los tres temas. Sin este
+ * `display: none` de base, el span vacio sigue contando como flex item de
+ * `.scene-nav-trigger` (gap: 0.45rem) y filtra ese hueco a Hyprland/Caelestia,
+ * descentrando el rotulo — hallazgo M1 de la revision final de rama.
+ */
+.scene-nav-trigger-mark {
+  display: none;
+}
+
+/*
  * Vice quita la caja del disparador: un recuadro es justo lo que esta
  * direccion elimina (misma nota en `.credits-used-list`, arriba). Con la
  * serigrafia de tinta detras, el marco cuadrado cortaba el flujo del
@@ -2743,6 +2754,7 @@
  * propio color.
  */
 :root[data-theme="vice"] .scene-nav-trigger-mark {
+  display: inline-block;
   position: relative;
   flex: none;
   width: 10px;

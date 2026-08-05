@@ -233,14 +233,3 @@ fix: densidad de punto visualmente idéntica entre DPR 1, 1.5 y 2, sin parpadeo 
 - Capturas reales de las cinco escenas (hero, about, obra, credits, contacto) a 1440×900 y
   390×844 con `?theme=vice`: canvas WebGL activo con la trama de semitono magenta/ámbar en las
   diez, cero errores de consola en cada captura.
-
-- `npm run build` y `npm run lint` verdes.
-- Luminancia del fondo **aislado** (con el contenido oculto) por debajo del techo en al menos 12
-  puntos del recorrido, a 1440x900 y 390x844.
-- `scripts/verify.py` en verde contra su línea base, sin fallos nuevos. Atención especial al gate
-  de contraste: `--nav-dim` es un porcentaje calibrado **contra una superficie**, así que cambiar
-  el fondo puede invalidarlo aunque nadie toque el token. Ya pasó con el vídeo: cayó de 5,74:1 a
-  4,17:1 sin editar una línea.
-- Sin muaré visible a DPR 1, 1.5 y 2, en reposo y durante el scroll.
-- Capturas reales a 1440x900 y 390x844, cero errores de consola.
-- Gate final: `lidia-naive-tester` y `vera-art-director`.
