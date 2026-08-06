@@ -143,6 +143,115 @@ def comprobar(datos, ancho):
     return fallos
 
 
+SINCRO_JS = """() => new Promise(res => {
+  const panel = document.querySelector('.scene-index');
+  const filas = [...panel.querySelectorAll('.scene-index-row')];
+  const caja = panel.getBoundingClientRect();
+  const pct = el => {
+    const m = getComputedStyle(el).clipPath.match(/inset\\(([^)]*)\\)/);
+    if (!m) return 0;
+    const p = m[1].split(' ')[1];
+    return p ? parseFloat(p) : 0;
+  };
+  const out = [];
+  const t0 = performance.now();
+  document.querySelector('.scene-nav-trigger').click();
+  function tick() {
+    const t = performance.now() - t0;
+    const borde = caja.width * (1 - pct(panel) / 100);
+    let cont = null;
+    for (const f of filas) {
+      const rp = pct(f);
+      if (rp >= 99.9) continue;            // aun sin revelar: no es contenido
+      const r = f.getBoundingClientRect();
+      const x = (r.left - caja.left) + r.width * (1 - rp / 100);
+      if (cont === null || x > cont) cont = x;
+    }
+    out.push({t: Math.round(t), borde: Math.round(borde),
+              cont: cont === null ? null : Math.round(cont)});
+    if (t < 620) requestAnimationFrame(tick); else res(out);
+  }
+  requestAnimationFrame(tick);
+})"""
+
+
+def medir_sincronia():
+    with sync_playwright() as pw:
+        b, pg = abrir(pw, 1440, 900)
+        filas = pg.evaluate(SINCRO_JS)
+        b.close()
+    adelantos = [f["cont"] - f["borde"] for f in filas if f["cont"] is not None]
+    return max(adelantos) if adelantos else None
+
+
+TIEMPOS_JS = """() => {
+  const panel = document.querySelector('.scene-index');
+  const fila = panel.querySelector('.scene-index-row');
+  const flash = panel.querySelector('.scene-index-flash');
+  const bar = panel.querySelector('.scene-index-bar');
+  const trig = document.querySelector('.scene-nav-trigger');
+  const nom = trig.querySelector('.scene-nav-trigger-name-a');
+  const cs = e => getComputedStyle(e);
+  return {
+    telonAbierto: cs(panel).transitionDuration,
+    telonCurva: cs(panel).transitionTimingFunction,
+    fila: cs(fila).transitionDuration,
+    filaRetardo: cs(fila).transitionDelay,
+    flash: cs(flash).animationDuration,
+    barra: cs(bar).animationDuration,
+    barraCurva: cs(bar).animationTimingFunction,
+    barraDisplay: cs(bar).display,
+    rotulo: nom ? cs(nom).transitionDuration : null,
+  };
+}"""
+
+# Con `.is-open` puesto. La curva del telon abierto es `linear` a proposito:
+# el borde del telon ES la barra, y un instrumento fisico va a velocidad
+# constante (ver el comentario del bloque en themes.css).
+TIEMPOS_ESPERADOS = {
+    "telonAbierto": "0.48s",
+    "telonCurva": "linear",
+    "fila": "0.14s, 0.2s",
+    "filaRetardo": "0.009s, 0s",
+    "flash": "0.3s",
+    "barra": "0.48s",
+    "barraCurva": "linear",
+}
+
+
+def medir_tiempos(reducido):
+    with sync_playwright() as pw:
+        b, pg = abrir(pw, 1440, 900, reducido=reducido)
+        abrir_cortinilla(pg)
+        datos = pg.evaluate(TIEMPOS_JS)
+        # Con la cortinilla abierta, Tab debe seguir dando cinco paradas.
+        paradas = pg.evaluate(
+            "() => document.querySelectorAll('.scene-index .scene-index-row').length"
+        )
+        b.close()
+    datos["paradas"] = paradas
+    return datos
+
+
+def comprobar_tiempos(datos, reducido):
+    fallos = []
+    if reducido:
+        if datos["telonAbierto"] not in ("0s", "0ms"):
+            fallos.append(f"reducido: el telon dura {datos['telonAbierto']}, debe ser 0s")
+        if datos["filaRetardo"].replace(" ", "") not in ("0s,0s", "0ms,0ms"):
+            fallos.append(f"reducido: retardos vivos ({datos['filaRetardo']})")
+        if datos["barraDisplay"] != "none":
+            fallos.append("reducido: la barra de luz sigue existiendo (debe retirarse, no acelerarse)")
+        if datos["paradas"] != 5:
+            fallos.append(f"reducido: {datos['paradas']} filas, la funcion no puede degradarse")
+    else:
+        for k, v in TIEMPOS_ESPERADOS.items():
+            real = datos[k].replace(" ", "") if isinstance(datos[k], str) else datos[k]
+            if real != v.replace(" ", ""):
+                fallos.append(f"tiempos: {k} = {datos[k]}, declarado {v}")
+    return fallos
+
+
 def main():
     fallos = []
     for ancho, alto in ((1440, 900), (390, 844)):
@@ -150,6 +259,20 @@ def main():
         print(f"== {ancho}x{alto}")
         print(json.dumps(datos, indent=2, ensure_ascii=False))
         fallos += comprobar(datos, ancho)
+
+    adelanto = medir_sincronia()
+    print(f"\nadelanto maximo del contenido sobre la barra: {adelanto} px")
+    if adelanto is None:
+        fallos.append("sincronia: no se midio ni un fotograma revelandose")
+    elif adelanto > 0:
+        fallos.append(f"sincronia: el contenido adelanta a la barra {adelanto}px (debe ser <= 0)")
+
+    for reducido in (False, True):
+        d = medir_tiempos(reducido)
+        print(f"\n== tiempos ({'reducido' if reducido else 'normal'})")
+        print(json.dumps(d, indent=2, ensure_ascii=False))
+        fallos += comprobar_tiempos(d, reducido)
+
     if fallos:
         print("\nFALLOS:")
         for f in fallos:

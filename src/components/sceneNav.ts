@@ -59,6 +59,15 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   heading.textContent = "Selección de escenas";
   panel.append(heading);
 
+  /*
+   * La barra de luz del barrido de apertura. Solo Hyprland la usa (ver
+   * themes.css, `display: none` de base). Va al final del panel para que
+   * quede por encima de los fotogramas sin necesidad de z-index alto.
+   */
+  const bar = document.createElement("span");
+  bar.className = "scene-index-bar";
+  bar.setAttribute("aria-hidden", "true");
+
   for (const [i, entry] of TARGETS.entries()) {
     const row = document.createElement("a");
     row.className = "scene-index-row";
@@ -245,6 +254,8 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
     const s = document.getElementById(t.id);
     if (s) observer.observe(s);
   }
+
+  panel.append(bar);
 
   root.append(trigger);
   root.append(panel);

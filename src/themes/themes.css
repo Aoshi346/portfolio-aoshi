@@ -2357,6 +2357,172 @@
   }
 }
 
+/* --------------------------------------------------------------------------
+   Movimiento de la hoja.
+
+   La APERTURA va `linear` y es deliberado: el borde del telon ES la barra, y
+   una barra de luz que cruza es un instrumento fisico a velocidad constante;
+   con la curva de corte del tema frenaria al llegar al borde y volveria a
+   leerse como un panel de interfaz. El instrumento va lineal; los EVENTOS que
+   provoca (exposicion, golpe de luz, cierre) llevan cubic-bezier(.7,0,.2,1).
+   Es la unica desviacion de la tabla de movimiento de Ascua: no la "corrijas".
+   -------------------------------------------------------------------------- */
+:root[data-theme="hyprland"] .scene-index {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 480ms linear;
+}
+
+:root[data-theme="hyprland"] .scene-index-bar {
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--l3);
+  box-shadow: 0 0 22px 6px rgba(255, 90, 52, 0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* En % del mismo eje que el recorte, no en px: con un valor fijo la barra y el
+   borde de revelado se despegan en cuanto cambia el ancho de pantalla. */
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-bar {
+  animation: hypr-barrido 480ms linear forwards;
+}
+
+@keyframes hypr-barrido {
+  0% { left: 0; opacity: 1; }
+  82% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Cada fotograma se expone AL PASO de la barra. Los retardos no son un ritmo
+   elegido a ojo: son el momento en que la barra llega a su borde izquierdo.
+
+   Geometria REAL, medida (no la del prototipo): `.scene-index` es
+   `position: fixed; inset: 0`, o sea 1440 de ancho en escritorio, no los 1216
+   del prototipo. Con `padding: 26px` y `gap: 12px`, el contenido mide 1388 y
+   cada fotograma (1388 - 4*12) / 5 = 268, con paso 280. Bordes izquierdos:
+   26, 306, 586, 866, 1146. La barra recorre 1440px en 480ms = 3,0 px/ms:
+     26->9   306->102   586->195   866->289   1146->382.
+
+   Estos retardos son fijos en ms y la rejilla es fluida, asi que solo son
+   exactos a 1440. Medida la deriva: a 1024 los bordes caen en las fracciones
+   0,025 / 0,218 / 0,410 / 0,602 / 0,794 frente a 0,018 / 0,213 / 0,407 /
+   0,601 / 0,796 a 1440 — menos de 0,008 del ancho, es decir **por debajo de
+   4ms**. No compensa complicarlo.
+
+   Cada exposicion dura 140ms mientras la barra tarda 268/3 = 89ms en cruzar un
+   fotograma, asi que el revelado ASIENTA por detras del instrumento y nunca
+   por delante. Verificado por scripts/measure-cortinilla.py. */
+:root[data-theme="hyprland"] .scene-index-row {
+  clip-path: inset(0 100% 0 0);
+  transition:
+    clip-path 110ms cubic-bezier(0.7, 0, 0.2, 1),
+    border-color 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row {
+  clip-path: inset(0 0 0 0);
+  transition:
+    clip-path 140ms cubic-bezier(0.7, 0, 0.2, 1),
+    border-color 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1) { transition-delay: 9ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2) { transition-delay: 102ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3) { transition-delay: 195ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4) { transition-delay: 289ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) { transition-delay: 382ms, 0ms; }
+
+/* Cierre: orden INVERSO, se apaga primero el ultimo que se encendio. El
+   contenido se va antes que la sabana (110ms escalonados 20 = 190ms, dentro
+   de los 200 del telon). Salir nunca es ceremonia. */
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(1) { transition-delay: 80ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(2) { transition-delay: 60ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(3) { transition-delay: 40ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(4) { transition-delay: 20ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(5) { transition-delay: 0ms, 0ms; }
+
+/* El golpe de luz: sobreexpone y asienta. No es brillo decorativo — es el
+   unico momento en que el fotograma dice "acabo de revelarse", que es
+   literalmente lo que hace una hoja de contactos. */
+:root[data-theme="hyprland"] .scene-index-flash {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(106deg, rgba(255, 160, 110, 0.55), rgba(255, 90, 52, 0.22));
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-flash {
+  animation: hypr-exposicion 300ms cubic-bezier(0.7, 0, 0.2, 1) forwards;
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1) .scene-index-flash { animation-delay: 9ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2) .scene-index-flash { animation-delay: 102ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3) .scene-index-flash { animation-delay: 195ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4) .scene-index-flash { animation-delay: 289ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) .scene-index-flash { animation-delay: 382ms; }
+
+@keyframes hypr-exposicion {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/*
+ * La barra de luz NO se acelera: se retira. Un elemento que atraviesa la
+ * pantalla es en si mismo el efecto de movimiento, no solo su duracion —
+ * a 1ms sigue siendo algo que cruza la pantalla a ojos de quien pidio
+ * `reduce`. Se degrada el viaje, nunca la funcion: foco, Esc, clic fuera y
+ * bloqueo de scroll no cambian, son logica de sceneNav.ts.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .scene-index,
+  :root[data-theme="hyprland"] .scene-index.is-open {
+    transition: none;
+    transition-delay: 0ms;
+  }
+
+  /*
+   * `transition: none` por si sola deja `transition-delay` como un solo
+   * valor ("0s"), no los dos que reporta el arnes (uno por propiedad:
+   * clip-path, border-color). Se declaran ambas listas a mano para que
+   * sigan comparando en pares con la regla normal.
+   */
+  :root[data-theme="hyprland"] .scene-index .scene-index-row,
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row,
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1),
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2),
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3),
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4),
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) {
+    transition-property: clip-path, border-color;
+    transition-duration: 0ms, 0ms;
+    transition-delay: 0ms, 0ms;
+  }
+
+  :root[data-theme="hyprland"] .scene-index-bar,
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-bar {
+    display: none;
+    animation: none;
+  }
+
+  :root[data-theme="hyprland"] .scene-index-flash,
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-flash {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* ---------------------------------------------------------------- Caelestia */
 
 :root[data-theme="caelestia"] {
@@ -4140,7 +4306,8 @@
  * final de rama del hero).
  */
 .scene-shot,
-.scene-index-flash {
+.scene-index-flash,
+.scene-index-bar {
   display: none;
 }
 
