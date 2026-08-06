@@ -2147,6 +2147,216 @@
   }
 }
 
+/* ==========================================================================
+   La hoja de contactos: el indice de escenas de Hyprland deja de ser cinco
+   renglones y pasa a cinco fotogramas con la silueta de su escena.
+   Spec: docs/superpowers/specs/2026-08-06-hyprland-cortinilla-hoja-design.md
+   Cualquier selector va bajo [data-theme="hyprland"]: `.scene-index` es el mismo
+   nodo en los tres temas y no hay `[data-scene]` que lo contenga.
+   ========================================================================== */
+:root[data-theme="hyprland"] .scene-index {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  align-content: center;
+  justify-content: center;
+  padding: 26px;
+}
+
+:root[data-theme="hyprland"] .scene-index-title {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+}
+
+:root[data-theme="hyprland"] .scene-index-row {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--rule);
+  background: #070302;
+}
+
+:root[data-theme="hyprland"] .scene-index-row:hover,
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"] {
+  border-color: var(--l1);
+}
+
+/* El filete superior marca la escena en curso sin gastar color en el texto. */
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"]::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto;
+  height: 2px;
+  background: var(--l1);
+  z-index: 6;
+}
+
+/* La guia punteada une dos extremos de una linea. Aqui no hay linea. */
+:root[data-theme="hyprland"] .scene-index-guide {
+  display: none;
+}
+
+/* El encuadre: 16:10, la proporcion de la pantalla del sitio, para que la
+   silueta se lea como un plano y no como un icono. */
+:root[data-theme="hyprland"] .scene-shot {
+  display: block;
+  position: relative;
+  width: 100%;
+  padding-top: 62.5%;
+  overflow: hidden;
+}
+
+/* El plano se dibuja a 1440x900 y se escala. `--escala` la fija cada encuadre
+   segun su ancho: 216/1440 en escritorio. No se calcula con JS. */
+:root[data-theme="hyprland"] .scene-shot > span {
+  position: absolute;
+  transform-origin: 0 0;
+}
+
+/* La exposicion hace de navegacion: la escena en curso es la unica revelada. */
+:root[data-theme="hyprland"] .scene-shot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--color-ink);
+  opacity: 0.58;
+  transition: opacity 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"] .scene-shot::after {
+  opacity: 0;
+}
+
+:root[data-theme="hyprland"] .scene-index-row:hover .scene-shot::after {
+  opacity: 0.05;
+}
+
+/* El pie del fotograma: numero, nombre y descriptor. El descriptor SIEMPRE
+   visible, nunca solo en hover — es lo que cerro el hallazgo de que los
+   nombres de cine no comunican, y en tactil no hay hover. */
+:root[data-theme="hyprland"] .scene-index-num,
+:root[data-theme="hyprland"] .scene-index-name,
+:root[data-theme="hyprland"] .scene-index-blurb {
+  position: static;
+  display: block;
+}
+
+/* 1440 -> ancho del encuadre. En escritorio el encuadre mide 216px de ancho
+   (rejilla de 1128 centrada en 1216 con paso 228), luego 216/1440 = 0.15.
+   Se declara con un factor por encuadre y no con `zoom` ni con JS: `zoom` no
+   se anima ni se hereda igual entre navegadores. */
+:root[data-theme="hyprland"] .scene-shot {
+  --escala: 0.15;
+}
+
+:root[data-theme="hyprland"] .scene-shot > span {
+  transform: scale(var(--escala));
+}
+
+:root[data-theme="hyprland"] .scene-shot-rl,
+:root[data-theme="hyprland"] .scene-shot-bar,
+:root[data-theme="hyprland"] .scene-shot-dot {
+  background: var(--haze);
+  opacity: 0.5;
+}
+
+:root[data-theme="hyprland"] .scene-shot-box {
+  border: 1px solid var(--rule);
+}
+
+:root[data-theme="hyprland"] .scene-shot-dot {
+  border-radius: 50%;
+}
+
+:root[data-theme="hyprland"] .scene-shot-disp {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.032em;
+  line-height: 0.94;
+  white-space: nowrap;
+  color: var(--color-paper);
+}
+
+/* El haz cruza los cinco encuadres: es lo unico que aparece en todas las
+   escenas del sitio real, y es lo que hace que la hoja se lea como cinco
+   planos de la misma pelicula en vez de cinco iconos. */
+:root[data-theme="hyprland"] .scene-shot-beam {
+  inset: 0;
+  transform: none;
+  background: linear-gradient(
+    106deg,
+    transparent 20%,
+    rgba(255, 90, 52, 0.26) 34%,
+    rgba(255, 90, 52, 0.4) 43%,
+    rgba(224, 29, 60, 0.18) 56%,
+    transparent 74%
+  );
+}
+
+:root[data-theme="hyprland"] .scene-index-row > .scene-index-num {
+  padding: 9px 11px 0;
+  border-top: 1px solid var(--rule);
+  /* `--t-1` (12px), no los 9,5px del prototipo: el criterio 11 exige que todo
+     tamano sea un escalon declarado, y la escala de Ascua no baja de 12. El
+     numero queda del mismo tamano que el descriptor, asi que lo que lo separa
+     es el `letter-spacing` y el color, no el cuerpo. */
+  font-size: var(--t-1);
+  letter-spacing: 0.18em;
+  color: var(--haze);
+}
+
+:root[data-theme="hyprland"] .scene-index-name {
+  padding: 5px 11px 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--t-3);
+  line-height: 1;
+  letter-spacing: -0.034em;
+  color: var(--color-paper);
+  transition: color 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index-blurb {
+  padding: 4px 11px 11px;
+  font-size: var(--t-1);
+  color: var(--haze);
+}
+
+:root[data-theme="hyprland"] .scene-index-row:hover .scene-index-name,
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"] .scene-index-name,
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"] > .scene-index-num {
+  color: var(--l3);
+}
+
+/* Dos, dos y la quinta a lo ancho. El quinto fotograma va el ULTIMO en el DOM
+   y toma `grid-column: 1 / -1`: adelantarlo con `order` para "priorizar"
+   contacto romperia la correspondencia entre el recorrido de Tab y lo que se
+   ve (WCAG 2.4.3), y es facil caer en ello justo aqui. */
+@media (max-width: 640px) {
+  :root[data-theme="hyprland"] .scene-index {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+    padding: 56px 16px 16px;
+    align-content: start;
+  }
+
+  :root[data-theme="hyprland"] .scene-index-row:last-of-type {
+    grid-column: 1 / -1;
+  }
+
+  /* 172/1440 = 0.1194 para los cuatro de dos columnas; el quinto mide 356. */
+  :root[data-theme="hyprland"] .scene-shot {
+    --escala: 0.1194;
+  }
+
+  :root[data-theme="hyprland"] .scene-index-row:last-of-type .scene-shot {
+    --escala: 0.2472;
+    padding-top: 31.25%;
+  }
+}
+
 /* ---------------------------------------------------------------- Caelestia */
 
 :root[data-theme="caelestia"] {
