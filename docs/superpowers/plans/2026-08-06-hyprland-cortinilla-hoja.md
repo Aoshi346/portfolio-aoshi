@@ -550,7 +550,7 @@ En `src/themes/themes.css`, al final del bloque de Hyprland (busca
   position: absolute;
   inset: 0;
   z-index: 5;
-  background: var(--void);
+  background: var(--color-ink);
   opacity: 0.58;
   transition: opacity 200ms cubic-bezier(0.7, 0, 0.2, 1);
 }
@@ -616,7 +616,7 @@ Añadir, en el mismo bloque:
   letter-spacing: -0.032em;
   line-height: 0.94;
   white-space: nowrap;
-  color: var(--text);
+  color: var(--color-paper);
 }
 
 /* El haz cruza los cinco encuadres: es lo unico que aparece en todas las
@@ -645,7 +645,11 @@ superficie. Empieza por `var(--haze)` y compruébalo en el Step 7; si no llega, 
 :root[data-theme="hyprland"] .scene-index-row > .scene-index-num {
   padding: 9px 11px 0;
   border-top: 1px solid var(--rule);
-  font-size: 0.594rem;
+  /* `--t-1` (12px), no los 9,5px del prototipo: el criterio 11 exige que todo
+     tamano sea un escalon declarado, y la escala de Ascua no baja de 12. El
+     numero queda del mismo tamano que el descriptor, asi que lo que lo separa
+     es el `letter-spacing` y el color, no el cuerpo. */
+  font-size: var(--t-1);
   letter-spacing: 0.18em;
   color: var(--haze);
 }
@@ -657,7 +661,7 @@ superficie. Empieza por `var(--haze)` y compruébalo en el Step 7; si no llega, 
   font-size: var(--t-3);
   line-height: 1;
   letter-spacing: -0.034em;
-  color: var(--text);
+  color: var(--color-paper);
   transition: color 200ms cubic-bezier(0.7, 0, 0.2, 1);
 }
 
@@ -674,10 +678,18 @@ superficie. Empieza por `var(--haze)` y compruébalo en el Step 7; si no llega, 
 }
 ```
 
-Nota sobre `font-size: 0.594rem`: **no lo dejes así si el arnés de escala tipográfica se queja.**
-El criterio 11 exige que todo tamaño sea un escalón declarado (`--t-1..--t-10`), no un valor
-continuo. Si `--t-1` es demasiado grande para el número, declara un escalón nuevo en el tema en vez
-de un literal.
+**Tokens de Ascua, comprobados en `themes.css:1131-1144` — no inventes nombres.** El prototipo usaba
+`--void`, `--text` y literales; en el repo **no existen**. Los reales son:
+
+| prototipo | repo |
+|---|---|
+| `--void` | `--color-ink` (`#0b0404`) |
+| `--text` | `--color-paper` (`#ffeae6`) |
+| `--l1` `--l2` `--l3` `--catch` `--rule` `--haze` | iguales, existen tal cual |
+
+Y la escala es `--t-1: 12px`, `--t-2: 16px`, `--t-3: 21.33px`, `--t-4: 28.43px`. El prototipo usaba
+9,5 / 19 / 10,5 px, que no son escalones: el número y el descriptor suben a `--t-1` y el nombre a
+`--t-3`. Es una desviación consciente del prototipo, exigida por el criterio 11.
 
 - [ ] **Step 5: El layout de 390**
 
@@ -1295,7 +1307,7 @@ heredado: la navegacion es la unica excepcion al radio 0 del tema"):
   line-height: 22px;
   letter-spacing: -0.034em;
   text-transform: none;
-  color: var(--text);
+  color: var(--color-paper);
   transition:
     transform 200ms cubic-bezier(0.7, 0, 0.2, 1),
     color 200ms cubic-bezier(0.7, 0, 0.2, 1);
