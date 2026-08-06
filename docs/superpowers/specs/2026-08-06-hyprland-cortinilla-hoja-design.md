@@ -1,6 +1,7 @@
 # La hoja de contactos — la cortinilla de Hyprland deja de ser una lista y pasa a ser cinco planos
 
 Estado: pendiente de plan
+Plan: `docs/superpowers/plans/2026-08-06-hyprland-cortinilla-hoja.md`
 Fecha: 2026-08-06
 Alcance: **solo el tema Hyprland**. El disparador (`.scene-nav-trigger`) y la cortinilla
 (`.scene-index`), que hoy son el mismo componente vestido igual en los tres temas. **Vice no se
