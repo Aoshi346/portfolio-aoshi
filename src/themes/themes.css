@@ -1713,6 +1713,44 @@
     transform: none;
     transition: none;
   }
+
+  /* Hero: el layout final estatico, sin ninguna pieza a medio revelar. */
+  :root[data-theme="hyprland"] .hero-kick,
+  :root[data-theme="hyprland"] .hero-name-word,
+  :root[data-theme="hyprland"] .hero-corner > span,
+  :root[data-theme="hyprland"] .hero-corner > a {
+    clip-path: none !important;
+    animation: none !important;
+  }
+  :root[data-theme="hyprland"] .hero-name-ghost {
+    display: none !important;
+  }
+  :root[data-theme="hyprland"] .hero-divider::after {
+    transform: scaleY(1) !important;
+    transition: none !important;
+  }
+  @media (max-width: 900px) {
+    :root[data-theme="hyprland"] .hero-divider::after {
+      transform: scaleX(1) !important;
+    }
+  }
+  :root[data-theme="hyprland"] .hero-divider-spark,
+  :root[data-theme="hyprland"] .hero-divider-landing {
+    display: none !important;
+  }
+  :root[data-theme="hyprland"] .hero-corner::before {
+    transform: scaleX(1) !important;
+    transition: none !important;
+  }
+  :root[data-theme="hyprland"] .lead {
+    opacity: 0.85 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  :root[data-theme="hyprland"] .hero:hover .hero-name-wrap .display-xl,
+  :root[data-theme="hyprland"] .hero:focus-within .hero-name-wrap .display-xl {
+    animation: none !important;
+  }
 }
 
 /*
