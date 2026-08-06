@@ -133,8 +133,9 @@ En `src/sections/about.ts:302`:
 - [ ] **Step 3: Comprobar que no queda ninguno y que el id sigue intacto**
 
 Run: `grep -rn "Quién es" src/ ; grep -rn "quien-es" src/ | wc -l`
-Expected: la primera orden no imprime nada; la segunda imprime `3` (content.ts, about.ts y main.ts
-siguen usando el id).
+Expected: la primera orden no imprime nada; la segunda imprime `2` — `content.ts` y `main.ts`.
+`about.ts` **no** lleva el literal `quien-es`: su sección se marca con `data-scene="about"` y el
+mapeo a id vive en `main.ts:120`. Si sale `3`, alguien ha metido el id donde no iba.
 
 - [ ] **Step 4: Build**
 
