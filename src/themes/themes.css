@@ -127,6 +127,46 @@
 }
 
 /*
+ * Compensacion del rediseno de Hyprland (Important 4 de la revision final).
+ * `.hero-kick` paso a ser hermano de `.hero-surface` en el DOM (antes vivia
+ * dentro, como su primer hijo) para que la rejilla de "el lomo" pudiera
+ * colocarlo en su columna 1 (ver hero.ts). En Vice ese movimiento por si
+ * solo desplazaba la etiqueta 48px hacia arriba y la encogia a su ancho de
+ * contenido (paso de bloque a ancho completo, centrado por herencia de
+ * `text-align`, a item de flex que se encoge y centra por `align-items:
+ * center` del `.hero`) — measured con Playwright contra el commit previo al
+ * rediseno (204998c): `.hero-kick` pasaba de x:96/y:274/ancho:1248 a
+ * x:600/y:226/ancho:240 en 1440x900. `.hero-surface` y su contenido
+ * (nombre, lead) no se movian ni un pixel — asi que la unica pieza que
+ * necesita compensacion es esta.
+ *
+ * El alto total del flujo YA es identico al de antes del rediseno sin tocar
+ * nada mas: `.hero-surface` conserva su `padding-top` de siempre aunque
+ * `.hero-kick` ya no viva dentro (verificado — `h1`/`.lead` caen en el
+ * mismo pixel en las dos versiones), asi que anadir un `margin-top` a
+ * `.hero-kick` para bajarlo NO es neutral: `.hero` centra sus items en el
+ * eje principal (`justify-content: center`, heredado), y sumar espacio al
+ * flujo desplaza a todos los items por igual (a la mitad de lo anadido, no
+ * lo que se necesita) en vez de mover solo `.hero-kick`. La caja se
+ * reposiciona en su lugar SIN reservar espacio de mas con `position:
+ * relative; top`, que no participa en el calculo de la altura total: el
+ * hueco donde `.hero-kick` vivia en el flujo (el arranque del padding-top
+ * de `.hero-surface`, que sigue ahi, en blanco) es exactamente donde hace
+ * falta que se vea. Ancho: estira a todo el `.hero` con `align-self:
+ * stretch` y descuenta el mismo padding-left/right de `.hero-surface`
+ * como margen (el margen, no el padding, es lo que resta un item de flex
+ * de ancho automatico en el eje cruzado). Reproduce los mismos cuatro
+ * numeros medidos arriba, verificado de nuevo tras el cambio.
+ */
+:root[data-theme="vice"] [data-scene="hero"] .hero-kick {
+  align-self: stretch;
+  position: relative;
+  top: clamp(1.5rem, 4vw, 3rem);
+  margin-left: clamp(1.5rem, 4vw, 3rem);
+  margin-right: clamp(1.5rem, 4vw, 3rem);
+}
+
+/*
  * Cromo de cine (letterbox + barra de orientacion + atenuador de fondo): solo
  * Vice lo muestra. `style.css` lo oculta por defecto (`display: none`); esta
  * regla, mas especifica, lo reactiva solo aqui.
@@ -1184,7 +1224,7 @@
   text-align: left;
 }
 
-:root[data-theme="hyprland"] .hero-kick {
+:root[data-theme="hyprland"] [data-scene="hero"] .hero-kick {
   font-family: var(--font-body);
   font-size: var(--t-1);
   font-weight: 600;
@@ -1199,6 +1239,16 @@
   display: flex;
   align-items: flex-end;
   padding-bottom: 0.5rem;
+  /*
+    `.hero-corner` vuelve a ser hermano de `.hero-surface` en el DOM (ver
+    hero.ts, fix de la revision final): la columna de contenido del "lomo"
+    ahora son DOS filas de la rejilla (fila 1 = surface, fila 2 = corner) en
+    vez de una sola caja. La etiqueta y el filete deben seguir cubriendo el
+    bloque entero (surface + corner), no solo la fila 1, asi que se les da un
+    span explicito de 2 filas — el numero de filas es fijo (siempre surface y
+    corner, nunca mas), no depende del contenido.
+  */
+  grid-row: 1 / span 2;
 }
 
 :root[data-theme="hyprland"] .hero-divider {
@@ -1208,6 +1258,9 @@
   position: relative;
   overflow: visible;
   container-type: size;
+  /* Mismo motivo que el span de `.hero-kick` arriba: el filete tiene que
+     cubrir surface + corner (las 2 filas), no solo la fila 1. */
+  grid-row: 1 / span 2;
 }
 
 :root[data-theme="hyprland"] .hero-surface {
@@ -1264,11 +1317,23 @@
 }
 
 /*
-  Antes: `position: absolute; bottom: 9%; left/right: 1.5rem` heredado del
-  `.hero-corner` compartido (style.css:166) — Vice/Caelestia lo dejan asi a
-  proposito (flota sobre el plano, no estorba). Aqui necesita fluir dentro de
-  la columna de contenido del "lomo", asi que se reemplaza `position` por
-  `relative` (tambien sirve de ancla al filete dibujado, ver Task 3).
+  Fix de la revision final (Critico 3): `.hero-corner` habia pasado a vivir
+  DENTRO de `.hero-surface` en el DOM para fluir en la columna de contenido.
+  Eso rompia Caelestia: su `.hero-surface` fija `backdrop-filter:
+  blur(24px) saturate(1.25)`, y un `backdrop-filter` distinto de `none`
+  establece bloque contenedor para descendientes en `position: absolute`
+  — `.hero-corner` (style.css) pasaba a resolver `bottom`/`left`/`right`
+  contra la tarjeta en vez de contra la seccion (175px vertical / 49px
+  horizontal medidos, ancho recortado 354px).
+
+  Vuelve a ser hermano de `.hero-surface` en el DOM (hero.ts), igual que
+  antes de este rediseno — asi Vice/Caelestia no ven ningun cambio de bloque
+  contenedor. Para que en Hyprland seguir fluyendo bajo el nombre/lead de la
+  columna de contenido, entra como item propio de la rejilla del `.hero`
+  (`grid-column: 3`, mas abajo): fila 1 = surface, fila 2 = corner, mismas
+  celdas que antes ocupaba una sola caja. `position: relative` se mantiene
+  porque sigue siendo el ancla de `.hero-corner::before` (el filete horizontal
+  que se dibuja bajo "Caracas, Venezuela"/el correo).
 */
 :root[data-theme="hyprland"] .hero-corner {
   position: relative;
@@ -1279,6 +1344,7 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--haze);
+  grid-column: 3;
 }
 :root[data-theme="hyprland"] .hero-mail {
   position: relative;
@@ -1300,16 +1366,21 @@
     grid-template-columns: 1fr;
     row-gap: 1.2rem;
   }
-  :root[data-theme="hyprland"] .hero-kick {
+  :root[data-theme="hyprland"] [data-scene="hero"] .hero-kick {
     writing-mode: horizontal-tb;
     transform: none;
     align-self: auto;
     padding-bottom: 0;
+    /* Rejilla de 1 columna: kick, divider, surface y corner caen cada uno
+       en su propia fila (`grid-template-columns: 1fr`, arriba). El span de
+       2 filas del desktop ya no aplica. */
+    grid-row: auto;
   }
   :root[data-theme="hyprland"] .hero-divider {
     width: 100%;
     height: 1px;
     align-self: auto;
+    grid-row: auto;
   }
   /*
     El clamp heredado de Ascua para `.display-xl` (min 50.52px, `--t-6`) ya
@@ -1334,6 +1405,17 @@
   :root[data-theme="hyprland"] .hero-corner {
     flex-direction: column;
     gap: 0.4rem;
+    /*
+      Sin este reset, el `grid-column: 3` explicito (desktop, ver comentario
+      de Critico 3 mas arriba) sigue pidiendo una columna que la rejilla
+      colapsada de 1 columna (`grid-template-columns: 1fr`, arriba) no
+      declara — CSS Grid crea entonces columnas implicitas de mas para
+      satisfacer esa peticion, y el `.hero` termina con una rejilla de 3
+      pistas estrechas en vez de 1 sola a ancho completo. Medido: kick y
+      nombre se desbordaban del viewport, envueltos linea a linea en un
+      carril de ~157px que se leia como texto rotado sin estarlo.
+    */
+    grid-column: auto;
   }
 }
 
@@ -1432,10 +1514,10 @@
   que el filete. Ahora se descubre con el mismo lenguaje de corte
   (clip-path), sincronizada con el arranque del filete.
 */
-:root[data-theme="hyprland"] .hero-kick {
+:root[data-theme="hyprland"] [data-scene="hero"] .hero-kick {
   clip-path: inset(100% 0 0 0);
 }
-:root[data-theme="hyprland"] .is-lit .hero-kick {
+:root[data-theme="hyprland"] [data-scene="hero"].is-lit .hero-kick {
   animation: hypr-hero-spine 0.5s var(--hard) forwards;
   animation-delay: 220ms;
 }
@@ -1445,7 +1527,7 @@
   }
 }
 @media (max-width: 900px) {
-  :root[data-theme="hyprland"] .hero-kick {
+  :root[data-theme="hyprland"] [data-scene="hero"] .hero-kick {
     /* Solo cambia el punto de partida del corte (de arriba a la izquierda);
        el destino es el mismo `inset(0 0 0 0)` en los dos casos, asi que
        `hypr-hero-spine` (definida arriba, un solo `to`) no necesita
@@ -1581,14 +1663,14 @@
   }
 }
 
-:root[data-theme="hyprland"] .lead {
+:root[data-theme="hyprland"] [data-scene="hero"] .lead {
   opacity: 0;
   transform: translateY(10px);
   transition:
-    opacity 1s var(--slow),
-    transform 1s var(--slow);
+    opacity 900ms var(--slow),
+    transform 900ms var(--slow);
 }
-:root[data-theme="hyprland"] .is-lit .lead {
+:root[data-theme="hyprland"] [data-scene="hero"].is-lit .lead {
   opacity: 0.85;
   transform: none;
   transition-delay: 1050ms;
@@ -1640,7 +1722,7 @@
 */
 :root[data-theme="hyprland"] .hero:hover .hero-name-wrap .display-xl,
 :root[data-theme="hyprland"] .hero:focus-within .hero-name-wrap .display-xl {
-  animation: hypr-hero-idle 6s ease-in-out infinite;
+  animation: hypr-hero-idle 6s var(--slow) infinite;
 }
 @keyframes hypr-hero-idle {
   0%,
@@ -1715,7 +1797,7 @@
   }
 
   /* Hero: el layout final estatico, sin ninguna pieza a medio revelar. */
-  :root[data-theme="hyprland"] .hero-kick,
+  :root[data-theme="hyprland"] [data-scene="hero"] .hero-kick,
   :root[data-theme="hyprland"] .hero-name-word,
   :root[data-theme="hyprland"] .hero-corner > span,
   :root[data-theme="hyprland"] .hero-corner > a {
@@ -1742,7 +1824,7 @@
     transform: scaleX(1) !important;
     transition: none !important;
   }
-  :root[data-theme="hyprland"] .lead {
+  :root[data-theme="hyprland"] [data-scene="hero"] .lead {
     opacity: 0.85 !important;
     transform: none !important;
     transition: none !important;
@@ -2113,6 +2195,38 @@
 
 :root[data-theme="caelestia"] .hero-surface {
   max-width: 68rem;
+}
+
+/*
+ * Misma compensacion que Vice (buscar "Important 4" mas arriba), con el
+ * mismo diagnostico: `.hero-kick` paso a ser hermano de `.hero-surface`
+ * para que la rejilla de Hyprland pudiera usarlo como columna 1. En
+ * Caelestia la etiqueta vivia DENTRO de la tarjeta Material You — perdia su
+ * padding Y su borde de 1px al salir. Medido con Playwright contra 204998c:
+ * `.hero-kick` pasaba de x:101/y:267/ancho:982 (inset por padding:
+ * clamp(1.75rem,4vw,3.25rem) + border:1px, igual que el resto de la
+ * tarjeta) a x:48/y:214/ancho:1344 (a sangre, fuera de la tarjeta) en
+ * 1440x900. Se repone el mismo inset (padding de la tarjeta + su borde)
+ * directamente sobre `.hero-kick`: `position: relative; top` para el
+ * vertical (no `margin-top` — mismo motivo que en Vice, buscar el
+ * comentario ahi: `.hero` tambien centra sus items en el eje principal).
+ * Para el horizontal no basta con margen + `align-self: stretch`:
+ * `.hero-surface` tiene ademas un tope propio (`max-width: 68rem`, arriba)
+ * que en este viewport de referencia es MAS ESTRECHO que el `.hero`
+ * completo (1088px vs 1344px), y el `min-width`/`max-width` de un item de
+ * flex se resuelve sobre su propio ancho de caja, ANTES del margen — un
+ * `max-width: 68rem` en `.hero-kick` deja su caja en 1088px con el margen
+ * puesto fuera, no en 982px con el margen absorbido dentro de esos 1088px.
+ * Se calcula un ancho explicito en su lugar: el mismo tope, menos el mismo
+ * margen a cada lado, que es exactamente lo que `.hero-surface` le resta a
+ * su contenido interno con su padding+borde.
+ */
+:root[data-theme="caelestia"] [data-scene="hero"] .hero-kick {
+  position: relative;
+  top: calc(clamp(1.75rem, 4vw, 3.25rem) + 1px);
+  margin-left: calc(clamp(1.75rem, 4vw, 3.25rem) + 1px);
+  margin-right: calc(clamp(1.75rem, 4vw, 3.25rem) + 1px);
+  width: calc(min(68rem, 100%) - 2 * (clamp(1.75rem, 4vw, 3.25rem) + 1px));
 }
 
 /* Chips como contenedores tonales: sobre fondo claro, un 4% de tinta no se ve. */

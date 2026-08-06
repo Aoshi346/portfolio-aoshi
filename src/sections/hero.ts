@@ -19,6 +19,19 @@ export function createHero(): HTMLElement {
   // hacia arriba y lo que esta debajo hacia abajo, de modo que el nombre queda
   // solo en el centro. El selector `[data-hero-fade]` que usan reveal.ts y
   // style.css no distingue valor, asi que los otros dos temas no se enteran.
+  //
+  // `.hero-kick` es HERMANO de `.hero-surface` (antes de este rediseno vivia
+  // dentro, como su primer hijo). El movimiento es real y AFECTA a Vice y
+  // Caelestia — no es inerte como se penso al principio — pero es el que se
+  // queda: la rejilla de 3 columnas del "lomo" en Hyprland (columna 1 =
+  // etiqueta rotada) solo puede colocar via CSS Grid a los HIJOS DIRECTOS
+  // de `.hero`, y anidar `.hero-kick` en `.hero-surface` lo saca de alcance
+  // de esa rejilla sin recurrir a trucos fragiles (`display: contents` con
+  // spans de fila explicitos en cada hijo de la superficie). Vice y
+  // Caelestia compensan con CSS propio en themes.css (buscar
+  // "Important 4" en el historial) que reproduce exactamente el hueco y el
+  // ancho que `.hero-kick` tenia estando dentro de la superficie — medido
+  // contra el commit previo al rediseno (204998c) con Playwright, no a ojo.
   const eyebrow = el("p", "hero-kick", [identity.role]);
   eyebrow.setAttribute("data-hero-fade", "up");
 
@@ -63,17 +76,26 @@ export function createHero(): HTMLElement {
   // Envoltorio comun a los tres temas: Caelestia lo viste como tarjeta
   // Material You (themes.css), Vice y Hyprland lo neutralizan a sangre.
   // El DOM es unico; solo el CSS colgado de [data-theme] decide la piel.
-  // `.hero-corner` vive AHORA dentro de la superficie (antes era hermano):
-  // en Vice/Caelestia sigue con `position: absolute` (style.css), asi que su
-  // posicion visual no cambia pase lo que pase con su padre; en Hyprland pasa
-  // a fluir en la columna de contenido del "lomo" (position: static en
-  // themes.css, ver Task 2).
-  const surface = el("div", "hero-surface", [nameWrap, lead, corner]);
+  //
+  // `.hero-corner` es HERMANO de `.hero-surface`, no hijo — igual que antes
+  // de este rediseno. Un intento anterior lo anido dentro de la superficie
+  // para que fluyera en la columna de contenido del "lomo" en Hyprland, y
+  // eso rompio Caelestia: `.hero-surface` fija ahi `backdrop-filter:
+  // blur(24px) saturate(1.25)`, y un `backdrop-filter` distinto de `none`
+  // establece bloque contenedor para descendientes en `position: absolute`
+  // (CSS estandar, no un bug de navegador) — con `.hero-corner` dentro,
+  // `bottom`/`left`/`right` (style.css) resolvian contra la tarjeta en vez
+  // de contra la seccion. Con `.hero-corner` fuera, en Vice/Caelestia
+  // resuelve exactamente igual que siempre (contra `.hero`, que ya es
+  // `position: relative`). En Hyprland entra en la misma columna que
+  // `.hero-surface` via CSS Grid puro (`grid-column: 3` en themes.css, sin
+  // tocar el DOM): fila 1 = surface, fila 2 = corner.
+  const surface = el("div", "hero-surface", [nameWrap, lead]);
 
   const section = el(
     "section",
     "hero relative flex min-h-screen flex-col justify-center overflow-hidden px-6 py-24 md:px-12",
-    [eyebrow, divider, surface],
+    [eyebrow, divider, surface, corner],
   );
   section.setAttribute("data-scene", "hero");
 

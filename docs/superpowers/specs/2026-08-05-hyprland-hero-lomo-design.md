@@ -105,13 +105,11 @@ Tabla de tiempos (t=0 = `is-lit` en el hero; duraciones de corte en `--hard`, at
 | Filete superior del corner | 1300ms | 500ms | `--hard` |
 | "Caracas, Venezuela" (corte) | 1550ms | 420ms | `--hard` |
 | Correo (corte) | 1720ms | 420ms | `--hard` |
-| Pista de scroll (decorativa, no bloquea lectura) | 1900ms | 900ms* | `--slow` |
 
 \* Duración heredada de `.hypr-up` (900ms), no recalibrada en esta sesión.
 
 Settle del contenido esencial (nombre + lead + corner): ~2,14s (el correo, última pieza de
-lectura, termina su corte a los 1720+420ms). La pista de scroll llega después, a los ~2,8s, como
-adorno final, no como parte de lo que hay que leer. El nombre real está legible (última palabra
+lectura, termina su corte a los 1720+420ms). El nombre real está legible (última palabra
 cortada) a los 1,1s — dentro del principio ya escrito en `hero.ts` ("nombre, rol y contacto
 legibles al instante").
 
