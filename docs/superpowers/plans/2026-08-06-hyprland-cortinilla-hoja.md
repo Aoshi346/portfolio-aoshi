@@ -48,7 +48,17 @@ Copiadas del spec y de `CLAUDE.md`. **Aplican a todas las tareas.**
   `/usr/bin/google-chrome`. `/usr/bin/chromium-browser` NO existe.
 - **Nunca medir animación con capturas.** `page.screenshot()` en headless perturba el compositor.
   Muestrear desde dentro de la página en `requestAnimationFrame`.
-- **Nunca `git stash`** para comparar contra HEAD: usar `git worktree add`.
+- **Nunca `git stash`** para comparar contra HEAD: usar `git worktree add`. Y `git stash` solo
+  esconde lo **no commiteado**: un A/B así no prueba nada sobre lo que ya commitearon las tareas
+  anteriores de la propia rama. Para saber si algo es preexistente hay que medirlo contra el
+  merge-base, en un worktree.
+- **Caelestia sale en rojo también en `main`, y es normal.** Medido en el merge-base `c1cacf1`
+  sirviendo la rama en un worktree: `verify.py --theme caelestia` reporta **9 fallos de contraste
+  AA** sobre el rótulo del disparador (`span "0N · Nombre"`, `fg=(108,79,216)`, ratios 4,06–4,24
+  contra un mínimo de 4,5). No están en `verify-baseline.json` y **no se meten**: es un hallazgo de
+  accesibilidad real de un tema que este trabajo no toca, y esconderlo en la base es justo el modo
+  de fallo que la base venía a evitar. El gate correcto para Caelestia es **exactamente esos 9 y
+  ninguno más**, no "0 fallos".
 
 ## Estructura de ficheros
 
@@ -320,8 +330,10 @@ npm run build && npm run lint
 python3 scripts/verify.py --theme vice
 python3 scripts/verify.py --theme caelestia
 ```
-Expected: build y lint verdes; los dos `verify.py` con **0 fallos nuevos** sobre su línea base
-(código de salida 0).
+Expected: build y lint verdes. `--theme vice` con **0 fallos nuevos** (código de salida 0).
+`--theme caelestia` con **exactamente los 9 fallos de contraste preexistentes** descritos en las
+restricciones globales y ninguno más — ahí el código de salida es 1 en `main` también, así que un 1
+no dice nada por sí solo: hay que leer la lista.
 
 - [ ] **Step 6: Commit**
 
@@ -1470,8 +1482,10 @@ python3 scripts/verify.py --theme vice
 python3 scripts/verify.py --theme caelestia
 python3 scripts/verify.py --theme hyprland --reduced
 ```
-Expected: los cuatro con 0 fallos nuevos sobre la línea base. **Vice está cerrado y aceptado:
-cualquier diferencia ahí es un defecto de este trabajo, no una línea base que actualizar.**
+Expected: `hyprland`, `hyprland --reduced` y `vice` con 0 fallos nuevos sobre la línea base.
+`caelestia` con exactamente los 9 fallos de contraste preexistentes y ninguno más.
+**Vice está cerrado y aceptado: cualquier diferencia ahí es un defecto de este trabajo, no una
+línea base que actualizar.**
 
 - [ ] **Step 2: Capturas reales**
 
