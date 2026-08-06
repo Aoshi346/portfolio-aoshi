@@ -3923,6 +3923,18 @@
 }
 
 /*
+ * `sceneNav.ts` añade la silueta y el golpe de luz en los TRES temas, pero solo
+ * Hyprland los usa. Sin este `display: none` de base se cuelan en Vice y
+ * Caelestia como hijos sueltos de una fila que es `display: flex` — mismo modo
+ * de fallo que ya tuvo `.scene-nav-trigger-mark` (hallazgo M1 de la revision
+ * final de rama del hero).
+ */
+.scene-shot,
+.scene-index-flash {
+  display: none;
+}
+
+/*
  * Vice quita la caja del disparador: un recuadro es justo lo que esta
  * direccion elimina (misma nota en `.credits-used-list`, arriba). Con la
  * serigrafia de tinta detras, el marco cuadrado cortaba el flujo del

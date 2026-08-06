@@ -8,6 +8,7 @@
  * los tres temas la necesitan y el cromo de cine solo corre en Vice.
  */
 import { TARGETS, destinationFor } from "./sceneNav.destino";
+import { construirSilueta } from "./sceneNav.siluetas";
 
 export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   /*
@@ -93,7 +94,22 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
     blurb.className = "scene-index-blurb";
     blurb.textContent = entry.blurb;
 
-    row.append(num, name, guide, blurb);
+    /*
+     * Silueta y golpe de luz: los añaden los tres temas y solo Hyprland les da
+     * estilo (ver themes.css, `display: none` de base). Mismo patron que
+     * `.scene-nav-trigger-mark`. `aria-hidden` en el envoltorio, no pieza a
+     * pieza: la silueta es decorativa y ademas lleva fragmentos de copy
+     * ("Aoshi Blanco Sanz", "Hablemos") que un lector de pantalla leeria
+     * fuera de contexto y duplicados respecto al descriptor.
+     */
+    const shot = construirSilueta(entry.id);
+    shot.setAttribute("aria-hidden", "true");
+
+    const flash = document.createElement("span");
+    flash.className = "scene-index-flash";
+    flash.setAttribute("aria-hidden", "true");
+
+    row.append(shot, flash, num, name, guide, blurb);
     panel.append(row);
   }
 
