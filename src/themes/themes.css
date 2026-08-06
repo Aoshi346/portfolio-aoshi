@@ -2207,11 +2207,24 @@
   overflow: hidden;
 }
 
-/* El plano se dibuja a 1440x900 y se escala. `--escala` la fija cada encuadre
-   segun su ancho: 216/1440 en escritorio. No se calcula con JS. */
+/* Consulta de contenedor: la rejilla es fluida (`minmax(0, 1fr)`), asi que el
+   ancho del encuadre cambia con el viewport y con el numero de columnas
+   (5 en escritorio, 2 en movil). Un factor de escala fijo solo acierta en el
+   ancho para el que se calculo — medido: con `--escala: 0.15` el fotograma de
+   268px (no 216px, que asumia un `.scene-index` mas estrecho que el real)
+   dejaba 52px vacios a la derecha de cada silueta, un 19% del encuadre. */
+:root[data-theme="hyprland"] .scene-shot {
+  container-type: inline-size;
+}
+
+/* El plano se dibuja a 1440x900 y se escala al ancho REAL del encuadre.
+   `100cqw` es el ancho del contenedor (el propio `.scene-shot`); dividirlo
+   entre el ancho del plano da el factor exacto sea cual sea el encuadre, sin
+   JS y sin una constante que solo sirve a un ancho de pantalla. */
 :root[data-theme="hyprland"] .scene-shot > span {
   position: absolute;
   transform-origin: 0 0;
+  transform: scale(calc(100cqw / 1440px));
 }
 
 /* La exposicion hace de navegacion: la escena en curso es la unica revelada. */
@@ -2241,18 +2254,6 @@
 :root[data-theme="hyprland"] .scene-index-blurb {
   position: static;
   display: block;
-}
-
-/* 1440 -> ancho del encuadre. En escritorio el encuadre mide 216px de ancho
-   (rejilla de 1128 centrada en 1216 con paso 228), luego 216/1440 = 0.15.
-   Se declara con un factor por encuadre y no con `zoom` ni con JS: `zoom` no
-   se anima ni se hereda igual entre navegadores. */
-:root[data-theme="hyprland"] .scene-shot {
-  --escala: 0.15;
-}
-
-:root[data-theme="hyprland"] .scene-shot > span {
-  transform: scale(var(--escala));
 }
 
 :root[data-theme="hyprland"] .scene-shot-rl,
@@ -2346,13 +2347,12 @@
     grid-column: 1 / -1;
   }
 
-  /* 172/1440 = 0.1194 para los cuatro de dos columnas; el quinto mide 356. */
-  :root[data-theme="hyprland"] .scene-shot {
-    --escala: 0.1194;
-  }
-
+  /* La escala ya no se declara aqui: `calc(100cqw / 1440px)` se recalcula
+     sola con el ancho real del encuadre, sea de dos columnas o el quinto a
+     lo ancho completo. Lo unico que sigue siendo del encuadre, no de la
+     escala, es la proporcion del quinto (mas ancho que alto que los otros
+     cuatro): */
   :root[data-theme="hyprland"] .scene-index-row:last-of-type .scene-shot {
-    --escala: 0.2472;
     padding-top: 31.25%;
   }
 }
