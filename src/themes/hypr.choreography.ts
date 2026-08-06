@@ -37,6 +37,13 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
   ];
 
   scenes.forEach((scene) => {
+    // El hero lleva su propio gesto (ver themes.css, bloque
+    // `.hero-name-word`/`.hero-kick`/`.hero-corner` bajo `.is-lit`): si
+    // tambien recibe `hypr-cut`/`hypr-up` de la receta generica, las dos
+    // animaciones compiten sobre las mismas propiedades (clip-path/opacity)
+    // en el mismo elemento.
+    if (scene.dataset.scene === "hero") return;
+
     let n = 0;
     RECETA.forEach(([selector, clase]) => {
       Array.from(scene.querySelectorAll<HTMLElement>(selector)).forEach((node) => {
@@ -103,7 +110,9 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
     end: "bottom bottom",
     onUpdate: (self) => {
       const p = self.progress;
-      root.style.setProperty("--bx", `${52 + Math.sin(p * Math.PI * 1.4) * 15}%`);
+      // Base 70% (antes 52%, centrado): el nombre vive ahora en la columna
+      // derecha del grid del "lomo" (themes.css), no centrado en el hero.
+      root.style.setProperty("--bx", `${70 + Math.sin(p * Math.PI * 1.4) * 15}%`);
       root.style.setProperty("--by", `${26 + p * 32}%`);
     },
   });
