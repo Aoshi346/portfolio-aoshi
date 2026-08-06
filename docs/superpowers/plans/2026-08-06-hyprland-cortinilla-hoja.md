@@ -867,8 +867,18 @@ y en `main()`, antes del `if fallos:`:
 ```
 
 Run: `python3 scripts/measure-cortinilla.py`
-Expected: FALLA en sincronía — todavía no hay barrido, el panel usa la transición compartida de
-`clip-path` de 460 ms con la curva de Vice.
+Expected: FALLA en sincronía.
+
+**Aviso, medido al ejecutar esta tarea: ese rojo no sale.** La transición compartida recorta en
+vertical (`inset(0 0 100% 0)`), así que no hay información horizontal que comparar y la aserción
+no puede dar positivo por ausencia de datos, no por acierto. Un rojo que no llega no es prueba de
+nada, pero tampoco lo es cambiar la aserción hasta que salga.
+
+Lo que sí demuestra que el arnés caza lo que dice cazar: **forzar el modo de fallo real**. Cambia
+temporalmente la curva de apertura de `linear` a `cubic-bezier(.7,0,.2,1)` —que es la causa número
+uno de un adelanto positivo, según el propio Step 5— y vuelve a medir. Debe dar un adelanto
+claramente positivo (al ejecutarlo salió **+193 px**). Restaura el CSS después y comprueba con
+`diff` que quedó idéntico.
 
 - [ ] **Step 3: Escribir el movimiento**
 
