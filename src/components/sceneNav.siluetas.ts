@@ -157,6 +157,7 @@ export const SILUETAS: Readonly<Record<string, readonly Pieza[]>> = {
     { clase: "bar", x: 200, y: 788, w: 88, h: 5, opac: 0.3 },
     { clase: "rl", x: 1066, y: 790, w: 30, h: 2, tono: "#ff5a34" },
     { clase: "bar", x: 1120, y: 780, w: 220, h: 16, opac: 0.7 },
+    { clase: "rl", x: 100, y: 838, w: 1240, h: 1 },
   ],
 };
 
