@@ -38,8 +38,8 @@ Copiadas del spec y de `CLAUDE.md`. **Aplican a todas las tareas.**
 - **Cero emojis** en código, docs y commits.
 - **Curvas:** instrumento (barrido) `linear`; todo lo demás `cubic-bezier(.7,0,.2,1)`.
 - **Tiempos declarados:** barrido 480 ms · exposición 140 ms con retardos
-  17/107/197/287/377 ms · golpe de luz 300 ms · cierre fotogramas 110 ms escalonados 20 ms en orden
-  inverso · cierre telón 200 ms · hover 200 ms · cambio de rótulo del disparador 200 ms.
+  **9/102/195/289/382 ms** · golpe de luz 300 ms · cierre fotogramas 110 ms escalonados 20 ms en
+  orden inverso · cierre telón 200 ms · hover 200 ms · cambio de rótulo del disparador 200 ms.
 - **`prefers-reduced-motion: reduce`:** duración 0, sin escalonado, y la barra de luz **no existe**
   (no basta con acelerarla). Foco, `Esc`, clic fuera y bloqueo de scroll no cambian.
 - **Verificar con Node 22**, no con el del sistema: `export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH`.
@@ -922,9 +922,21 @@ En `themes.css`, en el bloque de Hyprland:
 
 /* Cada fotograma se expone AL PASO de la barra. Los retardos no son un ritmo
    elegido a ojo: son el momento en que la barra llega a su borde izquierdo.
-   Rejilla de 1128px centrada en 1216 (margen 44, paso 228) y barra a
-   1216px/480ms = 2,533 px/ms:  44->17  272->107  500->197  728->287  956->377.
-   Cada exposicion dura 140ms mientras la barra tarda 85 en cruzar un
+
+   Geometria REAL, medida (no la del prototipo): `.scene-index` es
+   `position: fixed; inset: 0`, o sea 1440 de ancho en escritorio, no los 1216
+   del prototipo. Con `padding: 26px` y `gap: 12px`, el contenido mide 1388 y
+   cada fotograma (1388 - 4*12) / 5 = 268, con paso 280. Bordes izquierdos:
+   26, 306, 586, 866, 1146. La barra recorre 1440px en 480ms = 3,0 px/ms:
+     26->9   306->102   586->195   866->289   1146->382.
+
+   Estos retardos son fijos en ms y la rejilla es fluida, asi que solo son
+   exactos a 1440. Medida la deriva: a 1024 los bordes caen en las fracciones
+   0,025 / 0,218 / 0,410 / 0,602 / 0,794 frente a 0,018 / 0,213 / 0,407 /
+   0,601 / 0,796 a 1440 — menos de 0,008 del ancho, es decir **por debajo de
+   4ms**. No compensa complicarlo.
+
+   Cada exposicion dura 140ms mientras la barra tarda 268/3 = 89ms en cruzar un
    fotograma, asi que el revelado ASIENTA por detras del instrumento y nunca
    por delante. Verificado por scripts/measure-cortinilla.py. */
 :root[data-theme="hyprland"] .scene-index-row {
@@ -941,11 +953,11 @@ En `themes.css`, en el bloque de Hyprland:
     border-color 200ms cubic-bezier(0.7, 0, 0.2, 1);
 }
 
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1) { transition-delay: 17ms, 0ms; }
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2) { transition-delay: 107ms, 0ms; }
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3) { transition-delay: 197ms, 0ms; }
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4) { transition-delay: 287ms, 0ms; }
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) { transition-delay: 377ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1) { transition-delay: 9ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2) { transition-delay: 102ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3) { transition-delay: 195ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4) { transition-delay: 289ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) { transition-delay: 382ms, 0ms; }
 
 /* Cierre: orden INVERSO, se apaga primero el ultimo que se encendio. El
    contenido se va antes que la sabana (110ms escalonados 20 = 190ms, dentro
@@ -973,11 +985,11 @@ En `themes.css`, en el bloque de Hyprland:
   animation: hypr-exposicion 300ms cubic-bezier(0.7, 0, 0.2, 1) forwards;
 }
 
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1) .scene-index-flash { animation-delay: 17ms; }
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2) .scene-index-flash { animation-delay: 107ms; }
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3) .scene-index-flash { animation-delay: 197ms; }
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4) .scene-index-flash { animation-delay: 287ms; }
-:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) .scene-index-flash { animation-delay: 377ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1) .scene-index-flash { animation-delay: 9ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2) .scene-index-flash { animation-delay: 102ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3) .scene-index-flash { animation-delay: 195ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4) .scene-index-flash { animation-delay: 289ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) .scene-index-flash { animation-delay: 382ms; }
 
 @keyframes hypr-exposicion {
   from { opacity: 1; }
@@ -1079,7 +1091,7 @@ TIEMPOS_ESPERADOS = {
     "telonAbierto": "0.48s",
     "telonCurva": "linear",
     "fila": "0.14s, 0.2s",
-    "filaRetardo": "0.017s, 0s",
+    "filaRetardo": "0.009s, 0s",
     "flash": "0.3s",
     "barra": "0.48s",
     "barraCurva": "linear",
@@ -1482,7 +1494,10 @@ python3 scripts/verify.py --theme vice
 python3 scripts/verify.py --theme caelestia
 python3 scripts/verify.py --theme hyprland --reduced
 ```
-Expected: `hyprland`, `hyprland --reduced` y `vice` con 0 fallos nuevos sobre la línea base.
+Expected: `hyprland`, `hyprland --reduced` y `vice` con **0 fallos nuevos** sobre la línea base.
+Ojo: `hyprland` sale con **código 1 aunque no haya fallos nuevos**, por deriva preexistente de la
+base (tres fixtures de `vice-hero` que figuran como "arreglados"); pasa igual en `main`. Ese es el
+caso que el Step 3 resuelve con `--update-baseline`.
 `caelestia` con exactamente los 9 fallos de contraste preexistentes y ninguno más.
 **Vice está cerrado y aceptado: cualquier diferencia ahí es un defecto de este trabajo, no una
 línea base que actualizar.**
