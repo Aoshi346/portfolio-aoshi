@@ -428,7 +428,7 @@ git commit -m "feat(hero): layout de 'el lomo' en hyprland, grid con colapso a 9
   hero recibirá ADEMÁS `hypr-cut`/`hypr-up` en sus piezas y competirá con esta animación. Hacer la
   Task 4 antes de verificar visualmente esta, o verificar ambas juntas.
 
-- [ ] **Step 1: Añadir la animación del nombre (fantasma + cortes por palabra)**
+- [x] **Step 1: Añadir la animación del nombre (fantasma + cortes por palabra)**
 
 ```css
 /*
@@ -506,7 +506,7 @@ git commit -m "feat(hero): layout de 'el lomo' en hyprland, grid con colapso a 9
 }
 ```
 
-- [ ] **Step 2: Añadir la revelación de la etiqueta de rol (spine)**
+- [x] **Step 2: Añadir la revelación de la etiqueta de rol (spine)**
 
 ```css
 /*
@@ -538,7 +538,7 @@ git commit -m "feat(hero): layout de 'el lomo' en hyprland, grid con colapso a 9
 }
 ```
 
-- [ ] **Step 3: Añadir el filete con chispa y destello**
+- [x] **Step 3: Añadir el filete con chispa y destello**
 
 ```css
 /*
@@ -668,7 +668,7 @@ git commit -m "feat(hero): layout de 'el lomo' en hyprland, grid con colapso a 9
 }
 ```
 
-- [ ] **Step 4: Añadir la entrada del lead y el corner en cadena de cortes**
+- [x] **Step 4: Añadir la entrada del lead y el corner en cadena de cortes**
 
 ```css
 :root[data-theme="hyprland"] .lead {
@@ -722,7 +722,7 @@ git commit -m "feat(hero): layout de 'el lomo' en hyprland, grid con colapso a 9
 }
 ```
 
-- [ ] **Step 5: Añadir el idle — un único pulso, gateado al hover/foco**
+- [x] **Step 5: Añadir el idle — un único pulso, gateado al hover/foco**
 
 ```css
 /*
@@ -747,7 +747,7 @@ git commit -m "feat(hero): layout de 'el lomo' en hyprland, grid con colapso a 9
 }
 ```
 
-- [ ] **Step 6: Recalibrar el filete superior de `.hero-mail` en `:focus-visible`**
+- [x] **Step 6: Recalibrar el filete superior de `.hero-mail` en `:focus-visible`**
 
 Añadir al final del bloque de `.hero-mail` (junto a lo escrito en la Task 2):
 
@@ -768,12 +768,12 @@ Añadir al final del bloque de `.hero-mail` (junto a lo escrito en la Task 2):
 }
 ```
 
-- [ ] **Step 7: Build y lint**
+- [x] **Step 7: Build y lint**
 
 Run: `npm run build && npm run lint`
 Expected: verde.
 
-- [ ] **Step 8: Verificación visual con `npm run dev`**
+- [x] **Step 8: Verificación visual con `npm run dev`**
 
 Abrir `http://localhost:5173/?theme=hyprland` en un navegador real (no headless, para ver la
 animación con fluidez — swiftshader va lento y distorsiona el ritmo). Confirmar:
@@ -787,7 +787,7 @@ animación con fluidez — swiftshader va lento y distorsiona el ritmo). Confirm
 Esto se confirma con más rigor en la Task 6 (verificación completa); aquí basta una revisión
 manual rápida antes de seguir.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/themes/themes.css
