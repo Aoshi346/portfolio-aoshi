@@ -907,7 +907,7 @@ git commit -m "feat(hero): hero fuera de la receta generica, --bx recalibrado a 
 - Produces: estado final. Con movimiento reducido, el layout completo debe verse exactamente como
   al terminar la animación, sin ningún elemento a medio revelar.
 
-- [ ] **Step 1: Ampliar el bloque existente**
+- [x] **Step 1: Ampliar el bloque existente**
 
 El bloque actual (línea 1276) neutraliza `.hypr-cut`/`.hypr-up`/`.hypr-rule`. Añadir las piezas
 nuevas del hero:
@@ -968,12 +968,12 @@ nuevas del hero:
 reglas más específicas — mismo motivo aquí: las reglas de `.is-lit` tienen mayor especificidad
 (incluyen `.is-lit` como clase extra) y ganarían por cascada normal sin el `!important`.
 
-- [ ] **Step 2: Build y lint**
+- [x] **Step 2: Build y lint**
 
 Run: `npm run build && npm run lint`
 Expected: verde.
 
-- [ ] **Step 3: Verificar con Playwright en modo reduced-motion**
+- [x] **Step 3: Verificar con Playwright en modo reduced-motion**
 
 ```bash
 python3 -c "
@@ -999,7 +999,7 @@ Expected: `word clip-path` es `none` (nombre completo visible sin esperar ningun
 `ghost display` es `none`, `lead opacity` es `0.85` — todo visible de inmediato, sin animación
 pendiente, a los 500ms de cargar (no a los ~2,1s que tarda la secuencia completa con movimiento).
 
-- [ ] **Step 4: `verify.py --reduced`**
+- [x] **Step 4: `verify.py --reduced`**
 
 ```bash
 python3 scripts/verify.py --theme hyprland --reduced
@@ -1007,7 +1007,7 @@ python3 scripts/verify.py --theme hyprland --reduced
 
 Expected: verde (o mismos fallos preexistentes de la baseline, ninguno nuevo).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css
