@@ -1023,12 +1023,12 @@ corrige, y repite esta tarea).
 
 **Interfaces:** N/A — tarea de cierre.
 
-- [ ] **Step 1: Build y lint limpios**
+- [x] **Step 1: Build y lint limpios**
 
 Run: `npm run build && npm run lint`
 Expected: cero errores TypeScript, cero fallos de build, cero errores de lint.
 
-- [ ] **Step 2: `verify.py` en los tres temas + reduced**
+- [x] **Step 2: `verify.py` en los tres temas + reduced**
 
 ```bash
 python3 scripts/verify.py --theme hyprland
@@ -1041,7 +1041,7 @@ Expected: los cuatro en verde contra la baseline (`scripts/verify-baseline.json`
 esta rama arregló un fallo que ya estaba en la baseline, actualízala:
 `python3 scripts/verify.py --update-baseline` y revisa el diff antes de commitear.
 
-- [ ] **Step 3: Capturas reales, mobile y desktop, con el sitio servido**
+- [x] **Step 3: Capturas reales, mobile y desktop, con el sitio servido**
 
 ```bash
 npm run build && npm run preview &
@@ -1067,7 +1067,7 @@ Expected: cero errores de consola, layout correcto en ambos tamaños, animación
 en las capturas (el timing exacto depende de cuándo dispara el screenshot dentro de los ~2,1s de
 secuencia — no es un fallo si captura un frame intermedio).
 
-- [ ] **Step 4: Grep anti-mock**
+- [x] **Step 4: Grep anti-mock**
 
 ```bash
 grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|lorem ipsum|Lorem" \
@@ -1076,20 +1076,20 @@ grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|l
 
 Expected: sin resultados (el nombre/rol/email vienen de `identity`, dato real).
 
-- [ ] **Step 5: Foco de teclado manual**
+- [x] **Step 5: Foco de teclado manual**
 
 Con `npm run preview` corriendo, abrir `http://localhost:4173/?theme=hyprland` en un navegador
 real, pulsar Tab hasta llegar al enlace de correo. Confirmar visualmente que aparece el filete
 (`::after` con `width: 100%`) y el color cambia a `--l1` — no solo el contorno por defecto del
 navegador.
 
-- [ ] **Step 6: Revisión de Aoshi sobre el sitio real**
+- [x] **Step 6: Revisión de Aoshi sobre el sitio real**
 
 Enseñar el hero funcionando en `npm run dev` (no solo capturas) — scroll de entrada, hover del
 nombre, tab hasta el correo, y el colapso a mobile con las devtools en modo responsive. Solo tras
 esta confirmación se considera la tarea DONE.
 
-- [ ] **Step 7: Actualizar el spec a "implementado"**
+- [x] **Step 7: Actualizar el spec a "implementado"**
 
 En `docs/superpowers/specs/2026-08-05-hyprland-hero-lomo-design.md`, cambiar la cabecera:
 
@@ -1100,7 +1100,7 @@ Estado: implementado
 Y añadir al final del documento una sección `## Registro de implementación` breve (fecha, qué
 divergió del plan si algo divergió, números medidos si hubo que remedir contraste).
 
-- [ ] **Step 8: Commit final**
+- [x] **Step 8: Commit final**
 
 ```bash
 git add docs/superpowers/specs/2026-08-05-hyprland-hero-lomo-design.md

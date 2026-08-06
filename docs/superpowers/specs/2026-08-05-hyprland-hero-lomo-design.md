@@ -1,6 +1,6 @@
 # El lomo — el hero de Ascua gana dispositivo propio y coreografía bespoke
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-05-hyprland-hero-lomo.md`
 Fecha: 2026-08-05
 Alcance: solo el hero del tema Hyprland — `src/sections/hero.ts` (estructura compartida por los
@@ -216,3 +216,73 @@ versión final del fantasma) → `hero-full-page.html` (hero completo a escala r
 `hero-full-page-v2.html` (spine/filete/corner con corte propio) → **`hero-full-page-v3.html`**
 (versión final aprobada — filete del corner sin línea base estática, Caracas/correo con
 `clip-path` en cadena).
+
+## Registro de implementación
+
+Cerrado el 2026-08-06. Seis tareas completas vía `superpowers:subagent-driven-development`
+(un implementador + un revisor por tarea, en un worktree aislado), revisión de Aoshi sobre el
+build de producción real (`npm run preview`, no dev ni mockup) en los checkpoints de móvil
+(antes de la Task 2) y al cierre (Task 6), con vídeo grabado de la entrada real además de
+capturas.
+
+### Divergencias respecto al plan
+
+Tres huecos aparecieron verificando contra el mockup y el código real, no al leer el plan
+original — el mismo patrón que ya dejó escrito la spec de Ascua:
+
+1. **`align-content` de CSS Grid resuelve `normal` a `stretch`** (a diferencia de flexbox, donde
+   resuelve a `start`). Con `min-height: 100vh` y las filas del "lomo" colapsadas a una sola
+   columna en móvil, el navegador repartía el sobrante *entre* filas en vez de agruparlas —
+   huecos enormes y desiguales entre la etiqueta, el filete y el contenido. Encontrado
+   literalmente viendo el mockup en 390×844 en el companion, no en el diseño original de
+   escritorio (que solo tiene una fila, donde el bug no se nota). Fijado a `align-content:
+   center`, que conserva el mismo reparto de aire arriba/abajo que ya tenía el hero heredado
+   antes de este rediseño.
+2. **El tamaño mínimo del nombre en móvil ya era grande antes de este spec** (heredado de Ascua,
+   clamp con mínimo 50,52px) y **el corner en fila partía "Caracas, Venezuela" en dos líneas**
+   desalineadas contra el correo. Ninguno de los dos era una regresión de este rediseño, pero
+   como ya se estaba tocando el hero, se corrigieron en el mismo breakpoint de 900px: tope propio
+   de `clamp(2rem, 9.5vw, 2.6rem)` para el nombre, y `.hero-corner` apilado
+   (`flex-direction: column`) en vez de en fila.
+3. **La técnica de degradado de texto (`background-clip: text`) no atraviesa un hijo
+   `display: inline-block`.** El plan pedía envolver cada palabra del nombre en un `<span
+   class="hero-name-word">` con su propio `clip-path` para el corte palabra-a-palabra — pero
+   `background`/`background-clip` no son propiedades heredadas, así que cada span quedaba sin
+   fondo y con `color: transparent` heredado: el nombre entero se volvía invisible tal cual
+   estaba escrito el plan. El implementador de la Task 3 lo encontró y lo arregló con
+   `background: inherit; -webkit-background-clip: inherit; background-clip: inherit;` en
+   `.hero-name-word` — cada palabra repinta el mismo degradado (con `background-attachment:
+   fixed`, calculado contra el viewport, no contra la caja) y encaja sin costura con sus vecinas.
+   Verificado por el revisor de la Task 3 como un arreglo necesario y acotado, no como alcance
+   añadido — el bug estaba en el CSS del propio plan, no en la implementación.
+
+Dos correcciones de tracking, sin efecto en el código: el spec no citaba el plan (rompía
+`check_spec_plan_consistency`) y se quedó con `Estado: pendiente de plan` mientras el plan ya
+existía y estaba en ejecución — arreglado añadiendo la línea `Plan:` y actualizando el estado.
+
+### Hallazgos del harness ajenos a esta rama
+
+`scripts/verify.py` reporta, en las cuatro pasadas de la Task 6 (`hyprland`, `hyprland --reduced`,
+`vice`, `caelestia`), fallos que **no** están causados por esta rama — confirmado cruzando
+`git diff --stat` contra los cuatro archivos tocados (`hero.ts`, `style.css`, el bloque Hyprland de
+`themes.css`, `hypr.choreography.ts`): ninguno menciona `credit`, `Vite`, `GSAP`, ni el disparador
+de navegación de escena (`scene-nav-trigger`).
+
+- **Caelestia, 9 fallos**: contraste del disparador de navegación de escena (`"01 · Título"` ...
+  `"05 · Fundido"`) en las cinco escenas, ratios 4,05:1–4,24:1 contra el mínimo 4,5:1. Reproducido
+  idéntico en dos pasadas consecutivas — no es parpadeo del fondo generativo, es deriva de la
+  línea base (`verify-baseline.json` quedó desactualizada respecto al estado real de `main`).
+- **Hyprland, 2 fallos**: contraste de los chips "Vite" y "GSAP" en la escena de créditos, ratios
+  4,25:1–4,45:1. Mismo patrón: ajeno al hero, reproducido de forma estable, deriva de línea base.
+
+No se tocó `verify-baseline.json` en esta rama — actualizarla es una decisión de alcance del
+repo completo, no de este spec.
+
+### Verificación final
+
+`npm run build`/`lint` en verde. `verify.py` en verde para `hyprland`, `hyprland --reduced`,
+`vice` y `caelestia` (0 fallos nuevos atribuibles a esta rama en las cuatro pasadas — ver arriba).
+Capturas 1440×900 y 390×844 sobre `npm run preview` (build real, no dev): cero errores de consola
+en ambas. Foco de teclado confirmado con `Tab` real (no `.focus()` programático, que en Chromium
+no dispara `:focus-visible`): el filete y el color de acento se activan en el enlace de correo.
+Grep anti-mock limpio en `hero.ts`/`hypr.choreography.ts`.
