@@ -808,7 +808,7 @@ git commit -m "feat(hero): entrada del hero en hyprland — fantasma, cortes en 
   mostrado el problema: el nombre/lead del hero también recibirían `hypr-cut`/`hypr-up` de la
   receta genérica, compitiendo con la animación bespoke).
 
-- [ ] **Step 1: Excluir la escena "hero" del reparto de clases genérico**
+- [x] **Step 1: Excluir la escena "hero" del reparto de clases genérico**
 
 En `scenes.forEach((scene) => { ... RECETA.forEach ... })` (línea ~39), añadir un `return`
 temprano:
@@ -835,7 +835,7 @@ temprano:
   });
 ```
 
-- [ ] **Step 2: Recalibrar la base de `--bx`**
+- [x] **Step 2: Recalibrar la base de `--bx`**
 
 En el Gesto 3 (`ScrollTrigger.create({ id: `${ID}-light`, ... onUpdate ... })`, línea ~106),
 cambiar la base de `52` a `70` — el nombre ya no está centrado, vive en la columna derecha del
@@ -851,12 +851,12 @@ grid, y el barrido de luz debe seguir cruzando por dentro de las letras:
     },
 ```
 
-- [ ] **Step 3: Build y lint**
+- [x] **Step 3: Build y lint**
 
 Run: `npm run build && npm run lint`
 Expected: verde.
 
-- [ ] **Step 4: Verificar que las otras cuatro escenas siguen recibiendo la receta genérica**
+- [x] **Step 4: Verificar que las otras cuatro escenas siguen recibiendo la receta genérica**
 
 ```bash
 python3 -c "
@@ -878,7 +878,7 @@ Expected: `about .hero-kick` sigue incluyendo `hypr-cut` (recibió la receta gen
 `hero .hero-kick` NO incluye `hypr-cut` ni `hypr-up` (solo lleva la clase base `hero-kick`, sin
 `--hypr-d` puesto).
 
-- [ ] **Step 5: Confirmar Vice/Caelestia intactos**
+- [x] **Step 5: Confirmar Vice/Caelestia intactos**
 
 ```bash
 python3 scripts/verify.py --theme vice
@@ -887,7 +887,7 @@ python3 scripts/verify.py --theme caelestia
 
 Expected: sin cambios — este archivo es exclusivo de Hyprland.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/themes/hypr.choreography.ts
