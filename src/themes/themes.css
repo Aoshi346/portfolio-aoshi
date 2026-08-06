@@ -2117,16 +2117,148 @@
   }
 }
 
-/* El disparador de escena flota sobre el fondo generativo directamente (sin
-   `.scene-surface` de por medio): base `.scene-nav-trigger` es transparente
-   y el haz brillante pasando por detras tumbaba "03 · Obra" a 1.95:1
-   (medido). Radio 5px heredado: la navegacion es la unica excepcion al
-   radio 0 del tema (spec). */
+/*
+ * El disparador de Hyprland: el pie de un fotograma. Sin caja.
+ *
+ * Se retira la excepcion de radio del spec de Ascua ("radio 0 en todo salvo la
+ * navegacion"): esa excepcion se escribio para proteger una pastilla concreta,
+ * y con la hoja de contactos la pastilla deja de existir. El tema se queda sin
+ * su unica contradiccion interna.
+ *
+ * Los 44px de area de toque los da `min-height`, no una caja visible. Se mide
+ * la caja del BOTON: un `::after` con `inset` negativo agranda la zona
+ * clicable pero no mueve lo que el criterio mide.
+ */
 :root[data-theme="hyprland"] .scene-nav-trigger {
-  background: color-mix(in srgb, var(--color-ink) 82%, transparent);
+  display: block;
+  min-width: 6.5rem;
+  min-height: 44px;
+  padding: 9px 0 5px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  text-align: right;
 }
+
 :root[data-theme="hyprland"] .scene-nav-trigger:hover {
-  background: color-mix(in srgb, var(--color-ink) 70%, var(--l1) 14%);
+  background: none;
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] {
+  background: none;
+}
+
+/* El filete de arriba se calienta de DERECHA a izquierda: el mismo sentido en
+   el que el disparador esta anclado. */
+:root[data-theme="hyprland"] .scene-nav-trigger::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--rule);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, var(--l2), var(--l3));
+  box-shadow: 0 0 8px 1px rgba(255, 90, 52, 0.7);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 320ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger:hover::after,
+:root[data-theme="hyprland"] .scene-nav-trigger:focus-visible::after,
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"]::after {
+  transform: scaleX(1);
+}
+
+/* En Hyprland el rotulo compartido deja el sitio a la version de dos estados,
+   pero NO se quita del DOM: es el nombre accesible del boton. */
+:root[data-theme="hyprland"] .scene-nav-trigger-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger-tc {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 12px 22px;
+  row-gap: 4px;
+  justify-items: end;
+  overflow: hidden;
+  /* Alto total de la celda (12px numero + 4px hueco + 22px nombre): el
+     desplazamiento de CADA fila usa esta medida entera, no `100%` de su
+     propio alto. `100%` en la fila del numero (12px) solo la mueve 12px,
+     que la deja dentro de las 38px de la celda — visible asomando sobre el
+     nombre. Medido: "Esc" se veia superpuesto sobre "Titulo" en reposo. */
+  --tc-shift: 38px;
+}
+
+/* Las dos versiones ocupan la MISMA celda: se apilan y una sube tapando a la
+   otra. Nada de `opacity`: el corte es la gramatica del tema. */
+:root[data-theme="hyprland"] .scene-nav-trigger-num-a,
+:root[data-theme="hyprland"] .scene-nav-trigger-num-b {
+  grid-row: 1;
+  grid-column: 1;
+  font-size: var(--t-1);
+  line-height: 12px;
+  letter-spacing: 0.18em;
+  color: var(--haze);
+  transition: transform 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger-name-a,
+:root[data-theme="hyprland"] .scene-nav-trigger-name-b {
+  grid-row: 2;
+  grid-column: 1;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--t-3);
+  line-height: 22px;
+  letter-spacing: -0.034em;
+  text-transform: none;
+  color: var(--color-paper);
+  transition:
+    transform 200ms cubic-bezier(0.7, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger-num-b,
+:root[data-theme="hyprland"] .scene-nav-trigger-name-b {
+  transform: translateY(var(--tc-shift));
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-num-a,
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-name-a {
+  transform: translateY(calc(var(--tc-shift) * -1));
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-num-b,
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-name-b {
+  transform: translateY(0);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger:hover .scene-nav-trigger-name-a,
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-name-b {
+  color: var(--l3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .scene-nav-trigger::after,
+  :root[data-theme="hyprland"] .scene-nav-trigger-num-a,
+  :root[data-theme="hyprland"] .scene-nav-trigger-num-b,
+  :root[data-theme="hyprland"] .scene-nav-trigger-name-a,
+  :root[data-theme="hyprland"] .scene-nav-trigger-name-b {
+    transition: none;
+  }
 }
 
 :root[data-theme="hyprland"] .hypr-ignition {

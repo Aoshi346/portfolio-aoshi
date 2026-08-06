@@ -43,6 +43,37 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   trigger.append(triggerLabel);
 
   /*
+   * Disparador de Hyprland: el pie de un fotograma, con dos estados. La
+   * estructura se añade en los tres temas y solo Hyprland le da estilo (ver
+   * themes.css). Vice y Caelestia siguen con `.scene-nav-trigger-label`.
+   *
+   * El rotulo NO se funde entre estados: se corta y sube, que es la gramatica
+   * del tema. Por eso hacen falta las dos versiones en el DOM a la vez, y por
+   * eso el cambio lo hace el CSS y no este modulo: JS solo mantiene la parte
+   * que depende de la escena.
+   */
+  const tc = document.createElement("span");
+  tc.className = "scene-nav-trigger-tc";
+  tc.setAttribute("aria-hidden", "true"); // el nombre accesible lo da `.scene-nav-trigger-label`
+
+  const tcNumA = document.createElement("span");
+  tcNumA.className = "scene-nav-trigger-num-a";
+
+  const tcNumB = document.createElement("span");
+  tcNumB.className = "scene-nav-trigger-num-b";
+  tcNumB.textContent = "Esc";
+
+  const tcNameA = document.createElement("span");
+  tcNameA.className = "scene-nav-trigger-name-a";
+
+  const tcNameB = document.createElement("span");
+  tcNameB.className = "scene-nav-trigger-name-b";
+  tcNameB.textContent = "Cerrar";
+
+  tc.append(tcNumA, tcNumB, tcNameA, tcNameB);
+  trigger.append(tc);
+
+  /*
    * La cortinilla: panel a pantalla completa con el indice de las cinco
    * escenas. `id="scene-index"` porque el disparador ya apunta ahi via
    * `aria-controls`.
@@ -229,6 +260,10 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
      * conmutaba para el lector de pantalla; para el ojo, no conmutaba nada.
      */
     triggerLabel.textContent = abierto ? "Cerrar" : `${n} · ${TARGETS[i].label}`;
+    // Las versiones "b" son estaticas ("Esc"/"Cerrar"): el CSS decide cual se
+    // ve. Aqui solo va lo que depende de la escena.
+    tcNumA.textContent = n;
+    tcNameA.textContent = TARGETS[i].label;
     panel.querySelectorAll<HTMLElement>(".scene-index-row").forEach((row, j) => {
       if (j === i) row.setAttribute("aria-current", "true");
       else row.removeAttribute("aria-current");

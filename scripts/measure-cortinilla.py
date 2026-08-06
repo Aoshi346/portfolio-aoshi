@@ -252,6 +252,77 @@ def comprobar_tiempos(datos, reducido):
     return fallos
 
 
+# Que version del rotulo se ve se decide por POSICION, no leyendo el
+# `transform`: `getComputedStyle` devuelve una matriz y compararla es fragil.
+# Un span se ve si su caja cae dentro de la de su celda.
+ESTADO_JS = """() => {
+  const trig = document.querySelector('.scene-nav-trigger');
+  const tc = trig.querySelector('.scene-nav-trigger-tc');
+  const caja = tc.getBoundingClientRect();
+  const dentro = sel => {
+    const e = trig.querySelector(sel);
+    if (!e) return null;
+    const b = e.getBoundingClientRect();
+    return b.top >= caja.top - 2 && b.bottom <= caja.bottom + 2;
+  };
+  return {
+    expanded: trig.getAttribute('aria-expanded'),
+    numA: dentro('.scene-nav-trigger-num-a'),
+    numB: dentro('.scene-nav-trigger-num-b'),
+    nameA: dentro('.scene-nav-trigger-name-a'),
+    nameB: dentro('.scene-nav-trigger-name-b'),
+    textoA: trig.querySelector('.scene-nav-trigger-name-a')?.textContent,
+    textoB: trig.querySelector('.scene-nav-trigger-name-b')?.textContent,
+  };
+}"""
+
+
+def medir_estados_y_foco():
+    with sync_playwright() as pw:
+        b, pg = abrir(pw, 1440, 900)
+        cerrado = pg.evaluate(ESTADO_JS)
+        abrir_cortinilla(pg)
+        abierto = pg.evaluate(ESTADO_JS)
+
+        # Criterio 5: Tab da exactamente cinco paradas y vuelve a la primera.
+        visitados = []
+        for _ in range(6):
+            visitados.append(pg.evaluate(
+                "() => document.activeElement?.getAttribute('href') ?? null"))
+            pg.keyboard.press("Tab")
+            pg.wait_for_timeout(60)
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(400)
+        tras_esc = pg.evaluate(
+            "() => document.activeElement?.classList.contains('scene-nav-trigger') ?? false")
+        b.close()
+    return cerrado, abierto, visitados, tras_esc
+
+
+def comprobar_estados(cerrado, abierto, visitados, tras_esc):
+    fallos = []
+    if cerrado["expanded"] != "false" or abierto["expanded"] != "true":
+        fallos.append("aria-expanded no conmuta")
+    if not (cerrado["numA"] and cerrado["nameA"]):
+        fallos.append("cerrado: no se ve la version de escena del rotulo")
+    if cerrado["numB"] or cerrado["nameB"]:
+        fallos.append("cerrado: se ve la version 'Esc / Cerrar'")
+    if not (abierto["numB"] and abierto["nameB"]):
+        fallos.append("abierto: no se ve 'Esc / Cerrar'")
+    if abierto["numA"] or abierto["nameA"]:
+        fallos.append("abierto: se sigue viendo la version de escena")
+    if abierto["textoB"] != "Cerrar":
+        fallos.append(f"el rotulo abierto dice {abierto['textoB']!r}, debe decir 'Cerrar'")
+    unicos = [v for v in visitados[:5] if v]
+    if len(set(unicos)) != 5:
+        fallos.append(f"Tab no da cinco paradas distintas: {visitados}")
+    if visitados[5] != visitados[0]:
+        fallos.append(f"Tab no vuelve a la primera fila: {visitados}")
+    if not tras_esc:
+        fallos.append("tras Esc el foco no vuelve al disparador")
+    return fallos
+
+
 def main():
     fallos = []
     for ancho, alto in ((1440, 900), (390, 844)):
@@ -272,6 +343,12 @@ def main():
         print(f"\n== tiempos ({'reducido' if reducido else 'normal'})")
         print(json.dumps(d, indent=2, ensure_ascii=False))
         fallos += comprobar_tiempos(d, reducido)
+
+    c, a, v, esc = medir_estados_y_foco()
+    print("\n== disparador y foco")
+    print(json.dumps({"cerrado": c, "abierto": a, "tab": v, "escDevuelveFoco": esc},
+                     indent=2, ensure_ascii=False))
+    fallos += comprobar_estados(c, a, v, esc)
 
     if fallos:
         print("\nFALLOS:")
