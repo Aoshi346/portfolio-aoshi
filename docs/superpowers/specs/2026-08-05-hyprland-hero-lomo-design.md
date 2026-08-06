@@ -284,3 +284,47 @@ Capturas 1440×900 y 390×844 sobre `npm run preview` (build real, no dev): cero
 en ambas. Foco de teclado confirmado con `Tab` real (no `.focus()` programático, que en Chromium
 no dispara `:focus-visible`): el filete y el color de acento se activan en el enlace de correo.
 Grep anti-mock limpio en `hero.ts`/`hypr.choreography.ts`.
+
+### Revisión final de toda la rama — lo que las seis revisiones por tarea no podían ver
+
+Las seis tareas de implementación pasaron su revisión individual sin ningún hallazgo Crítico ni
+Importante. La revisión final de toda la rama (modelo más capaz, tras cerrar la Task 6) encontró
+tres Críticos y dos Importantes reales que ninguna revisión por tarea podía atrapar porque cada
+una miraba solo su propio diff aislado:
+
+1. **`.hero-kick` y `.lead` son clases compartidas por las cinco escenas** (about, obra, créditos,
+   contacto, hero), no exclusivas del hero. El CSS del "lomo" (grid, `writing-mode: vertical-rl`,
+   la animación de entrada bespoke) se había añadido sin acotar a `[data-scene="hero"]` —
+   "Quién es", "Contacto", "Con qué construyo" y las cinco etiquetas de obra se renderizaban
+   rotadas 90° en Hyprland, y además recibían la animación de entrada del hero encima de la
+   receta genérica que la Task 4 ya les dejaba intacta (las dos animando `clip-path` al mismo
+   tiempo sobre el mismo elemento — exactamente la colisión que esa tarea existía para evitar).
+2. **Mover `.hero-corner` dentro de `.hero-surface` (Task 1) rompía la posición del correo en
+   Caelestia.** `.hero-surface` en Caelestia lleva `backdrop-filter` no nulo, que establece
+   contenedor de posicionamiento para descendientes `position: absolute` — el correo, que sigue
+   siendo `position: absolute` ahí, pasaba a anclarse contra la tarjeta en vez de contra la
+   sección (175px de desplazamiento vertical medido). El comentario que justificaba el cambio en
+   `hero.ts` decía lo contrario de lo que hace `position: absolute` con un contenedor nuevo.
+3. **Mover la etiqueta de rol fuera de `.hero-surface` (Task 1) desplazaba el rótulo en Vice y
+   Caelestia** — en Vice 48px hacia arriba (pasa de bloque a ancho completo dentro del padding de
+   la superficie a item de flex que se ajusta a su contenido), en Caelestia se salía por completo
+   de la tarjeta Material You.
+
+**Arreglo**: un único fix (no uno por hallazgo, según el protocolo) — `.hero-corner` vuelve a ser
+hermano de `.hero-surface` en el DOM (como antes de este spec) y Hyprland lo reposiciona solo con
+`grid-column`/`grid-row`, sin tocar el árbol compartido; Vice y Caelestia reciben CSS propio de
+compensación para la etiqueta de rol (`position: relative; top`, no `margin-top`, porque
+`.hero` centra por `justify-content` y un margen ahí redistribuye la altura entre todos los
+items). Verificado con comparación de geometría (`getBoundingClientRect`) contra el commit previo
+a esta rama, bit a bit idéntica en Vice y Caelestia, en 1440×900 y 390×844. Una regresión de
+móvil que el propio arreglo introdujo (el `grid-column: 3` del correo se filtraba a la rejilla de
+una sola columna) se encontró y corrigió en la misma pasada. Reverificado con una re-revisión
+acotada, independiente del reporte del implementador (medición propia, no solo lectura del
+diff): los ocho hallazgos (3 Críticos + 2 Importantes + 3 menores) quedaron atendidos, sin
+regresión nueva.
+
+**Lección para el checklist de verificación**: la Task 6 tomó capturas de escritorio y móvil del
+hero, pero no de las otras cuatro escenas ni con `full_page=True` — las tres roturas vivían fuera
+de ese encuadre. La comparación de geometría contra el commit previo (no solo `verify.py`, que
+mide contraste, no posición) es lo que de verdad prueba "byte a byte idéntico" cuando el cambio
+toca una clase o un nodo compartido.
