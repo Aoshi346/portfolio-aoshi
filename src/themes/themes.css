@@ -2138,12 +2138,23 @@
  * Los 44px de area de toque los da `min-height`, no una caja visible. Se mide
  * la caja del BOTON: un `::after` con `inset` negativo agranda la zona
  * clicable pero no mueve lo que el criterio mide.
+ *
+ * `top` se despega del 0 que hereda de la regla compartida. Con `top: 0` el
+ * filete del disparador queda calcado al borde del navegador, que es lo que le
+ * quita el aire: sin caja, ese trazo de 1px ES el elemento, y pegado al canto
+ * de la ventana no se lee como pie de fotograma sino como un artefacto del
+ * cromo del navegador. 1.5rem son los mismos 24px que separan del canto al
+ * resto de horizontales del tema.
+ *
+ * El relleno de arriba se queda en 10px: lo que hacia falta era mover el
+ * filete, no empujar el texto por dentro y dejar el trazo donde estaba.
  */
 :root[data-theme="hyprland"] .scene-nav-trigger {
+  top: 1.5rem;
   display: block;
   min-width: 6.5rem;
   min-height: 44px;
-  padding: 9px 0 5px;
+  padding: 10px 0 5px;
   border-radius: 0;
   background: none;
   box-shadow: none;
