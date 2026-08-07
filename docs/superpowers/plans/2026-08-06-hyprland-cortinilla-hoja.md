@@ -1,5 +1,12 @@
 # La hoja de contactos — plan de implementación
 
+> **Sobre las casillas de las Tareas 0 a 4.** Se marcaron al cerrar la rama, no una a una
+> conforme se hacian: los implementadores ejecutaron sus pasos y no ticaron. No es un tick en
+> bloque de trabajo que nadie siguio — cada tarea tiene su reporte, su revision independiente y su
+> rango de commits en `.superpowers/sdd/2026-08-06-hyprland-cortinilla-hoja/`, y ahi esta la
+> evidencia paso a paso. Se anota porque la norma del proyecto distingue las dos cosas y la
+> diferencia importa: lo que falta aqui es el registro en vivo, no el trabajo.
+
 > **Para agentes:** SUB-SKILL OBLIGATORIA: usar `superpowers:subagent-driven-development`
 > (recomendada) o `superpowers:executing-plans` para ejecutar este plan tarea a tarea. Los pasos
 > usan casillas (`- [ ]`) para el seguimiento. Marca cada casilla **en el momento** en que
@@ -95,7 +102,7 @@ las siluetas y del movimiento: si el harness limpia esa carpeta, el plan se qued
 **Interfaces:**
 - Produces: el fichero de referencia que las Tareas 2, 3, 4 y 5 citan para valores exactos.
 
-- [ ] **Step 1: Copiar el prototipo aprobado**
+- [x] **Step 1: Copiar el prototipo aprobado**
 
 ```bash
 mkdir -p docs/superpowers/prototypes
@@ -103,7 +110,7 @@ cp .superpowers/brainstorm/2163099-1786029203/content/cortinilla-h-v3.html \
    docs/superpowers/prototypes/2026-08-06-cortinilla-hoja.html
 ```
 
-- [ ] **Step 2: Comprobar que llegó entero**
+- [x] **Step 2: Comprobar que llegó entero**
 
 Run: `grep -c "SC = \[" docs/superpowers/prototypes/2026-08-06-cortinilla-hoja.html && grep -c "h-frame" docs/superpowers/prototypes/2026-08-06-cortinilla-hoja.html`
 Expected: `1` y un número ≥ 15.
@@ -111,7 +118,7 @@ Expected: `1` y un número ≥ 15.
 Si el fichero de origen ya no existe (el servidor del companion se limpió), **para y avísalo**: hay
 que reconstruirlo desde el spec antes de seguir. No inventes las siluetas.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/superpowers/prototypes/2026-08-06-cortinilla-hoja.html
@@ -134,7 +141,7 @@ enlaces que alguien tenga guardados y el arnés `measure-nav.py`.
 - Consumes: nada.
 - Produces: `sceneIndex[1].label === "Quién soy"`.
 
-- [ ] **Step 1: Cambiar el rótulo del índice**
+- [x] **Step 1: Cambiar el rótulo del índice**
 
 En `src/data/content.ts:396`, cambiar solo el `label`:
 
@@ -142,7 +149,7 @@ En `src/data/content.ts:396`, cambiar solo el `label`:
   { id: "quien-es", label: "Quién soy", blurb: "Trayectoria y cifras" },
 ```
 
-- [ ] **Step 2: Cambiar el rótulo de la escena**
+- [x] **Step 2: Cambiar el rótulo de la escena**
 
 En `src/sections/about.ts:302`:
 
@@ -150,19 +157,19 @@ En `src/sections/about.ts:302`:
     [el("h2", "hero-kick", ["Quién soy"]), el("div", "about-grid", [createCard(), body])],
 ```
 
-- [ ] **Step 3: Comprobar que no queda ninguno y que el id sigue intacto**
+- [x] **Step 3: Comprobar que no queda ninguno y que el id sigue intacto**
 
 Run: `grep -rn "Quién es" src/ ; grep -rn "quien-es" src/ | wc -l`
 Expected: la primera orden no imprime nada; la segunda imprime `2` — `content.ts` y `main.ts`.
 `about.ts` **no** lleva el literal `quien-es`: su sección se marca con `data-scene="about"` y el
 mapeo a id vive en `main.ts:120`. Si sale `3`, alguien ha metido el id donde no iba.
 
-- [ ] **Step 4: Build**
+- [x] **Step 4: Build**
 
 Run: `export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH && npm run build && npm run lint`
 Expected: ambos en verde.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/data/content.ts src/sections/about.ts
@@ -188,7 +195,7 @@ git commit -m "content(nav): la segunda escena pasa a llamarse Quien soy"
     `<span class="scene-shot">` con las piezas dentro, o un `<span class="scene-shot">` vacío si el
     id no está en `SILUETAS` (defensivo: `content.ts` puede crecer antes que este módulo).
 
-- [ ] **Step 1: Escribir el módulo con la primera silueta completa**
+- [x] **Step 1: Escribir el módulo con la primera silueta completa**
 
 Crear `src/components/sceneNav.siluetas.ts`. Las coordenadas están en el plano de **1440×900** —el
 encuadre real del sitio— y el CSS lo escala al fotograma. Esta es la silueta 01 completa, portada
@@ -264,7 +271,7 @@ export function construirSilueta(id: string): HTMLElement {
 Nota sobre `tono`: en `bar`/`rl`/`box`/`dot` pinta el fondo; en `disp` pinta el color del texto. El
 `if` de arriba lo resuelve. No añadas un campo aparte.
 
-- [ ] **Step 2: Portar las otras cuatro siluetas**
+- [x] **Step 2: Portar las otras cuatro siluetas**
 
 Abrir `docs/superpowers/prototypes/2026-08-06-cortinilla-hoja.html` y traducir las entradas
 `quien`, `obra`, `creditos` y `contacto` del array `SC` a `Pieza[]`, **con las mismas coordenadas**.
@@ -283,7 +290,7 @@ La correspondencia de clases del prototipo a `Pieza.clase` es directa:
 Las claves del objeto son los **ids de `content.ts`**, no los del prototipo:
 `hero`, `quien-es`, `obra`, `creditos`, `contacto`. Ojo con `quien` → `quien-es`.
 
-- [ ] **Step 3: Añadir los nodos a cada fila**
+- [x] **Step 3: Añadir los nodos a cada fila**
 
 En `src/components/sceneNav.ts`, importar arriba junto al import existente:
 
@@ -312,7 +319,7 @@ y sustituir la línea 96 (`row.append(num, name, guide, blurb);`) por:
     row.append(shot, flash, num, name, guide, blurb);
 ```
 
-- [ ] **Step 4: Apagar los nodos nuevos en la hoja base**
+- [x] **Step 4: Apagar los nodos nuevos en la hoja base**
 
 En `src/themes/themes.css`, justo detrás del bloque de `.scene-nav-trigger-mark` (busca
 `.scene-nav-trigger-mark {`), añadir:
@@ -331,7 +338,7 @@ En `src/themes/themes.css`, justo detrás del bloque de `.scene-nav-trigger-mark
 }
 ```
 
-- [ ] **Step 5: Verificar que Vice y Caelestia no se han movido**
+- [x] **Step 5: Verificar que Vice y Caelestia no se han movido**
 
 Run:
 ```bash
@@ -345,7 +352,7 @@ Expected: build y lint verdes. `--theme vice` con **0 fallos nuevos** (código d
 restricciones globales y ninguno más — ahí el código de salida es 1 en `main` también, así que un 1
 no dice nada por sí solo: hay que leer la lista.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/sceneNav.siluetas.ts src/components/sceneNav.ts src/themes/themes.css
@@ -367,7 +374,7 @@ git commit -m "feat(nav): siluetas de escena en el indice, apagadas fuera de Hyp
   `scripts/measure-cortinilla.py` con los subcomandos `layout` y `toque`, que las Tareas 4 y 5
   amplían.
 
-- [ ] **Step 1: Escribir el arnés primero, y verlo fallar**
+- [x] **Step 1: Escribir el arnés primero, y verlo fallar**
 
 Crear `scripts/measure-cortinilla.py`. Este es el fichero completo de esta tarea (las Tareas 4 y 5
 le añaden funciones):
@@ -480,7 +487,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Verlo fallar**
+- [x] **Step 2: Verlo fallar**
 
 Run (en una terminal el dev server, en otra el arnés — **y sin editar nada mientras corre**, que el
 HMR de Vite se lleva por delante el contexto de la página):
@@ -494,7 +501,7 @@ Expected: FALLA. A 390 el panel arrastra scroll interno o los descriptores desbo
 disparador aún no cumple 44 de alto en Hyprland. Anota los números que salen: son la línea de
 partida.
 
-- [ ] **Step 3: Escribir el CSS de la hoja**
+- [x] **Step 3: Escribir el CSS de la hoja**
 
 En `src/themes/themes.css`, al final del bloque de Hyprland (busca
 `:root[data-theme="hyprland"] .scene-nav-trigger` y trabaja debajo), añadir:
@@ -601,7 +608,7 @@ En `src/themes/themes.css`, al final del bloque de Hyprland (busca
 el ancho del encuadre, y el color del descriptor necesita medirse (criterio 7). No lo adivines
 aquí.
 
-- [ ] **Step 4: Declarar el escalado del plano y los colores del pie**
+- [x] **Step 4: Declarar el escalado del plano y los colores del pie**
 
 Añadir, en el mismo bloque:
 
@@ -714,7 +721,7 @@ Y la escala es `--t-1: 12px`, `--t-2: 16px`, `--t-3: 21.33px`, `--t-4: 28.43px`.
 9,5 / 19 / 10,5 px, que no son escalones: el número y el descriptor suben a `--t-1` y el nombre a
 `--t-3`. Es una desviación consciente del prototipo, exigida por el criterio 11.
 
-- [ ] **Step 5: El layout de 390**
+- [x] **Step 5: El layout de 390**
 
 Añadir, al final del bloque:
 
@@ -747,7 +754,7 @@ Añadir, al final del bloque:
 }
 ```
 
-- [ ] **Step 6: Correr el arnés hasta verde**
+- [x] **Step 6: Correr el arnés hasta verde**
 
 Run: `python3 scripts/measure-cortinilla.py`
 Expected: `OK`, y en los números impresos: 5 filas; a 1440 los fotogramas rondan 216 de ancho; a
@@ -757,7 +764,7 @@ sin descriptores desbordados; sin `order`.
 Los valores del spec son los del prototipo: **±10px es tolerancia razonable**, una desviación mayor
 significa que el padding o el hueco no son los declarados. Si no cuadra, ajusta el CSS, no el arnés.
 
-- [ ] **Step 7: Medir el contraste del pie**
+- [x] **Step 7: Medir el contraste del pie**
 
 Criterio 7. Sobre **píxel compuesto y con recorte ajustado al glifo**, no a la caja del bloque:
 medir una caja ancha y casi vacía devuelve la variación del fondo y ya dio un falso 1,5:1 sobre un
@@ -768,7 +775,7 @@ contraste (búscalo con `grep -n "contrast" scripts/verify.py`) y aplícalo a `.
 Umbral: ≥4,5:1 los tres. Si el descriptor no llega con `var(--haze)`, súbelo. Anota los tres
 números: van al registro de implementación del spec.
 
-- [ ] **Step 8: Los otros dos temas, intactos**
+- [x] **Step 8: Los otros dos temas, intactos**
 
 Run:
 ```bash
@@ -778,7 +785,7 @@ python3 scripts/verify.py --theme hyprland
 ```
 Expected: los tres con 0 fallos nuevos sobre la línea base.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-cortinilla.py
@@ -799,7 +806,7 @@ git commit -m "feat(nav): la cortinilla de Hyprland pasa a rejilla de cinco foto
 - Produces: `.scene-index-bar` (la barra de luz) en el DOM del panel, y la función
   `medir_sincronia()` en el arnés.
 
-- [ ] **Step 1: Añadir la barra al panel**
+- [x] **Step 1: Añadir la barra al panel**
 
 En `src/components/sceneNav.ts`, tras el `panel.append(heading);` de la línea 59:
 
@@ -819,7 +826,7 @@ y antes del `root.append(panel);` de la línea 234, añadir `panel.append(bar);`
 En `themes.css`, junto al `display: none` de base de la Tarea 2, añadir `.scene-index-bar` a la
 lista de selectores.
 
-- [ ] **Step 2: Ampliar el arnés con el muestreo de sincronía, y verlo fallar**
+- [x] **Step 2: Ampliar el arnés con el muestreo de sincronía, y verlo fallar**
 
 Añadir a `scripts/measure-cortinilla.py`:
 
@@ -890,7 +897,7 @@ uno de un adelanto positivo, según el propio Step 5— y vuelve a medir. Debe d
 claramente positivo (al ejecutarlo salió **+193 px**). Restaura el CSS después y comprueba con
 `diff` que quedó idéntico.
 
-- [ ] **Step 3: Escribir el movimiento**
+- [x] **Step 3: Escribir el movimiento**
 
 En `themes.css`, en el bloque de Hyprland:
 
@@ -1017,7 +1024,7 @@ En `themes.css`, en el bloque de Hyprland:
 }
 ```
 
-- [ ] **Step 4: Movimiento reducido**
+- [x] **Step 4: Movimiento reducido**
 
 El bloque `@media (prefers-reduced-motion: reduce)` que ya existe (busca
 `.scene-index.is-open .scene-index-row:nth-of-type(1)` dentro de una media query) **no alcanza a
@@ -1063,7 +1070,7 @@ Añadir un bloque propio:
 }
 ```
 
-- [ ] **Step 5: Correr el arnés hasta verde**
+- [x] **Step 5: Correr el arnés hasta verde**
 
 Run: `python3 scripts/measure-cortinilla.py`
 Expected: `OK`, y el adelanto máximo del contenido sobre la barra **≤ 0** (en el prototipo salió
@@ -1074,7 +1081,7 @@ Si sale positivo, el error casi seguro es uno de estos dos: la rejilla no mide 1
 telón con curva en vez de `linear`. Recalcula los retardos con la geometría real, no los ajustes a
 ojo hasta que pase.
 
-- [ ] **Step 6: Comprobar los tiempos declarados y el movimiento reducido**
+- [x] **Step 6: Comprobar los tiempos declarados y el movimiento reducido**
 
 Criterios 2 y 10. Lo que se comprueba es la duración **declarada**, que es determinista. Un
 cronómetro desde el clic mide la carga de la máquina, no la animación: el spec anterior lo pagó con
@@ -1168,7 +1175,7 @@ Si `fila` sale como `0.14s, 0.2s` pero el arnés se queja del orden, es que en e
 `border-color` antes que `clip-path` en el `transition`. El orden importa: los retardos van
 posicionales.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/components/sceneNav.ts src/themes/themes.css scripts/measure-cortinilla.py
@@ -1575,11 +1582,11 @@ A `lidia-naive-tester` hay que pedirle explícitamente que mida **tiempo hasta l
 correcta** sobre la rejilla, no solo una impresión estética: el riesgo abierto del spec es que cinco
 miniaturas compitiendo ralenticen el escaneo, y eso no se ve en una captura.
 
-- [ ] **Step 6: Revisión de Aoshi sobre el sitio real**
+- [x] **Step 6: Revisión de Aoshi sobre el sitio real**
 
 Sobre el sitio, haciendo scroll y abriendo la cortinilla. No sobre capturas.
 
-- [ ] **Step 7: Commit final**
+- [x] **Step 7: Commit final**
 
 ```bash
 git add docs/superpowers/specs/2026-08-06-hyprland-cortinilla-hoja-design.md docs/superpowers/plans/2026-08-06-hyprland-cortinilla-hoja.md

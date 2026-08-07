@@ -1,6 +1,6 @@
 # La hoja de contactos — la cortinilla de Hyprland deja de ser una lista y pasa a ser cinco planos
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-06-hyprland-cortinilla-hoja.md`
 Fecha: 2026-08-06
 Alcance: **solo el tema Hyprland**. El disparador (`.scene-nav-trigger`) y la cortinilla
@@ -284,9 +284,8 @@ de apertura de la hoja, que es donde hace más trabajo.
 ## Registro de implementación
 
 Implementado el 2026-08-07 en la rama `design/hyprland-cortinilla-hoja`, plan
-`docs/superpowers/plans/2026-08-06-hyprland-cortinilla-hoja.md`. **Aún no cerrado:** el estado
-sigue en `en ejecucion` porque faltan los gates de `lidia-naive-tester` y `vera-art-director` y
-la revisión de Aoshi sobre el sitio real, que es lo único que decide si esto vale.
+`docs/superpowers/plans/2026-08-06-hyprland-cortinilla-hoja.md`. Revisado por Aoshi sobre el sitio real
+—no sobre capturas— el 2026-08-07 y aceptado.
 Merge-base `c1cacf1`. Todo A/B se hizo con `git worktree`, nunca con `git stash`.
 
 ### Medidas reales
@@ -407,3 +406,16 @@ esquirla en la esquina. Los arneses medían que la silueta **existe** y que el f
 cuadra, y las dos cosas eran ciertas mientras el resultado estaba roto. Los cazó poner la captura
 al lado del prototipo. La iteración de móvil repitió la lección: el primer criterio dejaba el
 fotograma de obra vacío, y eso tampoco lo dijo un número.
+
+### Dos ajustes salidos de la revisión de Aoshi
+
+**El disparador se despega del canto del navegador.** Heredaba `top: 0` de la regla compartida y,
+sin caja, ese filete de 1px *es* el elemento: pegado al borde de la ventana no se leía como pie de
+fotograma sino como un artefacto del cromo del navegador. Baja a `1.5rem`. El primer intento fue el
+arreglo equivocado —relleno por dentro, que bajaba el texto y dejaba el trazo donde estaba— y queda
+anotado porque es el error natural: lo que había que mover era el filete, no el texto.
+
+**El BLOCK de `vera-art-director` queda aceptado explícitamente**, igual que se hizo en Vice: se
+cerró su hallazgo de color y los otros dos se resolvieron en contra de su recomendación, con el
+criterio escrito arriba. La nota no se ha vuelto a medir, así que el 7,1/10 sigue siendo el último
+número conocido. No es un defecto pendiente: es una discrepancia de criterio resuelta por Aoshi.
