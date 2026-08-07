@@ -90,7 +90,13 @@ LAYOUT_JS = """() => {
       if (!encuadre || !encuadreRect) return null;
       const plano = encuadre.querySelector('.scene-shot-plano');
       if (!plano) return null;
-      const piezas = [...plano.children];
+      // Solo las piezas que SE DIBUJAN. Las que el tema oculta a proposito
+      // (`.scene-shot-fino` en movil) tienen un rect 0x0 en el origen, que cae
+      // fuera del encuadre por definicion: contarlas seria acusar de recorte a
+      // una pieza que nadie ha pintado. Lo que esta asercion vigila es lo
+      // contrario — piezas dibujadas que el `overflow: hidden` se come.
+      const piezas = [...plano.children].filter(
+        p => getComputedStyle(p).display !== 'none');
       const fuera = piezas.filter(p => {
         const b = p.getBoundingClientRect();
         return b.top > encuadreRect.bottom - 1 || b.bottom < encuadreRect.top + 1
@@ -181,6 +187,11 @@ def comprobar(datos, ancho):
     pf = datos.get("piezasFuera")
     if pf is None:
         fallos.append(f"{ancho}: no hay `.scene-shot-plano` en el primer encuadre")
+    elif pf["total"] == 0:
+        # `siluetasVacias` cuenta hijos del DOM y no distingue oculto de
+        # dibujado: si un dia el filtro de movil se pasa de rosca y esconde la
+        # silueta entera, aquella seguiria en verde. Esta no.
+        fallos.append(f"{ancho}: la silueta no dibuja ni una pieza")
     elif pf["fuera"]:
         fallos.append(
             f"{ancho}: {pf['fuera']} de {pf['total']} piezas de la silueta caen fuera del "

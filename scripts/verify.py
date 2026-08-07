@@ -720,7 +720,7 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
     gate bajo el pliegue): el filtro de opacidad de mas abajo no lo atrapaba
     porque el alfa vive en `color`, no en la propiedad `opacity`."""
     candidates = page.evaluate(
-        """(() => {
+        r"""(() => {
       const out = [];
       const nodes = document.querySelectorAll('body *');
       for (const el of nodes) {

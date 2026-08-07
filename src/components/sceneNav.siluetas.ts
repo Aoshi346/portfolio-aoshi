@@ -161,6 +161,57 @@ export const SILUETAS: Readonly<Record<string, readonly Pieza[]>> = {
   ],
 };
 
+/*
+ * Grosor minimo, en pixeles del plano, para que una pieza siga siendo un trazo
+ * y no un manchon en movil.
+ *
+ * A 390 el encuadre mide 170,5 y el plano se escala a 0,1184, asi que hace
+ * falta 1 / 0,1184 = 8,45 px de plano para renderizar 1 px. Todo lo que quede
+ * por debajo lo pinta el navegador como una mancha gris translucida. Medido en
+ * el estado anterior: hero 5 de 6 piezas por debajo de 1 px, quien-es 13 de 19,
+ * obra 31 de 41 (con los nombres de proyecto a 3,6 px), creditos 7 de 31.
+ * Es el hallazgo P1 de `lidia-naive-tester`: las siluetas de movil obligaban a
+ * leer el rotulo en vez de ayudar a decidir, 2,5-3 s hasta la primera pulsacion
+ * correcta sobre un umbral de 2 s.
+ *
+ * No se corrige subiendo la escala — el encuadre lo fija la rejilla — sino
+ * dejando de dibujar lo que ya no se ve. Lo que sobrevive queda mas limpio.
+ */
+const GROSOR_MINIMO = 9;
+
+/** Cuerpo minimo de un texto de la silueta para que en movil se lea como
+ *  palabra y no como raya: a 0,1184 un `tam` de 40 renderiza a 4,7 px. */
+const CUERPO_MINIMO = 40;
+
+/*
+ * Tonos de acento: emiten. Por debajo de un pixel el navegador funde el color
+ * en el pixel, asi que un trazo de `--l1` a plena opacidad sigue leyendose como
+ * marca aunque mida 0,7 px, mientras que el mismo trazo en `--haze` al 30% se
+ * disuelve en el fondo. Por eso el criterio no puede ser solo el grosor: si lo
+ * fuera, el carril de obra se quedaba en movil con sus cinco ordinales de marca
+ * de agua y nada mas — comprobado en captura, el fotograma quedaba vacio.
+ */
+const ACENTOS = ["--l1", "--l2", "--l3", "--catch"];
+const OPACIDAD_QUE_AGUANTA = 0.6;
+
+function emite(p: Pieza): boolean {
+  return (
+    p.tono !== undefined &&
+    ACENTOS.some((t) => p.tono?.includes(t)) &&
+    (p.opac ?? 1) >= OPACIDAD_QUE_AGUANTA
+  );
+}
+
+function esFino(p: Pieza): boolean {
+  if (p.clase === "beam") return false;
+  if (emite(p)) return false;
+  // Una `box` solo aporta su borde de 1px: en movil nunca sobrevive.
+  if (p.clase === "box") return true;
+  if (p.texto !== undefined) return (p.tam ?? 0) < CUERPO_MINIMO;
+  const lados = [p.w, p.h].filter((v): v is number => v !== undefined);
+  return lados.length > 0 && Math.min(...lados) < GROSOR_MINIMO;
+}
+
 export function construirSilueta(id: string): HTMLElement {
   const shot = document.createElement("span");
   shot.className = "scene-shot";
@@ -180,7 +231,7 @@ export function construirSilueta(id: string): HTMLElement {
   shot.append(plano);
   for (const p of SILUETAS[id] ?? []) {
     const n = document.createElement("span");
-    n.className = `scene-shot-${p.clase}`;
+    n.className = esFino(p) ? `scene-shot-${p.clase} scene-shot-fino` : `scene-shot-${p.clase}`;
     if (p.x !== undefined) n.style.left = `${p.x}px`;
     if (p.y !== undefined) n.style.top = `${p.y}px`;
     if (p.w !== undefined) n.style.width = `${p.w}px`;

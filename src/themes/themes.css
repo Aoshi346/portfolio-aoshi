@@ -2523,6 +2523,22 @@
   :root[data-theme="hyprland"] .scene-index-row:last-of-type .scene-shot {
     padding-top: 31.25%;
   }
+
+  /* En movil el plano se escala a 0,1184, asi que todo trazo de menos de
+     8,45px de plano renderiza por debajo de un pixel y el navegador lo pinta
+     como una mancha gris. `sceneNav.siluetas.ts` marca esas piezas con
+     `.scene-shot-fino` (ver `GROSOR_MINIMO` alli) y aqui dejan de dibujarse.
+     No se pierde informacion: se deja de pintar lo que ya no se leia y que
+     solo aportaba ruido — hallazgo P1 de `lidia-naive-tester`, que medía
+     2,5-3 s hasta la primera pulsacion correcta sobre un umbral de 2 s.
+
+     La regla vive DENTRO de este bloque a proposito: es el mismo umbral en el
+     que la rejilla pasa a dos columnas, que es lo que fija el ancho del
+     encuadre y por tanto la escala. Separarlos seria dejar dos numeros que hay
+     que cambiar a la vez sin nada que avise. */
+  :root[data-theme="hyprland"] .scene-shot-fino {
+    display: none;
+  }
 }
 
 /* --------------------------------------------------------------------------
