@@ -1143,6 +1143,16 @@
   --rule: #3d1c1c;
   --haze: #b18c86;
 
+  /* Tonos que solo existen dentro de las siluetas de la hoja de contactos
+     (`sceneNav.siluetas.ts`). Son tinta levantada uno o dos escalones, para
+     piezas que deben leerse como relleno y no como contenido: el ordinal de
+     marca de agua del carril de obra y el hueco del avatar. Estaban en hex
+     crudo dentro del modulo de datos, que es justo lo que la norma del
+     proyecto prohibe — no tenerlos aqui es no poder retematizarlos. */
+  --shot-marca: #2c1311;
+  --shot-marca-viva: #371815;
+  --shot-hueco: #5a3a34;
+
   /* Medido contra `.scene-index` abierto (fondo SOLIDO --color-ink, no el
      shader — el menu no es translucido): .scene-index-title 5.75:1,
      .scene-index-num/-name 6.55:1, .scene-index-blurb 4.74:1 (el mas
