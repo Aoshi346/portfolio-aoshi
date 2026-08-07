@@ -368,3 +368,42 @@ toca, y meterlo en la línea base sería esconderlo.
 `measure-type-scale.py` sale 1 y su salida es **byte a byte idéntica** a la del merge-base: sus 6
 entradas nuevas son un renombrado de clase (`display-xl ...` -> `hero-name-word`) que ya está en
 `main` y cuya base nadie actualizó. Ajeno a esta rama.
+
+### Los gates, y qué salió de ellos
+
+**`lidia-naive-tester`: PASA con reserva.** Medía 2,5–3 s hasta la primera pulsación correcta,
+sobre su umbral de 2 s, porque en móvil las siluetas eran manchones que obligaban a leer el rótulo
+en vez de ayudar a decidir. Es exactamente el riesgo que este spec declaró, y **no estaba
+resuelto**. Cuantificado: a 390 el plano se escala a 0,1184, así que hace falta 8,45 px de plano
+para renderizar 1 px, y por debajo estaban hero 5 de 6 piezas, "quién soy" 13 de 19, obra 31 de 41
+—con los nombres de proyecto a 3,6 px— y créditos 7 de 31. Arreglado dejando de dibujar en móvil
+lo que ya no se veía, con una excepción medida: los tonos de acento a opacidad ≥ 0,6 se quedan,
+porque por debajo de un píxel el navegador funde el color y `--l1` a plena opacidad sigue leyéndose
+como marca a 0,7 px. Sin esa excepción el carril de obra se quedaba vacío.
+
+**`vera-art-director`: 7,1/10, BLOCK** contra el gate de 7,5. Tres hallazgos:
+
+- Hex crudo en el módulo de siluetas (P1). **Arreglado**: eran seis colores a mano, dos duplicando
+  literales que ya son token, tres sin token, y uno era el papel de Vice colado en Hyprland.
+- "Título" y "Quién soy" comparten el texto dominante (P1). **No se toca, y es deliberado**: es
+  fiel al sitio —las dos escenas muestran el nombre— y falsear la miniatura para que se distinga
+  es el fallo que estas siluetas existen para no cometer. El pie ya las separa.
+- El ordinal del disparador en `--t-1` con 5,75:1 (P2). **No se sube a `--t-2`**: 16 px para un
+  ordinal de navegación compite con el nombre, y el problema real es el margen de contraste sobre
+  un fondo que se mueve, no el cuerpo. Si hace falta holgura, el sitio donde tocar es el tono.
+
+Sobre el **golpe de luz**, que este spec dejaba como la pieza más prescindible: dictamen
+**mantener**, con la timeline muestreada a 50/120/200/300/450 ms — pico 0,97, cae a 0 en 300 ms,
+disparo único, y viaja siempre por detrás del barrido, nunca por delante.
+
+El BLOCK de Vera queda **abierto**: se ha cerrado su hallazgo de color, pero los otros dos se han
+resuelto en contra de su recomendación y con criterio explícito. La nota no se ha vuelto a medir.
+
+### Lo que ningún arnés vio
+
+Dos defectos de la Tarea 3 sobrevivieron a dos revisiones de tarea y a todos los números: las
+siluetas no se dibujaban dentro del encuadre —0 de 6 piezas del hero— y el haz se encogía a una
+esquirla en la esquina. Los arneses medían que la silueta **existe** y que el factor de escala
+cuadra, y las dos cosas eran ciertas mientras el resultado estaba roto. Los cazó poner la captura
+al lado del prototipo. La iteración de móvil repitió la lección: el primer criterio dejaba el
+fotograma de obra vacío, y eso tampoco lo dijo un número.

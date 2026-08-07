@@ -1566,7 +1566,7 @@ En `docs/superpowers/specs/2026-08-06-hyprland-cortinilla-hoja-design.md`:
 `check_spec_plan_consistency()` en `verify.py` lo cruza y falla. Marca las casillas conforme
 avanzas, no en bloque al final.
 
-- [ ] **Step 5: Gates**
+- [x] **Step 5: Gates**
 
 Lanzar `lidia-naive-tester` y `vera-art-director` (umbral 7,5/10), **pineados a Sonnet**
 (`CLAUDE.md` regla 3: los subagentes heredan el modelo de la sesión).
