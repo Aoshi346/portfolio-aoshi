@@ -31,6 +31,16 @@ Copiadas del spec y de `CLAUDE.md`. **Aplican a todas las tareas.**
 - **Ninguna regla CSS nueva sin `:root[data-theme="hyprland"]` en el selector.**
   `.scene-nav-trigger` y `.scene-index` son compartidas por los tres temas y el disparador vive
   fuera del árbol de cualquier escena: no hay `[data-scene]` que lo contenga por accidente.
+- **Todo nodo nuevo que `sceneNav.ts` añada necesita su `display: none` de base.** El módulo se
+  ejecuta en los tres temas; si solo Hyprland le da estilo, en Vice y Caelestia el nodo se cuela
+  como hijo suelto de un contenedor `flex`. Ya ha pasado cuatro veces
+  (`.scene-nav-trigger-mark`; luego `.scene-shot` / `.scene-index-flash` / `.scene-index-bar` en la
+  Tarea 3; y `.scene-nav-trigger-tc` en la Tarea 5, que ensanchó el disparador de 168,81 a 411,06 px
+  en **Vice**, que está cerrado). La regla va a la lista compartida de `themes.css`, sin prefijo de
+  tema, y el bloque de Hyprland la revierte al `display` que toque.
+  **Y el arnés de la tarea tiene que abrir los otros dos temas:** `measure-cortinilla.py` solo
+  miraba `?theme=hyprland` y por eso no lo vio; lo delató `verify.py --theme caelestia` con menos
+  fallos de contraste y ratios peores, que es la firma de estar midiendo otra cosa.
 - **Prohibido `order` en la rejilla.** El quinto fotograma va el último en el DOM con
   `grid-column: 1 / -1`.
 - **Prohibido `innerHTML` para construir las siluetas.** Nodos a mano, como `src/utils/dom.ts`.
@@ -1179,7 +1189,7 @@ git commit -m "feat(nav): barrido de exposicion y cierre en cascada inversa de l
 - Produces: `.scene-nav-trigger-tc` con cuatro spans:
   `.scene-nav-trigger-num-a`, `-num-b`, `-name-a`, `-name-b`.
 
-- [ ] **Step 1: Añadir la estructura de dos estados**
+- [x] **Step 1: Añadir la estructura de dos estados**
 
 En `src/components/sceneNav.ts`, tras el `trigger.append(triggerLabel);` de la línea 42:
 
@@ -1220,7 +1230,7 @@ En `src/components/sceneNav.ts`, tras el `trigger.append(triggerLabel);` de la l
 `.scene-nav-trigger-label`, y `aria-expanded` ya dice el estado. El lector de pantalla no pierde
 nada; quien mira, gana.
 
-- [ ] **Step 2: Alimentarlo desde `pinta`**
+- [x] **Step 2: Alimentarlo desde `pinta`**
 
 Dentro de `pinta`, junto a la línea que fija `triggerLabel.textContent` (línea 206), añadir:
 
@@ -1233,7 +1243,7 @@ Dentro de `pinta`, junto a la línea que fija `triggerLabel.textContent` (línea
 
 No toques la línea de `triggerLabel`: Vice y Caelestia dependen de ella.
 
-- [ ] **Step 3: Escribir el CSS del disparador**
+- [x] **Step 3: Escribir el CSS del disparador**
 
 En `themes.css`, **sustituyendo** el bloque actual de cuatro líneas de
 `:root[data-theme="hyprland"] .scene-nav-trigger` (líneas ~2119-2131, el que dice "Radio 5px
@@ -1382,7 +1392,7 @@ heredado: la navegacion es la unica excepcion al radio 0 del tema"):
 Ojo con `position`: `.scene-nav-trigger` base es `position: fixed`, así que los pseudo-elementos ya
 tienen contenedor. No añadas `position: relative`, que rompería el `top: 0; right: 3rem` heredado.
 
-- [ ] **Step 4: Ampliar el arnés con los dos estados y el foco**
+- [x] **Step 4: Ampliar el arnés con los dos estados y el foco**
 
 Criterios 4 y 5. Añadir a `scripts/measure-cortinilla.py`:
 
@@ -1468,7 +1478,7 @@ y en `main()`, antes del `if fallos:`:
     fallos += comprobar_estados(c, a, v, esc)
 ```
 
-- [ ] **Step 5: Correr todo**
+- [x] **Step 5: Correr todo**
 
 Run:
 ```bash
@@ -1480,7 +1490,7 @@ export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH && npm run build && npm run 
 Expected: `measure-cortinilla` OK; `measure-nav` 15 de 15 a ±8 px en los tres temas;
 `measure-type-scale` con 0 fallos nuevos; build y lint verdes.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/sceneNav.ts src/themes/themes.css scripts/measure-cortinilla.py
