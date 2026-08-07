@@ -406,7 +406,15 @@ AJENO_JS = """() => {
 # Anchos del disparador en el merge-base c1cacf1, medidos a 1440x900 antes de
 # que existiera el pie de dos estados. Si vuelven a moverse, es que algo de
 # Hyprland se ha escapado a los otros dos temas.
-ANCHO_AJENO = {"vice": 168.81, "caelestia": 152.0}
+#
+# Los numeros son exactos, no aproximados: 15 muestras entre 500 ms y 9 s, en el
+# worktree del merge-base, en el dev server de la rama y en el build servido,
+# dan 167,94 en las 15. La rama deja Vice IDENTICO, no "casi igual". Aqui estuvo
+# 168,81 durante un rato, que no es reproducible por ninguna via; y como este es
+# el unico registro escrito de como estaba un tema CERRADO, un numero de mas
+# habria convertido el arnes en el modo de fallo de `OBRA_TRANSIT`: no falla,
+# miente.
+ANCHO_AJENO = {"vice": 167.94, "caelestia": 152.0}
 TOLERANCIA_AJENO = 1.5
 
 
@@ -448,6 +456,89 @@ def comprobar_ajenos(datos):
     return fallos
 
 
+# El rotulo del disparador se apoya en el fondo generativo, sin caja: es lo que
+# pide el criterio 4. `verify.py` no puede medirlo — excluye el texto cuyo fondo
+# no es solido, y este no lo es (desviacion tipica 27,7 sobre un limite de 18) —
+# asi que el unico elemento del widget que quedaba medido era la version
+# ESCONDIDA del rotulo, desplazada fuera del contenedor recortado: un OK
+# fantasma de 17,75:1 sobre texto que en reposo no se ve. Corregido en verify.py;
+# la medida del rotulo VISIBLE se hace aqui, que es donde se conoce el widget.
+#
+# Se oculta solo el texto para leer el fondo puro bajo su caja y se barre el
+# scroll: el haz del fondo pasa por detras y el peor momento no es el reposo.
+# El minimo es el de WCAG AA para texto pequeno, no una tolerancia inventada.
+CONTRASTE_MIN = 4.5
+MUESTRAS_SCROLL = (0, 0.15, 0.3, 0.4, 0.5, 0.65, 0.8, 1.0)
+PIEZAS_ROTULO = (".scene-nav-trigger-num-a", ".scene-nav-trigger-name-a")
+
+
+def _luminancia(c):
+    def canal(v):
+        v /= 255
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    return 0.2126 * canal(c[0]) + 0.7152 * canal(c[1]) + 0.0722 * canal(c[2])
+
+
+def _ratio(a, b):
+    l1, l2 = sorted((_luminancia(a), _luminancia(b)), reverse=True)
+    return (l1 + 0.05) / (l2 + 0.05)
+
+
+def medir_contraste_rotulo():
+    from PIL import Image
+    import io
+    peor = {}
+    with sync_playwright() as pw:
+        b, pg = abrir(pw, 1440, 900)
+        alto = pg.evaluate("document.body.scrollHeight")
+        for frac in MUESTRAS_SCROLL:
+            pg.evaluate(f"window.scrollTo(0, {int((alto - 900) * frac)})")
+            pg.wait_for_timeout(1400)
+            cajas = pg.evaluate(
+                "(sels) => Object.fromEntries(sels.map(s => {"
+                "  const e = document.querySelector(s); if (!e) return [s, null];"
+                "  const r = e.getBoundingClientRect();"
+                "  return [s, {x: r.x, y: r.y, w: r.width, h: r.height,"
+                "              color: getComputedStyle(e).color}];"
+                "}))", list(PIEZAS_ROTULO))
+            pg.evaluate("(sels) => sels.forEach(s => {const e = document.querySelector(s);"
+                        " if (e) e.style.visibility = 'hidden';})", list(PIEZAS_ROTULO))
+            pg.wait_for_timeout(120)
+            img = Image.open(io.BytesIO(pg.screenshot())).convert("RGB")
+            pg.evaluate("(sels) => sels.forEach(s => {const e = document.querySelector(s);"
+                        " if (e) e.style.visibility = '';})", list(PIEZAS_ROTULO))
+            for sel, d in cajas.items():
+                if not d:
+                    continue
+                xs = range(max(int(d["x"]), 0), min(int(d["x"] + d["w"]), 1440))
+                ys = range(max(int(d["y"]), 0), min(int(d["y"] + d["h"]), 900))
+                px = [img.getpixel((x, y)) for x in xs for y in ys]
+                if not px:
+                    continue
+                fondo = tuple(sum(c[i] for c in px) // len(px) for i in range(3))
+                frente = tuple(int(v) for v in
+                               d["color"].removeprefix("rgb(").rstrip(")").split(","))
+                r = round(_ratio(frente, fondo), 2)
+                if sel not in peor or r < peor[sel]["ratio"]:
+                    peor[sel] = {"ratio": r, "fondo": list(fondo), "enScroll": round(frac, 2)}
+        b.close()
+    return peor
+
+
+def comprobar_contraste(peor):
+    fallos = []
+    for sel in PIEZAS_ROTULO:
+        d = peor.get(sel)
+        if d is None:
+            fallos.append(f"no se pudo medir el contraste de {sel}")
+        elif d["ratio"] < CONTRASTE_MIN:
+            fallos.append(
+                f"{sel}: {d['ratio']}:1 sobre el fondo {d['fondo']} al {int(d['enScroll'] * 100)}% "
+                f"del scroll; el minimo AA para texto pequeno es {CONTRASTE_MIN}:1"
+            )
+    return fallos
+
+
 def main():
     fallos = []
     for ancho, alto in ((1440, 900), (390, 844)):
@@ -479,6 +570,11 @@ def main():
     print("\n== el disparador en los temas que NO son Hyprland")
     print(json.dumps(ajenos, indent=2, ensure_ascii=False))
     fallos += comprobar_ajenos(ajenos)
+
+    contraste = medir_contraste_rotulo()
+    print("\n== contraste del rotulo visible del disparador (peor momento del scroll)")
+    print(json.dumps(contraste, indent=2, ensure_ascii=False))
+    fallos += comprobar_contraste(contraste)
 
     if fallos:
         print("\nFALLOS:")

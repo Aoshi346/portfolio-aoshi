@@ -740,6 +740,30 @@ def check_contrast_wcag(page, theme: str, screenshot_bytes: bytes) -> None:
          * nuevo exponiendo un hueco que ya existia para los tres temas.
          */
         if (el.closest('.scene-index') && !el.closest('.scene-index.is-open')) continue;
+        /*
+         * Texto RECORTADO por un ancestro con `overflow: hidden`: conserva un
+         * rect valido, asi que el gate lo medía contra lo que hay detras en la
+         * pagina, aunque no se vea nunca.
+         *
+         * El caso que lo destapo: el disparador de Hyprland apila dos versiones
+         * del rotulo en la misma celda y desplaza la que no toca 38px fuera de
+         * un contenedor recortado. El gate daba OK 17.75:1 a "Cerrar" — que en
+         * reposo no se ve — mientras el rotulo VISIBLE salia SKIP por fondo no
+         * solido. Neto: el widget parecia cubierto y verde y su texto real no
+         * lo medía nadie. Un OK fantasma es peor que un hueco, porque ademas
+         * cuenta para el suelo de "al menos un elemento medible por escena".
+         */
+        let clipped = false;
+        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+          const ov = getComputedStyle(a);
+          if (ov.overflow === 'visible' && ov.overflowX === 'visible'
+              && ov.overflowY === 'visible') continue;
+          const ar = a.getBoundingClientRect();
+          const er = el.getBoundingClientRect();
+          if (er.bottom <= ar.top + 1 || er.top >= ar.bottom - 1
+              || er.right <= ar.left + 1 || er.left >= ar.right - 1) { clipped = true; break; }
+        }
+        if (clipped) continue;
         const style = getComputedStyle(el);
         if (style.visibility === 'hidden' || style.display === 'none') continue;
         if (parseFloat(style.opacity) < 0.2) continue;
