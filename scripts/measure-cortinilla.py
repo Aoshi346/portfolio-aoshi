@@ -28,26 +28,73 @@ LAYOUT_JS = """() => {
   const r = e => { const b = e.getBoundingClientRect();
     return {w: Math.round(b.width), h: Math.round(b.height),
             t: Math.round(b.top), l: Math.round(b.left)}; };
-  const primeraFila = filas[0];
-  const encuadre = primeraFila?.querySelector('.scene-shot');
-  const encuadreRect = encuadre ? encuadre.getBoundingClientRect() : null;
-  // El primer hijo NO beam: el haz se dibuja sobre el ENCUADRE, no sobre el
-  // plano de 1440x900, asi que no se escala y no sirve para leer el factor.
-  // Cualquier otro hijo si lo lleva.
-  //
-  // Este comentario decia antes que el haz "lleva `transform: none`". Lo
-  // llevaba escrito y no lo cumplia: perdia por especificidad contra la regla
-  // de escala ((0,3,0) contra (0,3,1)) y se encogia a 49,1x30,7 px dentro de un
-  // encuadre de 266x166,3. El arnes miraba a otro lado justo donde estaba el
-  // fallo, y por eso hace falta `haz` aqui abajo: se mide, no se declara.
-  const hijoEscalado = encuadre
-    ? [...encuadre.children].find(c => !c.classList.contains('scene-shot-beam'))
-    : null;
-  const matriz = hijoEscalado ? getComputedStyle(hijoEscalado).transform : null;
-  // `matrix(a, b, c, d, e, f)` -> el factor de escala horizontal es `a`.
-  const escalaX = matriz && matriz.startsWith('matrix(')
-    ? parseFloat(matriz.slice(7).split(',')[0])
-    : null;
+  /*
+   * Se mide CADA UNA de las cinco siluetas, no `filas[0]`.
+   *
+   * Mirar solo la primera dejaba entrar en verde exactamente los dos defectos
+   * que esta rama ya pago: con el plano de las filas 2-5 roto, 106 de 113
+   * piezas caian fuera del encuadre y el arnes seguia verde; con el haz
+   * encogido en esas filas, tambien. Un arnes que vigila un quinto de lo que
+   * dice vigilar es peor que no tenerlo, porque se lee como cobertura.
+   */
+  const mide = fila => {
+    const encuadre = fila.querySelector('.scene-shot');
+    if (!encuadre) return null;
+    const er = encuadre.getBoundingClientRect();
+    const plano = encuadre.querySelector('.scene-shot-plano');
+    const haz = encuadre.querySelector('.scene-shot-beam');
+    // El ancho renderizado del plano se MIDE, no se deduce multiplicando la
+    // escala por un 1440 escrito aqui. Ese literal vive tambien en el CSS
+    // (`.scene-shot-plano { width: 1440px }`) y son dos sitios que hay que
+    // cambiar a la vez sin nada que avise — el patron `OBRA_TRANSIT` que
+    // CLAUDE.md documenta. Comprobado: con el plano a 1280px el arnes salia
+    // verde dejando un 11% del encuadre vacio.
+    const pr = plano ? plano.getBoundingClientRect() : null;
+    const cs = plano ? getComputedStyle(plano).transform : null;
+    const escala = cs && cs.startsWith('matrix(')
+      ? parseFloat(cs.slice(7).split(',')[0]) : null;
+    const piezas = plano
+      ? [...plano.children].filter(x => getComputedStyle(x).display !== 'none')
+      : [];
+    /*
+     * El recorte VERTICAL puede ser legitimo y el HORIZONTAL nunca lo es.
+     *
+     * El plano es 16:10 y el encuadre tambien... salvo el quinto en movil, que
+     * es un panoramico a proposito (`padding-top: 31.25%`). Como la escala se
+     * deriva del ancho, ese fotograma ensena una banda del plano y deja fuera
+     * el resto: es un encuadre distinto de la misma escena, no un defecto.
+     * Medido: 8 de sus 10 piezas caen por debajo, y la silueta se ve bien.
+     *
+     * Lo que no admite excusa es que una pieza se salga por los lados: eso
+     * significa que el plano no esta alineado o no esta escalado al ancho, que
+     * es justo el defecto que esta rama pago dos veces. Se separan los dos.
+     */
+    const fueraX = piezas.filter(x => {
+      const b = x.getBoundingClientRect();
+      return b.left > er.right - 1 || b.right < er.left + 1;
+    });
+    const fueraY = piezas.filter(x => {
+      const b = x.getBoundingClientRect();
+      return b.top > er.bottom - 1 || b.bottom < er.top + 1;
+    });
+    return {
+      escena: fila.hash,
+      encuadreAncho: er.width,
+      encuadreAlto: er.height,
+      siluetaDisplay: getComputedStyle(encuadre).display,
+      escalaX: escala,
+      planoRenderizadoAncho: pr ? pr.width : null,
+      haz: haz && er.width
+        ? (() => { const b = haz.getBoundingClientRect();
+            return {ancho: b.width, alto: b.height,
+                    cubreAncho: b.width / er.width,
+                    cubreAlto: b.height / er.height}; })()
+        : null,
+      piezasFuera: plano
+        ? {total: piezas.length, fueraX: fueraX.length, fueraY: fueraY.length}
+        : null,
+    };
+  };
   return {
     filas: filas.map(r),
     rejilla: r(panel),
@@ -65,45 +112,7 @@ LAYOUT_JS = """() => {
     // --- Hallazgo 1 (rejilla fluida + escala de la silueta) ---
     panelDisplay: getComputedStyle(panel).display,
     columnas: getComputedStyle(panel).gridTemplateColumns.trim().split(/\\s+/).length,
-    siluetaDisplay: encuadre ? getComputedStyle(encuadre).display : null,
-    encuadreAncho: encuadreRect ? encuadreRect.width : null,
-    encuadreAlto: encuadreRect ? encuadreRect.height : null,
-    escalaX: escalaX,
-    planoRenderizadoAncho: escalaX !== null ? escalaX * 1440 : null,
-    // El haz es lo que levanta la silueta del negro: sin el, el fotograma es
-    // un rectangulo vacio (las piezas se dibujan en `--rule`, #3d1c1c sobre
-    // #0b0404). Debe cubrir el encuadre entero, no una esquina.
-    haz: (() => {
-      const h = encuadre?.querySelector('.scene-shot-beam');
-      if (!h || !encuadreRect) return null;
-      const b = h.getBoundingClientRect();
-      return {ancho: b.width, alto: b.height,
-              cubreAncho: b.width / encuadreRect.width,
-              cubreAlto: b.height / encuadreRect.height};
-    })(),
-    // La asercion que faltaba, y la unica que habria cazado que las piezas
-    // caian fuera del encuadre: no basta con que la silueta EXISTA
-    // (`siluetasVacias`) ni con que el factor de escala cuadre, porque el
-    // factor se lee del plano y el plano puede medir bien mientras sus piezas
-    // quedan recortadas. Se cuentan las que caen fuera de verdad.
-    piezasFuera: (() => {
-      if (!encuadre || !encuadreRect) return null;
-      const plano = encuadre.querySelector('.scene-shot-plano');
-      if (!plano) return null;
-      // Solo las piezas que SE DIBUJAN. Las que el tema oculta a proposito
-      // (`.scene-shot-fino` en movil) tienen un rect 0x0 en el origen, que cae
-      // fuera del encuadre por definicion: contarlas seria acusar de recorte a
-      // una pieza que nadie ha pintado. Lo que esta asercion vigila es lo
-      // contrario — piezas dibujadas que el `overflow: hidden` se come.
-      const piezas = [...plano.children].filter(
-        p => getComputedStyle(p).display !== 'none');
-      const fuera = piezas.filter(p => {
-        const b = p.getBoundingClientRect();
-        return b.top > encuadreRect.bottom - 1 || b.bottom < encuadreRect.top + 1
-            || b.left > encuadreRect.right - 1 || b.right < encuadreRect.left + 1;
-      });
-      return {total: piezas.length, fuera: fuera.length};
-    })(),
+    siluetas: filas.map(mide),
   };
 }"""
 
@@ -165,49 +174,76 @@ def comprobar(datos, ancho):
             f"{ancho}: {datos['columnas']} columnas en la rejilla, "
             f"se esperaban {columnas_esperadas}"
         )
-    if datos["siluetaDisplay"] == "none":
-        fallos.append(f"{ancho}: la silueta (.scene-shot) esta oculta (display:none)")
-    if datos["encuadreAncho"] is not None and datos["planoRenderizadoAncho"] is not None:
-        diff = abs(datos["planoRenderizadoAncho"] - datos["encuadreAncho"])
+    # Las CINCO siluetas, una por una. Antes esto miraba `filas[0]` y dejaba
+    # pasar en verde los dos defectos historicos si ocurrian en las filas 2-5.
+    for s in datos["siluetas"]:
+        if s is None:
+            fallos.append(f"{ancho}: una fila no tiene `.scene-shot`")
+            continue
+        eti = f"{ancho} {s['escena']}"
+        if s["siluetaDisplay"] == "none":
+            fallos.append(f"{eti}: la silueta esta oculta (display:none)")
+            continue
+        if s["planoRenderizadoAncho"] is None:
+            fallos.append(f"{eti}: no hay `.scene-shot-plano`")
+            continue
+        if s["escalaX"] is None:
+            fallos.append(
+                f"{eti}: el plano no lleva escala (`transform` sin matriz). Se dibuja a "
+                f"1440x900 dentro de un encuadre de {s['encuadreAncho']:.0f}px"
+            )
+        diff = abs(s["planoRenderizadoAncho"] - s["encuadreAncho"])
         if diff > TOLERANCIA_ESCALA:
             fallos.append(
-                f"{ancho}: el plano renderiza a {datos['planoRenderizadoAncho']:.1f}px "
-                f"pero el encuadre mide {datos['encuadreAncho']:.1f}px "
+                f"{eti}: el plano renderiza a {s['planoRenderizadoAncho']:.1f}px pero el "
+                f"encuadre mide {s['encuadreAncho']:.1f}px "
                 f"(diferencia {diff:.1f}px > {TOLERANCIA_ESCALA}px)"
             )
-    else:
-        fallos.append(f"{ancho}: no se pudo leer la escala del primer hijo escalado")
-    if datos["encuadreAncho"] and datos["encuadreAlto"]:
-        proporcion = datos["encuadreAlto"] / datos["encuadreAncho"]
-        if abs(proporcion - 0.625) > 0.01:
-            fallos.append(
-                f"{ancho}: el encuadre no respeta 16:10 (alto/ancho={proporcion:.3f}, "
-                f"se esperaba 0.625 +-0.01)"
-            )
-    pf = datos.get("piezasFuera")
-    if pf is None:
-        fallos.append(f"{ancho}: no hay `.scene-shot-plano` en el primer encuadre")
-    elif pf["total"] == 0:
-        # `siluetasVacias` cuenta hijos del DOM y no distingue oculto de
-        # dibujado: si un dia el filtro de movil se pasa de rosca y esconde la
-        # silueta entera, aquella seguiria en verde. Esta no.
-        fallos.append(f"{ancho}: la silueta no dibuja ni una pieza")
-    elif pf["fuera"]:
-        fallos.append(
-            f"{ancho}: {pf['fuera']} de {pf['total']} piezas de la silueta caen fuera del "
-            f"encuadre y las recorta `overflow: hidden`"
-        )
-    haz = datos.get("haz")
-    if haz is None:
-        fallos.append(f"{ancho}: no hay `.scene-shot-beam` en el primer encuadre")
-    else:
-        for eje in ("cubreAncho", "cubreAlto"):
-            if abs(haz[eje] - 1) > TOLERANCIA_HAZ:
+        if s["encuadreAncho"] and s["encuadreAlto"]:
+            proporcion = s["encuadreAlto"] / s["encuadreAncho"]
+            # El quinto fotograma es mas ancho que alto a proposito en movil.
+            esperada = 0.3125 if (ancho <= 640 and s["escena"] == "#contacto") else 0.625
+            if abs(proporcion - esperada) > 0.01:
                 fallos.append(
-                    f"{ancho}: el haz cubre {haz[eje]:.3f} del encuadre en {eje[5:].lower()} "
-                    f"({haz['ancho']:.1f}x{haz['alto']:.1f}px); debe cubrirlo entero. "
-                    f"Sin haz la silueta no se ve: se dibuja en --rule sobre --color-ink"
+                    f"{eti}: el encuadre no respeta la proporcion "
+                    f"(alto/ancho={proporcion:.3f}, se esperaba {esperada})"
                 )
+        pf = s["piezasFuera"]
+        if pf is None:
+            fallos.append(f"{eti}: no se pudieron leer las piezas del plano")
+        elif pf["total"] == 0:
+            # `siluetasVacias` cuenta hijos del DOM y no distingue oculto de
+            # dibujado: es vacuo desde que existe `.scene-shot-plano`, que
+            # siempre esta. Esta comprobacion no.
+            fallos.append(f"{eti}: la silueta no dibuja ni una pieza")
+        else:
+            if pf["fueraX"]:
+                fallos.append(
+                    f"{eti}: {pf['fueraX']} de {pf['total']} piezas se salen por los LADOS "
+                    f"del encuadre; el plano no esta alineado o no esta escalado al ancho"
+                )
+            # El recorte vertical solo es legitimo donde el encuadre no es 16:10
+            # (el quinto fotograma en movil, panoramico a proposito).
+            panoramico = ancho <= 640 and s["escena"] == "#contacto"
+            if pf["fueraY"] and not panoramico:
+                fallos.append(
+                    f"{eti}: {pf['fueraY']} de {pf['total']} piezas caen fuera por ARRIBA o "
+                    f"por ABAJO y las recorta `overflow: hidden`"
+                )
+            if pf["fueraY"] == pf["total"]:
+                fallos.append(f"{eti}: el encuadre no ensena ni una pieza")
+        haz = s["haz"]
+        if haz is None:
+            fallos.append(f"{eti}: no hay `.scene-shot-beam`")
+        else:
+            for eje in ("cubreAncho", "cubreAlto"):
+                if abs(haz[eje] - 1) > TOLERANCIA_HAZ:
+                    fallos.append(
+                        f"{eti}: el haz cubre {haz[eje]:.3f} del encuadre en "
+                        f"{eje[5:].lower()} ({haz['ancho']:.1f}x{haz['alto']:.1f}px); debe "
+                        f"cubrirlo entero. Sin haz la silueta no se ve: se dibuja en "
+                        f"--rule sobre --color-ink"
+                    )
     return fallos
 
 
@@ -269,6 +305,14 @@ TIEMPOS_JS = """() => {
     barra: cs(bar).animationDuration,
     barraCurva: cs(bar).animationTimingFunction,
     barraDisplay: cs(bar).display,
+    // La barra podia estar sin animacion asignada o con 0px de ancho y el gate
+    // salia verde: solo comparaba su duracion y su curva DECLARADAS. Un
+    // instrumento invisible no es un instrumento. Su opacidad NO se lee aqui:
+    // en reposo vale 0 porque la animacion ya termino — se muestrea durante el
+    // barrido, en `medir_tiempos`.
+
+    barraAnimacion: cs(bar).animationName,
+    barraAncho: bar.getBoundingClientRect().width,
     rotulo: nom ? cs(nom).transitionDuration : null,
   };
 }"""
@@ -287,11 +331,32 @@ TIEMPOS_ESPERADOS = {
 }
 
 
+# Pico de opacidad de la barra DURANTE el barrido. En reposo vale 0 (la
+# animacion ya acabo), asi que leerla despues no dice nada: hay que muestrear
+# mientras corre. Se abre y se muestrea en cada fotograma durante 600ms, que
+# cubre los 480 declarados.
+PICO_BARRA_JS = """() => new Promise(res => {
+  const bar = document.querySelector('.scene-index-bar');
+  if (!bar) { res(0); return; }
+  let pico = 0;
+  const t0 = performance.now();
+  const tick = () => {
+    pico = Math.max(pico, parseFloat(getComputedStyle(bar).opacity) || 0);
+    if (performance.now() - t0 < 600) requestAnimationFrame(tick);
+    else res(pico);
+  };
+  requestAnimationFrame(tick);
+})"""
+
+
 def medir_tiempos(reducido):
     with sync_playwright() as pw:
         b, pg = abrir(pw, 1440, 900, reducido=reducido)
-        abrir_cortinilla(pg)
+        pg.click(".scene-nav-trigger")
+        pico = pg.evaluate(PICO_BARRA_JS)
+        pg.wait_for_timeout(900)
         datos = pg.evaluate(TIEMPOS_JS)
+        datos["barraOpacidadPico"] = round(pico, 3)
         # Con la cortinilla abierta, Tab debe seguir dando cinco paradas.
         paradas = pg.evaluate(
             "() => document.querySelectorAll('.scene-index .scene-index-row').length"
@@ -310,9 +375,28 @@ def comprobar_tiempos(datos, reducido):
             fallos.append(f"reducido: retardos vivos ({datos['filaRetardo']})")
         if datos["barraDisplay"] != "none":
             fallos.append("reducido: la barra de luz sigue existiendo (debe retirarse, no acelerarse)")
+        # `fila` y `flash` se median y no se comprobaban: con las filas barriendo
+        # 140ms y el golpe de luz 300ms bajo `reduce`, el gate salia VERDE. Es la
+        # regla no negociable 3 del proyecto, no un detalle.
+        for clave, etiqueta in (("fila", "la exposicion de las filas"),
+                                ("flash", "el golpe de luz"),
+                                ("rotulo", "el cambio de rotulo del disparador"),
+                                ("barra", "la barra de luz")):
+            valor = str(datos.get(clave, "")).replace(" ", "")
+            if valor and any(t not in ("0s", "0ms") for t in valor.split(",")):
+                fallos.append(f"reducido: {etiqueta} dura {datos[clave]}, debe ser 0s")
         if datos["paradas"] != 5:
             fallos.append(f"reducido: {datos['paradas']} filas, la funcion no puede degradarse")
     else:
+        if datos["barraOpacidadPico"] < 0.05:
+            fallos.append(
+                f"la barra de luz no llega a verse durante el barrido (opacidad maxima "
+                f"{datos['barraOpacidadPico']}): el instrumento que lo marca es invisible"
+            )
+        if datos["barraAnimacion"] in ("none", "", None):
+            fallos.append("la barra de luz no tiene animacion asignada, asi que no barre")
+        if not datos["barraAncho"]:
+            fallos.append("la barra de luz mide 0px de ancho")
         for k, v in TIEMPOS_ESPERADOS.items():
             real = datos[k].replace(" ", "") if isinstance(datos[k], str) else datos[k]
             if real != v.replace(" ", ""):
@@ -479,7 +563,10 @@ def comprobar_ajenos(datos):
 # scroll: el haz del fondo pasa por detras y el peor momento no es el reposo.
 # El minimo es el de WCAG AA para texto pequeno, no una tolerancia inventada.
 CONTRASTE_MIN = 4.5
-MUESTRAS_SCROLL = (0, 0.15, 0.3, 0.4, 0.5, 0.65, 0.8, 1.0)
+# El barrido fino encuentra el peor momento en el 42,4% del scroll (5,08:1), y
+# el muestreo saltaba de 0,40 a 0,50 justo por encima: declaraba 5,75 de margen
+# donde el real es 5,08. Se anaden los puntos del valle.
+MUESTRAS_SCROLL = (0, 0.15, 0.3, 0.4, 0.42, 0.44, 0.46, 0.5, 0.65, 0.8, 1.0)
 PIEZAS_ROTULO = (".scene-nav-trigger-num-a", ".scene-nav-trigger-name-a")
 
 
