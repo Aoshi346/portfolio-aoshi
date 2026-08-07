@@ -164,6 +164,20 @@ export const SILUETAS: Readonly<Record<string, readonly Pieza[]>> = {
 export function construirSilueta(id: string): HTMLElement {
   const shot = document.createElement("span");
   shot.className = "scene-shot";
+  /*
+   * Las piezas van dentro de un PLANO de 1440x900 que se escala entero, no
+   * sueltas dentro del encuadre. `transform: scale()` escala la caja de un
+   * elemento pero no su `left`/`top`: con las piezas como hijas directas, una
+   * en `top: 340px` seguia a 340px de un encuadre de 166px de alto y la
+   * recortaba el `overflow: hidden`. Medido: de las seis piezas de la silueta
+   * del hero, CERO caian dentro del encuadre — el fotograma era el haz y nada
+   * mas.
+   *
+   * El haz no entra en el plano: se dibuja sobre el encuadre, a su tamano.
+   */
+  const plano = document.createElement("span");
+  plano.className = "scene-shot-plano";
+  shot.append(plano);
   for (const p of SILUETAS[id] ?? []) {
     const n = document.createElement("span");
     n.className = `scene-shot-${p.clase}`;
@@ -181,7 +195,7 @@ export function construirSilueta(id: string): HTMLElement {
       n.style.background = "";
       if (p.tono !== undefined) n.style.color = p.tono;
     }
-    shot.append(n);
+    (p.clase === "beam" ? shot : plano).append(n);
   }
   return shot;
 }

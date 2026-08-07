@@ -2352,11 +2352,30 @@
 /* El plano se dibuja a 1440x900 y se escala al ancho REAL del encuadre.
    `100cqw` es el ancho del contenedor (el propio `.scene-shot`); dividirlo
    entre el ancho del plano da el factor exacto sea cual sea el encuadre, sin
-   JS y sin una constante que solo sirve a un ancho de pantalla. */
-:root[data-theme="hyprland"] .scene-shot > span {
+   JS y sin una constante que solo sirve a un ancho de pantalla.
+
+   Se escala el PLANO entero, no cada pieza. `transform: scale()` escala la
+   caja de un elemento pero no su `left`/`top`: escalando pieza a pieza, una en
+   `top: 340px` seguia a 340px dentro de un encuadre de 166px y la recortaba el
+   `overflow: hidden`. Medido: de las seis piezas del hero, CERO caian dentro
+   del encuadre.
+
+   El haz queda fuera del plano — se dibuja sobre el encuadre, a su tamano — y
+   por eso es hermano y no hijo. Antes se apoyaba en un `transform: none` que
+   no se cumplia: ese selector es `(0,3,0)` contra el `(0,3,1)` de la regla de
+   escala, asi que perdia y el haz se encogia a 49,1x30,7 px en la esquina. */
+:root[data-theme="hyprland"] .scene-shot-plano {
   position: absolute;
+  left: 0;
+  top: 0;
+  width: 1440px;
+  height: 900px;
   transform-origin: 0 0;
   transform: scale(calc(100cqw / 1440px));
+}
+
+:root[data-theme="hyprland"] .scene-shot-plano > span {
+  position: absolute;
 }
 
 /* La exposicion hace de navegacion: la escena en curso es la unica revelada. */
@@ -2416,8 +2435,8 @@
    escenas del sitio real, y es lo que hace que la hoja se lea como cinco
    planos de la misma pelicula en vez de cinco iconos. */
 :root[data-theme="hyprland"] .scene-shot-beam {
+  position: absolute;
   inset: 0;
-  transform: none;
   background: linear-gradient(
     106deg,
     transparent 20%,

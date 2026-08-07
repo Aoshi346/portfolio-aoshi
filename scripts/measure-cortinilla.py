@@ -18,6 +18,10 @@ CHROME = "/usr/bin/google-chrome"
 # 2px cubre el redondeo normal de `getBoundingClientRect()`/`calc()`, nada mas.
 TOLERANCIA_ESCALA = 2
 
+# El haz debe cubrir el encuadre entero. 1% de margen para el redondeo de
+# `getBoundingClientRect()`; el defecto real cubria 0,18 del ancho.
+TOLERANCIA_HAZ = 0.01
+
 LAYOUT_JS = """() => {
   const panel = document.querySelector('.scene-index');
   const filas = [...panel.querySelectorAll('.scene-index-row')];
@@ -27,9 +31,15 @@ LAYOUT_JS = """() => {
   const primeraFila = filas[0];
   const encuadre = primeraFila?.querySelector('.scene-shot');
   const encuadreRect = encuadre ? encuadre.getBoundingClientRect() : null;
-  // El primer hijo NO beam: `.scene-shot-beam` lleva `transform: none` a
-  // proposito (cruza el encuadre completo sin escalarse), asi que no sirve
-  // para leer el factor de escala real. Cualquier otro hijo si lo lleva.
+  // El primer hijo NO beam: el haz se dibuja sobre el ENCUADRE, no sobre el
+  // plano de 1440x900, asi que no se escala y no sirve para leer el factor.
+  // Cualquier otro hijo si lo lleva.
+  //
+  // Este comentario decia antes que el haz "lleva `transform: none`". Lo
+  // llevaba escrito y no lo cumplia: perdia por especificidad contra la regla
+  // de escala ((0,3,0) contra (0,3,1)) y se encogia a 49,1x30,7 px dentro de un
+  // encuadre de 266x166,3. El arnes miraba a otro lado justo donde estaba el
+  // fallo, y por eso hace falta `haz` aqui abajo: se mide, no se declara.
   const hijoEscalado = encuadre
     ? [...encuadre.children].find(c => !c.classList.contains('scene-shot-beam'))
     : null;
@@ -60,6 +70,34 @@ LAYOUT_JS = """() => {
     encuadreAlto: encuadreRect ? encuadreRect.height : null,
     escalaX: escalaX,
     planoRenderizadoAncho: escalaX !== null ? escalaX * 1440 : null,
+    // El haz es lo que levanta la silueta del negro: sin el, el fotograma es
+    // un rectangulo vacio (las piezas se dibujan en `--rule`, #3d1c1c sobre
+    // #0b0404). Debe cubrir el encuadre entero, no una esquina.
+    haz: (() => {
+      const h = encuadre?.querySelector('.scene-shot-beam');
+      if (!h || !encuadreRect) return null;
+      const b = h.getBoundingClientRect();
+      return {ancho: b.width, alto: b.height,
+              cubreAncho: b.width / encuadreRect.width,
+              cubreAlto: b.height / encuadreRect.height};
+    })(),
+    // La asercion que faltaba, y la unica que habria cazado que las piezas
+    // caian fuera del encuadre: no basta con que la silueta EXISTA
+    // (`siluetasVacias`) ni con que el factor de escala cuadre, porque el
+    // factor se lee del plano y el plano puede medir bien mientras sus piezas
+    // quedan recortadas. Se cuentan las que caen fuera de verdad.
+    piezasFuera: (() => {
+      if (!encuadre || !encuadreRect) return null;
+      const plano = encuadre.querySelector('.scene-shot-plano');
+      if (!plano) return null;
+      const piezas = [...plano.children];
+      const fuera = piezas.filter(p => {
+        const b = p.getBoundingClientRect();
+        return b.top > encuadreRect.bottom - 1 || b.bottom < encuadreRect.top + 1
+            || b.left > encuadreRect.right - 1 || b.right < encuadreRect.left + 1;
+      });
+      return {total: piezas.length, fuera: fuera.length};
+    })(),
   };
 }"""
 
@@ -140,6 +178,25 @@ def comprobar(datos, ancho):
                 f"{ancho}: el encuadre no respeta 16:10 (alto/ancho={proporcion:.3f}, "
                 f"se esperaba 0.625 +-0.01)"
             )
+    pf = datos.get("piezasFuera")
+    if pf is None:
+        fallos.append(f"{ancho}: no hay `.scene-shot-plano` en el primer encuadre")
+    elif pf["fuera"]:
+        fallos.append(
+            f"{ancho}: {pf['fuera']} de {pf['total']} piezas de la silueta caen fuera del "
+            f"encuadre y las recorta `overflow: hidden`"
+        )
+    haz = datos.get("haz")
+    if haz is None:
+        fallos.append(f"{ancho}: no hay `.scene-shot-beam` en el primer encuadre")
+    else:
+        for eje in ("cubreAncho", "cubreAlto"):
+            if abs(haz[eje] - 1) > TOLERANCIA_HAZ:
+                fallos.append(
+                    f"{ancho}: el haz cubre {haz[eje]:.3f} del encuadre en {eje[5:].lower()} "
+                    f"({haz['ancho']:.1f}x{haz['alto']:.1f}px); debe cubrirlo entero. "
+                    f"Sin haz la silueta no se ve: se dibuja en --rule sobre --color-ink"
+                )
     return fallos
 
 
