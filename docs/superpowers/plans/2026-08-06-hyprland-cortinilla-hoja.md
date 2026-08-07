@@ -1505,7 +1505,7 @@ git commit -m "feat(nav): el disparador de Hyprland pasa a pie de fotograma con 
 - Modify: `docs/superpowers/specs/2026-08-06-hyprland-cortinilla-hoja-design.md` (estado y registro)
 - Modify: `scripts/verify-baseline.json` (solo si procede, ver Step 3)
 
-- [ ] **Step 1: Los tres temas y la pasada reducida**
+- [x] **Step 1: Los tres temas y la pasada reducida**
 
 Run:
 ```bash
@@ -1522,7 +1522,7 @@ caso que el Step 3 resuelve con `--update-baseline`.
 **Vice está cerrado y aceptado: cualquier diferencia ahí es un defecto de este trabajo, no una
 línea base que actualizar.**
 
-- [ ] **Step 2: Capturas reales**
+- [x] **Step 2: Capturas reales**
 
 Con el **build de producción servido**, no con `npm run dev` (el HMR de Vite corrompe las medidas de
 ScrollTrigger y miente en los dos sentidos):
@@ -1534,7 +1534,7 @@ npm run build && npm run preview
 
 Capturar 1440×900 y 390×844 con `?theme=hyprland`, cortinilla cerrada y abierta. Cuatro imágenes.
 
-- [ ] **Step 3: Línea base**
+- [x] **Step 3: Línea base**
 
 Si arreglaste algún fallo que estaba **en** `scripts/verify-baseline.json`, hay que quitarlo de la
 base o el arnés sale en rojo a propósito:
@@ -1546,7 +1546,15 @@ git diff scripts/verify-baseline.json   # revisar ANTES de commitear
 
 Si no arreglaste ninguno, no toques el fichero.
 
-- [ ] **Step 4: Cerrar el spec**
+**Lo que pasó de verdad, y por qué el Step partía de una premisa falsa.** Los 3 fixtures de
+`vice-hero` NO estaban arreglados: `check_fixture_assets()` vivía dentro del bloque
+`if theme == "vice"`, así que en hyprland y caelestia esa comprobación no se ejecutaba y el arnés
+la leía como "arreglada" contra una línea base que es una lista plana común a los tres temas.
+`--update-baseline` desde una pasada de hyprland habría reescrito el fichero con los 9 fallos de
+esa pasada y **borrado las 12 entradas reales**. La línea base no se toca; lo que se movió es la
+llamada, que no depende del tema. Resultado: hyprland pasa a **exit 0** por primera vez.
+
+- [x] **Step 4: Cerrar el spec**
 
 En `docs/superpowers/specs/2026-08-06-hyprland-cortinilla-hoja-design.md`:
 - cambiar `Estado: pendiente de plan` por `Estado: implementado`

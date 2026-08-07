@@ -1,6 +1,6 @@
 # La hoja de contactos — la cortinilla de Hyprland deja de ser una lista y pasa a ser cinco planos
 
-Estado: pendiente de plan
+Estado: en ejecucion
 Plan: `docs/superpowers/plans/2026-08-06-hyprland-cortinilla-hoja.md`
 Fecha: 2026-08-06
 Alcance: **solo el tema Hyprland**. El disparador (`.scene-nav-trigger`) y la cortinilla
@@ -280,3 +280,91 @@ corchete, el fotograma y la tira.
 
 El barrido no está en esa lista: se exploró como dirección propia y acabó **absorbido** como gesto
 de apertura de la hoja, que es donde hace más trabajo.
+
+## Registro de implementación
+
+Implementado el 2026-08-07 en la rama `design/hyprland-cortinilla-hoja`, plan
+`docs/superpowers/plans/2026-08-06-hyprland-cortinilla-hoja.md`. **Aún no cerrado:** el estado
+sigue en `en ejecucion` porque faltan los gates de `lidia-naive-tester` y `vera-art-director` y
+la revisión de Aoshi sobre el sitio real, que es lo único que decide si esto vale.
+Merge-base `c1cacf1`. Todo A/B se hizo con `git worktree`, nunca con `git stash`.
+
+### Medidas reales
+
+| medida | 1440x900 | 390x844 |
+|---|---|---|
+| rejilla | 5 columnas | 2 columnas, la quinta a lo ancho |
+| fila | 268 x 244 | 173 x 187 (la quinta, 358 x 192) |
+| encuadre | 266 x 166,25 | 170,5 x 106,5625 |
+| escala del plano | 0,184722 | 0,118403 |
+| plano renderizado | 265,99968 (encuadre 266) | 170,50032 (encuadre 170,5) |
+| disparador | 104 x 52 | 104 x 52 |
+
+Proporción del encuadre 0,625 en los dos anchos. El disparador supera el umbral de 44x44 sin
+caja visible: los 44 los da `min-height`, no un recuadro.
+
+### Movimiento
+
+Barrido 480 ms `linear`; exposición 140 ms con retardos **9 / 102 / 195 / 289 / 382 ms**,
+derivados de la geometría real (1388 px de recorrido en 1440, paso de 280, barra a 3,0 px/ms) y
+no de la que suponía el plan. Deriva medida entre anchos: menos de 4 ms.
+
+**Sincronía: adelanto máximo −26 px.** El contenido nunca adelanta a la barra. Se consiguió
+haciendo `linear` el instrumento: con la curva de corte, el arranque lento de la barra dejaba el
+contenido hasta 83 px por delante a media apertura.
+
+Cierre en cascada inversa (110 ms escalonados 20 ms, del quinto al primero) y telón 200 ms. Con
+`prefers-reduced-motion: reduce` todo a 0 s y la barra de luz **no existe**, no se acelera.
+
+### Contraste
+
+| elemento | ratio | color |
+|---|---|---|
+| `.scene-index-name` | 17,42:1 | `--color-paper` |
+| `.scene-index-num` | 6,80:1 | `--haze` |
+| `.scene-index-blurb` | 6,37:1 | `--haze` |
+| rótulo del disparador, nombre | 15,06:1 | `--color-paper` |
+| rótulo del disparador, número | 5,75:1 | `--haze` |
+
+El rótulo del disparador se apoya en el fondo generativo sin scrim, así que `verify.py` no puede
+medirlo (excluye el texto cuyo fondo no es sólido). Se mide en `measure-cortinilla.py`, ocultando
+solo el texto para leer el fondo puro y barriendo el scroll. **Dato en conflicto, sin cerrar:** la
+revisión de la Tarea 5 midió el número en 4,53:1 con otro muestreo, contra los 5,75:1 que da el
+arnés de forma determinista en tres pasadas. Los dos pasan AA, pero uno lo hace por 0,03. Si
+Aoshi quiere holgura, lo que toca es subir el tono del número, no el umbral.
+
+### Divergencias entre lo planeado y lo hecho
+
+1. **Los retardos del barrido eran falsos.** El plan los derivó de un panel de 1216 px; el panel
+   es `position: fixed; inset: 0` y mide 1440. Recalculados dentro de la Tarea 3.
+2. **La escala de la silueta no puede ser una constante.** `--escala: 0.15` dejaba 52 px vacíos
+   —un 19% del encuadre— y además falla en cualquier ancho distinto de 1440 porque la rejilla es
+   fluida. Se deriva con `container-type: inline-size` y `scale(calc(100cqw / 1440px))`.
+3. **Las siluetas se escalan como un plano, no pieza a pieza.** `transform: scale()` escala la
+   caja de un elemento pero no su `left`/`top`: con las piezas sueltas dentro del encuadre, 0 de
+   las 6 del hero caían dentro y el `overflow: hidden` las recortaba. El fotograma era el haz y
+   nada más. Lo cazó la captura de la Tarea 6 comparada contra el prototipo, no el arnés.
+4. **Todo nodo que `sceneNav.ts` añade necesita su `display: none` de base.** El pie de dos
+   estados se coló en Vice y Caelestia y ensanchó el disparador de 167,94 a 411,06 px y de 152 a
+   303,70. Cuarta vez que el proyecto paga ese modo de fallo; ya es restricción global del plan.
+5. **El gate de contraste medía un rótulo invisible.** Al quitar la caja, `verify.py` empezó a
+   dar `SKIP` al rótulo visible y `OK 17,75:1` a la versión escondida, desplazada 38 px fuera de
+   un contenedor recortado. El widget parecía cubierto y verde. Corregido: se excluyen los nodos
+   recortados por un ancestro con `overflow: hidden`.
+6. **`check_fixture_assets` no dependía del tema y vivía dentro del bloque de Vice.** La línea
+   base es una lista plana común a los tres temas, así que en hyprland y caelestia esos tres
+   fallos no se medían, se leían como "arreglados" y el arnés salía con código 1 de forma
+   permanente. La línea base **no se ha tocado**: `--update-baseline` desde una pasada de
+   hyprland habría borrado las 12 entradas reales.
+
+### Estado de los gates
+
+`verify.py`: vice **0 nuevos**, hyprland **0 nuevos**, hyprland `--reduced` **0 nuevos**.
+Caelestia sale con **exactamente los 9** fallos de contraste preexistentes, los mismos y con las
+mismas ratios que el merge-base — es un hallazgo de accesibilidad de un tema que este trabajo no
+toca, y meterlo en la línea base sería esconderlo.
+
+`measure-cortinilla.py`, `measure-nav.py` (15/15 anclas exactas en los tres temas): en verde.
+`measure-type-scale.py` sale 1 y su salida es **byte a byte idéntica** a la del merge-base: sus 6
+entradas nuevas son un renombrado de clase (`display-xl ...` -> `hero-name-word`) que ya está en
+`main` y cuya base nadie actualizó. Ajeno a esta rama.
