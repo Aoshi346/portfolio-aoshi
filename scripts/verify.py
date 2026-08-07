@@ -1713,8 +1713,21 @@ def run(
 
                 check_reduced_motion_chrome(browser, url, theme)
 
-                if not allow_fixture_assets:
-                    check_fixture_assets()
+            # `check_fixture_assets` mira hashes de ficheros en disco: no depende
+            # del tema y por eso NO va dentro del `if theme == "vice"`, donde
+            # estaba. Ahi rompia la linea base, que es una lista plana comun a
+            # los tres temas: en hyprland y caelestia esos tres fallos no se
+            # median, el arnes los leia como "ARREGLADOS respecto a la linea
+            # base" y salia con codigo 1 en cada ejecucion. Un gate que nunca se
+            # pone verde no se lee — el mismo modo de fallo que la propia linea
+            # base venia a evitar.
+            #
+            # Y el arreglo que parecia obvio era el peligroso: `--update-baseline`
+            # desde una ejecucion de hyprland habria reescrito el fichero con los
+            # 9 fallos de esa pasada, borrando las 3 entradas que en vice SI
+            # fallan de verdad.
+            if not allow_fixture_assets:
+                check_fixture_assets()
 
             # Task 12: degradacion con prefers-reduced-motion. Corre solo
             # cuando `--reduced` esta activo (la pagina se abrio con
