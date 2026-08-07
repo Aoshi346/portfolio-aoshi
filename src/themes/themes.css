@@ -4431,15 +4431,20 @@
 }
 
 /*
- * `sceneNav.ts` añade la silueta y el golpe de luz en los TRES temas, pero solo
- * Hyprland los usa. Sin este `display: none` de base se cuelan en Vice y
- * Caelestia como hijos sueltos de una fila que es `display: flex` — mismo modo
- * de fallo que ya tuvo `.scene-nav-trigger-mark` (hallazgo M1 de la revision
- * final de rama del hero).
+ * `sceneNav.ts` añade la silueta, el golpe de luz y el pie de dos estados del
+ * disparador en los TRES temas, pero solo Hyprland los usa. Sin este
+ * `display: none` de base se cuelan en Vice y Caelestia como hijos sueltos de
+ * una fila que es `display: flex` — mismo modo de fallo que ya tuvo
+ * `.scene-nav-trigger-mark` (hallazgo M1 de la revision final de rama del hero).
+ *
+ * `-tc` volvio a caer en la misma trampa y se midio: el disparador pasaba de
+ * 168,81 a 415,31 px en Vice y de 152 a 308,22 en Caelestia, pintando
+ * "01ESCTÍTULOCERRAR" al lado del rotulo. Hyprland lo devuelve a `grid`.
  */
 .scene-shot,
 .scene-index-flash,
-.scene-index-bar {
+.scene-index-bar,
+.scene-nav-trigger-tc {
   display: none;
 }
 

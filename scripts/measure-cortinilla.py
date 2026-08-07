@@ -323,6 +323,74 @@ def comprobar_estados(cerrado, abierto, visitados, tras_esc):
     return fallos
 
 
+# El pie de dos estados se anade en los TRES temas y solo Hyprland lo estiliza.
+# Sin `display: none` de base se cuela como texto suelto: medido, el disparador
+# pasaba de 168,81 a 415,31 px en Vice y de 152 a 308,22 en Caelestia, pintando
+# "01ESCTÍTULOCERRAR" junto al rotulo. El arnes de esta tarea solo miraba
+# Hyprland y por eso no lo vio; esta comprobacion es el guardarrail que faltaba.
+#
+# Se mide el ANCHO del disparador y no la existencia del nodo: el nodo debe
+# existir en los tres temas (lo pone `sceneNav.ts`), lo que no debe existir es
+# su huella. Y se compara el texto renderizado (`innerText`, que respeta
+# `display: none`) contra el rotulo compartido, que es lo unico que esos dos
+# temas deben mostrar.
+AJENO_JS = """() => {
+  const t = document.querySelector('.scene-nav-trigger');
+  const tc = t.querySelector('.scene-nav-trigger-tc');
+  return {
+    tcEnElDom: !!tc,
+    tcDisplay: tc ? getComputedStyle(tc).display : null,
+    anchoDisparador: Math.round(t.getBoundingClientRect().width * 100) / 100,
+    textoRenderizado: t.innerText.trim(),
+    rotulo: t.querySelector('.scene-nav-trigger-label')?.textContent ?? '',
+  };
+}"""
+
+# Anchos del disparador en el merge-base c1cacf1, medidos a 1440x900 antes de
+# que existiera el pie de dos estados. Si vuelven a moverse, es que algo de
+# Hyprland se ha escapado a los otros dos temas.
+ANCHO_AJENO = {"vice": 168.81, "caelestia": 152.0}
+TOLERANCIA_AJENO = 1.5
+
+
+def medir_ajenos():
+    datos = {}
+    with sync_playwright() as pw:
+        b = pw.chromium.launch(headless=True, executable_path=CHROME,
+                               args=["--no-sandbox", "--use-gl=swiftshader"])
+        for tema in ANCHO_AJENO:
+            ctx = b.new_context(viewport={"width": 1440, "height": 900})
+            pg = ctx.new_page()
+            pg.goto(URL.replace("theme=hyprland", f"theme={tema}"),
+                    wait_until="domcontentloaded", timeout=40000)
+            pg.wait_for_timeout(6000)
+            datos[tema] = pg.evaluate(AJENO_JS)
+            ctx.close()
+        b.close()
+    return datos
+
+
+def comprobar_ajenos(datos):
+    fallos = []
+    for tema, d in datos.items():
+        if not d["tcEnElDom"]:
+            fallos.append(f"{tema}: falta `.scene-nav-trigger-tc` en el DOM")
+            continue
+        if d["tcDisplay"] != "none":
+            fallos.append(
+                f"{tema}: `.scene-nav-trigger-tc` no esta oculto (display={d['tcDisplay']})")
+        deriva = abs(d["anchoDisparador"] - ANCHO_AJENO[tema])
+        if deriva > TOLERANCIA_AJENO:
+            fallos.append(
+                f"{tema}: el disparador mide {d['anchoDisparador']}px y en el merge-base "
+                f"medía {ANCHO_AJENO[tema]}px (deriva {round(deriva, 2)}px)")
+        if d["textoRenderizado"].casefold() != d["rotulo"].casefold():
+            fallos.append(
+                f"{tema}: el disparador pinta {d['textoRenderizado']!r}, "
+                f"debe pintar solo el rotulo {d['rotulo']!r}")
+    return fallos
+
+
 def main():
     fallos = []
     for ancho, alto in ((1440, 900), (390, 844)):
@@ -349,6 +417,11 @@ def main():
     print(json.dumps({"cerrado": c, "abierto": a, "tab": v, "escDevuelveFoco": esc},
                      indent=2, ensure_ascii=False))
     fallos += comprobar_estados(c, a, v, esc)
+
+    ajenos = medir_ajenos()
+    print("\n== el disparador en los temas que NO son Hyprland")
+    print(json.dumps(ajenos, indent=2, ensure_ascii=False))
+    fallos += comprobar_ajenos(ajenos)
 
     if fallos:
         print("\nFALLOS:")
