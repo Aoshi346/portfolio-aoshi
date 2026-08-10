@@ -23,6 +23,8 @@ interface CreditEntry {
 
 const PANEL_ID = "credits-panel";
 
+type Tier = "alto" | "medio" | "bajo";
+
 function toEntry(role: string, item: SkillGroup["items"][number]): CreditEntry {
   return {
     role,
@@ -38,6 +40,30 @@ function toEntry(role: string, item: SkillGroup["items"][number]): CreditEntry {
       .filter((project) => [...project.stack, ...(project.tooling ?? [])].includes(item.name))
       .map((project) => project.title),
   };
+}
+
+/*
+ * El nivel sale del dato: en cuantas obras aparece la tecnologia, cruzando
+ * `stack` Y `tooling` — el mismo cruce que ya hace `toEntry`.
+ *
+ * Se normaliza contra el maximo de SU PROPIA parcela, no contra un maximo
+ * global. Con vara global las cinco herramientas caen a cero y un cuarto del
+ * catastro queda apagado, cuando `tooling` existe precisamente porque Git,
+ * GitHub y las dos CLI estan en TODOS los proyectos: medirlas contra `stack`
+ * las declara vacias siendo lo contrario. Y comparar entre territorios nunca
+ * fue el mensaje de esta escena.
+ */
+function tiersDeGrupo(group: SkillGroup): Map<string, Tier> {
+  const cuenta = new Map<string, number>();
+  for (const item of group.items) {
+    cuenta.set(item.slug, toEntry(group.label, item).usedIn.length);
+  }
+  const max = Math.max(...cuenta.values());
+  const tiers = new Map<string, Tier>();
+  for (const [slug, n] of cuenta) {
+    tiers.set(slug, n === 0 ? "bajo" : n === max ? "alto" : "medio");
+  }
+  return tiers;
 }
 
 /**
@@ -97,21 +123,40 @@ export function createCredits(): HTMLElement {
   const rows: HTMLButtonElement[] = [];
   const listChildren: HTMLElement[] = [];
 
+  // Contabilidad que usan tambien las tareas 6, 8 y 9 para encontrar nodos
+  // por grupo sin recorrer el DOM.
+  const labels: HTMLElement[] = []; // un rotulo por grupo
+  const filasPorGrupo: HTMLButtonElement[][] = []; // los botones de cada grupo
+  const marcasPorGrupo: Map<string, HTMLElement>[] = []; // slug -> marca, O(1) por grupo
+
+  const MAX_ITEMS = Math.max(...groups.map((g) => g.items.length)); // 8 hoy
+  const FILA_NOMBRES = 3; // 1 cabecera, 2 mojones, 3..(2+MAX) nombres, luego franja
+
+  /*
+   * Los nombres se REPARTEN por el alto de la parcela, no se amontonan
+   * arriba: las tres parcelas de 5 dejaban un agujero visible al pie y el
+   * recuento se decia dos veces (ancho Y alto). Repartidos, la segunda
+   * senal pasa a ser densidad. Las 5 filas de una parcela corta se estiran
+   * sobre las 8 ranuras de la mas larga, asi que las cuatro parcelas miden
+   * lo mismo y las cuatro chispas llegan abajo a la vez.
+   */
+  function filaDe(i: number, n: number): number {
+    if (n <= 1) return FILA_NOMBRES;
+    return Math.round((i * (MAX_ITEMS - 1)) / (n - 1)) + FILA_NOMBRES;
+  }
+
   /*
    * Friso de marcas: donde un cartel de cine pone los logos de estudio y
    * distribuidora. Va al pie y no delante de cada nombre porque una marca por
    * nombre convierte la linea de reparto en una lista con vinetas — el
    * defecto exacto que la direccion de cartel elimina.
    *
-   * Se declara AQUI, antes del bucle, y no despues: `select()` se define
-   * dentro del bucle y cierra sobre `marks`. Declararlo despues compila con
-   * "used before its declaration".
-   *
-   * El Map indexa por slug para encender la marca en O(1): `mouseenter` se
-   * dispara muchas veces por segundo al recorrer el cartel con el raton y no
-   * puede volver a recorrer el DOM en cada disparo.
+   * El encendido de marca es por parcela (`marcasPorGrupo`, declarado junto
+   * al resto de la contabilidad mas abajo): cada Map indexa por slug para
+   * encender la marca en O(1) dentro de su territorio, porque `mouseenter`
+   * se dispara muchas veces por segundo al recorrer el cartel con el raton y
+   * no puede volver a recorrer el DOM en cada disparo.
    */
-  const marks = new Map<string, HTMLElement>();
 
   /*
    * El catastro de Hyprland: cuatro parcelas, cuatro franjas de detalle y
@@ -125,7 +170,7 @@ export function createCredits(): HTMLElement {
   const strips: HTMLElement[] = [];
   const markRows: HTMLElement[] = [];
 
-  groups.forEach((_group, gi) => {
+  groups.forEach((group, gi) => {
     /*
      * Caja decorativa de columna. NO es un envoltorio: la lista sigue plana
      * y esta caja es una hermana que ocupa la columna entera de la rejilla.
@@ -139,6 +184,7 @@ export function createCredits(): HTMLElement {
     ]);
     parcela.setAttribute("data-credit-parcela", "");
     parcela.dataset.parcela = String(gi);
+    parcela.style.setProperty("--parcela-i", String(gi));
     parcela.setAttribute("aria-hidden", "true");
     parcela.setAttribute("data-decorative", "");
     parcelas.push(parcela);
@@ -149,6 +195,8 @@ export function createCredits(): HTMLElement {
     strip.id = `credits-strip-${gi}`;
     strip.setAttribute("role", "status");
     strip.setAttribute("aria-live", "polite");
+    strip.style.setProperty("--skill-col-strip", String(gi + 1));
+    strip.style.setProperty("--skill-span-m", String(3 + Math.ceil(group.items.length / 2)));
     strips.push(strip);
 
     const row = el("div", "credits-marks-row", []);
@@ -161,10 +209,19 @@ export function createCredits(): HTMLElement {
 
   groups.forEach((group, gi) => {
     const groupLabel = el("p", "credit-group-label", [group.label]);
-    groupLabel.setAttribute("data-credit-group", "");
+    groupLabel.setAttribute("data-credit-group", String(gi));
+    groupLabel.style.setProperty("--skill-col", String(gi + 1));
+    groupLabel.style.setProperty("--skill-row", "1");
     listChildren.push(groupLabel);
+    labels.push(groupLabel);
 
-    for (const item of group.items) {
+    const tiers = tiersDeGrupo(group);
+    const filaButtons: HTMLButtonElement[] = [];
+    const marcasDeEsteGrupo = new Map<string, HTMLElement>();
+    filasPorGrupo.push(filaButtons);
+    marcasPorGrupo.push(marcasDeEsteGrupo);
+
+    group.items.forEach((item, i) => {
       const entry = toEntry(group.label, item);
       const row = el("button", "credit", [
         el("span", "credit-role", [entry.role]),
@@ -173,8 +230,19 @@ export function createCredits(): HTMLElement {
       row.type = "button";
       row.setAttribute("data-credit", "");
       row.dataset.index = String(rows.length);
+      row.dataset.parcela = String(gi);
+      row.dataset.creditTier = tiers.get(item.slug) ?? "bajo";
       row.setAttribute("aria-controls", PANEL_ID);
       row.setAttribute("aria-pressed", "false");
+      row.style.setProperty("--skill-col", String(gi + 1));
+      row.style.setProperty("--skill-row", String(filaDe(i, group.items.length)));
+      // El retardo de la lampara ES la posicion de la chispa: si cambia la
+      // altura de fila y no cambia esto, el gesto miente. Los dos numeros
+      // van juntos.
+      row.style.setProperty(
+        "--skill-d",
+        `${Math.round((i / Math.max(1, group.items.length - 1)) * 620)}ms`,
+      );
       /*
        * Marcas cuyo nombre se escribe en minuscula (n8n hoy) para que el
        * cartel no las suba a versalita: "N8N" no es como se escribe la marca.
@@ -195,7 +263,7 @@ export function createCredits(): HTMLElement {
       mark.setAttribute("aria-hidden", "true");
       mark.setAttribute("data-decorative", "");
       mark.dataset.markSlug = entry.slug;
-      marks.set(entry.slug, mark);
+      marcasDeEsteGrupo.set(entry.slug, mark);
       markRows[gi].appendChild(mark);
 
       const select = () => {
@@ -230,9 +298,13 @@ export function createCredits(): HTMLElement {
         used.setAttribute("aria-hidden", String(vacio));
         // La marca encendida es una segunda senal de seleccion que no depende
         // del hover: en tactil no lo hay, y el cartel no tiene recuadros ni
-        // bordes que delaten que un nombre responde.
-        for (const [slug, node] of marks) {
-          node.classList.toggle("is-active", slug === entry.slug);
+        // bordes que delaten que un nombre responde. Se recorren las marcas
+        // de todos los grupos porque el hover puede desactivar la marca
+        // encendida de otra parcela.
+        for (const grupoDeMarcas of marcasPorGrupo) {
+          for (const [slug, node] of grupoDeMarcas) {
+            node.classList.toggle("is-active", slug === entry.slug);
+          }
         }
       };
 
@@ -241,8 +313,33 @@ export function createCredits(): HTMLElement {
       row.addEventListener("click", select);
 
       rows.push(row);
+      filaButtons.push(row);
       listChildren.push(row);
-    }
+    });
+  });
+
+  /*
+   * Movil: rejilla de DOS columnas por parcela, apiladas. Se calcula aqui y
+   * no se deja a la colocacion automatica porque las franjas y los frisos
+   * inactivos van en `display: none` y desaparecen del flujo, lo que
+   * descuadraria una rejilla automatica.
+   *
+   * Por parcela: fila base = cabecera, +1 = mojones, +2.. = nombres de dos
+   * en dos, y la franja al final.
+   */
+  let filaM = 1;
+  groups.forEach((group, gi) => {
+    const base = filaM;
+    const filasNombres = Math.ceil(group.items.length / 2);
+    labels[gi].style.setProperty("--skill-row-m", String(base));
+    markRows[gi].style.setProperty("--skill-row-m", String(base + 1));
+    group.items.forEach((_, i) => {
+      const row = filasPorGrupo[gi][i];
+      row.style.setProperty("--skill-col-m", String((i % 2) + 1));
+      row.style.setProperty("--skill-row-m", String(base + 2 + Math.floor(i / 2)));
+    });
+    strips[gi].style.setProperty("--skill-row-m", String(base + 2 + filasNombres));
+    filaM = base + 3 + filasNombres;
   });
 
   const list = el("div", "credits-list", listChildren);
@@ -267,5 +364,12 @@ export function createCredits(): HTMLElement {
   // vacio.
   rows[0]?.dispatchEvent(new MouseEvent("mouseenter"));
 
-  return el("div", "credits-grid", [list, panel, frieze, ...parcelas, ...strips]);
+  const grid = el("div", "credits-grid", [list, panel, frieze, ...parcelas, ...strips]);
+  /*
+   * El ancho de cada parcela es proporcional a cuantas tecnologias contiene:
+   * el area en pantalla ES el dato. Sale de `content.ts`, no de una lista a
+   * mano: si manana cambian los grupos, la proporcion se actualiza sola.
+   */
+  grid.style.setProperty("--parcela-cols", groups.map((g) => `${g.items.length}fr`).join(" "));
+  return grid;
 }
