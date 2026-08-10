@@ -233,13 +233,13 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
            *
            * 1100ms cubre el peor caso real: 620ms (el maximo de
            * `--skill-d`) + 400ms (duracion de la lampara) + margen. Pasado
-           * ese tiempo, `is-caught-still` empuja el `animation-delay` muy
-           * por debajo de cero (ver themes.css) — visible o no en ese
-           * instante — para que cualquier redibujado nazca ya mas alla del
-           * final y el color vuelva de inmediato al de reposo, sin volver
-           * a recorrer el keyframe. `animation-name` sigue siendo
-           * `hypr-lampara` para siempre: las lamparas nunca dejan de ser
-           * CSS, solo dejan de tener retardo pendiente.
+           * ese tiempo, `is-caught-still` apaga la `animation` (ver
+           * themes.css) — visible o no en ese instante — y el color que
+           * queda es el de reposo normal de la cascada: el fotograma 100%
+           * de `hypr-lampara` ya esta vacio, asi que apagar la animation o
+           * dejarla corriendo mas alla de su fin da el MISMO resultado
+           * visual. `animation: none` de verdad libera el objeto
+           * `Animation`, en vez de dejarlo para siempre en fase "after".
            */
           window.setTimeout(() => {
             for (const n of nombres) n.classList.add("is-caught-still");

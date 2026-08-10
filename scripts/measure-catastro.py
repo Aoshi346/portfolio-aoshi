@@ -57,12 +57,13 @@ Ocho aserciones, y todas nacieron de un fallo real o de una trampa ya pagada:
       (28.43 / 21.33 / 16px). "El nivel se dice SOLO con tipografia" es el
       contenido de la escena: sin esta aserción esa frase era una intención,
       no algo verificable.
-  12. Las 23 lamparas siguen siendo `animation` de CSS, no tweens de GSAP.
-      Reemplaza a un techo numerico de `document.getAnimations().length`
-      que se probo y se descarto (ronda de arreglo 1 de la tarea 8): el
-      diseño aprobado EXIGE 23 lamparas de `color` (barato, no dispara
-      layout) y por construccion casi todas se solapan — medido, muestreo
-      cada 16ms separando "en efecto" de "produciendo valores de verdad"
+  12. Las 23 lamparas siguen siendo `animation` de CSS, no tweens de GSAP,
+      MIENTRAS ESTAN EN SU VENTANA DE ENTRADA. Reemplaza a un techo
+      numerico de `document.getAnimations().length` que se probo y se
+      descarto (ronda de arreglo 1 de la tarea 8): el diseño aprobado
+      EXIGE 23 lamparas de `color` (barato, no dispara layout) y por
+      construccion casi todas se solapan — medido, muestreo cada 16ms
+      separando "en efecto" de "produciendo valores de verdad"
       (`effect.getComputedTiming().progress !== null`): ambas cuentas
       COINCIDEN siempre (`1/1 1/1 1/1 14/14 23/23 22/22 21/21 20/20 18/18
       15/15 13/13 10/10`), asi que ni filtrar por fase activa evita el 23.
@@ -71,8 +72,25 @@ Ocho aserciones, y todas nacieron de un fallo real o de una trampa ya pagada:
       numero por si solo no dice CUAL de los dos esta pasando. Lo que si
       lo dice es el mecanismo: si alguien reescribe la lampara como tween,
       `getComputedStyle(n).animationName` deja de ser `hypr-lampara` y esta
-      aserción cae. Medida SOLO sobre nombres visibles, mismo motivo que la
-      aserción 8.
+      aserción cae.
+
+      IMPORTANTE, ronda de arreglo 2: la primera version de esta aserción
+      medía sobre CUALQUIER nombre ya `is-caught`, sin distinguir si su
+      entrada seguía en curso o ya se había asentado. Eso obligó al CSS del
+      arreglo del destello en movil (`is-caught-still`, ver `themes.css`) a
+      usar un `animation-delay` muy negativo en vez de `animation: none`
+      — para no borrar `animationName` del computed style y no tirar esta
+      misma aserción — cuando las dos soluciones dan EXACTAMENTE el mismo
+      resultado visual (el fotograma 100% de `hypr-lampara` esta vacio). La
+      asercion mal acotada estaba dictando la implementacion en vez de
+      describir el invariante — el mismo defecto que el techo de 12 (ronda
+      1). Se corrigio primero la asercion (ahora `ir_a_creditos` sondea
+      DENTRO de la pagina, sin ida y vuelta de Playwright, hasta cazar un
+      nombre `is-caught` pero AUN NO `is-caught-still` — la ventana real en
+      la que la entrada esta en curso, no el estado ya asentado — o falla
+      explicito si esa ventana nunca aparece) y DESPUES se simplifico el
+      CSS a `animation: none`. Medida SOLO sobre nombres visibles, mismo
+      motivo que la aserción 8.
   13. GSAP no toca mas de 13 nodos en el gesto de entrada (`window.__hyprSkills`):
       4 carriles + 4 rotulos + 4 chispas + 1 tween compartido sobre las 4
       franjas = 13. Cuenta los hijos de la timeline cuyos `targets()` son
@@ -97,18 +115,52 @@ ALTO_MAXIMO_REJILLA_ESCRITORIO = 700
 GSAP_NODOS_MAXIMO = 13
 
 
-def ir_a_creditos(pg) -> bool:
+def ir_a_creditos(pg) -> dict | None:
+    """Baja hasta creditos y devuelve la ventana activa de la lampara
+    (asercion 12), capturada DURANTE el mismo viaje — no despues de que
+    todo se asiente, que ya es tarde para verla (ver docstring, asercion
+    12). `None` si la escena no existe."""
     top = pg.evaluate(
         "() => { const s = document.querySelector('[data-scene=\"credits\"]');"
         " return s ? s.getBoundingClientRect().top + window.scrollY : -1; }"
     )
     if top < 0:
-        return False
+        return None
     pg.evaluate(f"window.scrollTo(0, {top})")
+    # Sondeo DENTRO de la pagina (rapido, sin ida y vuelta de Playwright)
+    # mientras Lenis sigue desplazando: caza el primer nombre `is-caught`
+    # pero AUN NO `is-caught-still` — la ventana real en la que la entrada
+    # esta en curso. Pasado ese punto (~1.1s despues de encenderse, ver
+    # themes.css) la lampara se apaga (`animation: none`) y el conjunto
+    # queda vacio: medir despues de asentarse deja ciega a la asercion 12.
+    ventana = pg.evaluate(
+        """
+        async () => {
+          const deadline = performance.now() + 3000;
+          while (performance.now() < deadline) {
+            const activos = Array.from(
+              document.querySelectorAll('[data-credit].is-caught:not(.is-caught-still)')
+            ).filter(n => getComputedStyle(n).display !== 'none');
+            if (activos.length > 0) {
+              return {
+                found: true,
+                malos: activos
+                  .filter(n => getComputedStyle(n).animationName !== 'hypr-lampara')
+                  .map(n => n.textContent.trim()),
+                muestra: activos.length,
+              };
+            }
+            await new Promise(r => setTimeout(r, 15));
+          }
+          return { found: false, malos: [], muestra: 0 };
+        }
+        """
+    )
     # Lenis sigue desplazando despues de un scrollTo: medir antes de que
-    # asiente da falsos positivos.
-    pg.wait_for_timeout(2500)
-    return True
+    # asiente da falsos positivos en las aserciones de posicion. El sondeo
+    # de arriba ya ha consumido parte de esta espera.
+    pg.wait_for_timeout(1200)
+    return ventana
 
 
 def catastro_visible(pg) -> bool:
@@ -135,10 +187,21 @@ def main() -> int:
             pg = ctx.new_page()
             pg.goto(f"{args.url}/?theme=hyprland", wait_until="domcontentloaded", timeout=30000)
             pg.wait_for_timeout(9000)
-            if not ir_a_creditos(pg):
+            ventana = ir_a_creditos(pg)
+            if ventana is None:
                 fallos.append(f"[{nombre}] no existe [data-scene=credits]")
                 ctx.close()
                 continue
+
+            # 12. las lamparas siguen en CSS, MEDIDO EN SU VENTANA ACTIVA
+            # (no en el estado ya asentado — ver docstring y `ir_a_creditos`).
+            if not ventana["found"]:
+                fallos.append(f"[{nombre}] la ventana activa de la lampara nunca aparecio")
+            elif ventana["malos"]:
+                fallos.append(
+                    f"[{nombre}] lamparas sin animationName hypr-lampara"
+                    f" en su ventana activa: {ventana['malos']}"
+                )
 
             # 1. visibilidad
             if not catastro_visible(pg):
@@ -180,18 +243,6 @@ def main() -> int:
             )
             if desborda:
                 fallos.append(f"[{nombre}] desborda: {desborda}")
-
-            # 12. las lamparas siguen en CSS — mecanismo, no cuenta cruda.
-            # Medido SOLO sobre nombres visibles (mismo motivo que la 8): en
-            # movil tres parcelas ocultan sus `[data-credit]`.
-            sin_lampara = pg.evaluate(
-                "() => Array.from(document.querySelectorAll('[data-credit]'))"
-                " .filter(n => getComputedStyle(n).display !== 'none')"
-                " .filter(n => getComputedStyle(n).animationName !== 'hypr-lampara')"
-                " .map(n => n.textContent.trim())"
-            )
-            if sin_lampara:
-                fallos.append(f"[{nombre}] lamparas sin animationName hypr-lampara: {sin_lampara}")
 
             if nombre == "escritorio":
                 # 2. los cuatro pies a la misma cota
@@ -300,7 +351,7 @@ def main() -> int:
             pg = ctx.new_page()
             pg.goto(f"{args.url}/?theme={tema}", wait_until="domcontentloaded", timeout=30000)
             pg.wait_for_timeout(9000)
-            if ir_a_creditos(pg) and catastro_visible(pg):
+            if ir_a_creditos(pg) is not None and catastro_visible(pg):
                 fallos.append(f"[{tema}] el catastro se ve y no deberia")
             ctx.close()
 

@@ -4619,17 +4619,24 @@
  * pintarse, y ese destello tardio queda fuera del scroll de entrada que le
  * daba sentido.
  *
- * Un `animation-delay` muy negativo, NO `animation: none`: retira solo el
- * retardo, deja `animation-name` declarado como `hypr-lampara` para
- * siempre (es lo que vigila el arnes — "las lamparas siguen en CSS" se lee
- * en `animationName`, no en si la animation esta corriendo). Con el
- * retardo tan por debajo de cero, cualquier redibujado nace ya mas alla
- * de los 0.4s de duracion — sin `forwards`, ahi no aplica el 100% del
- * keyframe y el color vuelve de inmediato al de la cascada normal: cero
- * fotogramas intermedios, cero destello.
+ * `animation: none`, sin rodeos — y el orden en que se llego aqui importa
+ * mas que el propio CSS (ronda de arreglo 2 de la tarea 8). La primera
+ * version usaba un `animation-delay` muy negativo en vez de esto, para no
+ * romper `scripts/measure-catastro.py::asercion 12` — que entonces leia
+ * `animationName === 'hypr-lampara'` sobre CUALQUIER nombre ya asentado, y
+ * `animation: none` borra ese nombre del computed style. Eso era escribir
+ * la version mas retorcida de dos que hacen EXACTAMENTE lo mismo — el
+ * fotograma 100% de `hypr-lampara` esta vacio, asi que terminada la
+ * lampara el color ya lo decide la cascada normal en los dos casos —
+ * solo para no tocar una asercion mal acotada. Es el mismo error que el
+ * techo de 12 (ronda 1): la asercion describe el invariante, no dicta la
+ * implementacion. Se corrigio la asercion primero — ahora solo mide
+ * dentro de la VENTANA ACTIVA de la lampara, no el estado ya asentado — y
+ * DESPUES se simplifico este CSS a lo que se lee como lo que es: la
+ * lampara se apaga, punto.
  */
 :root[data-theme="hyprland"] .credit.is-caught.is-caught-still {
-  animation-delay: calc(var(--skill-d) - 999s);
+  animation: none;
 }
 
 /*
