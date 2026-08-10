@@ -29,6 +29,12 @@ interface Fila {
    * captura al cerrar. Sin esto, reabrir una fila donde se pulso un tile
    * dejaria la lupa con la ultima foto vista, no con `gallery[0]`. */
   miniOriginal: { src: string; alt: string; pie: string };
+  /** Intercambio de captura EN VUELO, si lo hay. Su `.call()` muta `src` a
+   * mitad de la linea de tiempo: si `pagehide` (o un cierre) llega entre el
+   * recorte de ida y esa llamada, el DOM se queda mutado DESPUES de que
+   * `restauraMini()` ya lo haya devuelto a su sitio. Ventana estrecha, mismo
+   * sintoma que ya se corrigio una vez. Se guarda para poder matarla. */
+  intercambio: ReturnType<Gsap["timeline"]> | null;
 }
 
 const PASO_RELEVO = 0.024;
@@ -68,6 +74,19 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     return nodo;
   })();
 
+  // El estado abierto es UN panel, no tres hijos absolutos sueltos. Los tres
+  // llevaban `top` en px contra un marco de 1400x820 que solo existia en el
+  // prototipo (la pista real mide 482-548 y no recorta), y de ahi salieron la
+  // ficha de alto 0 entre 821 y 1199px, la lupa 59px fuera del carril y la
+  // banda de capturas pintando sobre la seccion siguiente. Con el panel en
+  // rejilla, el alto lo dicta el contenido y no hay ningun numero que sumar a
+  // mano en cada breakpoint.
+  const panel = document.createElement("div");
+  panel.className = "obra-panel";
+  panel.setAttribute("data-obra-panel", "");
+  const visor = document.createElement("div");
+  visor.className = "obra-visor";
+  visor.setAttribute("data-obra-visor", "");
   const lupa = document.createElement("div");
   lupa.className = "obra-lupa";
   lupa.setAttribute("data-obra-lupa", "");
@@ -82,7 +101,9 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
   anuncio.className = "sr-only";
   anuncio.setAttribute("data-obra-anuncio", "");
   anuncio.setAttribute("aria-live", "polite");
-  pista.append(lupa, ficha, anuncio);
+  visor.appendChild(lupa);
+  panel.append(visor, ficha);
+  pista.append(panel, anuncio);
 
   let abierta = -1;
   let anclas: Ancla[] = [];
@@ -185,6 +206,7 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     abierta = indice;
     const fila = filas[indice];
     fila.seccion.classList.add("is-abierto");
+    fila.boton.setAttribute("aria-expanded", "true");
     relevo(gsap, fila, true, motionReducido);
 
     // La miniatura y la grande son EL MISMO nodo: Flip mide donde esta, se
@@ -193,8 +215,59 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     lupa.appendChild(fila.mini);
     Flip.from(estado, { duration: motionReducido ? 0 : 0.62, ease: "hard", absolute: true });
 
+    const piezas = bloquesDeFicha(fila.seccion);
+    anclas = piezas.map((nodo) => ({ nodo, padre: nodo.parentNode as Node, siguiente: nodo.nextSibling }));
+    ficha.replaceChildren(...piezas);
+    gsap.set(ficha, { pointerEvents: "auto" });
+    // La banda de capturas restantes (Task 8) NO viaja a la ficha: viaja a
+    // `.obra-visor`, la columna de la imagen, y queda debajo de la lupa por
+    // flujo -- asi la miniatura sigue llenando el 100% de la lupa (contrato
+    // que ya median las pruebas de `apertura()`). Si el proyecto solo tiene
+    // una captura, `otras` esta vacia y no se mueve.
+    if (fila.otras.childElementCount > 0) {
+      anclas.push({
+        nodo: fila.otras,
+        padre: fila.otras.parentNode as Node,
+        siguiente: fila.otras.nextSibling,
+      });
+      visor.appendChild(fila.otras);
+    }
+
+    // GEOMETRIA. Se hace DESPUES de poblar el panel y ANTES de apartar las
+    // filas, y en este orden porque cada paso depende del anterior:
+    //   1. el hueco de arriba es el alto REAL de la fila abierta (la unica
+    //      que se queda), leido ya sin su miniatura -- que acaba de irse a la
+    //      lupa. Un `top: 132px` a mano se equivocaba en 3 de los 4 anchos
+    //      medidos y en movil se comia 26px del propio titular.
+    //   2. la pista crece hasta contener el panel. El estado abierto pide
+    //      ~683px a 1440 y el carril natural da 548: sin esto, la lupa, la
+    //      ficha y la banda pintan fuera (y `.obra-track` ahora RECORTA, asi
+    //      que "fuera" es "no se ve ni se puede pulsar").
+    //   3. las filas se apartan por el alto FINAL de la pista, no por el que
+    //      tenia antes de crecer: con el viejo, la fila siguiente aterrizaba
+    //      dentro del carril ya crecido y se leia bajo el panel.
+    pista.style.setProperty("--cartel-fila", `${Math.round(fila.seccion.getBoundingClientRect().height)}px`);
+    // El `min-height` se suelta ANTES de medir: si esta apertura viene de
+    // cerrar otra fila, el tween de vuelta sigue en vuelo y `clientHeight`
+    // devolveria el alto inflado del panel anterior en vez del natural.
+    gsap.killTweensOf(pista);
+    const desde = pista.clientHeight;
+    pista.style.minHeight = "";
+    // Se mide con rectangulos, no con `offsetTop`/`offsetHeight`: esos dos
+    // vienen REDONDEADOS al entero y contra el `offsetParent`, y el panel
+    // encadena varias cajas con alturas fraccionarias -- la suma se quedaba
+    // corta y la ficha asomaba por debajo del carril en movil.
+    const alturaPista = Math.max(
+      pista.clientHeight,
+      Math.ceil(panel.getBoundingClientRect().bottom - pista.getBoundingClientRect().top),
+    );
+    gsap.fromTo(
+      pista,
+      { minHeight: desde },
+      { minHeight: alturaPista, duration: motionReducido ? 0 : 0.62, ease: "hard" },
+    );
+
     const arriba = fila.seccion.offsetTop;
-    const alturaPista = pista.clientHeight;
     filas.forEach((otra, j) => {
       const destino =
         j === indice ? -arriba : j < indice ? -(arriba + alturaPista) : alturaPista;
@@ -206,23 +279,6 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       });
     });
 
-    const piezas = bloquesDeFicha(fila.seccion);
-    anclas = piezas.map((nodo) => ({ nodo, padre: nodo.parentNode as Node, siguiente: nodo.nextSibling }));
-    ficha.replaceChildren(...piezas);
-    gsap.set(ficha, { pointerEvents: "auto" });
-    // La banda de capturas restantes (Task 8) NO viaja a la ficha: vive
-    // bajo la lupa, en `.obra-track`, para que la miniatura pueda seguir
-    // llenando el 100% de la lupa (contrato que ya median las pruebas de
-    // `apertura()`). Si el proyecto solo tiene una captura, `otras` esta
-    // vacia y no se mueve -- no hay nada que mostrar ni hueco que dejar.
-    if (fila.otras.childElementCount > 0) {
-      anclas.push({
-        nodo: fila.otras,
-        padre: fila.otras.parentNode as Node,
-        siguiente: fila.otras.nextSibling,
-      });
-      pista.appendChild(fila.otras);
-    }
     gsap.fromTo(
       ficha,
       { clipPath: "inset(0 100% 0 0)" },
@@ -266,6 +322,7 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     const fila = filas[abierta];
     abierta = -1;
     fila.seccion.classList.remove("is-abierto");
+    fila.boton.setAttribute("aria-expanded", "false");
     relevo(gsap, fila, false, motionReducido);
     restauraMini(gsap, fila);
     const estado = Flip.getState(fila.mini);
@@ -276,6 +333,19 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       duration: motionReducido ? 0 : 0.52,
       ease: "hard",
       stagger: 0.03,
+    });
+    // La pista vuelve a su alto natural con la misma curva. Se anima hasta el
+    // alto de las filas y solo entonces se suelta el `min-height`: bajar a 0
+    // de golpe deja caer la seccion siguiente de un tiron a mitad del gesto.
+    gsap.killTweensOf(pista);
+    const natural = alturaNatural(pista);
+    gsap.to(pista, {
+      minHeight: natural,
+      duration: motionReducido ? 0 : 0.52,
+      ease: "hard",
+      onComplete: () => {
+        pista.style.minHeight = "";
+      },
     });
     cortaParticion();
     // Sale tambien por recorte, y el contenido se devuelve DESPUES: si se
@@ -355,9 +425,17 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       // position/top/left/width/height a mano).
       gsap.set(filas.map((f) => f.seccion), { clearProps: "all" });
       gsap.set(filas.map((f) => f.mini), { clearProps: "all" });
-      for (const fila of filas) fila.seccion.classList.remove("is-abierto");
-      lupa.remove();
-      ficha.remove();
+      for (const fila of filas) {
+        fila.seccion.classList.remove("is-abierto");
+        fila.boton.setAttribute("aria-expanded", "false");
+      }
+      // El crecimiento de la pista es un estilo en linea y una variable CSS:
+      // con bfcache la pagina no se remonta, asi que sin soltarlos el carril
+      // volveria con el alto del ultimo panel abierto.
+      gsap.killTweensOf(pista);
+      pista.style.minHeight = "";
+      pista.style.removeProperty("--cartel-fila");
+      panel.remove();
       anuncio.remove();
       // La barra de brasa vive fuera de `filas`: sin esto su tween sigue vivo
       // si `destroy()` llega a mitad del barrido (p.ej. bfcache).
@@ -367,6 +445,18 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       }
     },
   };
+}
+
+/** Alto de la pista SIN el `min-height` que le pone la apertura, es decir el
+ * que le dan sus cinco filas. Se mide soltando el estilo y volviendolo a
+ * poner en la misma tarea: entre las dos escrituras no hay pintado, asi que
+ * no parpadea. */
+function alturaNatural(nodo: HTMLElement): number {
+  const previo = nodo.style.minHeight;
+  nodo.style.minHeight = "";
+  const alto = nodo.clientHeight;
+  nodo.style.minHeight = previo;
+  return alto;
 }
 
 /** Convierte el texto del boton en una letra por mirilla, con su gemela. */
@@ -386,6 +476,11 @@ function partirTitulo(seccion: HTMLElement): Fila {
     alt: miniImg?.alt ?? "",
     pie: miniPie?.textContent ?? "",
   };
+
+  // El disparador es un CONMUTADOR: abre y cierra la misma ficha, asi que
+  // tiene que decir en que estado esta. Sin esto seguia anunciandose como
+  // "Mostrar EchoPlan" con la ficha ya abierta.
+  boton.setAttribute("aria-expanded", "false");
 
   // Se parte el TITULAR, no el boton: el boton es un hermano vacio que solo
   // hace de disparador accesible (ver Task 1).
@@ -435,6 +530,7 @@ function partirTitulo(seccion: HTMLElement): Fila {
     mini,
     otras,
     miniOriginal,
+    intercambio: null,
   };
 }
 
@@ -458,6 +554,14 @@ function relevo(gsap: Gsap, fila: Fila, encendido: boolean, reducido: boolean): 
  * volver de la bfcache) leeria esa mutacion como si fuera la primera
  * captura -- `gallery[0]` quedaria inaccesible el resto de la sesion. */
 function restauraMini(gsap: Gsap, fila: Fila): void {
+  // La linea de tiempo del intercambio PRIMERO: `killTweensOf(fila.mini)` mata
+  // los dos recortes pero no el `.call()` que hay entre ellos, que muta
+  // `src`/`alt`/pie. Si llega despues de esta funcion, deja el DOM real
+  // intercambiado justo cuando se acaba de devolver a su sitio.
+  if (fila.intercambio) {
+    fila.intercambio.kill();
+    fila.intercambio = null;
+  }
   gsap.killTweensOf(fila.mini);
   gsap.set(fila.mini, { clipPath: "inset(0 0 0 0)" });
   const img = fila.mini.querySelector<HTMLImageElement>(".obra-mini-img");
@@ -519,7 +623,9 @@ function engancharOtras(gsap: Gsap, fila: Fila, reducido: boolean): () => void {
       const srcLupa = miniImg.src;
       const altLupa = miniImg.alt;
       gsap.killTweensOf(fila.mini);
-      const tl = gsap.timeline();
+      if (fila.intercambio) fila.intercambio.kill();
+      const tl = gsap.timeline({ onComplete: () => { fila.intercambio = null; } });
+      fila.intercambio = tl;
       tl.to(fila.mini, { clipPath: "inset(0 0 0 100%)", duration: reducido ? 0 : 0.21, ease: "hard" }).call(
         () => {
           miniImg.src = srcTile;

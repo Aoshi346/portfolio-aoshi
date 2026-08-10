@@ -2343,7 +2343,13 @@
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-mini {
   display: block;
   order: 3;
-  flex: 0 0 144px;
+  /* El ANCHO se deriva del alto por proporcion, no se escribe: con `144px` a
+     mano la miniatura quedaba en 1,43:1 (144 x 100,63) mientras el spec pide
+     16:10 -- el ancho se quedo del prototipo cuando se corrigio el alto, y el
+     arnes solo comparaba alturas. Con `aspect-ratio` no hay dos numeros que
+     mantener en sync: los tres breakpoints solo declaran su alto. */
+  flex: 0 0 auto;
+  aspect-ratio: 16 / 10;
   height: calc(var(--t-8) * 1.12); /* = caja del titulo a --t-8 con interlinea 1,12 */
   margin: 0;
   position: relative;
@@ -2399,8 +2405,11 @@
 }
 :root[data-theme="hyprland"] .obra-barrido {
   position: absolute;
-  top: -6px;
-  bottom: -6px;
+  /* Pegada a los bordes del carril, sin sangrar 6px por arriba y por abajo:
+     `.obra-track` recorta desde esta revision (las filas apartadas no pueden
+     pintar sobre la seccion siguiente) y esa sangria se perderia igual. */
+  top: 0;
+  bottom: 0;
   width: 2px;
   background: var(--l1);
   box-shadow: 0 0 26px var(--l1);
@@ -2409,10 +2418,35 @@
   z-index: 8;
 }
 :root[data-theme="hyprland"] .obra-track {
-  position: relative;   /* ancla de la barra */
-  /* Task 6: la lupa y la ficha se miden en `cqw` sobre este ancho, no en px
-     fijos -- ver el comentario de `.obra-lupa`/`.obra-ficha` mas abajo. */
+  position: relative;   /* ancla de la barra y del panel abierto */
+  /* La lupa y la ficha se miden en `cqw` sobre este ancho, no en px fijos --
+     ver el comentario de `.obra-panel` mas abajo. */
   container-type: inline-size;
+  /*
+    RECORTA. Las cinco filas se apartan con un `y` del tamano del carril
+    cuando una abre; sin este recorte no las para nadie (`.obra-rail`, el
+    carril y la seccion iban los tres en `overflow: visible`) y se leian
+    titulares fantasma, ordinales y miniaturas superpuestos a "Con que
+    construyo" -- medido a 1440 y a 1000. En el prototipo salian de cuadro
+    porque el marco recortaba; aqui no habia marco.
+  */
+  overflow: hidden;
+  /*
+    Geometria del estado abierto, EN UN SOLO SITIO.
+
+    `--cartel-fila` lo escribe `obraCartel.ts` al abrir, con el alto REAL de
+    la fila abierta (la unica que se queda arriba). El valor de aqui es solo
+    la red por si el modulo no llega a montar: la version anterior fijaba
+    `top: 132px` a mano contra un marco de 820px de alto que no existe en el
+    DOM (`.obra-track` mide 482-548), y de ahi salian una ficha de alto 0
+    entre 821 y 1199px y una lupa que se salia 59px del carril en escritorio.
+  */
+  --cartel-fila: 110px;
+  --cartel-hueco: 22px;
+  --cartel-calle: 2.7778cqw;   /* 40 / 1440 */
+  --lupa-ancho: 52.7778cqw;    /* 760 / 1440 -- medido y aprobado */
+  --lupa-ratio: 16 / 10;
+  --ficha-ancho: 36.1111cqw;   /* 520 / 1440 -- medido y aprobado */
 }
 
 /*
@@ -2444,36 +2478,65 @@
   repueblan en cada `abre()`. `.obra-mini` viaja de la fila a `.obra-lupa`
   con Flip (el MISMO nodo), asi que su tamano de reposo no aplica aqui.
 
-  Task 6 -- el hueco 1200-1439px: la geometria de aqui abajo estaba en px
-  fijos (lupa 760, ficha a 800px del borde con 520 de ancho -- suman 1320px).
-  Los `@media` de movil/tableta de esta misma tarea solo cubren hasta 1199,
-  asi que entre 1200 y 1439 no habia ninguna regla y un portatil de 1280
-  (1280 < 1320) sacaba la ficha por la derecha de la pista. Se destapo en la
-  revision de la Task 4 y no tenia numeros medidos hasta ahora.
+  El ancho se deriva del ancho REAL de `.obra-track` (`container-type:
+  inline-size` mas arriba): `1cqw` es 1% de ese ancho, asi que expresar
+  760/40/520 como fraccion de 1440 en `cqw` da EXACTAMENTE esos px cuando el
+  contenedor mide 1440 -- los numeros medidos y aprobados por Aoshi no
+  cambian -- y encoge proporcionalmente por debajo.
 
-  En vez de un tercer breakpoint, la geometria se deriva del ancho REAL de
-  `.obra-track` (`container-type: inline-size` mas arriba): `1cqw` es 1% de
-  ese ancho, asi que expresar 760/800/520 como fraccion de 1440 en `cqw` da
-  EXACTAMENTE esos mismos px cuando el contenedor mide 1440 -- los numeros
-  medidos y aprobados por Aoshi no cambian -- y encoge solo por debajo, sin
-  overflow a ningun ancho (la ficha nunca pasa de `left + width` = 91,667%,
-  siempre por debajo del 100% del contenedor). Un `calc()` sobre px fijos no
-  vale aqui precisamente porque lo que hay que perseguir es el ancho real del
-  contenedor, no un punto de corte mas.
+  El ALTO era el que mentia. La version anterior daba a los tres hijos
+  absolutos (`lupa`, `ficha`, `otras`) un `top` en px contra un marco de
+  1400x820 que solo existia en el prototipo, y que ademas recortaba: en el
+  DOM real la pista mide 482-548px. De ahi, medido: la ficha con alto 0 en
+  todo el tramo 821-1199 (`top: 570` sobre 482), la lupa 59px fuera del
+  carril a 1280 y a 1440, y la banda de capturas 75px por debajo del borde,
+  encima de "Con que construyo" y con sus tiles inalcanzables
+  (`elementFromPoint` sobre el centro del tile devolvia la seccion siguiente).
+
+  Ahora no hay ningun `top` de contenido:
+    - los tres cuelgan de UN panel, y el panel es una rejilla en flujo. El
+      alto del panel lo dicta su contenido, no un numero.
+    - el panel arranca justo debajo de la fila abierta: `--cartel-fila` es su
+      alto REAL, medido por `obraCartel.ts` en cada apertura.
+    - la pista CRECE para contener el panel (`min-height`, tambien desde el
+      modulo, animada con la misma curva que el resto de la apertura). Es la
+      decision de diseno de esta revision: con la lupa de 760x475 aprobada,
+      el estado abierto pide ~683px y el carril real da 548 -- o crecia el
+      carril, o habia que encoger la lupa o mudar la banda. Crece el carril:
+      es lo unico que no toca nada ya aprobado.
 */
-:root[data-theme="hyprland"] .obra-lupa {
+:root[data-theme="hyprland"] .obra-panel {
   position: absolute;
   left: 0;
-  top: 132px;
-  width: 52.7778cqw;  /* 760 / 1440 */
-  height: 475px;
+  right: 0;
+  top: calc(var(--cartel-fila) + var(--cartel-hueco));
+  display: grid;
+  grid-template-columns: var(--lupa-ancho) var(--ficha-ancho);
+  column-gap: var(--cartel-calle);
+  align-items: start;
+  /* La ficha abierta y los tiles lo reactivan por su cuenta. Sin esto el
+     panel vacio taparia las cinco filas: es el defecto medido en el
+     prototipo, donde el arnes se quedo 30s intentando pulsar. */
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .obra-visor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+:root[data-theme="hyprland"] .obra-lupa {
+  position: relative;   /* bloque contenedor del pie de la miniatura */
+  width: 100%;
+  /* Alto por PROPORCION, no fijo: con `height: 475px` y ancho en `cqw` la
+     lupa pasaba de 1,6:1 a 1440 a 1,42:1 a 1280, y con `object-fit: cover`
+     recortaba mas cuanto mas estrecha la ventana -- justo lo que la lupa
+     existe para evitar. */
+  aspect-ratio: var(--lupa-ratio);
   pointer-events: none;
 }
 :root[data-theme="hyprland"] .obra-ficha {
-  position: absolute;
-  left: 55.5556cqw;  /* 800 / 1440 */
-  top: 132px;
-  width: 36.1111cqw;  /* 520 / 1440 */
+  min-width: 0;
   /* La ficha entra y sale por RECORTE, no por opacidad. La ley de la
      seccion es que aqui nada se desvanece, y una ficha que aparece con un
      fundido la rompe en el sitio mas visible. */
@@ -2501,27 +2564,24 @@
   padding-top: 0.4rem;
 }
 /*
- * Ficha comprimida verticalmente: a 900px de alto la pista mide ~416px desde
- * la primera fila hasta su borde, y las cinco fichas (medidas con el
- * contenido real de `content.ts`, no una aproximacion) pasaban ese margen en
- * las filas con textos mas largos (HyprFinance +50px, WatchDog +35px,
- * EchoPlan +24px). El interlineado `leading-relaxed` (1.625) es el que mas
- * pesa en un bloque de 3-4 lineas; `leading-snug` (1.375) es la unica
- * reduccion que recupera margen suficiente sin tocar el tamano de letra.
+ * El interlineado vuelve al del resto del sitio. Se habia bajado dos veces
+ * (1.625 -> 1.375 en el lead y en el parrafo de la columna) para que la ficha
+ * cupiese en "la pista", pero esa pista se medida contra un marco de 820px que
+ * no existe: la hermana de al lado, la lupa, se salia 59px sin que nadie lo
+ * midiera. Con el carril creciendo hasta contener el panel, la ficha no tiene
+ * que pagar nada. Solo se conserva el ajuste de margenes, que es maquetacion
+ * de la ficha y no compresion de la lectura.
  */
 :root[data-theme="hyprland"] .obra-ficha .lead {
   margin-top: 0;
-  line-height: 1.375;
 }
 /* Se apunta a `.leading-relaxed` (la utilidad de Tailwind que ya lleva el
    parrafo de texto en `column()`, `projectScene.ts`), no a `:last-child`: por
    posicion es una diana fragil — si una columna gana un segundo parrafo, ese
-   parrafo se queda fuera del ajuste sin que nada lo detecte hasta que el
-   desborde real supere el borde de la pista. Por clase se apunta a lo que el
-   parrafo ES (el de interlineado relajado), no a donde vive. */
+   parrafo se queda fuera del ajuste sin que nada lo detecte. Por clase se
+   apunta a lo que el parrafo ES, no a donde vive. */
 :root[data-theme="hyprland"] .obra-ficha [data-mask] .leading-relaxed {
   margin-top: 0.35rem;
-  line-height: 1.375;
 }
 /*
   Las marcas del stack (Task 5): comparten gramatica con el friso del
@@ -2536,12 +2596,10 @@
 :root[data-theme="hyprland"] .obra-ficha .obra-marcas {
   display: flex;
   gap: 14px;
-  /* 8px, no 12: con HyprFinance (4 marcas tras retirar Zustand, que no
-     tiene simple-icon) la ficha desbordaba la pista 3px con 12px de
-     margen. La gramatica compartida con el friso del catastro es de
-     tratamiento de la marca (tamano, color, sin caja) -- este margen es
-     puramente de maquetacion de ESTA ficha y no la rompe. */
-  margin-top: 8px;
+  /* Vuelven los 12px: se habian bajado a 8 porque con HyprFinance la ficha
+     "desbordaba la pista 3px", medido contra el marco imaginario de 820px de
+     alto. Sin ese marco, esos 3px no existen. */
+  margin-top: 12px;
   flex-wrap: wrap;
   color: var(--haze);
 }
@@ -2568,7 +2626,14 @@
 */
 :root[data-theme="hyprland"] .obra-lupa .obra-mini {
   display: block;
-  position: relative;
+  /* ABSOLUTA contra la lupa, no `position: relative` con `height: 100%`: la
+     lupa se dimensiona por `aspect-ratio` con alto automatico, asi que un
+     100% de ese alto es un porcentaje contra algo indefinido -- la miniatura
+     caia en su propia proporcion y ESTIRABA la lupa (336x210 medidos en
+     movil, donde el spec pide 336x190). Fuera del flujo no puede empujar a su
+     contenedor, y sigue siendo el bloque contenedor del pie. */
+  position: absolute;
+  inset: 0;
   flex: none;
   width: 100%;
   height: 100%;
@@ -2595,28 +2660,32 @@
  * Las capturas restantes del proyecto (Task 8): un tile de 96x60 por cada
  * foto que no sea la primera. `.obra-mini` sigue llenando el 100% de la
  * lupa (contrato ya medido en `apertura()`), asi que la banda NO vive dentro
- * de `.obra-lupa` -- viaja directa a `.obra-track` (mismo nivel que la lupa
- * y la ficha) y se ancla DEBAJO de la caja de la lupa. En reposo (todavia
- * colgada de su fila, o si el proyecto solo tiene una captura y nunca viaja)
- * sigue `display: none` (`style.css`).
+ * de `.obra-lupa` -- viaja a `.obra-visor`, la columna de la imagen, y queda
+ * DEBAJO de la lupa por flujo. En reposo (todavia colgada de su fila, o si
+ * el proyecto solo tiene una captura y nunca viaja) sigue `display: none`
+ * (`style.css`).
  *
- * Los numeros de "top" salen de sumar top+alto de `.obra-lupa` en ESTE mismo
- * breakpoint mas 16px de margen (el mismo margen que ya separaba la lupa de
- * la ficha) -- no estan inventados, y si la geometria de la lupa cambia en
- * un breakpoint hay que recalcular el suyo aqui.
+ * Ya no lleva `top`: el `623px` que llevaba antes se calculaba sumando el
+ * top y el alto de la lupa a mano en cada breakpoint -- dos numeros que
+ * mantener en sync y ninguno medido contra el carril real. Con la banda en
+ * la columna, la suma la hace el `gap` de la rejilla.
+ *
+ * `:empty` importa: el proyecto de una sola captura (Editor de texto) mueve
+ * una banda vacia, y sin esto el `gap` de la columna dejaria 16px de hueco
+ * muerto bajo la lupa.
  *
  * Sin marca de "activo": el tile INTERCAMBIA su foto con la de la lupa
  * (`obraCartel.ts`, `engancharOtras`) -- es un conmutador reversible, no un
  * selector, asi que no hay "cual esta activo" que marcar. Lo que ves en el
  * tile es precisamente lo que no estas viendo en grande.
  */
-:root[data-theme="hyprland"] .obra-track > .obra-otras {
-  position: absolute;
-  left: 0;
-  top: 623px; /* 132 (top de .obra-lupa) + 475 (alto) + 16 */
+:root[data-theme="hyprland"] .obra-visor > .obra-otras {
   display: flex;
   gap: 8px;
   pointer-events: auto;
+}
+:root[data-theme="hyprland"] .obra-visor > .obra-otras:empty {
+  display: none;
 }
 :root[data-theme="hyprland"] .obra-otra {
   display: block;
@@ -2661,6 +2730,34 @@
   basta con el ancho, que es lo que decide si hay sitio para el canto
   derecho.
 */
+/*
+  Una sola columna por debajo de 1200px: la ficha va DEBAJO del visor, no al
+  lado. A 821px la columna de la ficha medria 296px, que no es una columna de
+  lectura. El corte es el mismo que ya usa el titular (`--t-8` a partir de
+  1200), asi que el cambio de regimen ocurre donde el cartel ya cambia de voz.
+*/
+@media (max-width: 1199px) {
+  :root[data-theme="hyprland"] .obra-panel {
+    grid-template-columns: 1fr;
+    row-gap: 16px;
+  }
+  :root[data-theme="hyprland"] .obra-lupa {
+    width: var(--lupa-ancho);
+  }
+}
+@media (min-width: 821px) and (max-width: 1199px) {
+  :root[data-theme="hyprland"] .obra-track {
+    /* 66% del carril: 542px a 821 y 791px a 1199, siempre 16:10. Antes eran
+       592x370 fijos, que a 1199 dejaban la lupa en la mitad del carril. */
+    --lupa-ancho: 66cqw;
+  }
+  /* La columna la marca la lupa, y la ficha se alinea con ella. A ancho
+     completo el parrafo de la ficha medía 110 caracteres por linea en una
+     tableta de 1000px: es texto que no se lee, aunque quepa. */
+  :root[data-theme="hyprland"] .obra-panel {
+    grid-template-columns: var(--lupa-ancho);
+  }
+}
 @media (max-width: 820px) {
   :root[data-theme="hyprland"] [data-scene="obra"] {
     flex-wrap: wrap;
@@ -2676,58 +2773,23 @@
     margin-top: 5px;
   }
   :root[data-theme="hyprland"] [data-scene="obra"] .obra-mini {
-    flex: 0 0 96px;
-    height: 60px;
+    height: 60px;      /* el ancho sale de `aspect-ratio`: 96px */
     clip-path: none;   /* sin hover, la captura no se esconde */
   }
-  :root[data-theme="hyprland"] .obra-lupa {
-    top: 88px;
-    width: 336px;
-    height: 130px;
+  :root[data-theme="hyprland"] .obra-track {
+    --cartel-hueco: 16px;
+    --lupa-ancho: min(336px, 100%);
+    /* 336x190, el valor del spec. La Task 8 lo habia bajado a 336x130 (2,58:1)
+       para hacer sitio a la banda de capturas contra un carril que no crecia;
+       ahora crece, asi que se recupera. */
+    --lupa-ratio: 336 / 190;
   }
-  /* Task 8: banda bajo la lupa (88 + 130 + 8 de margen), y la ficha se
-     empuja 60px (el alto del tile) + el mismo margen para no solaparla. */
-  :root[data-theme="hyprland"] .obra-track > .obra-otras {
-    top: 226px;
-  }
-  :root[data-theme="hyprland"] .obra-ficha {
-    left: 0;
-    top: 294px;
-    width: 100%;
-    bottom: 0;
-    /* El scroll interno esta MEDIDO tras la Task 8 (banda de capturas
-       restantes bajo la lupa, que empuja la ficha 60px mas abajo): el pie
-       de Rol y Periodo sigue quedando dentro del scroll interno, nunca
-       cortado sin posibilidad de desplazarse (ver `.obra-ficha .lead` y
-       `[data-mask] .leading-relaxed` mas arriba, que ya vienen comprimidos
-       para la ficha de escritorio y siguen aplicando aqui). */
-    overflow-y: auto;
-    scrollbar-width: none;
-  }
-  :root[data-theme="hyprland"] .obra-ficha::-webkit-scrollbar {
-    display: none;
-  }
+  /* La ficha ya NO lleva scroll interno: el carril crece hasta contenerla, asi
+     que se lee desplazando la pagina, no una caja dentro de la pagina. */
 }
 @media (min-width: 821px) and (max-width: 1199px) {
   :root[data-theme="hyprland"] [data-scene="obra"] .obra-mini {
-    flex: 0 0 152px;
-    height: 95px;
-  }
-  :root[data-theme="hyprland"] .obra-lupa {
-    top: 124px;
-    width: 592px;
-    height: 370px;
-  }
-  /* Task 8: banda bajo la lupa (124 + 370 + 8), ficha empujada 60px + 8. */
-  :root[data-theme="hyprland"] .obra-track > .obra-otras {
-    top: 502px;
-  }
-  :root[data-theme="hyprland"] .obra-ficha {
-    left: 0;
-    top: 570px;
-    width: 100%;
-    bottom: 0;
-    overflow-y: auto;
+    height: 95px;      /* el ancho sale de `aspect-ratio`: 152px */
   }
 }
 
