@@ -57,7 +57,7 @@ Se aplican a **todas** las tareas.
 
 | Fichero | Qué hace | Tarea |
 |---|---|---|
-| `src/sections/obra/projectScene.ts` | **Modificar.** Añade los nodos del cartel: `[data-obra-mini]`, `[data-obra-marcas]` y el `<button data-obra-abrir>` que envuelve el título. | 1, 5 |
+| `src/sections/obra/projectScene.ts` | **Modificar.** Añade los nodos del cartel: `[data-obra-mini]`, `[data-obra-marcas]` y el `<button data-obra-abrir>` hermano del título. | 1, 5 |
 | `src/utils/stackIcons.ts` | **Crear.** Mapa nombre de `stack` → slug de `simple-icons`. Aislado para que se pueda probar y ampliar sin tocar la escena. | 5 |
 | `src/style.css` | **Modificar (sólo añadir).** Reglas base que dejan los nodos nuevos ocultos y neutralizan el `<button>` en Vice/Caelestia. | 1 |
 | `src/themes/themes.css` | **Modificar.** Retira el bloque `LA TIRA DE EXPOSICION` y añade el bloque `EL CARTEL`. | 2, 4, 6, 7 |
@@ -81,7 +81,8 @@ Se aplican a **todas** las tareas.
 - Consume: `CaseStudy` de `src/data/content.ts`, `el()` de `src/utils/dom.ts`.
 - Produce: los ganchos `[data-obra-mini]` (un `<figure>` con `<img>` y `<figcaption>`),
   `[data-obra-marcas]` (un `<div>` vacío que rellena la Task 5) y
-  `[data-obra-abrir]` (un `<button>` dentro del `<h2>` con el texto del título).
+  `[data-obra-abrir]` (un `<button>` vacío, **hermano** del `<h2>`; su nombre accesible lo pone
+  la Task 3).
 
 **Por qué esta tarea existe sola:** el patrón aditivo del proyecto se ha roto cuatro veces por
 olvidar el `display: none` de base (nota en `scripts/measure-placa.py`). Los nodos entran y se
@@ -98,10 +99,10 @@ Las aserciones nacen de fallos reales, como en `measure-placa.py`:
   1. Los nodos del cartel existen en el DOM y estan OCULTOS en Vice y en
      Caelestia. El patron aditivo se ha roto cuatro veces por olvidar el
      `display: none` de base.
-  2. El boton de apertura no altera la maquetacion de Vice ni de Caelestia.
-     Chrome computa `display: inline` como `inline-block` en un <button>
-     salvo que se ponga `appearance: none`; ese fallo exacto ya se pago en
-     el marcador de identidad de los creditos.
+  2. Hay CINCO disparadores y los cinco titulares conservan su texto. Un
+     `querySelectorAll` vacio hace que el bucle de comprobacion no itere y
+     el arnes salga verde sin comprobar nada: eso paso en la primera
+     version de este mismo fichero.
 """
 import argparse
 import sys
@@ -132,15 +133,25 @@ def nodos_ocultos(pg) -> list[str]:
     )
 
 
-def boton_neutral(pg) -> list[str]:
+def titulo_intacto(pg) -> list[str]:
+    """El titular sigue diciendo lo que dice `content.ts` despues de que el
+    tema lo parta en caracteres, y hay CINCO disparadores.
+
+    El conteo no es decorativo: sin el, un `querySelectorAll` que devuelve 0
+    hace que el bucle no itere, no se empuje ningun fallo y el arnes salga
+    verde sin haber comprobado nada. Es el modo de fallo que destapo la
+    revision de la Task 1.
+    """
     return pg.evaluate(
         """() => {
           const fallos = [];
-          for (const b of document.querySelectorAll('[data-obra-abrir]')) {
-            const cs = getComputedStyle(b);
-            if (cs.display !== 'inline') fallos.push(`display ${cs.display}, esperaba inline`);
-            if (cs.appearance !== 'none') fallos.push(`appearance ${cs.appearance}`);
-            if (parseFloat(cs.paddingLeft) !== 0) fallos.push('padding heredado del UA');
+          const botones = document.querySelectorAll('[data-obra-abrir]');
+          if (botones.length !== 5) fallos.push(`${botones.length} disparadores, esperaba 5`);
+          const titulos = Array.from(document.querySelectorAll('[data-scene="obra"] h2.display-lg'));
+          if (titulos.length !== 5) fallos.push(`${titulos.length} titulares, esperaba 5`);
+          for (const t of titulos) {
+            const texto = (t.textContent || '').trim();
+            if (!texto) fallos.push('titular sin texto tras el split de caracteres');
           }
           return fallos;
         }"""
@@ -158,7 +169,7 @@ def main() -> int:
         for tema in TEMAS_AJENOS:
             abre(pg, args.base, tema)
             fallos += [f"[{tema}] {f}" for f in nodos_ocultos(pg)]
-            fallos += [f"[{tema}] {f}" for f in boton_neutral(pg)]
+            fallos += [f"[{tema}] {f}" for f in titulo_intacto(pg)]
         b.close()
     for f in fallos:
         print(f"FALLO {f}")
@@ -206,21 +217,30 @@ Dentro de `createProjectScene`, antes de construir `children`:
   marcas.setAttribute("aria-hidden", "true");
 ```
 
-Y el título deja de ser texto suelto para llevar dentro el disparador accesible. **Un `<h2>` no
-puede ir dentro de un `<button>`** (el modelo de contenido del botón es *phrasing*), así que va al
-revés: el botón dentro del encabezado.
+Y el disparador accesible, que va **como hermano del `<h2>`, nunca dentro**. El `<h2>` conserva
+su texto y sus atributos tal y como están hoy: no se toca.
+
+**Por qué fuera y no dentro** (medido, no deducido): `src/utils/reveal.ts:19` y
+`src/themes/vice.choreography.ts:32` parten el titular en caracteres haciendo
+`target.textContent = ""` sobre `[data-title]`. Caelestia no declara `choreography` propia, así que
+cae en las recetas genéricas de `reveal.ts`; Vice usa su propio `splitChars`. Un `<button>` anidado
+en ese `<h2>` **se borra del DOM en los dos temas** a los pocos ms de cargar. Hyprland se salva
+porque tiene coreografía propia, pero el gancho no puede depender de eso. Blindar el split queda
+descartado: obligaría a editar `vice.choreography.ts`, y **Vice está cerrado**.
 
 ```ts
-  const abrir = el("button", "obra-abrir", [project.title]);
+  // El disparador va FUERA del <h2>. Dentro no sobrevive: `reveal.ts` (que es
+  // lo que usa Caelestia) y `vice.choreography.ts` parten el titular con
+  // `target.textContent = ""` y se llevarian el boton por delante. En Hyprland
+  // este boton cubre la fila entera; en los otros dos temas no existe.
+  const abrir = el("button", "obra-abrir", []);
   abrir.setAttribute("data-obra-abrir", "");
   abrir.type = "button";
-
-  const title = el("h2", "display-lg mt-5 max-w-3xl text-[clamp(2rem,6vw,4.6rem)]", [abrir]);
-  title.setAttribute("data-reveal", "chars");
-  title.setAttribute("data-title", "");
+  // El nombre accesible lo pone el modulo del cartel (Task 3), que es quien
+  // conoce el titulo ya partido en letras.
 ```
 
-Añade `mini` y `marcas` a `children`, detrás de `columns`.
+Añade `mini`, `marcas` y `abrir` a `children`, detrás de `columns`.
 
 - [ ] **Paso 4: Neutralizar los nodos nuevos en `src/style.css`**
 
@@ -231,31 +251,16 @@ Al final del fichero:
  * Nodos del cartel de obra (`projectScene.ts`). Nacen apagados para los TRES
  * temas: solo el bloque Hyprland de `themes.css` los enciende. El patron
  * aditivo se ha roto cuatro veces por olvidar justo esto.
+ *
+ * `.obra-abrir` es HERMANO del <h2>, no hijo: dentro lo borraria el split de
+ * caracteres de `reveal.ts` (Caelestia) y de `vice.choreography.ts`, que hacen
+ * `target.textContent = ""`. Estando fuera basta con ocultarlo, y ademas no
+ * hay que pelear con el `appearance` del agente de usuario.
  */
 .obra-mini,
-.obra-marcas {
-  display: none;
-}
-
-/*
- * El titulo pasa a llevar un <button> dentro para que el cartel de Hyprland
- * tenga un disparador accesible. En Vice y en Caelestia ese boton no debe
- * existir visualmente: sin `appearance: none`, Chrome computa `display:
- * inline` como `inline-block` en un boton, y ese fallo exacto ya se pago en
- * el marcador de identidad de los creditos.
- */
+.obra-marcas,
 .obra-abrir {
-  appearance: none;
-  display: inline;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-  text-align: inherit;
-  cursor: default;
+  display: none;
 }
 ```
 
@@ -459,6 +464,17 @@ En su lugar:
   color: var(--haze);
 }
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-abrir {
+  /* El disparador cubre la fila entera: el objetivo tactil es la fila, no una
+     palabra. Va por debajo del contenido en z para no taparlo, y sin fondo. */
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   cursor: pointer;
 }
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-abrir:focus-visible {
@@ -665,17 +681,20 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
 /** Convierte el texto del boton en una letra por mirilla, con su gemela. */
 function partirTitulo(seccion: HTMLElement): Fila {
   const boton = seccion.querySelector<HTMLButtonElement>("[data-obra-abrir]");
+  const titulo = seccion.querySelector<HTMLElement>("h2.display-lg");
   const mini = seccion.querySelector<HTMLElement>("[data-obra-mini]");
-  if (!boton || !mini) throw new Error("Fila de obra sin boton o sin miniatura");
+  if (!boton || !titulo || !mini) throw new Error("Fila de obra sin boton, titulo o miniatura");
 
-  const texto = boton.textContent ?? "";
-  boton.textContent = "";
+  // Se parte el TITULAR, no el boton: el boton es un hermano vacio que solo
+  // hace de disparador accesible (ver Task 1).
+  const texto = titulo.textContent ?? "";
+  titulo.textContent = "";
   for (const caracter of texto) {
     const mirilla = document.createElement("span");
     mirilla.className = "obra-ch";
     if (caracter === " ") {
       mirilla.classList.add("obra-ch-hueco");
-      boton.appendChild(mirilla);
+      titulo.appendChild(mirilla);
       continue;
     }
     const capaEntrada = document.createElement("span");
@@ -689,7 +708,7 @@ function partirTitulo(seccion: HTMLElement): Fila {
     }
     capaEntrada.appendChild(tira);
     mirilla.appendChild(capaEntrada);
-    boton.appendChild(mirilla);
+    titulo.appendChild(mirilla);
   }
   // El texto partido deja de ser legible para un lector de pantalla: se le
   // devuelve entero por `aria-label`.
@@ -698,8 +717,8 @@ function partirTitulo(seccion: HTMLElement): Fila {
   return {
     seccion,
     boton,
-    tiras: Array.from(boton.querySelectorAll<HTMLElement>(".obra-rl")),
-    entradas: Array.from(boton.querySelectorAll<HTMLElement>(".obra-en")),
+    tiras: Array.from(titulo.querySelectorAll<HTMLElement>(".obra-rl")),
+    entradas: Array.from(titulo.querySelectorAll<HTMLElement>(".obra-en")),
     mini,
   };
 }
