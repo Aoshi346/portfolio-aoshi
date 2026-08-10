@@ -258,6 +258,30 @@ def apertura(pg) -> list[str]:
               if (!lead || lead.textContent !== leadEsperado) {
                 f.push(`fila ${i}: el lead de la ficha no es el de esta fila`);
               }
+              // La miniatura YA DENTRO de la lupa: sin `.obra-lupa .obra-mini`
+              // se queda con alto `auto` (no llena la lupa), sin `overflow`
+              // (la imagen se desborda) y con `position: static` (el pie
+              // absoluto deja de anclarse a la foto y flota donde le toque a
+              // la lupa). Se exigen valores concretos, no una iteracion que
+              // pase con cualquier caja no vacia.
+              if (!mini) { f.push(`fila ${i}: sin miniatura en la lupa, no se puede medir la caja`); return f; }
+              const img = mini.querySelector('.obra-mini-img');
+              const pie = mini.querySelector('.obra-mini-pie');
+              if (!img || !pie) { f.push(`fila ${i}: miniatura sin imagen o sin pie`); return f; }
+              const mr = mini.getBoundingClientRect();
+              const ir = img.getBoundingClientRect();
+              const pr = pie.getBoundingClientRect();
+              const lr = lupa.getBoundingClientRect();
+              if (Math.abs(mr.height - lr.height) > 1 || Math.abs(mr.width - lr.width) > 1) {
+                f.push(`fila ${i}: miniatura ${Math.round(mr.width)}x${Math.round(mr.height)} no llena la lupa (${Math.round(lr.width)}x${Math.round(lr.height)})`);
+              }
+              if (Math.abs(ir.height - mr.height) > 1 || Math.abs(ir.width - mr.width) > 1) {
+                f.push(`fila ${i}: imagen ${Math.round(ir.width)}x${Math.round(ir.height)} no llena la miniatura (${Math.round(mr.width)}x${Math.round(mr.height)})`);
+              }
+              const despegue = Math.abs(pr.bottom - ir.bottom);
+              if (despegue > 1) {
+                f.push(`fila ${i}: el pie esta a ${Math.round(despegue)}px del borde inferior de la foto, no pegado`);
+              }
               return f;
             }""",
             [i, leads_originales[i], BLOQUES_FICHA],
