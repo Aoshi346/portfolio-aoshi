@@ -4,6 +4,17 @@ export interface ObraCartelHandle {
   destroy: () => void;
 }
 
+/** Ancla de donde vivia un bloque de la ficha antes de viajar, para poder
+ * devolverlo exactamente ahi cuando la ficha cierra. Sin esto, la segunda
+ * apertura de una fila que ya se abrio una vez encuentra su `.lead`/`.obra-meta`
+ * huerfanos (los dejo colgando el `replaceChildren` de la fila que abrio
+ * despues) y `bloquesDeFicha` no los recupera. */
+interface Ancla {
+  nodo: HTMLElement;
+  padre: Node;
+  siguiente: Node | null;
+}
+
 interface Fila {
   seccion: HTMLElement;
   boton: HTMLButtonElement;
@@ -31,7 +42,9 @@ const BARRIDO = 1.05;
 export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHandle> {
   const { default: gsap } = await import("gsap");
   const { CustomEase } = await import("gsap/CustomEase");
-  gsap.registerPlugin(CustomEase);
+  const { Flip } = await import("gsap/Flip");
+  const { SplitText } = await import("gsap/SplitText");
+  gsap.registerPlugin(CustomEase, Flip, SplitText);
   CustomEase.create("hard", "0.7,0,0.2,1");
   CustomEase.create("slow", "0.16,0.84,0.28,1");
 
@@ -39,6 +52,76 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
   const filas: Fila[] = secciones.map((seccion) => partirTitulo(seccion));
   const finoPuntero = window.matchMedia("(hover: hover)").matches;
   const motionReducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Tipado como no-nulo desde el arranque, no solo comprobado: `pista` se lee
+  // dentro de `abre()`, una funcion anidada, y TypeScript no propaga el
+  // estrechamiento de un `if (!x) throw` a traves de closures anidadas.
+  const pista: HTMLElement = (() => {
+    const nodo = root.querySelector<HTMLElement>("[data-obra-track]");
+    if (!nodo) throw new Error("El cartel necesita [data-obra-track]");
+    return nodo;
+  })();
+
+  const lupa = document.createElement("div");
+  lupa.className = "obra-lupa";
+  lupa.setAttribute("data-obra-lupa", "");
+  const ficha = document.createElement("div");
+  ficha.className = "obra-ficha";
+  ficha.setAttribute("data-obra-ficha", "");
+  gsap.set(ficha, { opacity: 0, pointerEvents: "none" });
+  const anuncio = document.createElement("p");
+  anuncio.className = "sr-only";
+  anuncio.setAttribute("data-obra-anuncio", "");
+  anuncio.setAttribute("aria-live", "polite");
+  pista.append(lupa, ficha, anuncio);
+
+  let abierta = -1;
+  let anclas: Ancla[] = [];
+  let particion: InstanceType<typeof SplitText> | null = null;
+
+  /** Los bloques salen de los nodos que ya existen: content.ts no se toca. */
+  function bloquesDeFicha(seccion: HTMLElement): HTMLElement[] {
+    const piezas: HTMLElement[] = [];
+    const lead = seccion.querySelector<HTMLElement>(".lead");
+    const mascaras = Array.from(seccion.querySelectorAll<HTMLElement>("[data-mask]"));
+    const meta = seccion.querySelector<HTMLElement>(".obra-meta");
+    const marcas = seccion.querySelector<HTMLElement>("[data-obra-marcas]");
+    for (const pieza of [lead, mascaras[1], marcas, mascaras[0], meta]) {
+      if (pieza) piezas.push(pieza);
+    }
+    return piezas;
+  }
+
+  /** Devuelve cada bloque de la ficha a donde vivia antes de viajar. Se llama
+   * SIEMPRE antes de volver a poblar `ficha`, tanto al cerrar como al abrir
+   * otra fila (que cierra la anterior primero).
+   *
+   * `siguiente` puede ser OTRO bloque de la misma ficha (p.ej. `.lead` guarda
+   * como hermano siguiente a `.obra-meta`, que tambien viaja): si ese hermano
+   * todavia no ha vuelto a su sitio, `insertBefore` lo rechaza porque no es
+   * hijo de `padre` en ese instante y lanza, abortando el resto del bucle —
+   * el bloque siguiente se queda huerfano fuera de su fila. Medido: reabrir
+   * una fila tras visitar otra la deja sin ficha. Como estos bloques son
+   * `display: none` en reposo, el orden entre ellos no importa: si el hueco
+   * original ya no es valido, se aniade al final.
+   */
+  function devuelveBloques(): void {
+    for (const { nodo, padre, siguiente } of anclas) {
+      const hueco = siguiente && siguiente.parentNode === padre ? siguiente : null;
+      padre.insertBefore(nodo, hueco);
+    }
+    anclas = [];
+  }
+
+  /** Corta en seco cualquier SplitText de la ficha a medio animar: sin esto,
+   * cerrar antes de que `onComplete` revierta deja un tween vivo sobre nodos
+   * que la siguiente apertura va a desconectar del DOM con `replaceChildren`. */
+  function cortaParticion(): void {
+    if (!particion) return;
+    gsap.killTweensOf(particion.lines);
+    particion.revert();
+    particion = null;
+  }
 
   const sueltas: Array<() => void> = [];
 
@@ -55,6 +138,105 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     }
   }
 
+  function abre(indice: number): void {
+    if (abierta === indice) {
+      cierra();
+      return;
+    }
+    if (abierta >= 0) cierra();
+    abierta = indice;
+    const fila = filas[indice];
+    fila.seccion.classList.add("is-abierto");
+    relevo(gsap, fila, true, motionReducido);
+
+    // La miniatura y la grande son EL MISMO nodo: Flip mide donde esta, se
+    // reubica, y se anima el recorrido real entre las dos posiciones.
+    const estado = Flip.getState(fila.mini);
+    lupa.appendChild(fila.mini);
+    Flip.from(estado, { duration: motionReducido ? 0 : 0.62, ease: "hard", absolute: true });
+
+    const arriba = fila.seccion.offsetTop;
+    const alturaPista = pista.clientHeight;
+    filas.forEach((otra, j) => {
+      const destino =
+        j === indice ? -arriba : j < indice ? -(arriba + alturaPista) : alturaPista;
+      gsap.to(otra.seccion, {
+        y: destino,
+        duration: motionReducido ? 0 : 0.62,
+        ease: "hard",
+        delay: motionReducido ? 0 : Math.abs(j - indice) * 0.03,
+      });
+    });
+
+    const piezas = bloquesDeFicha(fila.seccion);
+    anclas = piezas.map((nodo) => ({ nodo, padre: nodo.parentNode as Node, siguiente: nodo.nextSibling }));
+    ficha.replaceChildren(...piezas);
+    gsap.set(ficha, { opacity: 1, pointerEvents: "auto" });
+    if (!motionReducido) {
+      particion = new SplitText(ficha.querySelectorAll("p, .obra-stack"), {
+        type: "lines",
+        mask: "lines",
+      });
+      gsap.fromTo(
+        particion.lines,
+        { yPercent: 110 },
+        {
+          yPercent: 0,
+          duration: 0.42,
+          ease: "hard",
+          stagger: 0.045,
+          delay: 0.24,
+          onComplete: cortaParticion,
+        },
+      );
+    }
+    anuncio.textContent = `${fila.boton.getAttribute("aria-label")?.replace("Mostrar ", "") ?? ""}, ficha abierta.`;
+  }
+
+  function cierra(): void {
+    if (abierta < 0) return;
+    const fila = filas[abierta];
+    abierta = -1;
+    fila.seccion.classList.remove("is-abierto");
+    relevo(gsap, fila, false, motionReducido);
+    const estado = Flip.getState(fila.mini);
+    fila.seccion.appendChild(fila.mini);
+    Flip.from(estado, { duration: motionReducido ? 0 : 0.52, ease: "hard", absolute: true });
+    gsap.to(filas.map((f) => f.seccion), {
+      y: 0,
+      duration: motionReducido ? 0 : 0.52,
+      ease: "hard",
+      stagger: 0.03,
+    });
+    cortaParticion();
+    devuelveBloques();
+    gsap.to(ficha, {
+      opacity: 0,
+      duration: motionReducido ? 0 : 0.24,
+      onComplete: () => gsap.set(ficha, { pointerEvents: "none" }),
+    });
+    anuncio.textContent = "Ficha cerrada.";
+  }
+
+  // Solo en `fila.boton`: por CSS cubre la fila entera (`inset: 0`), asi que
+  // ya es el objetivo tactil completo. Enganchar el mismo "click" tambien en
+  // `fila.seccion` duplica la llamada por burbujeo (el clic en el boton
+  // burbujea hasta la seccion) — se abre y el segundo disparo la cierra en
+  // el mismo evento. Medido con el arnes: "no se abrio" en las cinco filas.
+  filas.forEach((fila, i) => {
+    const alPulsar = (evento: Event): void => {
+      evento.preventDefault();
+      abre(i);
+    };
+    fila.boton.addEventListener("click", alPulsar);
+    sueltas.push(() => fila.boton.removeEventListener("click", alPulsar));
+  });
+  const alTeclado = (e: KeyboardEvent): void => {
+    if (e.key === "Escape") cierra();
+  };
+  window.addEventListener("keydown", alTeclado);
+  sueltas.push(() => window.removeEventListener("keydown", alTeclado));
+
   let entradaHandle: EntradaHandle | null = null;
   if (!motionReducido) entradaHandle = entrada(gsap, root, filas);
   else asentar(gsap, filas);
@@ -62,7 +244,19 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
   return {
     destroy(): void {
       for (const soltar of sueltas) soltar();
-      gsap.killTweensOf(filas.flatMap((f) => [...f.tiras, ...f.entradas, f.mini]));
+      gsap.killTweensOf(filas.flatMap((f) => [...f.tiras, ...f.entradas, f.mini, f.seccion]));
+      gsap.killTweensOf(ficha);
+      cortaParticion();
+      // Si `destroy()` llega a mitad de una apertura, la miniatura y los
+      // bloques de la ficha no pueden quedar huerfanos fuera de su fila.
+      if (abierta >= 0) {
+        const fila = filas[abierta];
+        fila.seccion.appendChild(fila.mini);
+        devuelveBloques();
+      }
+      lupa.remove();
+      ficha.remove();
+      anuncio.remove();
       // La barra de brasa vive fuera de `filas`: sin esto su tween sigue vivo
       // si `destroy()` llega a mitad del barrido (p.ej. bfcache).
       if (entradaHandle) {

@@ -193,6 +193,70 @@ def relevo_es_ola(pg) -> list[str]:
     )
 
 
+def apertura(pg) -> list[str]:
+    """La miniatura y la grande son EL MISMO nodo, la ficha no desborda, y la
+    ficha cerrada no roba el puntero.
+
+    Lo ultimo es un defecto medido en el prototipo: con `opacity: 0` el panel
+    sigue siendo alcanzable y tapa las filas — el arnes se quedo 30s
+    intentando pulsar hasta que Chrome dijo que elemento interceptaba.
+    """
+    fallos = pg.evaluate(
+        """() => {
+          const f = [];
+          const ficha = document.querySelector('[data-obra-ficha]');
+          if (!ficha) return ['no hay ficha'];
+          if (getComputedStyle(ficha).pointerEvents !== 'none') {
+            f.push('la ficha cerrada captura el puntero');
+          }
+          return f;
+        }"""
+    )
+    for i in range(5):
+        # Se marca la miniatura de la fila ANTES del clic: una vez viaja a la
+        # lupa (que vive al nivel de `.obra-track`, no dentro de `abierta`)
+        # cambia de posicion en el orden del documento, asi que recuperarla
+        # por indice tras el viaje señalaria un nodo distinto. La marca
+        # sobrevive el viaje porque es un atributo del propio nodo, no de su
+        # posicion.
+        pg.evaluate(
+            """(i) => {
+              const secs = document.querySelectorAll('[data-scene="obra"]');
+              const mini = secs[i].querySelector('[data-obra-mini]');
+              if (mini) mini.setAttribute('data-check-fila', String(i));
+            }""",
+            i,
+        )
+        pg.eval_on_selector_all(
+            "[data-obra-abrir]", f"ns => ns[{i}].click()"
+        )
+        pg.wait_for_timeout(900)
+        fallos += pg.evaluate(
+            """(i) => {
+              const f = [];
+              const secs = document.querySelectorAll('[data-scene="obra"]');
+              const abierta = secs[i];
+              if (!abierta.classList.contains('is-abierto')) f.push(`fila ${i}: no se abrio`);
+              const lupa = document.querySelector('[data-obra-lupa]');
+              // el MISMO nodo, no una copia: se recupera por la marca puesta
+              // antes del clic, no por posicion en el documento (que cambia
+              // cuando el nodo viaja a la lupa).
+              const mini = document.querySelector(`[data-check-fila="${i}"]`);
+              if (!lupa || !mini || mini.parentElement !== lupa) f.push(`fila ${i}: la captura no viajo a la lupa`);
+              const ficha = document.querySelector('[data-obra-ficha]');
+              const pista = document.querySelector('[data-obra-track]');
+              const desborde = ficha.getBoundingClientRect().bottom - pista.getBoundingClientRect().bottom;
+              if (desborde > 0) f.push(`fila ${i}: la ficha desborda ${Math.round(desborde)}px`);
+              if (getComputedStyle(ficha).pointerEvents !== 'auto') f.push(`fila ${i}: ficha abierta sin puntero`);
+              return f;
+            }""",
+            i,
+        )
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(700)
+    return fallos
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--base", default="http://localhost:4173")
@@ -213,6 +277,7 @@ def main() -> int:
             fallos += [f"[hyprland] {f}" for f in escala_tipografica(pg)]
             fallos += [f"[hyprland] {f}" for f in relevo_es_ola(pg)]
             fallos += [f"[hyprland] {f}" for f in nombre_accesible_intacto(pg)]
+            fallos += [f"[hyprland] {f}" for f in apertura(pg)]
         b.close()
     for f in fallos:
         print(f"FALLO {f}")

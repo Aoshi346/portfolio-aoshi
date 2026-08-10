@@ -2410,6 +2410,83 @@
 }
 
 /*
+  LA APERTURA — la lupa y la ficha que crea `obraCartel.ts` (Task 4).
+
+  Viven dentro de `.obra-track`, no de una fila: son compartidas, se
+  repueblan en cada `abre()`. `.obra-mini` viaja de la fila a `.obra-lupa`
+  con Flip (el MISMO nodo), asi que su tamano de reposo no aplica aqui.
+*/
+:root[data-theme="hyprland"] .obra-lupa {
+  position: absolute;
+  left: 0;
+  top: 132px;
+  width: 760px;
+  height: 475px;
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .obra-ficha {
+  position: absolute;
+  left: 800px;
+  top: 132px;
+  width: 520px;
+  opacity: 0;
+  /* Sin esto la ficha cerrada tapa las filas y no se puede pulsar ninguna.
+     Medido en el prototipo: el arnes se quedo 30s intentando el clic. */
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .obra-ficha .lead,
+:root[data-theme="hyprland"] .obra-ficha [data-mask] {
+  display: block;
+}
+/*
+ * `.obra-meta` no vuelve a `block`: su regla base (`style.css`) ya es
+ * `display: flex; flex-wrap: wrap`, que envuelve los 4 pares dt/dd en dos
+ * filas. Forzar `block` los apila uno bajo otro (168px medidos) y es lo que
+ * hacia desbordar la ficha 90px en la fila mas larga (WatchDog). `flex`
+ * restaura el ajuste original y cabe en el margen ya medido para 520px.
+ */
+:root[data-theme="hyprland"] .obra-ficha .obra-meta {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+}
+/*
+ * Ficha comprimida verticalmente: a 900px de alto la pista mide ~416px desde
+ * la primera fila hasta su borde, y las cinco fichas (medidas con el
+ * contenido real de `content.ts`, no una aproximacion) pasaban ese margen en
+ * las filas con textos mas largos (HyprFinance +50px, WatchDog +35px,
+ * EchoPlan +24px). El interlineado `leading-relaxed` (1.625) es el que mas
+ * pesa en un bloque de 3-4 lineas; `leading-snug` (1.375) es la unica
+ * reduccion que recupera margen suficiente sin tocar el tamano de letra.
+ */
+:root[data-theme="hyprland"] .obra-ficha .lead {
+  margin-top: 0;
+  line-height: 1.375;
+}
+:root[data-theme="hyprland"] .obra-ficha [data-mask] p:last-child {
+  margin-top: 0.35rem;
+  line-height: 1.375;
+}
+:root[data-theme="hyprland"] [data-scene="obra"].is-abierto .obra-mini {
+  clip-path: inset(0 0 0 0);
+}
+:root[data-theme="hyprland"] .obra-lupa .obra-mini-pie {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 12px;
+  /* El pie va FUERA de la imagen, en banda solida. Nada de degradado encima de
+     la foto: eso es el tratamiento generico que se abandona. */
+  background: var(--color-ink);
+  font-size: var(--t-1);
+  letter-spacing: 0.04em;
+  color: var(--haze);
+}
+
+/*
  * El disparador de Hyprland: el pie de un fotograma. Sin caja.
  *
  * Se retira la excepcion de radio del spec de Ascua ("radio 0 en todo salvo la
