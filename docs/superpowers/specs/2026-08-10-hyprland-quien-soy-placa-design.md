@@ -1,6 +1,7 @@
 # La placa — "Quién soy" en Hyprland deja de ser una pila de bloques y pasa a ser una ficha técnica
 
 Estado: pendiente de plan
+Plan: `docs/superpowers/plans/2026-08-10-hyprland-quien-soy-placa.md`
 Fecha: 2026-08-10
 Alcance: **solo el tema Hyprland**. `[data-scene="about"]` (`src/sections/about.ts`,
 `src/themes/themes.css`, `src/themes/hypr.choreography.ts`). **Vice no se toca** (cerrado el
@@ -227,6 +228,8 @@ completa se lee sin haber interactuado.
 
 ## Pendiente de decisión
 
-1. El defecto de `stackOf("Frontend")`, que toca a Vice.
-2. Si el retrato se queda. Es lo único que rompe el bloque de texto; sin él, "Quién soy" no muestra
-   a nadie.
+1. El defecto de `stackOf("Frontend")`, que toca a Vice y por eso no se arregla aquí.
+2. El tamaño del retrato. Se probó a media escena (demasiado), a una columna de dos filas
+   (demasiado) y en la celda actual de una columna, que es la aprobada. Queda escrito porque el
+   equilibrio entre "muestra a alguien" y "no domina la placa" es fino y puede querer revisarse al
+   verlo en el sitio real y no en el prototipo.
