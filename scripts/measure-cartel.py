@@ -8,6 +8,11 @@ Las aserciones nacen de fallos reales, como en `measure-placa.py`:
      `querySelectorAll` vacio hace que el bucle de comprobacion no itere y
      el arnes salga verde sin comprobar nada: eso paso en la primera
      version de este mismo fichero.
+  3. Movil/tableta (Task 6): el mismo dispositivo, no otro. La miniatura
+     esta SIEMPRE puesta bajo 1200px (no espera a un hover que no existe),
+     el objetivo tactil llega a 44px, y el hueco 1200-1439px (un portatil
+     de 1280, sin ninguna regla propia hasta esta tarea) no deja la ficha
+     abierta fuera de la pista.
 """
 import argparse
 import sys
@@ -15,6 +20,32 @@ import sys
 from playwright.sync_api import sync_playwright
 
 TEMAS_AJENOS = ["vice", "caelestia"]
+
+# "portatil" (1280) cierra el hueco 1200-1439px que destapo la revision de la
+# Task 4: la lupa (760) y la ficha (520, a 800px del borde) suman 1320px y los
+# dos `@media` de esta tarea solo cubren hasta 1199 -- sin geometria propia
+# aqui, un portatil de 1280 abre la ficha fuera de la pista.
+ANCHOS = [("movil", 390, 844), ("tableta", 820, 1024), ("portatil", 1280, 800), ("escritorio", 1440, 900)]
+
+
+def movil(pg) -> list[str]:
+    """La miniatura esta SIEMPRE puesta cuando no hay hover, el objetivo tactil
+    llega a 44px, y ninguna fila degrada a pila generica."""
+    return pg.evaluate(
+        """() => {
+          const f = [];
+          for (const sec of document.querySelectorAll('[data-scene="obra"]')) {
+            const mini = sec.querySelector('[data-obra-mini]');
+            const cs = getComputedStyle(mini);
+            if (cs.display === 'none') f.push('sin miniatura en movil');
+            if (cs.clipPath !== 'none' && cs.clipPath.includes('100%')) {
+              f.push('la miniatura espera a un hover que no existe');
+            }
+            if (sec.getBoundingClientRect().height < 44) f.push('fila por debajo del objetivo tactil');
+          }
+          return f;
+        }"""
+    )
 
 
 def abre(pg, base: str, tema: str) -> None:
@@ -178,14 +209,20 @@ def nombre_accesible_intacto(pg) -> list[str]:
 ESCALA = [12, 16, 21.33, 28.43, 37.9, 50.52, 67.4, 89.85, 119.77, 159.66]
 
 
-def cartel_en_reposo(pg) -> list[str]:
+def cartel_en_reposo(pg, ancho: int) -> list[str]:
     """El cartel se VE, las cinco filas caben, y la miniatura mide lo que las letras.
 
     Sin la primera comprobacion el arnes sale verde con el cartel apagado: los
     nodos existen en el DOM desde la Task 1, asi que contarlos no prueba nada.
+
+    La igualdad EXACTA miniatura/titulo solo se exige a partir de 1200px, que
+    es donde el titulo vale `--t-8`. Por debajo el titulo encoge a `--t-6`
+    (caja de 56,6px) y a `--t-4` (31,8px), y una miniatura de ese tamano no
+    enseñaria nada -- el diseno le da medidas propias (152x95 en tableta,
+    96x60 en movil), deliberadamente distintas de la caja del titulo.
     """
     return pg.evaluate(
-        """() => {
+        """(ancho) => {
           const fallos = [];
           const filas = Array.from(document.querySelectorAll('[data-scene="obra"]'));
           if (filas.length !== 5) return [`${filas.length} filas, esperaba 5`];
@@ -198,8 +235,9 @@ def cartel_en_reposo(pg) -> list[str]:
             if (!t || !m) { fallos.push('falta titulo o miniatura'); continue; }
             const tr = t.getBoundingClientRect(), mr = m.getBoundingClientRect();
             // La miniatura mide EXACTAMENTE la caja del titulo: 2px de holgura
-            // por redondeo de subpixel, ni uno mas.
-            if (Math.abs(mr.height - tr.height) > 2) {
+            // por redondeo de subpixel, ni uno mas. SOLO a partir de 1200px --
+            // por debajo la miniatura lleva medida propia (ver docstring).
+            if (ancho >= 1200 && Math.abs(mr.height - tr.height) > 2) {
               fallos.push(`miniatura ${Math.round(mr.height)}px vs titulo ${Math.round(tr.height)}px`);
             }
             if (Math.abs((mr.top + mr.height / 2) - (tr.top + tr.height / 2)) > 3) {
@@ -211,7 +249,8 @@ def cartel_en_reposo(pg) -> list[str]:
           const total = filas[4].getBoundingClientRect().bottom - filas[0].getBoundingClientRect().top;
           if (total > vp) fallos.push(`las 5 filas miden ${Math.round(total)}px en un viewport de ${vp}`);
           return fallos;
-        }"""
+        }""",
+        ancho,
     )
 
 
@@ -398,6 +437,12 @@ def apertura(pg) -> list[str]:
               const pista = document.querySelector('[data-obra-track]');
               const desborde = ficha.getBoundingClientRect().bottom - pista.getBoundingClientRect().bottom;
               if (desborde > 0) f.push(`fila ${i}: la ficha desborda ${Math.round(desborde)}px`);
+              // El hueco 1200-1439px (Task 6): lupa (760) + ficha (520, a 800px
+              // del borde) suman 1320px en pixeles fijos. Sin geometria propia
+              // ahi, un portatil de 1280 saca la ficha por la DERECHA de la
+              // pista sin que el desborde vertical de arriba lo note nunca.
+              const desbordeH = ficha.getBoundingClientRect().right - pista.getBoundingClientRect().right;
+              if (desbordeH > 1) f.push(`fila ${i}: la ficha desborda ${Math.round(desbordeH)}px por la derecha`);
               if (getComputedStyle(ficha).pointerEvents !== 'auto') f.push(`fila ${i}: ficha abierta sin puntero`);
               if (ficha.children.length !== nBloques) {
                 f.push(`fila ${i}: ficha con ${ficha.children.length} bloques, esperaba ${nBloques}`);
@@ -502,13 +547,38 @@ def main() -> int:
         if not ir_a_obra(pg):
             fallos.append("[hyprland] no existe [data-scene=\"obra\"]")
         else:
-            fallos += [f"[hyprland] {f}" for f in cartel_en_reposo(pg)]
-            fallos += [f"[hyprland] {f}" for f in escala_tipografica(pg)]
-            fallos += [f"[hyprland] {f}" for f in relevo_es_ola(pg)]
-            fallos += [f"[hyprland] {f}" for f in nombre_accesible_intacto(pg)]
-            fallos += [f"[hyprland] {f}" for f in marcas_del_stack(pg)]
-            fallos += [f"[hyprland] {f}" for f in apertura(pg)]
+            # 1440 (escritorio) es donde viven relevo por hover, marcas del stack
+            # y el nombre accesible -- lo que ya cubria el arnes antes de esta
+            # tarea. Los tres anchos nuevos (movil/tableta/portatil) se prueban
+            # abajo, cada uno en su propia pagina.
+            fallos += [f"[hyprland escritorio] {f}" for f in cartel_en_reposo(pg, 1440)]
+            fallos += [f"[hyprland escritorio] {f}" for f in escala_tipografica(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in relevo_es_ola(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in nombre_accesible_intacto(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in marcas_del_stack(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in apertura(pg)]
         b.close()
+
+        # Movil, tableta y portatil (Task 6): el mismo dispositivo, no otro.
+        # Cada ancho en su propia pagina -- `apertura()` deja la pagina con
+        # cinco filas desplazadas y una ficha poblada, y reutilizar la misma
+        # pagina entre anchos arrastraria ese estado al siguiente viewport.
+        for nombre, ancho, alto in ANCHOS:
+            if nombre == "escritorio":
+                continue
+            b2 = pw.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+            pg2 = b2.new_page(viewport={"width": ancho, "height": alto})
+            abre(pg2, args.base, "hyprland")
+            if not ir_a_obra(pg2):
+                fallos.append(f"[hyprland {nombre}] no existe [data-scene=\"obra\"]")
+                b2.close()
+                continue
+            fallos += [f"[hyprland {nombre}] {f}" for f in cartel_en_reposo(pg2, ancho)]
+            fallos += [f"[hyprland {nombre}] {f}" for f in escala_tipografica(pg2)]
+            if nombre in ("movil", "tableta"):
+                fallos += [f"[hyprland {nombre}] {f}" for f in movil(pg2)]
+            fallos += [f"[hyprland {nombre}] {f}" for f in apertura(pg2)]
+            b2.close()
     for f in fallos:
         print(f"FALLO {f}")
     print(f"{len(fallos)} fallos")

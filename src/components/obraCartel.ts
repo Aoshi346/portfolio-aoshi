@@ -132,6 +132,10 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
 
   const sueltas: Array<() => void> = [];
 
+  // Sin hover (movil) el relevo no tiene disparador propio: lo hace la
+  // apertura (`abre()` llama a `relevo(..., true, ...)` siempre, unas lineas
+  // mas abajo). La separacion va por capacidad del puntero, no por ancho de
+  // pantalla: un portatil tactil de 1440 tiene las dos cosas.
   for (const fila of filas) {
     if (finoPuntero) {
       const entra = (): void => relevo(gsap, fila, true, motionReducido);
