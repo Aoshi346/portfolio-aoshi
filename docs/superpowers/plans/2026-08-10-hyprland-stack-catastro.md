@@ -80,7 +80,7 @@ ya presentes. Sin dependencias nuevas.
 |---|---|---|
 | `[data-credit-parcela]` | 4 nodos, hermanos en `.credits-grid` | Caja decorativa de columna. Dibuja el lindero y aloja la luz y la chispa. `aria-hidden`, `data-decorative`. |
 | `[data-credit-strip]` | 4 nodos, hermanos en `.credits-grid` | La franja de detalle de cada parcela. `role="status"`, `aria-live="polite"`, id `credits-strip-<i>`. |
-| `[data-credit-marks-row]` | 4 nodos, hermanos en `.credits-grid` | Una fila de friso por parcela. Contiene los `.credits-mark` de ese grupo. |
+| `[data-credit-marks-row]` | 4 nodos, dentro de `.credits-marks` | Una fila de friso por parcela. Contiene los `.credits-mark` de ese grupo. Hyprland disuelve `.credits-marks` con `display: contents` para que las filas sean items de la rejilla; Vice disuelve las filas para conservar su friso de 23. |
 | `--skill-col` / `--skill-row` | inline en labels y `.credit` | Colocación en la rejilla de escritorio. |
 | `--skill-col-m` / `--skill-row-m` | inline en labels y `.credit` | Colocación en la rejilla de móvil. |
 | `--skill-d` | inline en cada `.credit` | Retardo de su lámpara. **Es** la posición de la chispa. |
@@ -658,6 +658,17 @@ Sustituye entero al bloque `Hyprland: el reparto` de `src/themes/themes.css` (~l
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--haze);
+}
+
+/*
+ * Las cuatro filas de friso viven DENTRO de `.credits-marks`, que la regla
+ * base apaga y solo Vice enciende. Sin disolver ese contenedor, las filas no
+ * son items de la rejilla del catastro y su `grid-column` no aplica a nada:
+ * el `display: contents` de aqui es lo que las sube un nivel. Es la imagen
+ * simetrica de lo que Vice hace con las filas para conservar su friso de 23.
+ */
+:root[data-theme="hyprland"] .credits-marks {
+  display: contents;
 }
 
 :root[data-theme="hyprland"] .credits-marks-row {
