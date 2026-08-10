@@ -1572,3 +1572,34 @@ body {
     display: none !important;
   }
 }
+
+/*
+ * Nodos del cartel de obra (`projectScene.ts`). Nacen apagados para los TRES
+ * temas: solo el bloque Hyprland de `themes.css` los enciende. El patron
+ * aditivo se ha roto cuatro veces por olvidar justo esto.
+ */
+.obra-mini,
+.obra-marcas {
+  display: none;
+}
+
+/*
+ * El titulo pasa a llevar un <button> dentro para que el cartel de Hyprland
+ * tenga un disparador accesible. En Vice y en Caelestia ese boton no debe
+ * existir visualmente: sin `appearance: none`, Chrome computa `display:
+ * inline` como `inline-block` en un boton, y ese fallo exacto ya se pago en
+ * el marcador de identidad de los creditos.
+ */
+.obra-abrir {
+  appearance: none;
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  cursor: default;
+}

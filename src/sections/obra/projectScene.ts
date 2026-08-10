@@ -35,9 +35,13 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
 
   const tag = el("p", "hero-kick", [project.tag]);
 
-  const title = el("h2", "display-lg mt-5 max-w-3xl text-[clamp(2rem,6vw,4.6rem)]", [
-    project.title,
-  ]);
+  // Un <h2> no puede ir dentro de un <button> (el modelo de contenido del
+  // boton es phrasing), asi que va al reves: el boton dentro del encabezado.
+  const abrir = el("button", "obra-abrir", [project.title]);
+  abrir.setAttribute("data-obra-abrir", "");
+  abrir.type = "button";
+
+  const title = el("h2", "display-lg mt-5 max-w-3xl text-[clamp(2rem,6vw,4.6rem)]", [abrir]);
   title.setAttribute("data-reveal", "chars");
   title.setAttribute("data-title", "");
 
@@ -76,7 +80,28 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
   ]);
   columns.setAttribute("data-reveal", "fade-up");
 
-  const children: HTMLElement[] = [tag, title, lead, meta, columns];
+  // El cartel de Hyprland necesita UNA captura por proyecto, no el carril
+  // arrastrable: `gallery.ts` construye un carril y aqui hace falta un solo
+  // nodo que pueda viajar con Flip. Nace oculto para los tres temas
+  // (`style.css`) y solo el bloque Hyprland lo enciende.
+  const mini = el("figure", "obra-mini", []);
+  mini.setAttribute("data-obra-mini", "");
+  const primera = project.gallery[0];
+  if (primera) {
+    const shot = el("img", "obra-mini-img") as HTMLImageElement;
+    shot.src = primera.src;
+    shot.alt = primera.caption;
+    shot.loading = "lazy";
+    shot.decoding = "async";
+    mini.append(shot, el("figcaption", "obra-mini-pie", [primera.caption]));
+  }
+
+  // Las marcas del stack las rellena `stackIcons.ts` en la Task 5.
+  const marcas = el("div", "obra-marcas", []);
+  marcas.setAttribute("data-obra-marcas", "");
+  marcas.setAttribute("aria-hidden", "true");
+
+  const children: HTMLElement[] = [tag, title, lead, meta, columns, mini, marcas];
 
   // Las capturas reales de la galeria (Task 11) ya existen y devuelven 200;
   // la galeria se construye siempre que el caso de estudio declare piezas,
