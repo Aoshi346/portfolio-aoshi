@@ -4734,6 +4734,40 @@
 }
 
 /*
+ * Movimiento reducido. `hypr.choreography.ts` nunca corre bajo `reduce`
+ * (`initScrollReveal` hace early-return antes de invocar `theme.choreography()`,
+ * medido: `.is-caught` no se aplica jamas ahi), asi que la regla de arriba
+ * (`.credit.is-caught.is-caught-still`) nunca llega a activarse por si sola
+ * bajo esta media query — se deja igualmente por si otro cambio futuro
+ * cambiara esa puerta. Lo que SI hace falta aqui, medido con un hover real
+ * (`page.mouse.move`, no un `dispatchEvent` sintetico, que no dispara
+ * `:hover`): sin `.is-caught`, `.credit:not(.is-caught) .credit-name`
+ * matchea siempre, asi que el `:hover`/`:focus-visible` puro de
+ * `.credit-name` seguia animando el color y el `translateX(6px)` en 900ms
+ * (`--slow`), y AL HACER hover una regla aun mas especifica
+ * (`.credit:not(.is-caught):hover .credit-name`) sube a 420ms — cambiar de
+ * estado no es animar.
+ *
+ * Mismo idioma que ya resuelve este mismo problema en Vice (`.about-claim-in`
+ * y compania, mas arriba en este fichero): `transition-duration: 0.01ms` +
+ * `transition-delay: 0s`, con `!important`. Se prefiere a `transition: none`
+ * porque hay CUATRO selectores de `.credit-name` con `transition` propia
+ * (900ms/420ms, con y sin `:hover`) y cada uno tiene mas especificidad que
+ * el anterior — iguala a mano cada uno es fragil ante el siguiente cambio,
+ * y `!important` no distingue por selector, solo por propiedad: gana pese a
+ * la escalera de especificidad sin tener que perseguirla.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .credit.is-caught {
+    animation: none;
+  }
+  :root[data-theme="hyprland"] .credit-name {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/*
  * El acento es estado, nunca taxonomia: `data-credit-picked` es el
  * seleccionado de SU parcela (uno por grupo, cuatro a la vez), lo pone la
  * coreografia de `credits.ts` tras una interaccion real (nunca en el

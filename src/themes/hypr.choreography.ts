@@ -10,6 +10,22 @@ const HARD = "cubic-bezier(0.7, 0, 0.2, 1)";
 const SLOW = "cubic-bezier(0.16, 0.84, 0.28, 1)";
 
 /**
+ * Sonda de temporizadores del gesto 4: la lampara programa un `setTimeout`
+ * de 1100ms para pasar de `is-caught` a `is-caught-still` (ver mas abajo).
+ * `Choreography` devuelve `void` — ningun tema tiene `destroy()`, y
+ * `main.ts` solo llama `destroy()` en `pagehide` sobre fondo/carril/cursor/
+ * ignicion/nav — asi que este tema se limpia como ya limpia sus
+ * ScrollTrigger: matando por prefijo AL ENTRAR, no al salir. Sin este
+ * registro, un remonte (HMR de Vite recargando este modulo sin recargar la
+ * pagina entera; la produccion real solo invoca la coreografia una vez por
+ * carga) deja temporizadores del montaje anterior corriendo sueltos: si uno
+ * dispara pasado el remonte, añade `is-caught-still` a nombres que el nuevo
+ * montaje puede estar animando en ese mismo instante, cortando su lampara
+ * antes de los 400ms que le tocan.
+ */
+type HyprTimerWindow = Window & { __hyprSkillTimers?: number[] };
+
+/**
  * Ascua: tres gestos, no uno repetido a distintas escalas.
  *
  * El defecto de las propuestas descartadas era que TODO iba lento y suave —
@@ -20,11 +36,47 @@ const SLOW = "cubic-bezier(0.16, 0.84, 0.28, 1)";
  * El revelado NO se fia solo del observador de interseccion: con scroll
  * rapido se pierden callbacks y el contenido se queda invisible para siempre.
  * Va con red por posicion, que es justo lo que hace ScrollTrigger.
+ *
+ * Movimiento reducido: esta funcion entera (y por tanto sus 5 gestos) NUNCA
+ * se ejecuta bajo `prefers-reduced-motion: reduce` — `initScrollReveal`
+ * (`src/utils/reveal.ts`) hace early-return antes de invocar
+ * `theme.choreography()`, y ese guardian es compartido por los tres temas
+ * (no se toca aqui: tocarlo afectaria a Vice y Caelestia). Medido en el
+ * arbol: con `reduce`, `window.__hyprSkills` es `undefined`, no aparece
+ * ninguna clase `.hypr-cut`/`.hypr-up`/`.is-lit`/`.is-caught` y GSAP no
+ * llega a importarse. Un `gsap.matchMedia` para `reduce` DENTRO de esta
+ * funcion seria codigo muerto: nunca se registraria porque la funcion que lo
+ * contiene no corre. Lo que SI sobrevive bajo `reduce` es contenido base
+ * (HTML/CSS, sin JS: las 4 parcelas, los 4 rotulos, los 23 nombres en su
+ * color de reposo y las 4 franjas se ven por la cascada normal) mas el
+ * `:hover`/`:focus-visible` puro de `.credit-name` (themes.css) y el cambio
+ * de contenido de la franja (`credits.ts::repintarFranja`, que hace
+ * `replaceChildren` SIEMPRE, fuera de esta coreografia). Lo unico que faltaba
+ * ahi era que ese `:hover` seguia animando 900ms bajo `reduce` porque
+ * `:not(.is-caught)` es SIEMPRE cierto cuando `.is-caught` nunca se aplica —
+ * arreglado en themes.css con `transition: none` bajo la media query, no
+ * aqui. La luz decorativa del lindero (`.credits-glow`, `aria-hidden`) y el
+ * resto del apuntado por GSAP no tienen equivalente CSS y quedan ausentes
+ * bajo `reduce`, igual que en Vice: es una capa de refuerzo, no el canal por
+ * el que se entiende que nombre esta enfocado.
  */
 export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
   ScrollTrigger.getAll()
     .filter((t) => typeof t.vars.id === "string" && t.vars.id.startsWith(ID))
     .forEach((t) => t.kill());
+
+  // Limpieza de un remonte anterior (ver comentario de `HyprTimerWindow`
+  // arriba): borra los temporizadores pendientes de la lampara, el estado
+  // `is-caught`/`is-caught-still` que hubieran dejado y la sonda del arnes,
+  // para que la entrada vuelva a correr entera y `window.__hyprSkills`
+  // apunte siempre a LA timeline de este montaje, no a la anterior.
+  const timerWindow = window as HyprTimerWindow;
+  for (const id of timerWindow.__hyprSkillTimers ?? []) window.clearTimeout(id);
+  timerWindow.__hyprSkillTimers = [];
+  for (const n of Array.from(root.querySelectorAll<HTMLElement>("[data-credit].is-caught"))) {
+    n.classList.remove("is-caught", "is-caught-still");
+  }
+  delete (window as unknown as { __hyprSkills?: unknown }).__hyprSkills;
 
   const scenes = Array.from(root.querySelectorAll<HTMLElement>("[data-scene]"));
 
@@ -242,9 +294,10 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
            * visual. `animation: none` de verdad libera el objeto
            * `Animation`, en vez de dejarlo para siempre en fase "after".
            */
-          window.setTimeout(() => {
+          const timerId = window.setTimeout(() => {
             for (const n of nombres) n.classList.add("is-caught-still");
           }, 1100);
+          timerWindow.__hyprSkillTimers?.push(timerId);
         },
         [],
         at + 0.26,

@@ -100,6 +100,34 @@ Ocho aserciones, y todas nacieron de un fallo real o de una trampa ya pagada:
       a GSAP, esta aserción subiria de 13 a 26 (13 + 23 lamparas) y caeria
       aunque la 12 tambien cayera — dos redes sobre el mismo riesgo, cada
       una desde su lado.
+
+Movimiento reducido (tarea 10) — pasada aparte, con `reduced_motion="reduce"`
+en el contexto de Playwright, en los dos viewports:
+
+  14. Nada queda invisible bajo `reduce`: las 4 parcelas, los 4 rotulos, los
+      23 nombres y las 4 franjas (no vacias) se ven exactamente igual que en
+      la pasada normal. Medido en el arbol ANTES de tocar nada: se ven, y
+      SIGUEN viendose despues del cambio de esta tarea, porque
+      `hyprChoreography` nunca corre bajo `reduce`
+      (`initScrollReveal` hace early-return antes de invocar
+      `theme.choreography()`) y el contenido de esta escena es HTML/CSS
+      base, no algo que JS revele.
+  15. Cero animaciones vivas dentro de `[data-scene="credits"]`
+      (`document.getAnimations()`), en reposo. Medido: ya salia en 0 antes
+      de esta tarea (la coreografia no corre, luego no hay ni ScrollTrigger
+      ni tweens que crear) — se deja como red, no como fix.
+  16. El apuntado por CSS puro de `.credit-name` (color + `translateX(6px)`
+      en `:hover`/`:focus-visible`) sigue funcionando bajo `reduce`, pero EN
+      SECO: with un hover real (`page.mouse.move`, un `dispatchEvent`
+      sintetico no dispara `:hover`), el color final se alcanza dentro del
+      primer frame pintado, no en 900ms/420ms. Este SI era un fallo real
+      (medido antes del cambio: `.credit:not(.is-caught) .credit-name`
+      siempre matchea porque `.is-caught` nunca se aplica bajo `reduce`, asi
+      que el hover seguia animando a la velocidad normal) — arreglado en
+      `themes.css` con el mismo idioma que ya usa Vice para el mismo
+      problema (`transition-duration: 0.01ms !important`), no con
+      `transition: none`: hay cuatro selectores de `.credit-name` con
+      `transition` propia y cada uno mas especifico que el anterior.
 """
 import argparse
 import sys
@@ -353,6 +381,116 @@ def main() -> int:
             pg.wait_for_timeout(9000)
             if ir_a_creditos(pg) is not None and catastro_visible(pg):
                 fallos.append(f"[{tema}] el catastro se ve y no deberia")
+            ctx.close()
+
+        # 14/15/16. movimiento reducido (tarea 10) — pasada aparte, en los
+        # dos viewports, con reduced_motion="reduce" en el CONTEXTO de
+        # Playwright (no un `matchMedia` simulado a mano: asi lo ve de
+        # verdad `window.matchMedia` dentro de la pagina).
+        for nombre, ancho, alto in VIEWPORTS:
+            ctx = b.new_context(
+                viewport={"width": ancho, "height": alto}, reduced_motion="reduce"
+            )
+            pg = ctx.new_page()
+            pg.goto(f"{args.url}/?theme=hyprland", wait_until="domcontentloaded", timeout=30000)
+            pg.wait_for_timeout(9000)
+            if ir_a_creditos(pg) is None:
+                fallos.append(f"[{nombre}/reduce] no existe [data-scene=credits]")
+                ctx.close()
+                continue
+            # Lenis no corre bajo reduce (`initScrollReveal` ni siquiera
+            # importa GSAP): un segundo asentado corto basta.
+            pg.wait_for_timeout(500)
+
+            # 14. nada invisible: mismas cajas que en la pasada normal.
+            estado = pg.evaluate(
+                """
+                () => {
+                  const parcelas = document.querySelectorAll('[data-credit-parcela]');
+                  const labels = document.querySelectorAll('[data-credit-group]');
+                  const nombres = document.querySelectorAll('[data-credit]');
+                  const strips = document.querySelectorAll('[data-credit-strip]');
+                  const visibles = (ns) => Array.from(ns).filter(n => {
+                    const r = n.getBoundingClientRect();
+                    return getComputedStyle(n).display !== 'none' && r.width > 0 && r.height > 0;
+                  }).length;
+                  return {
+                    parcelasVisibles: visibles(parcelas),
+                    labelsVisibles: visibles(labels),
+                    nombresVisibles: visibles(nombres),
+                    stripsVacias: Array.from(strips).filter(s => !s.textContent.trim()).length,
+                  };
+                }
+                """
+            )
+            if estado["parcelasVisibles"] != 4:
+                fallos.append(f"[{nombre}/reduce] parcelas visibles: {estado['parcelasVisibles']} de 4")
+            if estado["labelsVisibles"] != 4:
+                fallos.append(f"[{nombre}/reduce] rotulos visibles: {estado['labelsVisibles']} de 4")
+            if estado["nombresVisibles"] == 0:
+                fallos.append(f"[{nombre}/reduce] ningun nombre visible")
+            if estado["stripsVacias"]:
+                fallos.append(f"[{nombre}/reduce] {estado['stripsVacias']} franjas arrancan vacias")
+
+            # 15. cero animaciones vivas dentro de la escena, en reposo.
+            animaciones = pg.evaluate(
+                "() => { const s = document.querySelector('[data-scene=\"credits\"]');"
+                " return document.getAnimations()"
+                "   .filter(a => a.effect && a.effect.target && s.contains(a.effect.target)).length; }"
+            )
+            if animaciones:
+                fallos.append(f"[{nombre}/reduce] {animaciones} animaciones vivas en la escena")
+
+            # 16. el apuntado CSS de `.credit-name` cambia EN SECO. Hover
+            # real (no `dispatchEvent`, que no dispara `:hover`) sobre el
+            # primer nombre visible: el color final debe llegar dentro del
+            # primer frame pintado, nunca a mitad de una transicion de
+            # 900ms/420ms.
+            apuntado = pg.evaluate(
+                """
+                async () => {
+                  const boton = Array.from(document.querySelectorAll('[data-credit]'))
+                    .find(n => getComputedStyle(n).display !== 'none');
+                  if (!boton) return { ok: false };
+                  const span = boton.querySelector('.credit-name') ?? boton;
+                  return { ok: true, rect: boton.getBoundingClientRect() };
+                }
+                """
+            )
+            if not apuntado.get("ok"):
+                fallos.append(f"[{nombre}/reduce] ningun nombre visible para probar el apuntado")
+            else:
+                r = apuntado["rect"]
+                leer_color = (
+                    "() => { const b = Array.from(document.querySelectorAll('[data-credit]'))"
+                    ".find(n => getComputedStyle(n).display !== 'none');"
+                    " const span = b.querySelector('.credit-name') ?? b;"
+                    " return getComputedStyle(span).color; }"
+                )
+                color_reposo = pg.evaluate(leer_color)
+                pg.mouse.move(r["x"] + r["width"] / 2, r["y"] + r["height"] / 2)
+                # No se compara contra un color "final" fijo (una lectura
+                # sola tras un delay corto es fragil bajo swiftshader, que
+                # va lento — nota ya pagada del proyecto): se comparan DOS
+                # lecturas separadas 150ms, ya lejos del hover. Si el cambio
+                # fue en seco, las dos coinciden entre si (y con ninguna
+                # transicion en curso). Si sigue habiendo una transicion de
+                # 900ms/420ms, a los 150/300ms el color TODAVIA se esta
+                # moviendo y las dos lecturas difieren.
+                pg.wait_for_timeout(150)
+                muestra_a = pg.evaluate(leer_color)
+                pg.wait_for_timeout(150)
+                muestra_b = pg.evaluate(leer_color)
+                if muestra_a == color_reposo:
+                    fallos.append(
+                        f"[{nombre}/reduce] el hover no cambio el color: sigue en {color_reposo}"
+                    )
+                elif muestra_a != muestra_b:
+                    fallos.append(
+                        f"[{nombre}/reduce] el apuntado sigue animando:"
+                        f" {muestra_a} a los 150ms, {muestra_b} a los 300ms"
+                    )
+
             ctx.close()
 
         b.close()
