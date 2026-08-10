@@ -66,6 +66,52 @@ function tiersDeGrupo(group: SkillGroup): Map<string, Tier> {
   return tiers;
 }
 
+/*
+ * Con 4 o 5 obras no se listan los proyectos: "Los cinco proyectos" dice mas
+ * y ocupa menos. Listar los cinco no distingue nada y descuadraba el pie, que
+ * tiene altura fija.
+ */
+function textoCruce(usedIn: string[]): string {
+  if (usedIn.length === 5) return "Los cinco proyectos";
+  if (usedIn.length === 4) return "Cuatro de los cinco proyectos";
+  return "";
+}
+
+/**
+ * Contenido de una franja: icono + nombre, detalle, y el cruce con las obras
+ * publicadas (o "Sin obra publicada" si no hay ninguna). Devuelve el nodo
+ * `.credits-strip-in` completo — el rodillo lo sustituye entero, nunca lo
+ * muta, porque los dos nodos del rodillo van siempre en `position: absolute`
+ * (ver comentario de `.credits-strip-in` en `themes.css`).
+ */
+function pintarFranja(_strip: HTMLElement, entry: CreditEntry): HTMLElement {
+  const dentro = el("div", "credits-strip-in", []);
+  const marca = elFromMarkup("credits-strip-mark", getIconMarkup(entry.slug));
+  marca.setAttribute("aria-hidden", "true");
+  marca.setAttribute("data-decorative", "");
+
+  const hijos: HTMLElement[] = [
+    el("div", "credits-strip-top", [marca, el("span", "credits-strip-name", [entry.name])]),
+    el("p", "credits-strip-detail", [entry.detail]),
+  ];
+
+  if (entry.usedIn.length === 0) {
+    const vacio = el("p", "credits-strip-none", ["Sin obra publicada"]);
+    hijos.push(vacio);
+  } else {
+    const resumen = textoCruce(entry.usedIn);
+    const items = resumen
+      ? [el("span", "credits-used-item", [resumen])]
+      : entry.usedIn.map((t) => el("span", "credits-used-item", [t]));
+    hijos.push(
+      el("div", "credits-used", [el("p", "credits-used-label", ["Aparece en"]), ...items]),
+    );
+  }
+
+  dentro.replaceChildren(...hijos);
+  return dentro;
+}
+
 /**
  * Creditos de pelicula interactivos, agrupados por area. La lista a la
  * izquierda y, a la derecha, el icono real de la tecnologia, para que se usa y
@@ -209,6 +255,19 @@ export function createCredits(): HTMLElement {
     // Hyprland y crea columnas implicitas (catastro, tarea 4).
     row.style.setProperty("--skill-col", String(gi + 1));
     markRows.push(row);
+  });
+
+  /*
+   * La franja arranca LLENA para no dejar un hueco esperando interaccion,
+   * pero llenar no es encender: en reposo todavia no ha pasado nada, asi
+   * que ningun nombre lleva acento ni desplazamiento. Sembrar marcando el
+   * primero como seleccionado producia un falso hover en movil — por eso
+   * este bucle solo pinta contenido, nunca toca `.is-active` ni
+   * `aria-pressed` ni dispara `select()`.
+   */
+  groups.forEach((group, gi) => {
+    const primera = toEntry(group.label, group.items[0]);
+    strips[gi].replaceChildren(pintarFranja(strips[gi], primera));
   });
 
   groups.forEach((group, gi) => {

@@ -1142,6 +1142,12 @@
   --catch: #ffd9cc;
   --rule: #3d1c1c;
   --haze: #b18c86;
+  /* Alias del prototipo aprobado (`catastro-v2.html`): `--void` es
+     `--color-ink` y `--text` es `--color-paper`, mismo valor exacto. El
+     catastro (tareas 4 y 5) los referencia con estos nombres — sin el alias
+     `var(--void)` en `.credits-grid` quedaba invalido en tiempo de computo. */
+  --void: var(--color-ink);
+  --text: var(--color-paper);
 
   /* Tonos que solo existen dentro de las siluetas de la hoja de contactos
      (`sceneNav.siluetas.ts`). Son tinta levantada uno o dos escalones, para
@@ -4531,6 +4537,102 @@
   position: absolute;
   inset: 0;
   padding: 0.75rem 1rem 0.875rem;
+}
+
+/* ------------------------------------------- Hyprland: contenido de la franja
+   Tamaños en escalones discretos de `--t-*` (nunca `clamp()` sobre la escala),
+   sacados de la tabla tipografica del plan y contrastados contra el
+   prototipo aprobado (`catastro-v2.html`). La franja mide 126px fijos: si un
+   escalon desborda, se baja uno — ver informe de la tarea 5. */
+:root[data-theme="hyprland"] .credits-strip-top {
+  display: flex;
+  align-items: center;
+  gap: 0.56rem;
+  margin: 0 0 0.375rem;
+}
+:root[data-theme="hyprland"] .credits-strip-mark {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  color: var(--l1);
+}
+:root[data-theme="hyprland"] .credits-strip-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+:root[data-theme="hyprland"] .credits-strip-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--t-2);
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+:root[data-theme="hyprland"] .credits-strip-detail {
+  margin: 0 0 0.56rem;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--t-1);
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--text) 88%, transparent);
+}
+:root[data-theme="hyprland"] .credits-strip-none {
+  margin: 0;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--t-1);
+  color: var(--haze);
+}
+
+/* `.credits-used`/`.credits-used-label`/`.credits-used-item` son las MISMAS
+   clases que pinta el panel compartido (`createCredits`, ver `.credits-panel`
+   arriba, apagado en este tema). Aqui viven dentro de la franja: se
+   reescriben por completo en vez de heredar el bloque de `style.css`
+   (margen/borde de separador de panel, pildora de `.credits-used-item`) que
+   no pinta nada porque `.credits-panel { display: none }` ya lo saca del
+   documento — pero SI pintaria si algun dia esas reglas base cambiaran, y
+   dentro de la franja el vocabulario es el del catastro: filete, no pildora. */
+:root[data-theme="hyprland"] .credits-strip .credits-used {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+}
+:root[data-theme="hyprland"] .credits-strip .credits-used-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--t-1);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .credits-strip .credits-used-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  /* Radio 0 es doctrina del tema: la regla base de `style.css` trae
+     `border-radius: 999px` (pildora) para el panel compartido de Vice y
+     Caelestia. Aqui se anula, no se hereda. */
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--t-1);
+  color: var(--catch);
+}
+/* El filete vertical de 1px que separa proyectos del cruce — nunca una
+   pildora. Solo aparece entre items, nunca antes del primero. */
+:root[data-theme="hyprland"] .credits-strip .credits-used-item + .credits-used-item::before {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 0.7em;
+  background: var(--rule);
 }
 
 /* El panel compartido no se usa aqui: cada parcela tiene su propia franja.
