@@ -531,6 +531,48 @@ def apertura(pg) -> list[str]:
     return fallos
 
 
+def accesibilidad(pg) -> list[str]:
+    """Los cinco disparadores tienen nombre accesible, orden de tabulacion
+    visual (nada de `tabindex` negativo) y hay una region `aria-live` para
+    anunciar apertura/cierre. El conteo explicito de disparadores sigue el
+    mismo patron que el resto del arnes: un `querySelectorAll` vacio no debe
+    poder dar un verde vacuo."""
+    return pg.evaluate(
+        """() => {
+          const f = [];
+          const botones = Array.from(document.querySelectorAll('[data-obra-abrir]'));
+          if (botones.length !== 5) f.push(`${botones.length} disparadores, esperaba 5`);
+          for (const b of botones) {
+            const etiqueta = b.getAttribute('aria-label') || '';
+            if (!etiqueta.startsWith('Mostrar ')) f.push('disparador sin nombre accesible');
+            if (b.tabIndex < 0) f.push('disparador fuera del orden de tabulacion');
+          }
+          const anuncio = document.querySelector('[data-obra-anuncio]');
+          if (!anuncio || anuncio.getAttribute('aria-live') !== 'polite') f.push('sin region aria-live');
+          return f;
+        }"""
+    )
+
+
+def movimiento_reducido(pg_reducido) -> list[str]:
+    """Con `reduce` el dispositivo sigue COMPLETO: se pierde el movimiento, no
+    la informacion. Es la diferencia entre degradar y desactivar: la
+    miniatura ya esta asentada (recorte en reposo) en vez de esperar a un
+    barrido que no va a llegar, y la barra de entrada ni se crea."""
+    return pg_reducido.evaluate(
+        """() => {
+          const f = [];
+          for (const sec of document.querySelectorAll('[data-scene="obra"]')) {
+            const mini = sec.querySelector('[data-obra-mini]');
+            const cp = getComputedStyle(mini).clipPath;
+            if (cp !== 'none' && cp.includes('100%')) f.push('captura oculta con movimiento reducido');
+          }
+          if (document.querySelector('.obra-barrido')) f.push('la barra de entrada existe con reduce');
+          return f;
+        }"""
+    )
+
+
 def enlace_en_ficha(pg) -> list[str]:
     """El pie del proyecto (enlace al repositorio o nota de "Proyecto
     privado") viaja a la ficha abierta: `bloquesDeFicha()` lo incluye desde
@@ -604,8 +646,23 @@ def main() -> int:
             fallos += [f"[hyprland escritorio] {f}" for f in nombre_accesible_intacto(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in marcas_del_stack(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in apertura(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in accesibilidad(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in enlace_en_ficha(pg)]
         b.close()
+
+        # Movimiento reducido: contexto propio con `reduced_motion="reduce"`,
+        # nunca la misma pagina que ya corrio con movimiento completo.
+        b3 = pw.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+        ctx_reducido = b3.new_context(
+            viewport={"width": 1440, "height": 900}, reduced_motion="reduce"
+        )
+        pg3 = ctx_reducido.new_page()
+        abre(pg3, args.base, "hyprland")
+        if not ir_a_obra(pg3):
+            fallos.append('[hyprland reduce] no existe [data-scene="obra"]')
+        else:
+            fallos += [f"[hyprland reduce] {f}" for f in movimiento_reducido(pg3)]
+        b3.close()
 
         # Movil, tableta y portatil (Task 6): el mismo dispositivo, no otro.
         # Cada ancho en su propia pagina -- `apertura()` deja la pagina con
