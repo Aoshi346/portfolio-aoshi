@@ -124,14 +124,31 @@ real, no al filo.
 
 ### Las marcas del stack
 
-Fila de tiles cuadrados de **34 px** con filete de brasa al 42 %, radio 0, monocromas. React, Vite
-y Electron llevan su silueta real; el resto, monograma en Bricolage (`Py`, `dj`, `TS`, `JS`, `N`,
-`Rx`, `Z`, `GS`, `C`, `GTK`).
+Corrección 2026-08-10 (Task 5): esta sección describía tiles cuadrados con monogramas dibujados a
+mano. Las dos cosas eran incorrectas y se corrigen aquí.
 
-**Decisión y motivo:** los logotipos oficiales traen su propio color —el azul de Python, el cian de
-React, el verde de Django— y meterían cinco paletas ajenas en una sección que sólo tiene tinta,
-papel y brasa. Un juego monocromo uniforme además no se rompe cuando aparezca una tecnología nueva.
-Si alguna vez se quieren los logos de marca en color, es un cambio de criterio, no un ajuste.
+**Son iconos reales, no monogramas.** `src/utils/icons.ts` ya inlinea `simple-icons` — de un solo
+trazo, sin color propio, heredan `currentColor` — para 23 slugs. No hay que dibujar `Py`, `dj`,
+`TS`... a mano: la marca real de cada tecnología ya está disponible y ya es monocroma. La
+conclusión de monocromía no cambia; el medio sí. **Zustand no existe en `simple-icons`**: una
+tecnología sin marca no pinta tile — su nombre ya está escrito en la línea de stack de arriba, así
+que no se pierde información y no se inventa un logotipo que no existe.
+
+**No son tiles con filete, comparten gramática con el catastro.** Aoshi decidió el 2026-08-10 que
+estas marcas siguen el mismo tratamiento que el friso de «Con qué construyo»
+(`2026-08-10-hyprland-stack-catastro-design.md`): **monocromas, `--haze` en reposo, `--l1` sólo
+cuando algo está activo, sin caja, sin filete, sin radio.** Lo único que cambia con el contexto es
+el tamaño — 14 px en el friso, donde es el dispositivo firma de la sección; 20 px aquí, donde son
+un detalle de apoyo dentro de la ficha. Un tile con filete de brasa haría que la misma marca se
+leyera de dos formas distintas dentro del mismo tema. Lo que **no** se comparte: el catastro apaga
+las marcas vecinas con `opacity: 0.42` al apuntar una; aquí esa opacidad está prohibida por la ley
+de la sección (nada se presenta ni se retira por opacidad, salvo el canto de brasa del barrido).
+
+**Decisión y motivo (se mantiene):** un logotipo con su color de marca —el azul de Python, el cian
+de React, el verde de Django— metería cinco paletas ajenas en una sección que sólo tiene tinta,
+papel y brasa. `simple-icons` ya resuelve esto: son de un solo trazo y heredan el color del tema sin
+que haya que renunciar al icono real. Un juego monocromo uniforme además no se rompe cuando
+aparezca una tecnología nueva sin marca disponible.
 
 ### El cuadro de la imagen
 

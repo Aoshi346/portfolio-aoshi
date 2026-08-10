@@ -58,6 +58,42 @@ def nodos_ocultos(pg) -> list[str]:
     )
 
 
+# `Zustand` no existe en `simple-icons`: no pinta tile a proposito (Task 5).
+STACK_SIN_MARCA = {"Zustand"}
+
+
+def marcas_del_stack(pg) -> list[str]:
+    """Cada proyecto tiene una marca `.obra-marca` por cada tecnologia de su
+    stack con slug CONOCIDO en `simple-icons` -- ni una de menos (falta un
+    icono) ni una de mas (aparece un tile fantasma), y nunca el total del
+    stack sin filtrar `STACK_SIN_MARCA` (con la ficha vacia esa cuenta seria
+    vacuamente exigente: 0 esperadas, 0 encontradas, verde falso). Ademas,
+    ningun SVG trae su color de marca: todos deben heredar `currentColor`
+    del contenedor.
+    """
+    return pg.evaluate(
+        """(sinMarca) => {
+          const f = [];
+          for (const sec of document.querySelectorAll('[data-scene="obra"]')) {
+            const nombres = Array.from(sec.querySelectorAll('.obra-meta dd'))
+              .map(d => d.textContent).find(t => t && t.includes(' · '));
+            if (!nombres) continue;
+            const esperadas = nombres.split(' · ').filter(n => !sinMarca.includes(n)).length;
+            const tiles = sec.querySelectorAll('[data-obra-marcas] .obra-marca').length;
+            if (tiles !== esperadas) f.push(`${tiles} marcas, esperaba ${esperadas}`);
+            for (const svg of sec.querySelectorAll('[data-obra-marcas] svg')) {
+              const fill = getComputedStyle(svg).fill;
+              if (fill !== getComputedStyle(svg.parentElement).color) {
+                f.push(`marca con color propio: ${fill}`);
+              }
+            }
+          }
+          return f;
+        }""",
+        list(STACK_SIN_MARCA),
+    )
+
+
 def titulo_intacto(pg) -> list[str]:
     """El titular sigue diciendo lo que dice `content.ts` despues de que el
     tema lo parta en caracteres, y hay CINCO disparadores.
@@ -445,6 +481,7 @@ def main() -> int:
             fallos += [f"[hyprland] {f}" for f in escala_tipografica(pg)]
             fallos += [f"[hyprland] {f}" for f in relevo_es_ola(pg)]
             fallos += [f"[hyprland] {f}" for f in nombre_accesible_intacto(pg)]
+            fallos += [f"[hyprland] {f}" for f in marcas_del_stack(pg)]
             fallos += [f"[hyprland] {f}" for f in apertura(pg)]
         b.close()
     for f in fallos:

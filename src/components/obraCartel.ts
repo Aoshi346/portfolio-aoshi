@@ -210,6 +210,18 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
         },
       );
     }
+    // Las marcas del stack entran por corte, con escalonado propio: no van
+    // dentro del `SplitText` de arriba (que parte parrafos en lineas) porque
+    // `.obra-marca` no es texto, es un `<span>` con un SVG dentro.
+    if (!motionReducido) {
+      gsap.fromTo(
+        ficha.querySelectorAll(".obra-marca"),
+        { clipPath: "inset(0 100% 0 0)" },
+        { clipPath: "inset(0 0 0 0)", duration: 0.42, ease: "hard", stagger: 0.05, delay: 0.42 },
+      );
+    } else {
+      gsap.set(ficha.querySelectorAll(".obra-marca"), { clipPath: "inset(0 0 0 0)" });
+    }
     anuncio.textContent = `${fila.boton.getAttribute("aria-label")?.replace("Mostrar ", "") ?? ""}, ficha abierta.`;
   }
 
@@ -276,6 +288,9 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       for (const soltar of sueltas) soltar();
       gsap.killTweensOf(filas.flatMap((f) => [...f.tiras, ...f.entradas, f.mini, f.seccion]));
       gsap.killTweensOf(ficha);
+      // Las marcas del stack son hijos de `ficha`, no la propia `ficha`: su
+      // tween de entrada no lo mata el `killTweensOf(ficha)` de arriba.
+      gsap.killTweensOf(ficha.querySelectorAll(".obra-marca"));
       cortaParticion();
       // Si `destroy()` llega a mitad de una apertura O de un cierre, la
       // miniatura y los bloques de la ficha no pueden quedar huerfanos fuera

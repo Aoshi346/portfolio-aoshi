@@ -2478,6 +2478,37 @@
   line-height: 1.375;
 }
 /*
+  Las marcas del stack (Task 5): comparten gramatica con el friso del
+  catastro ("Con que construyo") — monocromas, `--haze` en reposo, `--l1`
+  solo cuando algo esta activo, sin caja, sin filete, sin radio. Lo unico
+  que cambia con el contexto es el tamano: 14px en el friso, que ahi ES el
+  dispositivo; 20px aqui, donde las marcas son un detalle de apoyo. Lo que
+  NO se comparte: el catastro apaga las vecinas con `opacity: 0.42` al
+  apuntar una — aqui esta seccion prohibe la opacidad para presentar o
+  retirar contenido, asi que ese gesto no se replica.
+*/
+:root[data-theme="hyprland"] .obra-ficha .obra-marcas {
+  display: flex;
+  gap: 14px;
+  /* 8px, no 12: con HyprFinance (4 marcas tras retirar Zustand, que no
+     tiene simple-icon) la ficha desbordaba la pista 3px con 12px de
+     margen. La gramatica compartida con el friso del catastro es de
+     tratamiento de la marca (tamano, color, sin caja) -- este margen es
+     puramente de maquetacion de ESTA ficha y no la rompe. */
+  margin-top: 8px;
+  flex-wrap: wrap;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .obra-marca {
+  display: block;
+  clip-path: inset(0 100% 0 0); /* entran por corte, con escalonado */
+}
+:root[data-theme="hyprland"] .obra-marca-svg svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor; /* simple-icons es de un solo trazo: hereda el tema */
+}
+/*
   La miniatura, YA DENTRO de la lupa. Es imprescindible: todas sus reglas de
   tamano y caja cuelgan de `[data-scene="obra"] .obra-mini`, y al viajar a la
   lupa el nodo deja de casar ese selector — se queda sin alto, sin `overflow`

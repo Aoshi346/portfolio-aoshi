@@ -1,6 +1,8 @@
 import { createGallery } from "../../components/gallery";
 import type { CaseStudy } from "../../data/content";
-import { el } from "../../utils/dom";
+import { el, elFromMarkup } from "../../utils/dom";
+import { getIconMarkup } from "../../utils/icons";
+import { slugDeStack } from "../../utils/stackIcons";
 
 function metaEntry(label: string, value: string): HTMLElement {
   const entry = el("div", "", [el("dt", "", [label]), el("dd", "", [value])]);
@@ -92,8 +94,20 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
     mini.append(shot, el("figcaption", "obra-mini-pie", [primera.caption]));
   }
 
-  // Las marcas del stack las rellena `stackIcons.ts` en la Task 5.
-  const marcas = el("div", "obra-marcas", []);
+  // Las marcas del stack: una por tecnologia con slug conocido en
+  // `simple-icons` (Task 5). Sin marca, la tecnologia no pinta tile — su
+  // nombre ya esta en la linea de stack de arriba, asi que no se pierde nada.
+  const marcas = el(
+    "div",
+    "obra-marcas",
+    project.stack.flatMap((nombre) => {
+      const slug = slugDeStack(nombre);
+      if (!slug) return [];
+      const tile = el("span", "obra-marca", [elFromMarkup("obra-marca-svg", getIconMarkup(slug))]);
+      tile.title = nombre;
+      return [tile];
+    }),
+  );
   marcas.setAttribute("data-obra-marcas", "");
   marcas.setAttribute("aria-hidden", "true");
 
