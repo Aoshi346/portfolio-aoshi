@@ -113,8 +113,19 @@ es la que se lee.
 | Los otros cuatro | **se apartan a los bordes**, no se encogen: los de arriba salen por arriba, los de abajo por abajo, con 30 ms de escalonado |
 
 La ficha lleva **seis bloques**, en este orden: `lead` (Instrument Serif, `--t-4`), *Qué construí*
-(`solution`), *Stack* (línea de texto + fila de marcas), estado con testigo de 8×8 px, *Qué pasaba
-antes* (`problem`) y un pie con *Rol* y *Periodo* separado por filete.
+(`solution`), *Stack* (línea de texto + fila de marcas), estado con testigo de 8×8 px, el **enlace
+al repositorio** (`link`) o la nota de proyecto privado, y un pie con *Rol* y *Periodo* separado por
+filete.
+
+**`problem` no aparece, y el enlace sí. Decisión de Aoshi del 2026-08-10, corrigiendo un hueco de
+este spec.** La primera versión describía la ficha con *Qué pasaba antes* y **sin el enlace**, con
+lo que el único gesto accionable de toda la sección —el repositorio, que tienen tres de los cinco
+proyectos— no aparecía en ninguna parte. Era un fallo del spec, no de la implementación.
+
+Se cambia contexto por acción: `problem` explica qué pasaba antes, `link` es lo que un reclutador
+pulsa. Y resuelve de paso el apretón que se arrastraba: la ficha llevaba dos recortes de espaciado
+consecutivos (interlineado y márgenes) para que los cinco proyectos cupieran en el alto de la
+pista, porque `problem` es el bloque más largo de los seis.
 
 **Este ancho está medido, no elegido a ojo.** Con la ficha a 412 px, tres de los cinco proyectos
 desbordaban el encuadre por abajo: WatchDog **+64 px**, TesisFar **+39**, «Editor de texto» **+27**.
@@ -284,7 +295,7 @@ Medidas del prototipo:
 | Visor grande | 336 × 190 | 592 × 370 |
 | Objetivo táctil de fila | ~86 px de alto | ~120 px |
 
-**No se cae ningún bloque**: la ficha abierta lleva los mismos seis. La hoja abierta se desplaza
+**No se cae ningún bloque en móvil**: la ficha abierta lleva los mismos seis que en escritorio (y `problem` no está en ninguno de los dos desde la decisión del 2026-08-10). La hoja abierta se desplaza
 dentro de sí misma entre **27 y 85 px en móvil** y entre **43 y 74 px en tableta**, según el
 proyecto — el pie de Rol y Periodo queda medio dedo por debajo del pliegue en los de texto más
 largo. Es el único scroll interno que este diseño acepta.

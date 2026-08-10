@@ -1044,7 +1044,11 @@ el objetivo táctil sea la fila entera):
     const mascaras = Array.from(seccion.querySelectorAll<HTMLElement>("[data-mask]"));
     const meta = seccion.querySelector<HTMLElement>(".obra-meta");
     const marcas = seccion.querySelector<HTMLElement>("[data-obra-marcas]");
-    for (const pieza of [lead, mascaras[1], marcas, mascaras[0], meta]) {
+    // `mascaras[0]` es `problem` y NO entra: se cambio por el enlace al
+    // repositorio (decision de Aoshi, 2026-08-10). El enlace es el unico gesto
+    // accionable de la seccion y no aparecia en ningun sitio.
+    const pie = seccion.querySelector<HTMLElement>("[data-obra-pie]");
+    for (const pieza of [lead, mascaras[1], marcas, pie, meta]) {
       if (pieza) piezas.push(pieza);
     }
     return piezas;
@@ -1542,6 +1546,31 @@ git commit -m "feat(obra): el cartel en movil y tableta, mismo dispositivo sin h
 ---
 
 ## Task 7: Accesibilidad y movimiento reducido
+
+> **Encargo adicional, en commit propio y separado: el enlace al repositorio entra en la ficha.**
+>
+> `bloquesDeFicha` nunca recogía el pie del proyecto, así que **el enlace al repositorio no aparece
+> en ninguna parte del cartel**. Tres de los cinco proyectos tienen repo público y es el único
+> gesto accionable de la sección; los otros dos pierden su nota de "Proyecto privado". Es un hueco
+> del spec, no de la implementación: la ficha se describió con seis bloques y ninguno era el enlace.
+> Lo destapó la Task 6 al arreglar un bug colateral.
+>
+> Decisión de Aoshi (2026-08-10): **el enlace entra y sale `problem`**, que es el bloque más largo
+> y la causa de los dos apretones de espaciado que se arrastran desde la Task 4. Se cambia contexto
+> por acción.
+>
+> Tres cambios:
+> 1. `projectScene.ts` — el `<div class="mt-10">` que envuelve el enlace (o la nota de proyecto
+>    privado) gana el gancho `data-obra-pie`. Hoy sólo se puede seleccionar por `.mt-10:not(.grid)`,
+>    que es frágil y ya causó un fallo en la Task 6.
+> 2. `obraCartel.ts` — `bloquesDeFicha` cambia `mascaras[0]` (que es `problem`) por ese pie.
+> 3. `measure-cartel.py` — la aserción de la ficha comprueba que **los tres proyectos con `link`
+>    muestran un `<a href>` visible dentro de la ficha abierta**, y que los dos privados muestran su
+>    nota. El conteo de bloques sigue siendo el mismo, así que un conteo por sí solo no lo detecta:
+>    hay que mirar el contenido.
+>
+> Ojo con el orden: el pie va **antes** del `meta` de Rol y Periodo, según el spec.
+
 
 **Ficheros:**
 - Modificar: `src/components/obraCartel.ts`
