@@ -4517,6 +4517,17 @@
   text-transform: inherit;
 }
 
+/*
+ * El acento es estado, nunca taxonomia: `data-credit-picked` es el
+ * seleccionado de SU parcela (uno por grupo, cuatro a la vez), lo pone la
+ * coreografia de `credits.ts` tras una interaccion real (nunca en el
+ * sembrado inicial). El color va en el span que pinta el texto, no en el
+ * boton — mismo motivo que la regla de arriba.
+ */
+:root[data-theme="hyprland"] .credit[data-credit-picked] .credit-name {
+  color: var(--l3);
+}
+
 /* La franja: altura FIJA, no minima. Con minima, la parcela cuyo cruce ocupa
    mas lineas sube su pie y el rectangulo deja de cerrar. Medido: los cuatro
    pies a la misma cota. */

@@ -295,7 +295,13 @@ export function createCredits(): HTMLElement {
       row.dataset.index = String(rows.length);
       row.dataset.parcela = String(gi);
       row.dataset.creditTier = tiers.get(item.slug) ?? "bajo";
-      row.setAttribute("aria-controls", PANEL_ID);
+      /*
+       * Apunta a los DOS destinos que la fila puede actualizar: el panel
+       * compartido (Vice/Caelestia) y la franja de su propia parcela
+       * (Hyprland). Es valido tener dos ids en `aria-controls` y sirve a los
+       * tres temas sin ramificar el atributo por tema.
+       */
+      row.setAttribute("aria-controls", `${PANEL_ID} credits-strip-${gi}`);
       row.setAttribute("aria-pressed", "false");
       row.style.setProperty("--skill-col", String(gi + 1));
       row.style.setProperty("--skill-row", String(filaDe(i, group.items.length)));
@@ -329,7 +335,7 @@ export function createCredits(): HTMLElement {
       marcasDeEsteGrupo.set(entry.slug, mark);
       markRows[gi].appendChild(mark);
 
-      const select = () => {
+      const select = (ev?: Event) => {
         for (const other of rows) {
           other.classList.remove("is-active");
           other.setAttribute("aria-pressed", "false");
@@ -368,6 +374,27 @@ export function createCredits(): HTMLElement {
           for (const [slug, node] of grupoDeMarcas) {
             node.classList.toggle("is-active", slug === entry.slug);
           }
+        }
+        /*
+         * Marcador propio de Hyprland, encima del `.is-active` global de
+         * arriba: uno por parcela (cuatro a la vez), nunca uno solo para las
+         * 23. `.is-active`/`aria-pressed` no se tocan aqui — siguen siendo
+         * globales y siguen alimentando el panel compartido de Vice y
+         * Caelestia sin cambiar de semantica. Solo el CSS de Hyprland lee
+         * `data-credit-picked`.
+         *
+         * `ev.isTrusted` distingue una interaccion real (mouseenter/focus/
+         * click del navegador, siempre `isTrusted: true`) del disparo
+         * sintetico de sembrado al final de `createCredits` (`new
+         * MouseEvent(...)`, siempre `isTrusted: false`). Sin este filtro el
+         * sembrado dejaria la primera tecnologia con acento encendido desde
+         * el arranque — sembrar la franja no es encender el nombre.
+         */
+        if (ev?.isTrusted) {
+          for (const otra of filasPorGrupo[gi]) {
+            otra.toggleAttribute("data-credit-picked", otra === row);
+          }
+          strips[gi].replaceChildren(pintarFranja(strips[gi], entry));
         }
       };
 
