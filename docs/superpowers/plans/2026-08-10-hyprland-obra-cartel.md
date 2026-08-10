@@ -1792,7 +1792,7 @@ apartado de composición y un `## Registro de implementación` con lo que se des
 Lanza `lidia-naive-tester` y `vera-art-director` (umbral 7,5/10). Antes, **revisión de Aoshi en el
 sitio real haciendo scroll**, no sobre capturas.
 
-- [ ] **Paso 8: Commit de cierre**
+- [x] **Paso 8: Commit de cierre** (`3c5e4e1`)
 
 ```bash
 git add -A
