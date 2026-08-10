@@ -335,7 +335,7 @@ git commit -m "feat(about): nodos de la placa, ocultos en los tres temas"
 - Consume: las clases `.placa`, `.placa-c`, `.placa-k`, `.placa-v`, `.placa-s`, `.placa-p`,
   `.placa-num`, `.placa-par`, `.placa-foto` de la tarea 2.
 
-- [ ] **Paso 1: encender y componer**
+- [x] **Paso 1: encender y componer**
 
 ```css
 /*
@@ -386,7 +386,7 @@ git commit -m "feat(about): nodos de la placa, ocultos en los tres temas"
 :root[data-theme="hyprland"] .placa .placa-p { margin-top: auto; }
 ```
 
-- [ ] **Paso 2: ocultar lo que la placa sustituye**
+- [x] **Paso 2: ocultar lo que la placa sustituye**
 
 ```css
 /* La placa dice todo esto y mejor. No se borran del DOM: los otros dos temas
@@ -401,7 +401,7 @@ git commit -m "feat(about): nodos de la placa, ocultos en los tres temas"
 :root[data-theme="hyprland"] .about-grid { grid-template-columns: 1fr; }
 ```
 
-- [ ] **Paso 3: medir**
+- [x] **Paso 3: medir**
 
 ```bash
 export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH
@@ -411,7 +411,7 @@ npm run build && python3 scripts/measure-placa.py
 Esperado: se acabaron los `no tiene celdas`. Es probable que salgan desbordes y tallas fuera de
 escala: **eso es correcto en este punto**, los cierran las tareas 4 y 5. Anotar cuáles salen.
 
-- [ ] **Paso 4: captura**
+- [x] **Paso 4: captura**
 
 ```bash
 python3 - <<'EOF'
@@ -433,7 +433,7 @@ EOF
 Mirarla al lado de `.superpowers/brainstorm/1961497-1786322787/content/ficha-b.html`. Si el arnés
 pasa y la captura no convence, **el arnés mide lo que no es**.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add src/themes/themes.css

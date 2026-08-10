@@ -1976,6 +1976,78 @@
 }
 
 /*
+  LA PLACA — "Quien soy" deja de ser una pila de bloques.
+  Rejilla de 6 columnas con celdas de distinto ancho: una rejilla uniforme es
+  una tabla, y anchos desiguales ordenan por importancia sin cambiar el tamano
+  de la letra. Spec: docs/superpowers/specs/2026-08-10-hyprland-quien-soy-placa-design.md
+
+  `container-type` en el cuerpo y no en la placa: una consulta de contenedor se
+  resuelve contra el ancestro contenedor mas cercano, nunca contra el elemento
+  que la lleva. Sin este contenedor no hay ninguno en toda la seccion y los
+  `@container` de abajo no casan jamas — la placa se quedaria en dos columnas
+  en escritorio sin que nada fallara a la vista.
+*/
+:root[data-theme="hyprland"] .about-body {
+  container-type: inline-size;
+}
+
+:root[data-theme="hyprland"] .placa {
+  display: grid;
+  position: relative;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin: 0;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+@container (min-width: 900px) {
+  :root[data-theme="hyprland"] .placa {
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: 1.02fr 0.98fr 1.05fr;
+  }
+  :root[data-theme="hyprland"] [data-placa-celda="quien"] { grid-area: 1 / 1 / 2 / 4; }
+  :root[data-theme="hyprland"] [data-placa-celda="retrato"] { grid-area: 1 / 4 / 2 / 5; }
+  :root[data-theme="hyprland"] [data-placa-celda="estado"] { grid-area: 1 / 5 / 3 / 7; }
+  :root[data-theme="hyprland"] [data-placa-celda="hace"] { grid-area: 2 / 1 / 3 / 4; }
+  :root[data-theme="hyprland"] [data-placa-celda="obra"] { grid-area: 2 / 4 / 3 / 5; }
+  :root[data-theme="hyprland"] [data-placa-celda="puesto"] { grid-area: 3 / 1 / 4 / 4; }
+  :root[data-theme="hyprland"] [data-placa-celda="estudia"] { grid-area: 3 / 4 / 4 / 7; }
+}
+
+/* El contenido va PEGADO al borde superior. Separar rotulo y dato con
+   `space-between` dejaba un hueco muerto en el centro de cada celda: ese era
+   el motivo real de que la placa se viera vacia, no la falta de contenido. */
+:root[data-theme="hyprland"] .placa-c {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  padding: 0.8rem 1rem 0.9rem;
+  background: #0c0403;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+/* El pie se ancla abajo. Ojo: `.placa dd { margin: 0 }` (0-1-1) gana a
+   `.placa-p` (0-1-0) y anularia el `auto`. */
+:root[data-theme="hyprland"] .placa dd {
+  margin: 0;
+}
+:root[data-theme="hyprland"] .placa .placa-p {
+  margin-top: auto;
+}
+
+/* La placa dice todo esto y mejor. No se borran del DOM: los otros dos temas
+   los siguen usando tal cual, y por eso sus reglas de Hyprland siguen escritas
+   mas arriba aunque ya no pinten nada. */
+:root[data-theme="hyprland"] .about-card,
+:root[data-theme="hyprland"] .about-stats,
+:root[data-theme="hyprland"] .about-track,
+:root[data-theme="hyprland"] .about-pairs,
+:root[data-theme="hyprland"] .about-body > [data-line] {
+  display: none;
+}
+
+/*
   LA TIRA DE EXPOSICION — el dispositivo de la obra.
   Equivale al carril horizontal de Vice (la bobina), pero aqui no hay
   tarjetas: es una banda a sangre partida en escalones de la misma luz, sin
