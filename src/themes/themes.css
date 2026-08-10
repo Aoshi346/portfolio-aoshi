@@ -4371,8 +4371,33 @@
 /*
   EL CATASTRO — cuatro parcelas contiguas que se reparten el encuadre entero,
   con el ancho proporcional a cuantas tecnologias contiene cada una. El area
-  en pantalla ES el dato. Radio 0, filetes de 1px, perimetro cerrado: la
-  oposicion deliberada a las bandas del contacto, que van a sangre.
+  en pantalla ES el dato. Radio 0, filetes de 1px.
+
+  En ESCRITORIO ya no lleva perimetro cerrado (gate visual de la tarea 12,
+  hallazgo P1): la prueba a ciegas leia el interior del catastro y el de la
+  placa (`.about-card`) como "el mismo dispositivo" porque los dos comparten
+  caja — mismo ancho de 1238px, mismo borde de 1px, mismo `x=102`. "El
+  interior cambia de gramatica; el envase no cambia de nada." Un catastro es
+  un territorio parcelado, no una ficha: lo que lo define es que las lineas
+  no terminan. Se retira el `border` exterior de `.credits-grid` y las dos
+  reglas horizontales que hacian de tapa (`.credit-group-label`,
+  border-bottom) y de suelo (`.credits-strip`, border-top) — juntas cerraban
+  el rectangulo tan bien como el `border` mismo, porque las cuatro parcelas
+  las repiten a la misma fila. Sin las tres, solo quedan los CUATRO linderos
+  verticales (`.credits-parcela + .credits-parcela`, mas abajo) corriendo de
+  arriba abajo del catastro sin nada que los cierre por los lados: territorio
+  parcelado, no ficha cerrada. La placa (`.about-card`) queda como el unico
+  objeto cerrado del tema — la oposicion que faltaba.
+
+  En MOVIL el dispositivo es otro (acordeon apilado, ver el `@media
+  (max-width: 820px)` de mas abajo): ahi SI hace falta el borde y las dos
+  reglas horizontales, asi que las tres vuelven a declararse dentro de ese
+  bloque en vez de heredar estas. Sin lindero vertical (`.credits-parcela`
+  pone `border-left: 0` en movil) el acordeon no tiene ninguna otra senal de
+  donde empieza y termina cada territorio plegado, y el borde perimetral SI
+  lee ahi como una lista de tarjetas apiladas, no como una ficha unica — el
+  hallazgo P1 fue especificamente sobre la silueta de ESCRITORIO frente a la
+  placa.
 
   La lista sigue PLANA (`display: contents`) porque `scene4Credits` de Vice
   anima los hijos directos de `[data-credit-roll]`. La columnizacion la
@@ -4406,7 +4431,8 @@
   gap: 0;
   max-width: none;
   width: 100%;
-  border: 1px solid var(--rule);
+  /* Sin `border`: ver el comentario largo de arriba (hallazgo P1). El
+     perimetro vuelve solo en movil, dentro de su propio `@media`. */
   /* Scrim propio: sin superficie, `--haze` a 15px cae por debajo de AA sobre
      la fase clara del fondo. El precedente es `.about-pairs` al 78%. */
   background: color-mix(in srgb, var(--void) 78%, transparent);
@@ -4522,7 +4548,11 @@
   grid-row: var(--skill-row);
   margin: 0;
   padding: 0.95rem 1rem;
-  border-bottom: 1px solid var(--rule);
+  /* Sin `border-bottom` en escritorio: era la "tapa" que cerraba el
+     rectangulo junto con el `border-top` de `.credits-strip` (hallazgo P1,
+     ver el comentario largo de `.credits-grid`). Vuelve dentro del `@media
+     (max-width: 820px)` de mas abajo, donde el dispositivo es un acordeon
+     y SI necesita esa linea. */
   font-family: var(--font-body);
   font-size: var(--t-1);
   font-weight: 600;
@@ -4632,16 +4662,22 @@
  * tiene que vivir en el span o competiria con ella.
  *
  * El prototipo pedia `.credit.is-active` como tercer disparador, junto a
- * `:hover`/`:focus-visible`. Se cambia por `[data-credit-picked]`: `.is-active`
- * es GLOBAL y lo pone `select()` en CUALQUIER invocacion, incluida la
- * sintetica de sembrado (`credits.ts`, `rows[0].dispatchEvent(new
- * MouseEvent("mouseenter"))`, `isTrusted: false`). Con `.is-active` en esta
- * regla, la primera tecnologia sembrada quedaba con el acento encendido
- * desde el arranque sin que nadie la senalara — medido, rompia la asercion
- * "acento en reposo" del arnes en los dos viewports. `[data-credit-picked]`
- * es el mismo interruptor que ya usa Hyprland mas abajo para el acento
- * persistente: solo lo pone la coreografia de `credits.ts` tras una
- * interaccion real (`ev.isTrusted`), nunca en el sembrado.
+ * `:hover`/`:focus-visible`. Ese tercer disparador se ha retirado del todo
+ * (gate visual de la tarea 12, hallazgo P0): el acento vive SOLO mientras
+ * hay apuntado real. `[data-credit-picked]` seguia pintando el nombre en
+ * `--l3` de forma PERMANENTE tras la interaccion — medido por la auditora,
+ * a 1500ms de sacar el raton el nombre seguia acentuado mientras las otras
+ * tres senales del gesto (luz del lindero, friso, rotulo) ya habian vuelto
+ * a reposo. Tras un barrido por las cuatro parcelas quedaban cuatro nombres
+ * acentuados a la vez y permanentes — se leian como un ranking que el
+ * catastro no tiene: los 23 nombres son comparables entre si (spec, "el
+ * acento no marca rango entre elementos comparables"). Que tecnologia
+ * muestra cada parcela ya lo dice su franja, justo debajo del friso, asi
+ * que retirar el acento persistente no pierde informacion.
+ *
+ * El atributo `data-credit-picked` SIGUE vivo en el DOM (lo escribe
+ * `credits.ts` para saber que fila repinta la franja de su parcela) — solo
+ * deja de tener CSS propio en Hyprland. Vice/Caelestia nunca lo leyeron.
  *
  * La transicion NUNCA se concede sin condicion: eso es exactamente la
  * carrera que el bloque de arriba ya explica y apago con `transition: none`.
@@ -4652,8 +4688,7 @@
  * en el mismo numero que documenta la asercion 12 (informe de la tarea 9).
  */
 :root[data-theme="hyprland"] .credit:hover .credit-name,
-:root[data-theme="hyprland"] .credit:focus-visible .credit-name,
-:root[data-theme="hyprland"] .credit[data-credit-picked] .credit-name {
+:root[data-theme="hyprland"] .credit:focus-visible .credit-name {
   color: var(--l3);
   transform: translateX(6px);
 }
@@ -4663,10 +4698,8 @@
 }
 :root[data-theme="hyprland"] .credit:not(.is-caught):hover .credit-name,
 :root[data-theme="hyprland"] .credit:not(.is-caught):focus-visible .credit-name,
-:root[data-theme="hyprland"] .credit:not(.is-caught)[data-credit-picked] .credit-name,
 :root[data-theme="hyprland"] .credit.is-caught-still:hover .credit-name,
-:root[data-theme="hyprland"] .credit.is-caught-still:focus-visible .credit-name,
-:root[data-theme="hyprland"] .credit.is-caught-still[data-credit-picked] .credit-name {
+:root[data-theme="hyprland"] .credit.is-caught-still:focus-visible .credit-name {
   transition: transform 0.42s var(--hard), color 0.42s var(--hard);
 }
 :root[data-theme="hyprland"] .credit:focus-visible {
@@ -4682,11 +4715,11 @@
  * El fotograma 100% es IDENTICO al valor de reposo — no lo declara, y
  * queda vacio a proposito — y el relleno es `backwards`, no `forwards`:
  * una `animation` con `forwards` gana a una `transition` en la cascada y
- * dejaria el nombre sin su color de reposo (el de `data-credit-tier` o el
- * de `data-credit-picked` si el gesto 9 ya lo apunto). Es el primo hermano
- * del "transform inline de GSAP gana a la regla CSS". El color anima en el
- * boton (`.credit`), no en `.credit-name`: el span hereda con `color:
- * inherit` de arriba, asi que un solo `animation` basta para los dos.
+ * dejaria el nombre sin su color de reposo (el de `data-credit-tier`). Es
+ * el primo hermano del "transform inline de GSAP gana a la regla CSS". El
+ * color anima en el boton (`.credit`), no en `.credit-name`: el span
+ * hereda con `color: inherit` de arriba, asi que un solo `animation` basta
+ * para los dos.
  */
 @keyframes hypr-lampara {
   0% {
@@ -4768,26 +4801,28 @@
 }
 
 /*
- * El acento es estado, nunca taxonomia: `data-credit-picked` es el
- * seleccionado de SU parcela (uno por grupo, cuatro a la vez), lo pone la
- * coreografia de `credits.ts` tras una interaccion real (nunca en el
- * sembrado inicial). El color va en el span que pinta el texto, no en el
- * boton — mismo motivo que la regla de arriba.
+ * `data-credit-picked` ya NO lleva CSS de acento en Hyprland (hallazgo P0,
+ * gate de la tarea 12): ver el comentario largo mas arriba, junto a
+ * `:hover`/`:focus-visible` de `.credit-name`. El atributo sigue vivo en el
+ * DOM porque `credits.ts` lo usa para saber que franja repintar — solo dejo
+ * de pintar nada por si mismo.
  */
-:root[data-theme="hyprland"] .credit[data-credit-picked] .credit-name {
-  color: var(--l3);
-}
 
 /* La franja: altura FIJA, no minima. Con minima, la parcela cuyo cruce ocupa
    mas lineas sube su pie y el rectangulo deja de cerrar. Medido: los cuatro
-   pies a la misma cota. */
+   pies a la misma cota (la aserción 2 de `measure-catastro.py` mide esa
+   cota, no depende de este `border`). */
 :root[data-theme="hyprland"] .credits-strip {
   display: block;
   grid-column: var(--skill-col-strip);
   grid-row: -2 / -1;
   height: 126px;
   padding: 0;
-  border-top: 1px solid var(--rule);
+  /* Sin `border-top` en escritorio: era el "suelo" que cerraba el
+     rectangulo junto con el `border-bottom` de `.credit-group-label`
+     (hallazgo P1, ver el comentario largo de `.credits-grid`). Vuelve en
+     movil, donde el `@media (max-width: 820px)` de mas abajo ya declara
+     `.credits-strip` de nuevo para su propio alto/`is-open`. */
   overflow: hidden;
   position: relative;
 }
@@ -4811,11 +4846,29 @@
   gap: 0.56rem;
   margin: 0 0 0.375rem;
 }
+/*
+ * El logo de la franja bajaba a `--haze` (hallazgo P1, gate de la tarea 12):
+ * en `--l1` con opacidad 1 era PERMANENTE — nace con la franja, nunca se
+ * apaga — y era lo mas caliente de la escena en reposo, mas caliente que el
+ * nombre REALMENTE apuntado (`--l3`, ver `.credit-name` mas arriba), que
+ * solo se enciende con la interaccion. El presupuesto de acento estaba
+ * invertido: el cromo que nunca cambia pesaba mas que el estado que si
+ * cambia. `--haze` es el mismo vocabulario "silencioso" que ya usa
+ * `.credit-group-label` y el nivel `bajo` de los nombres — el logo deja de
+ * leerse como acento y pasa a ser identificacion neutra, igual que el resto
+ * del cromo fijo de la escena.
+ *
+ * Contraste medido (metodo de `check_contrast_wcag` de `verify.py`: fondo
+ * muestreado en un anillo FUERA de la caja del icono sobre el screenshot
+ * real, shader activo, build de produccion, 1440x900): 4 marcas de franja,
+ * ratios 6,03:1 / 4,65:1 / 5,40:1 / 5,83:1 — minimo 4,65:1, por encima del
+ * 3:1 de WCAG 1.4.11 (contraste no textual) y del 4,5:1 de texto AA.
+ */
 :root[data-theme="hyprland"] .credits-strip-mark {
   width: 26px;
   height: 26px;
   flex: 0 0 auto;
-  color: var(--l1);
+  color: var(--haze);
 }
 :root[data-theme="hyprland"] .credits-strip-mark svg {
   display: block;
@@ -4872,9 +4925,8 @@
   color: var(--haze);
 }
 :root[data-theme="hyprland"] .credits-strip .credits-used-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
   padding: 0;
   border: 0;
   /* Radio 0 es doctrina del tema: la regla base de `style.css` trae
@@ -4886,14 +4938,25 @@
   font-size: var(--t-1);
   color: var(--catch);
 }
-/* El filete vertical de 1px que separa proyectos del cruce — nunca una
-   pildora. Solo aparece entre items, nunca antes del primero. */
-:root[data-theme="hyprland"] .credits-strip .credits-used-item + .credits-used-item::before {
-  content: "";
-  display: block;
-  width: 1px;
-  height: 0.7em;
-  background: var(--rule);
+/*
+ * El filete vertical de 1px que separa proyectos del cruce — nunca una
+ * pildora. Solo aparece entre items, nunca antes del primero (hallazgo P1,
+ * gate de la tarea 12): con un `::before` propio (`content: ""`, `display:
+ * block`) mas el `gap: 0.5rem` del item hacia su texto, el filete quedaba
+ * separado de su propio item por el mismo hueco que lo separaba del
+ * anterior — cuando ese item era el primero en envolver a una linea nueva
+ * (medido: "WatchDog" en el pie de la parcela 2, 1440x900), el filete se
+ * leia colgando solo, sin nada a su izquierda EN ESA linea que justificara
+ * su presencia, aunque tecnicamente siguiera dentro de la caja de
+ * "WatchDog". Se cambia de pseudo-elemento con gap a `border-left` +
+ * `padding-left` en el propio item: un borde vive PEGADO al canto de su
+ * caja, sin el hueco que lo hacia leerse como una marca flotante — envuelva
+ * donde envuelva, nunca puede separarse de lo que separa porque es la MISMA
+ * caja. Mismo selector que antes (`item + item`, nunca antes del primero).
+ */
+:root[data-theme="hyprland"] .credits-strip .credits-used-item + .credits-used-item {
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--rule);
 }
 
 /* El panel compartido no se usa aqui: cada parcela tiene su propia franja.
@@ -4938,6 +5001,15 @@
      */
     margin: 0 calc(26px - 7vw);
     width: auto;
+    /* `border` vuelve aqui (hallazgo P1, escritorio la pierde): el
+       dispositivo en movil es un acordeon apilado, no un territorio
+       parcelado — sin lindero vertical (`.credits-parcela` lo pone a 0 mas
+       abajo) el perimetro es la unica senal de donde empieza y termina la
+       lista. La comparacion a ciegas contra `.about-card` que motivo el
+       hallazgo se hizo en escritorio; en movil los dos temas ya usan
+       dispositivos de UI distintos (acordeon contra placa fija) y no
+       comparten silueta aunque los dos tengan borde. */
+    border: 1px solid var(--rule);
   }
   /* La parcela decorativa no sobrevive al apilado: el lindero pasa al canto
      izquierdo de la rejilla y la luz se posiciona sobre la fila. */
@@ -4959,6 +5031,12 @@
    */
   :root[data-theme="hyprland"] .credit-group-label {
     position: relative;
+    /* Vuelve aqui (hallazgo P1, escritorio la pierde): en el acordeon
+       apilado de movil no hay lindero vertical (`.credits-parcela` pone
+       `border-left: 0` mas abajo) ni nada mas que marque donde empieza y
+       termina cada territorio plegado. Sin esta linea la cabecera de una
+       parcela cerrada se confunde con la fila de arriba. */
+    border-bottom: 1px solid var(--rule);
     /*
      * Reserva la franja donde vive la marca (11px + su respiro) a la
      * derecha del recuento, para que `.credit-group-mark` (mas abajo) no
@@ -5074,7 +5152,15 @@
   }
   /* Una sola franja abierta: la que se abre y la que se cierra lo hacen a la
      vez y con la misma duracion, asi que la altura total no cambia. */
-  :root[data-theme="hyprland"] .credits-strip { display: none; height: 128px; }
+  /* `border-top` vuelve aqui (hallazgo P1, escritorio la pierde): en el
+     acordeon apilado la franja abierta necesita su propio filete de
+     separacion contra los nombres de encima, igual que la cabecera lo
+     necesita contra la fila anterior (ver `.credit-group-label` arriba). */
+  :root[data-theme="hyprland"] .credits-strip {
+    display: none;
+    height: 128px;
+    border-top: 1px solid var(--rule);
+  }
   :root[data-theme="hyprland"] .credits-strip.is-open { display: block; }
 }
 
