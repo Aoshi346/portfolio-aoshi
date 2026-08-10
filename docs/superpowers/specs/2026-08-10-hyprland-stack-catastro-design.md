@@ -1,7 +1,8 @@
 # El catastro — "Con qué construyo" en Hyprland deja de ser una lista y pasa a ser un reparto de territorio
 
-Estado: pendiente de plan
+Estado: implementado
 Fecha: 2026-08-10
+Plan: `docs/superpowers/plans/2026-08-10-hyprland-stack-catastro.md`
 Alcance: **solo el tema Hyprland**. `[data-scene="credits"]` (`src/sections/skills.ts`,
 `src/components/credits.ts`, `src/style.css`, `src/themes/themes.css`,
 `src/themes/hypr.choreography.ts`, `scripts/verify.py`). **Vice no se toca** (cerrado el
@@ -437,3 +438,110 @@ se relaja ni se borra.
 ## Pendiente de decisión
 
 Ninguna. El prototipo está aprobado y medido.
+
+---
+
+## Registro de implementación (tarea 12, 2026-08-10)
+
+Ejecutado tarea a tarea (1-11) siguiendo `superpowers:subagent-driven-development`, con
+revisión y commit por tarea. El detalle completo vive en
+`.superpowers/sdd/2026-08-10-hyprland-stack-catastro/progress.md` (ledger) y en
+`task-1-report.md` … `task-11-report.md` del mismo directorio (un informe por tarea, con su
+diff de revisión `review-<hash>..<hash>.diff`). Esta sección resume los números finales
+medidos en el cierre y las divergencias respecto al plan.
+
+### Build y presupuesto de bundle
+
+`tsc` limpio, `vite build` verde, `npm run lint` sin avisos.
+
+JS inicial (`dist/assets/index-*.js`, el resto son módulos de tema con `import()` diferido):
+**76,24 KB crudo / 28,96 KB gzip**, frente a la línea de partida de 71,65 KB / 27,74 KB gzip.
+Delta: **+1,22 KB gzip** — dentro del presupuesto de ≤3 KB gzip de JS extra que fijaba el plan.
+
+CSS (`dist/assets/index-*.css`): 125,84 KB crudo / 21,21 KB gzip, frente a 117,14 KB / 19,76 KB
+gzip de partida (+1,45 KB gzip). El plan no ponía techo de CSS; se reporta como referencia.
+
+### Arneses (sobre el build de producción, `vite preview`)
+
+- `scripts/measure-catastro.py --url http://localhost:4202`: **0 fallos** (16 aserciones).
+- `scripts/verify.py --theme hyprland/vice/caelestia --url http://localhost:4202`: los tres
+  **verdes** contra `verify-baseline.json` (12 fallos conocidos de fixtures pendientes, 0
+  fallos nuevos en los tres). La rama Hyprland engancha `measure-catastro.py` como subproceso
+  (Tarea 11) y también sale en 0 dentro de esa pasada.
+
+### Contraste del nivel `bajo` (`--haze`, 16px) contra el fondo real
+
+Medido con el shader activo, en el build de producción, con el mismo método que
+`check_contrast_wcag` de `verify.py` (fg = color computado, bg = muestreado en un anillo FUERA
+de la caja del texto — glifo, no caja) sobre los 7 nodos `[data-credit-tier="bajo"]` visibles
+en escritorio (1440×900) y el visible en móvil (390×844) antes de expandir la parcela:
+
+| Nodo | Viewport | Ratio |
+|---|---|---|
+| Tailwind CSS | desktop | 6,56:1 |
+| Node.js | desktop | **5,33:1 (peor caso)** |
+| MySQL | desktop | 5,44:1 |
+| HTML | desktop | 5,62:1 |
+| CSS | desktop | 5,67:1 |
+| C++ | desktop | 5,93:1 |
+| n8n | desktop | 6,26:1 |
+| Tailwind CSS | móvil | 5,60:1 |
+
+Mínimo medido 5,33:1, sobre el criterio de 4,5:1. No hizo falta subir el scrim del catastro;
+el token `--haze` no se tocó.
+
+### Capturas y anti-mock
+
+8 capturas (Playwright, `--use-gl=swiftshader`, build de producción): Hyprland 1440×900 y
+390×844 con y sin `prefers-reduced-motion`; Vice y Caelestia 1440×900 y 390×844. Cero errores
+de consola en las ocho. Vice y Caelestia confirmados sin cambios visuales (lista inline con
+rótulo/panel en Vice, píldoras en Caelestia). Hyprland en `reduced-motion` sigue mostrando
+contenido legible (nada invisible). `grep -rE "mockData|fakeData|placeholder|lorem ipsum|Lorem" src/ --include="*.ts"`:
+sin resultados.
+
+### Divergencias respecto al plan (documentadas en las tareas donde ocurrieron)
+
+1. **Tarea 1 — guarda de la aserción 2 de `measure-catastro.py` corregida.** La guarda original
+   comparaba `len(set(cotas)) != 1` sin comprobar antes que hubiera 4 nodos `[data-credit-strip]`,
+   así que en cualquier estado intermedio (0-3 franjas) fallaba siempre con un mensaje que
+   afirmaba "no cierran a la misma cota" cuando lo real era "no existen". Se separó en dos
+   ramas (`faltan franjas: N de 4` / `los pies no cierran a la misma cota: [...]`).
+2. **Tarea 4 — dos ajustes de CSS no cubiertos por el snippet literal del brief**, ambos dentro
+   del alcance declarado (`themes.css`, sin tocar `credits.ts` ni `content.ts`): `--skill-col`
+   aplicado por `:nth-of-type` en `.credits-marks-row` (el friso solo recibía `--skill-row-m`,
+   nunca la variable de columna de escritorio, y sin ella la rejilla se desbordaba a 8 pistas
+   implícitas) y `align-items: stretch` en `.credits-grid` (heredaba `align-items: start` de la
+   base compartida y las parcelas decorativas, sin contenido propio, colapsaban a `height: 0`).
+3. **Tarea 5 — un escalón tipográfico por debajo del planeado.** El plan asignaba `--t-2` (16px)
+   al detalle/cruce y `--t-1` (12px) al rótulo. Medido contra el prototipo aprobado (13px/10px/
+   13px, calibrado para caber en una franja de 126px), se bajó un escalón para
+   `.credits-strip-detail`, `.credits-used-label` y `.credits-used-item` (los tres en `--t-1`) y
+   se dejó `--t-2` solo para `.credits-strip-name` — así ninguna franja desborda en escritorio.
+4. **Tarea 6 — `[data-credit-picked]` en vez del `seleccionar(gi, i)` del brief.** El mecanismo
+   propuesto sustituía `.is-active`/`aria-pressed` por un estado de cuatro-a-la-vez por grupo,
+   pero esas clases son **globales**, compartidas por los tres temas (Vice y Caelestia también
+   las leen) — sustituirlas rompía los otros dos temas. Se implementó en su lugar un marcador
+   propio de Hyprland (`data-credit-picked`) que convive con el `.is-active` global sin tocarlo,
+   filtrado por `ev.isTrusted` para que el sembrado sintético inicial no encienda un acento en
+   reposo.
+5. **Tarea 9 — el rodillo de la franja se movió de `credits.ts` a un `CustomEvent` propio.**
+   El candado de ficheros de la tarea no autorizaba tocar `credits.ts` (donde vive el repintado
+   real de la franja), así que la primera versión hizo un monkeypatch de
+   `strip.replaceChildren` dentro de `hypr.choreography.ts`. Señalado en revisión como acoplamiento
+   invisible ("culpa del controlador": el límite de ficheros estaba mal trazado); se resolvió en
+   la ronda de arreglo con un contrato tipado y exportado (`STRIP_REPAINT_EVENT` +
+   `StripRepaintDetail`), grepeable desde `credits.ts`, sí autorizado a tocar en esa ronda.
+6. **Tarea 10 — aserción 14 del arnés reescrita, no relajada.** La tercera aserción hueca
+   encontrada en revisión: medía presencia en el layout (`display` + rect) y decía medir
+   visibilidad; un nodo en `opacity: 0` la habría pasado igual. Se corrigió para medir
+   visibilidad real y se probó rompiéndola a mano (inyectando `opacity: 0`) antes de darla por
+   buena.
+7. **Tarea 11 — registro de progreso.** Único caso donde las casillas del plan sí se marcaron en
+   vivo (`[x]`, commit `71f2eda`); no hay divergencia de contenido respecto al brief.
+8. **Tarea 12 (esta tarea) — casillas de las tareas 1-10 (45) sin marcar en el plan, a
+   propósito.** Ver la nota de cabecera de `docs/superpowers/plans/2026-08-10-hyprland-stack-catastro.md`
+   (`Tracking: historico`). El paso 5 del plan (gates de `lidia-naive-tester` y
+   `vera-art-director`) queda marcado `[!]` (diferido): esta tarea tenía instrucción explícita
+   de no correrlos — los lanza Aoshi por separado.
+
+Ninguna divergencia tocó `src/data/content.ts`, Vice ni Caelestia.

@@ -1,5 +1,18 @@
 # El catastro — "Con qué construyo" en Hyprland · plan de implementación
 
+Tracking: historico
+
+> **Nota de cierre (tarea 12, 2026-08-10):** las casillas de las tareas 1-10 (45 en total)
+> quedan **sin marcar** a propósito. La ejecución real de esas tareas se siguió tarea a tarea
+> en el ledger de la sesión (`.superpowers/sdd/2026-08-10-hyprland-stack-catastro/progress.md`),
+> con revisión y commit por tarea (ver `review-*.diff` e informes `task-*-report.md` en ese
+> mismo directorio) — las casillas de este documento nunca se usaron como rastreador en vivo
+> durante esas tareas. Ticarlas ahora, al cerrar, sería reconstruir el estado leyendo commits
+> después de los hechos: exactamente el fallo del 29-jul-2026 que dio origen a
+> `check_spec_plan_consistency()` en `scripts/verify.py`. La tarea 11 sí llegó con sus casillas
+> marcadas en vivo (`[x]`, commit `71f2eda`) y la tarea 12 se marcó en vivo durante esta propia
+> sesión de cierre — esas dos quedan como están.
+
 > **Para quien ejecute esto:** SUB-SKILL OBLIGATORIA: usar
 > `superpowers:subagent-driven-development` (recomendada) o
 > `superpowers:executing-plans` para implementar tarea a tarea. Los pasos usan
@@ -1335,7 +1348,7 @@ git commit -m "test(skills): el marcador 2 de Hyprland pasa del reparto al catas
 
 ## Tarea 12 · Verificación final y gates
 
-- [ ] **Paso 1: build y lint**
+- [x] **Paso 1: build y lint**
 
 ```bash
 /root/.nvm/versions/node/v22.22.3/bin/node node_modules/typescript/bin/tsc
@@ -1343,7 +1356,7 @@ git commit -m "test(skills): el marcador 2 de Hyprland pasa del reparto al catas
 npm run lint
 ```
 
-- [ ] **Paso 2: el arnés propio y el general, sobre el build**
+- [x] **Paso 2: el arnés propio y el general, sobre el build**
 
 ```bash
 python3 scripts/measure-catastro.py --url http://localhost:4173   # 0 fallos
@@ -1352,13 +1365,13 @@ python3 scripts/verify.py --theme vice
 python3 scripts/verify.py --theme caelestia
 ```
 
-- [ ] **Paso 3: contraste, con el fondo real**
+- [x] **Paso 3: contraste, con el fondo real**
 
 `check_contrast_wcag` con recorte **ajustado al glifo** y el shader **activo**, en producción.
 El `--haze` del nivel bajo es el más ajustado. Criterio: ≥ 4,5:1. Si no llega, se sube el scrim
 del catastro; **nunca se toca el token**.
 
-- [ ] **Paso 4: capturas y anti-mock**
+- [x] **Paso 4: capturas y anti-mock**
 
 Capturas 1440×900 y 390×844 con `?theme=hyprland`, y las de Vice y Caelestia para el diff
 contra un worktree del commit previo.
@@ -1367,7 +1380,7 @@ contra un worktree del commit previo.
 grep -rE "mockData|fakeData|placeholder|lorem ipsum|Lorem" src/ --include="*.ts"
 ```
 
-- [ ] **Paso 5: los dos críticos**
+- [!] **Paso 5: los dos críticos** <!-- diferido: Aoshi los lanza aparte, fuera de esta tarea de cierre -->
 
 - `lidia-naive-tester`, pregunta abierta: *"¿qué te cuenta esta sección?"*. Verde si responde en
   términos de áreas ("hace interfaces, y también backend, y sabe lenguajes de bajo nivel").
@@ -1377,7 +1390,7 @@ grep -rE "mockData|fakeData|placeholder|lorem ipsum|Lorem" src/ --include="*.ts"
   Si dice "la misma rejilla dos veces", la salida es darle al catastro el perímetro cerrado a
   doble filete, no tocar la placa.
 
-- [ ] **Paso 6: cerrar el registro**
+- [x] **Paso 6: cerrar el registro**
 
 Actualizar `PROGRESS.json`, poner el spec en `Estado: implementado` y añadirle la línea
 `Plan: docs/superpowers/plans/2026-08-10-hyprland-stack-catastro.md`, con una sección de
