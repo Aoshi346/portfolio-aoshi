@@ -174,9 +174,14 @@ export function createCredits(): HTMLElement {
   const labels: HTMLElement[] = []; // un rotulo por grupo
   const filasPorGrupo: HTMLButtonElement[][] = []; // los botones de cada grupo
   const marcasPorGrupo: Map<string, HTMLElement>[] = []; // slug -> marca, O(1) por grupo
+  const toggles: HTMLButtonElement[] = []; // un boton de apertura por grupo (movil)
+  // Relleno fantasma por grupo (movil): null si el grupo ya tiene el maximo
+  // de filas de nombres. Ver comentario grande junto al bucle que lo llena.
+  const fillersPorGrupo: (HTMLElement | null)[] = [];
 
   const MAX_ITEMS = Math.max(...groups.map((g) => g.items.length)); // 8 hoy
   const FILA_NOMBRES = 3; // 1 cabecera, 2 mojones, 3..(2+MAX) nombres, luego franja
+  const MAX_FILAS_NOMBRES_M = Math.ceil(MAX_ITEMS / 2); // 4 hoy: filas de a dos del grupo mas largo
 
   /*
    * Los nombres se REPARTEN por el alto de la parcela, no se amontonan
@@ -270,8 +275,52 @@ export function createCredits(): HTMLElement {
     strips[gi].replaceChildren(pintarFranja(strips[gi], primera));
   });
 
+  /*
+   * Abre el territorio `gi`: es el estado de "cual estoy mirando" en movil
+   * (parcela, nombres y franja), independiente del acento de abajo ("cual
+   * tecnologia estoy senalando"). Compartida por dos disparadores: `select()`
+   * (una interaccion real o el sembrado sobre una tecnologia concreta) y
+   * `toggles[gi]` (tocar la cabecera de un territorio PLEGADO, sin senalar
+   * ningun nombre — la unica via para abrir un territorio en movil, porque
+   * sus `.credit` nacen `display: none` y un boton oculto no es alcanzable
+   * ni por raton ni por teclado).
+   */
+  function abrirTerritorio(gi: number): void {
+    parcelas.forEach((p, idx) => p.classList.toggle("is-open", idx === gi));
+    filasPorGrupo.forEach((filas, idx) => {
+      const abierto = idx === gi;
+      for (const fila of filas) fila.classList.toggle("is-open", abierto);
+    });
+    fillersPorGrupo.forEach((f, idx) => f?.classList.toggle("is-open", idx === gi));
+    strips.forEach((s, idx) => s.classList.toggle("is-open", idx === gi));
+    toggles.forEach((t, idx) => t.setAttribute("aria-expanded", String(idx === gi)));
+  }
+
   groups.forEach((group, gi) => {
-    const groupLabel = el("p", "credit-group-label", [group.label]);
+    /*
+     * El recuento es derivado (`group.items.length`), no un dato nuevo de
+     * `content.ts`: nace oculto (`style.css`) y solo Hyprland en movil lo
+     * enciende, como cabecera de un territorio plegado que no muestra sus
+     * nombres.
+     */
+    const count = el("span", "credit-group-count", [String(group.items.length)]);
+    /*
+     * El unico tap target para abrir un territorio plegado en movil. Cubre
+     * toda la cabecera (`position: absolute; inset: 0` sobre el `<p>`
+     * relativo, en `themes.css`) y nace oculto: en escritorio y en los
+     * otros dos temas no hay nada que abrir, y un boton `display: none` no
+     * entra en el orden de tabulacion de Vice/Caelestia — el patron
+     * aditivo no se rompe por tener el nodo en el DOM de los tres temas.
+     */
+    const toggle = el("button", "credit-group-toggle", []);
+    toggle.type = "button";
+    toggle.setAttribute("aria-controls", `credits-strip-${gi}`);
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", `${group.label}, ${group.items.length} tecnologias`);
+    toggle.addEventListener("click", () => abrirTerritorio(gi));
+    toggles.push(toggle);
+
+    const groupLabel = el("p", "credit-group-label", [group.label, count, toggle]);
     groupLabel.setAttribute("data-credit-group", String(gi));
     groupLabel.style.setProperty("--skill-col", String(gi + 1));
     groupLabel.style.setProperty("--skill-row", "1");
@@ -376,18 +425,17 @@ export function createCredits(): HTMLElement {
           }
         }
         /*
-         * Territorio movil: la parcela, su fila de friso y su franja
-         * "abiertas" son el estado de "cual estoy mirando", distinto del
-         * acento de mas abajo. Se mueven en CUALQUIER llamada a `select()`,
-         * incluida la sintetica de sembrado — por eso el sembrado inicial de
-         * `rows[0]` deja la primera parcela abierta sin encender ningun
-         * nombre (el acento sigue detras del guardia `ev?.isTrusted`). En
-         * movil solo una franja puede estar visible a la vez o el arnes de
-         * calles/desborde vuelve a fallar con las cuatro a la vez.
+         * Territorio movil: la parcela, sus nombres y su franja "abiertos"
+         * son el estado de "cual estoy mirando", distinto del acento de mas
+         * abajo. `abrirTerritorio` se llama en CUALQUIER `select()`, incluida
+         * la sintetica de sembrado — por eso el sembrado inicial de `rows[0]`
+         * deja la primera parcela abierta sin encender ningun nombre (el
+         * acento sigue detras del guardia `ev?.isTrusted`, mas abajo). El
+         * friso NO entra en este reparto: decision de producto, se ve en las
+         * cuatro parcelas a la vez en movil (es la evidencia que sostiene el
+         * territorio plegado).
          */
-        parcelas.forEach((p, idx) => p.classList.toggle("is-open", idx === gi));
-        markRows.forEach((r, idx) => r.classList.toggle("is-open", idx === gi));
-        strips.forEach((s, idx) => s.classList.toggle("is-open", idx === gi));
+        abrirTerritorio(gi);
 
         /*
          * Marcador propio de Hyprland, encima del `.is-active` global de
@@ -428,19 +476,33 @@ export function createCredits(): HTMLElement {
    * inactivos van en `display: none` y desaparecen del flujo, lo que
    * descuadraria una rejilla automatica.
    *
-   * Por parcela: fila base = cabecera, +1 = mojones, +2.. = nombres de dos
-   * en dos, y la franja al final.
+   * Por parcela: fila base = cabecera, +1 = mojones, +2..+1+MAX_FILAS_NOMBRES_M
+   * = nombres de dos en dos (mas relleno si el grupo tiene menos de
+   * MAX_FILAS_NOMBRES_M filas), y la franja al final.
+   *
+   * `--skill-span-m` de la parcela usa SIEMPRE `MAX_FILAS_NOMBRES_M` (el
+   * numero de filas del grupo mas largo), nunca "las filas de ESTE grupo":
+   * si cada parcela reservara solo lo suyo, una parcela de 5 tecnologias (3
+   * filas) mediria ABIERTA menos que una de 8 (4 filas) y "la altura total
+   * no puede cambiar al cambiar de una a otra" — el requisito de la
+   * decision de producto de Aoshi — se rompe (medido: 930.8px con Interfaz
+   * abierta contra 903.6px con Herramientas abierta). Un `[data-credit-
+   * filler-m]` fantasma (aria-hidden, oculto salvo `is-open` igual que
+   * `.credit`) cubre la diferencia: nace SOLO en los grupos mas cortos que
+   * el mayor, mide `44px * relleno` y ocupa las filas que a ese grupo le
+   * faltan para llegar a MAX_FILAS_NOMBRES_M.
    */
   let filaM = 1;
   groups.forEach((group, gi) => {
     const base = filaM;
-    const filasNombres = Math.ceil(group.items.length / 2);
+    const filasNombres = Math.ceil(group.items.length / 2); // filas REALES de este grupo
+    const relleno = MAX_FILAS_NOMBRES_M - filasNombres;
     // La parcela decorativa no sobrevive al apilado por si sola: el CSS de
     // movil le pide grid-row a partir de --skill-row-m/--skill-span-m igual
     // que a la etiqueta, el friso y la franja. Sin escribirlas aqui cae en
     // colocacion automatica y el lindero deja de cubrir su territorio.
     parcelas[gi].style.setProperty("--skill-row-m", String(base));
-    parcelas[gi].style.setProperty("--skill-span-m", String(3 + filasNombres));
+    parcelas[gi].style.setProperty("--skill-span-m", String(3 + MAX_FILAS_NOMBRES_M));
     labels[gi].style.setProperty("--skill-row-m", String(base));
     markRows[gi].style.setProperty("--skill-row-m", String(base + 1));
     group.items.forEach((_, i) => {
@@ -448,8 +510,20 @@ export function createCredits(): HTMLElement {
       row.style.setProperty("--skill-col-m", String((i % 2) + 1));
       row.style.setProperty("--skill-row-m", String(base + 2 + Math.floor(i / 2)));
     });
-    strips[gi].style.setProperty("--skill-row-m", String(base + 2 + filasNombres));
-    filaM = base + 3 + filasNombres;
+    if (relleno > 0) {
+      const filler = el("div", "credit-filler-m", []);
+      filler.setAttribute("aria-hidden", "true");
+      filler.setAttribute("data-decorative", "");
+      filler.dataset.parcela = String(gi);
+      filler.style.setProperty("--skill-row-m", String(base + 2 + filasNombres));
+      filler.style.setProperty("--skill-relleno-m", String(relleno));
+      fillersPorGrupo.push(filler);
+      listChildren.push(filler);
+    } else {
+      fillersPorGrupo.push(null);
+    }
+    strips[gi].style.setProperty("--skill-row-m", String(base + 2 + MAX_FILAS_NOMBRES_M));
+    filaM = base + 3 + MAX_FILAS_NOMBRES_M;
   });
 
   const list = el("div", "credits-list", listChildren);

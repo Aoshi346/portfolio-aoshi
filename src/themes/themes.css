@@ -1215,7 +1215,14 @@
   --bg-fallback: radial-gradient(120% 90% at 52% 26%, #3a1008 0%, #150605 46%, #0b0404 100%);
 }
 
-/* Escenas a sangre: el padding lateral es del tema, no de la maqueta comun. */
+/*
+ * Escenas a sangre: el padding lateral es del tema, no de la maqueta comun.
+ * Consumidor silencioso: el catastro de "Con que construyo" en movil
+ * (`@media (max-width: 820px)` mas abajo, `.credits-grid`) cancela este
+ * `padding-left/right: 7vw` con `margin: 0 calc(26px - 7vw)` para fijar su
+ * calle en 26px exactos sea cual sea el ancho de viewport dentro del
+ * breakpoint. Si cambia el 7vw de aqui, esa formula deja de dar 26px.
+ */
 :root[data-theme="hyprland"] [data-scene] {
   padding-top: 15vh;
   padding-bottom: 17vh;
@@ -4662,21 +4669,17 @@
  */
 @media (max-width: 820px) {
   /*
-   * El resto de las escenas de Hyprland respiran con `padding: 15vh 7vw
-   * 17vh` (regla base, arriba) porque son una pantalla de contenido corto.
-   * El catastro apilado no lo es: 23 tecnologias en filas de 44px minimo
-   * (diana tactil, no negociable) mas la franja de 128px ya suman ~951px
-   * de rejilla. Con el respiro generico puesto la seccion media 1239px,
-   * por encima del tope de 1100. El acortamiento es solo de ESTA escena
-   * (selector por `[data-scene="credits"]`, no toca hero/about/contacto).
+   * El padding de escena (15vh/17vh/7vw, regla base de `[data-scene]` mas
+   * arriba) es COMPARTIDO por las cinco escenas: recortarlo solo para
+   * `credits` (ronda de arreglo 1 de esta tarea) dejaba el rotulo pegado a
+   * la barra de navegacion mientras el resto del sitio respiraba —
+   * cambiaba el sujeto que mide la aserción 6 en vez de resolver el
+   * problema. NO se toca aqui. Lo que baja la seccion de 1100px es el
+   * plegado de abajo: territorios, no aire.
    */
-  :root[data-theme="hyprland"] [data-scene="credits"] {
-    padding-top: 3.4rem;
-    padding-bottom: 3.4rem;
-  }
   /*
-   * Calle FIJA de 26px, no derivada del 5vw del tema: a 390px ese 5vw deja
-   * 20 y un rectangulo de borde duro queda casi a sangre.
+   * Calle FIJA de 26px, no derivada del 7vw del tema: a 390px ese 7vw deja
+   * 27.3px y un rectangulo de borde duro queda casi a sangre.
    */
   :root[data-theme="hyprland"] .credits-grid {
     grid-template-columns: 1fr 1fr;
@@ -4684,12 +4687,11 @@
     grid-auto-rows: min-content;
     /*
      * `[data-scene]` de Hyprland ya trae `padding: 0 7vw` (escenas a sangre,
-     * ver mas arriba). Un `margin: 0 26px` liso se suma a ese padding — medido
-     * [53, 53] en vez de [26, 26], justo el doble. `calc(26px - 7vw)` cancela
-     * el 7vw variable del tema y deja la calle en 26px fijos para cualquier
-     * ancho de este breakpoint, que es la razon de ser del numero: a 390px el
-     * 7vw del tema deja 27.3px y un rectangulo de borde duro queda casi a
-     * sangre.
+     * ver mas arriba — la regla base deja un comentario espejo apuntando
+     * aqui). Un `margin: 0 26px` liso se suma a ese padding — medido
+     * [53, 53] en vez de [26, 26], justo el doble. `calc(26px - 7vw)`
+     * cancela el 7vw variable del tema y deja la calle en 26px fijos para
+     * cualquier ancho de este breakpoint.
      */
     margin: 0 calc(26px - 7vw);
     width: auto;
@@ -4707,24 +4709,71 @@
     grid-column: 1 / -1;
     grid-row: var(--skill-row-m);
   }
+  /*
+   * Posiciona la cabecera para que `.credit-group-toggle` (mas abajo) pueda
+   * cubrirla entera con `inset: 0`: es el unico tap target para abrir un
+   * territorio plegado.
+   */
+  :root[data-theme="hyprland"] .credit-group-label {
+    position: relative;
+  }
+  :root[data-theme="hyprland"] .credit-group-toggle {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  /*
+   * Decision de producto (Aoshi): en movil se PLIEGAN los territorios, no
+   * se recorta el aire de la escena. Solo el activo enseña sus nombres —
+   * `.credit` nace oculto y `is-open` (por parcela, la misma clase que ya
+   * reparte `select()`) lo muestra. El friso, en cambio, se ve en las
+   * CUATRO a la vez — al reves que en la primera vuelta de esta tarea — y
+   * es lo que sostiene el territorio plegado: sin nombres, los logos son
+   * la unica evidencia de que ahi hay 5 u 8 tecnologias. Los 23 siguen en
+   * pantalla; lo que se pliega es la prosa de nombres, no la densidad.
+   */
   :root[data-theme="hyprland"] .credit {
     grid-column: var(--skill-col-m);
     grid-row: var(--skill-row-m);
     min-height: 44px;
-    display: flex;
+    display: none;
     align-items: center;
     padding: 0.3rem 1.1rem;
   }
-  /*
-   * El friso solo en el territorio activo: con los cuatro a la vez son 23
-   * iconos de 14px compitiendo con 23 nombres en 390px de ancho. `is-open`
-   * la reparte `select()` en credits.ts, sobre la parcela, el friso y la
-   * franja del grupo tocado — y la primera parcela nace abierta (el
-   * sembrado inicial dispara la misma llamada) sin encender ningun nombre,
-   * que sigue detras del guardia `ev.isTrusted`.
-   */
-  :root[data-theme="hyprland"] .credits-marks-row { display: none; }
-  :root[data-theme="hyprland"] .credits-marks-row.is-open { display: flex; }
+  :root[data-theme="hyprland"] .credit.is-open {
+    display: flex;
+  }
+  /* Relleno fantasma: mismo gate `is-open` que `.credit`, mismos 44px por
+     fila, para que un grupo mas corto que el mayor mida igual abierto. */
+  :root[data-theme="hyprland"] .credit-filler-m {
+    grid-column: 1 / -1;
+    grid-row: var(--skill-row-m) / span var(--skill-relleno-m);
+    display: none;
+    height: calc(44px * var(--skill-relleno-m));
+  }
+  :root[data-theme="hyprland"] .credit-filler-m.is-open {
+    display: block;
+  }
+  :root[data-theme="hyprland"] .credits-marks-row {
+    display: flex;
+  }
+  /* El recuento solo tiene sentido cuando los nombres estan plegados: es
+     la cabecera de un territorio cerrado (rotulo + cuantas tecnologias
+     esconde). Oculto de base en `style.css`; aqui es el unico tema y el
+     unico breakpoint que lo enciende. */
+  :root[data-theme="hyprland"] .credit-group-count {
+    display: inline;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: var(--t-1);
+    color: var(--l1);
+  }
   /* Una sola franja abierta: la que se abre y la que se cierra lo hacen a la
      vez y con la misma duracion, asi que la altura total no cambia. */
   :root[data-theme="hyprland"] .credits-strip { display: none; height: 128px; }

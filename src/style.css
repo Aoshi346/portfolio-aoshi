@@ -1118,6 +1118,40 @@ body {
 }
 
 /*
+ * Recuento de tecnologias del grupo ("5", "8"...): hijo nuevo de
+ * `.credit-group-label`, oculto de base como manda el patron aditivo. Solo
+ * lo enciende Hyprland en movil (`themes.css`, catastro), donde un
+ * territorio plegado no muestra sus nombres y el recuento es la unica
+ * senal de cuantas tecnologias esconde.
+ */
+.credit-group-count {
+  display: none;
+}
+
+/*
+ * Boton invisible que cubre la cabecera del grupo: el unico tap target para
+ * abrir un territorio plegado en el catastro de Hyprland en movil (nace
+ * oculto aqui, ver `themes.css`). En Vice/Caelestia y en escritorio de
+ * Hyprland no hay nada que abrir, y `display: none` lo saca del orden de
+ * tabulacion y del arbol de accesibilidad en los tres temas.
+ */
+.credit-group-toggle {
+  display: none;
+}
+
+/*
+ * Fila fantasma: solo existe en los grupos con menos de MAX_FILAS_NOMBRES_M
+ * filas de nombres (ver `credits.ts`). Reserva la altura que le falta a un
+ * grupo corto para medir lo mismo ABIERTO que el mas largo — sin ella, "la
+ * altura total no puede cambiar al cambiar de una a otra" (decision de
+ * producto de Aoshi) se rompe. `aria-hidden`: no aporta informacion, solo
+ * espacio.
+ */
+.credit-filler-m {
+  display: none;
+}
+
+/*
  * "Aparece en": los proyectos reales donde se uso la tecnologia activa. Es la
  * pieza que convierte la seccion de lista en prueba. `credits.ts` oculta el
  * bloque entero (`hidden`) cuando no hay ninguno.

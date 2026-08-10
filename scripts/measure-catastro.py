@@ -19,10 +19,22 @@ Ocho aserciones, y todas nacieron de un fallo real o de una trampa ya pagada:
   4. Ninguna franja arranca vacia. Llenar no es encender: la 3 y la 4 van
      juntas o se arregla una rompiendo la otra.
   5. Nada desborda su caja, ni las parcelas ni los nombres en su celda.
+     Filtra nodos ocultos (`display: none`): con el plegado de movil (ronda
+     de arreglo 1 de la tarea 7) tres de cada cuatro parcelas tienen sus
+     nombres ocultos, y un nodo sin caja no puede "desbordarla" — medirlo de
+     todas formas no falsea el resultado (scrollHeight/clientHeight son 0 en
+     los dos lados), pero el filtro deja explicito que la aserción describe
+     cajas RENDERIZADAS, no nodos en el DOM.
   6. El alto de la seccion en movil baja de 1100px. Hoy son 1134 y se corta.
   7. Las calles de movil son iguales y de 26px. A 390px el 5vw del tema deja
      20 y el rectangulo queda casi a sangre.
-  8. La diana tactil de cada nombre llega a 44px en movil.
+  8. La diana tactil de cada nombre llega a 44px en movil. Medida SOLO sobre
+     nombres visibles: con el plegado de movil, tres parcelas ocultan sus
+     `[data-credit]` (`display: none`, alto 0) y un `Math.min` sin filtrar
+     mediria ese cero en vez de la diana real — un falso rojo que esconde el
+     verde real detras. Si no queda ningun nombre visible (las cuatro
+     plegadas a la vez, que no deberia poder pasar) el arnes falla explicito
+     en vez de devolver `Infinity` en silencio.
   9. El catastro no existe en Vice ni en Caelestia. El patron aditivo se ha
      roto cuatro veces por olvidar el `display: none` de base.
   10. El alto de `.credits-grid` en escritorio baja de 700px. Nacio de un
@@ -129,10 +141,13 @@ def main() -> int:
             if vacias:
                 fallos.append(f"[{nombre}] {vacias} franjas arrancan vacias")
 
-            # 5. desbordes
+            # 5. desbordes — solo sobre nodos renderizados (display !== 'none'):
+            # el plegado de movil oculta 3 de cada 4 grupos de nombres, y un
+            # nodo sin caja no desborda nada.
             desborda = pg.evaluate(
                 "() => Array.from(document.querySelectorAll("
                 "  '[data-credit-parcela], [data-credit], [data-credit-strip]'))"
+                " .filter(n => getComputedStyle(n).display !== 'none')"
                 " .filter(n => n.scrollHeight > n.clientHeight + 1"
                 "           || n.scrollWidth > n.clientWidth + 1)"
                 " .map(n => (n.dataset.creditParcela !== undefined ? 'parcela' : n.textContent.trim()))"
@@ -201,13 +216,23 @@ def main() -> int:
                 if calles[0] != CALLE_MOVIL or calles[1] != CALLE_MOVIL:
                     fallos.append(f"[movil] calles {calles}, se esperaban [{CALLE_MOVIL}, {CALLE_MOVIL}]")
 
-                # 8. diana tactil
-                diana = pg.evaluate(
-                    "() => Math.min(...Array.from(document.querySelectorAll('[data-credit]'))"
-                    " .map(n => n.getBoundingClientRect().height))"
+                # 8. diana tactil — solo sobre nombres VISIBLES. Con el
+                # plegado de movil, tres parcelas ocultan sus `[data-credit]`
+                # (`display: none`, alto 0): un Math.min sin filtrar mide ese
+                # cero, no la diana real, y falla en verde falso. Sin ningun
+                # nombre visible (no deberia poder pasar: siempre hay una
+                # parcela abierta) el arnes falla explicito en vez de callar.
+                alturas_visibles = pg.evaluate(
+                    "() => Array.from(document.querySelectorAll('[data-credit]'))"
+                    " .filter(n => getComputedStyle(n).display !== 'none')"
+                    " .map(n => n.getBoundingClientRect().height)"
                 )
-                if diana < DIANA_MINIMA:
-                    fallos.append(f"[movil] diana tactil de {round(diana)}px (minimo {DIANA_MINIMA})")
+                if not alturas_visibles:
+                    fallos.append("[movil] ningun nombre visible: no se puede medir la diana tactil")
+                else:
+                    diana = min(alturas_visibles)
+                    if diana < DIANA_MINIMA:
+                        fallos.append(f"[movil] diana tactil de {round(diana)}px (minimo {DIANA_MINIMA})")
 
             ctx.close()
 
