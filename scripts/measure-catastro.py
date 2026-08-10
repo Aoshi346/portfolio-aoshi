@@ -25,6 +25,15 @@ Ocho aserciones, y todas nacieron de un fallo real o de una trampa ya pagada:
   8. La diana tactil de cada nombre llega a 44px en movil.
   9. El catastro no existe en Vice ni en Caelestia. El patron aditivo se ha
      roto cuatro veces por olvidar el `display: none` de base.
+  10. El alto de `.credits-grid` en escritorio baja de 700px. Nacio de un
+      falso verde real (ronda de arreglo 1 de la tarea 4): el `gap` heredado
+      de la base compartida (`clamp(1.4rem, 4vw, 3.4rem)`, 54.4px a 1440)
+      nunca se reseteaba en Hyprland, la rejilla media 1106px en vez de los
+      562px del prototipo y los cuatro pies cerraban fuera de la pantalla —
+      y la aserción 2 (pies a la misma cota) seguía en verde porque los
+      cuatro seguían cerrando a la MISMA cota, solo que esa cota estaba a
+      1146px. El tope de 700px deja margen sobre los 562px del prototipo
+      para variaciones de fuente sin dejar pasar un descuadre del doble.
 """
 import argparse
 import sys
@@ -36,6 +45,7 @@ ACENTOS = {"rgb(255, 90, 52)", "rgb(255, 160, 60)"}  # --l1, --l3
 CALLE_MOVIL = 26
 DIANA_MINIMA = 44
 ALTO_MAXIMO_MOVIL = 1100
+ALTO_MAXIMO_REJILLA_ESCRITORIO = 700
 
 
 def ir_a_creditos(pg) -> bool:
@@ -124,6 +134,17 @@ def main() -> int:
                     fallos.append(f"[escritorio] faltan franjas: {len(cotas)} de 4 [data-credit-strip]")
                 elif len(set(cotas)) != 1:
                     fallos.append(f"[escritorio] los pies no cierran a la misma cota: {cotas}")
+
+                # 10. la rejilla no se desborda por un gap heredado
+                alto_rejilla = pg.evaluate(
+                    "() => Math.round(document.querySelector('.credits-grid')"
+                    " .getBoundingClientRect().height)"
+                )
+                if alto_rejilla > ALTO_MAXIMO_REJILLA_ESCRITORIO:
+                    fallos.append(
+                        f"[escritorio] la rejilla mide {alto_rejilla}px"
+                        f" (tope {ALTO_MAXIMO_REJILLA_ESCRITORIO})"
+                    )
             else:
                 # 6. alto de la seccion
                 alto_seccion = pg.evaluate(

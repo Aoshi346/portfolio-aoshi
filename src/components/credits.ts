@@ -204,6 +204,10 @@ export function createCredits(): HTMLElement {
     row.dataset.parcela = String(gi);
     row.setAttribute("aria-hidden", "true");
     row.setAttribute("data-decorative", "");
+    // Simetrico con --skill-col-strip en `strip` y con --skill-col en
+    // `groupLabel`: sin esto la fila de friso cae en grid-column: auto en
+    // Hyprland y crea columnas implicitas (catastro, tarea 4).
+    row.style.setProperty("--skill-col", String(gi + 1));
     markRows.push(row);
   });
 
