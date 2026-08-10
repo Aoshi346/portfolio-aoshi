@@ -1858,121 +1858,15 @@
 }
 
 /*
-  "QUIEN ES" — el bloque de afirmacion y prueba, en filas con filete.
-  El DOM ya existe (`src/sections/about.ts`): `.about-pair` > `.about-claim` >
-  `.about-claim-in`, y `.about-proof` > `.about-proof-in`. Vice lo maqueta como
-  cartel de cine; aqui es una tabla editorial de dos columnas.
-
-  El filete que se pinta al apuntar es el equivalente de las marcas de esquina
-  de Vice: el dato que recibe atencion se marca, y se marca con un canto.
+  "Quien soy" en Hyprland es LA PLACA (justo debajo). Las reglas de este tema
+  para el bloque de afirmacion y prueba, la ficha, la franja de cifras y la
+  trayectoria se han retirado: la placa oculta esos nodos, asi que su estilo no
+  pintaba nada y solo confundia a quien leyera el fichero. Los nodos siguen en
+  el DOM porque Vice y Caelestia si los usan, y su estilo vive en los bloques
+  de esos temas.
 */
 :root[data-theme="hyprland"] .about-grid {
   grid-template-columns: 1fr;
-}
-/*
-  Base: `.about-pairs { display: none }` en style.css:803 — solo Vice lo
-  enciende hoy. Sin este `display: block` el bloque entero seguiria oculto
-  bajo Hyprland pese a llevar sus propias reglas.
-*/
-:root[data-theme="hyprland"] .about-pairs {
-  display: block;
-  border-top: 1px solid var(--rule);
-  margin-top: 6vh;
-  padding: 1.4rem 1.6rem;
-  /* Scrim de legibilidad: sin el, el texto secundario (--haze) se mide
-     contra el fondo de brasa directamente y cae por debajo de 4.5:1 donde
-     el haz pasa por detras (medido: 3.20:1 en "Telefónica Venezuela"). */
-  background: color-mix(in srgb, var(--color-ink) 78%, transparent);
-}
-:root[data-theme="hyprland"] .about-pairs-head {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  padding-bottom: 0.6rem;
-}
-:root[data-theme="hyprland"] .about-pairs-head .about-h {
-  margin: 0;
-  font-size: var(--t-1);
-  letter-spacing: 0.28em;
-}
-:root[data-theme="hyprland"] .about-pairs-rule {
-  display: none;
-}
-:root[data-theme="hyprland"] .about-pair {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.25rem 1.2rem;
-  padding: 1.15rem 0;
-  border-bottom: 1px solid var(--rule);
-}
-/* El conector decorativo de Vice (linea + cabeza de flecha) no tiene trabajo
-   aqui: el filete de `.about-pair::before` ya marca el apuntado. */
-:root[data-theme="hyprland"] .about-link {
-  display: none;
-}
-@media (min-width: 760px) {
-  :root[data-theme="hyprland"] .about-pair {
-    grid-template-columns: 0.9fr 1.1fr;
-    align-items: baseline;
-  }
-  :root[data-theme="hyprland"] .about-claim {
-    grid-column: 1;
-  }
-  :root[data-theme="hyprland"] .about-proof {
-    grid-column: 2;
-  }
-}
-:root[data-theme="hyprland"] .about-pair::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  height: 1px;
-  width: 0;
-  background: var(--l1);
-  transition: width 0.5s var(--hard);
-}
-:root[data-theme="hyprland"] .about-pair:hover::before,
-:root[data-theme="hyprland"] .about-pair:focus-within::before {
-  width: 100%;
-}
-:root[data-theme="hyprland"] .about-claim-in {
-  font-family: var(--font-display);
-  font-size: var(--t-3);
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  text-transform: none;
-  color: var(--color-paper);
-}
-:root[data-theme="hyprland"] .about-proof-in {
-  display: block;
-  font-family: var(--font-body);
-  color: var(--haze);
-}
-/* `b` (organizacion/cifra) y `span` (detalle) son hermanos, no un solo
-   nodo de texto: sin `display: block` en cada uno corren pegados en la
-   misma linea ("Telefónica VenezuelaDesarrollé..."). Mismo patron que
-   Vice, en el material propio de Hyprland. */
-:root[data-theme="hyprland"] .about-proof-in b {
-  display: block;
-  font-size: var(--t-2);
-  font-weight: 600;
-  color: var(--color-paper);
-}
-:root[data-theme="hyprland"] .about-proof-in > span {
-  display: block;
-  margin-top: 0.28rem;
-  font-size: var(--t-1);
-  line-height: 1.45;
-}
-:root[data-theme="hyprland"] .about-portrait {
-  border-radius: 0;
-}
-@media (prefers-reduced-motion: reduce) {
-  :root[data-theme="hyprland"] .about-pair::before {
-    transition: none;
-  }
 }
 
 /*
@@ -5168,5 +5062,101 @@
 
   .scene-index-blurb {
     line-height: 1.3;
+  }
+}
+
+/*
+  VELO DEL DISPARADOR EN CAELESTIA — solo aqui, y solo por contraste.
+
+  El rotulo se mide contra el blob animado, que oscila entre #d4dfd7 y #ecddd6,
+  y cae a 4,06-4,24:1 contra un minimo de 4,5. Nueve fallos, uno por escena, y
+  ninguno reproducible a ojo porque el fondo cambia solo. Un fondo constante
+  detras del rotulo fija el color contra el que se mide.
+
+  NO se aplica a Vice ni a Hyprland: ninguno de los dos falla contraste aqui y
+  el velo les deja una mancha oscura detras del rotulo sobre un fondo graduado
+  (visto en captura en Vice). Vice ademas esta cerrado.
+
+  Degradado radial que se apaga antes del borde, no caja: el anillo de este
+  tema ya hace de caja y el velo solo aporta densidad.
+*/
+:root[data-theme="caelestia"] .scene-nav-trigger,
+:root[data-theme="caelestia"] .scene-nav-trigger:hover,
+:root[data-theme="caelestia"] .scene-nav-trigger[aria-expanded="true"] {
+  background-image: radial-gradient(
+    130% 165% at 100% 0%,
+    var(--color-ink) 0%,
+    var(--color-ink) 64%,
+    color-mix(in srgb, var(--color-ink) 62%, transparent) 84%,
+    transparent 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--color-accent),
+    0 0 18px 13px var(--color-ink);
+}
+
+/*
+  En MOVIL el velo pasa a banda de borde a borde.
+
+  Un velo del tamano del control tapa lo justo para leerse y deja el texto de
+  debajo cortado a media palabra: se probo y se vio en captura ("Datos a gran
+  escala" partido en "Dat"). Cambia una fealdad por otra. Una banda superior,
+  en cambio, es cromo reconocible: el contenido pasa por debajo como en
+  cualquier sitio, sin que parezca que algo se ha roto.
+
+  El control se estira de borde a borde solo para PINTAR. La zona pulsable
+  vuelve a ser el rotulo via `pointer-events`: una banda de 390px de ancho que
+  abre la navegacion al tocarla en cualquier punto son toques accidentales
+  garantizados. El evento sigue burbujeando desde el hijo, asi que el boton
+  conserva su comportamiento y su nombre accesible.
+*/
+@media (max-width: 820px) {
+  :root[data-theme="vice"] .scene-nav-trigger,
+  :root[data-theme="hyprland"] .scene-nav-trigger,
+  :root[data-theme="caelestia"] .scene-nav-trigger,
+  :root[data-theme="vice"] .scene-nav-trigger:hover,
+  :root[data-theme="hyprland"] .scene-nav-trigger:hover,
+  :root[data-theme="caelestia"] .scene-nav-trigger:hover,
+  :root[data-theme="vice"] .scene-nav-trigger[aria-expanded="true"],
+  :root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"],
+  :root[data-theme="caelestia"] .scene-nav-trigger[aria-expanded="true"] {
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    /* Alto comun para los tres. Sin el, cada tema hace la banda del alto de su
+       propio control y en Caelestia (el mas bajo) una linea de texto asomaba
+       dentro del degradado de apagado. */
+    min-height: 58px;
+    justify-content: flex-end;
+    text-align: right;
+    padding-right: 1.5rem;
+    padding-left: 1.5rem;
+    border-radius: 0;
+    box-shadow: none;
+    pointer-events: none;
+    /* Opaca hasta cubrir el rotulo ENTERO y solo entonces se apaga. Al 62% la
+       banda se acababa a media altura del rotulo y el texto de la pagina
+       reaparecia justo encima de el: el mismo choque, cuatro pixeles mas
+       abajo. */
+    background-image: linear-gradient(
+      to bottom,
+      var(--color-ink) 0%,
+      var(--color-ink) 84%,
+      color-mix(in srgb, var(--color-ink) 50%, transparent) 94%,
+      transparent 100%
+    );
+  }
+  /* Hyprland baja su rotulo 1,5rem del borde. Con banda, ese aire de mas solo
+     sirve para engordarla: el rotulo sube al borde y la banda adelgaza. */
+  :root[data-theme="hyprland"] .scene-nav-trigger {
+    padding-top: 10px;
+  }
+  /* Devuelve el area pulsable al rotulo. */
+  .scene-nav-trigger-tc,
+  .scene-nav-trigger-label,
+  .scene-nav-trigger-mark {
+    pointer-events: auto;
   }
 }

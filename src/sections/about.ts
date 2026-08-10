@@ -256,7 +256,12 @@ function createPairs(): HTMLElement {
     createPair(
       focusAreas[1]?.title ?? "",
       `${statValue("Proyectos")} proyectos · ${statValue("En producción")} en producción`,
-      stackOf("Frontend", 4),
+      // "Interfaz", no "Frontend": el grupo se llama asi en content.ts:142 y
+      // `stackOf` casa por rotulo exacto, asi que devolvia "" y la segunda
+      // pareja se quedaba sin prueba en los tres temas. Fallaba en silencio
+      // porque el `?? []` del propio helper convierte el grupo ausente en
+      // cadena vacia en vez de en error.
+      stackOf("Interfaz", 4),
     ),
     // La tercera afirmacion es `identity.role`, que tambien vive en la fila de
     // meta de la cabecera. Es la unica reaparicion aceptada del plano: arriba

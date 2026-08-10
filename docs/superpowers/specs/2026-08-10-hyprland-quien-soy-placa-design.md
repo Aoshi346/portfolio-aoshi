@@ -226,10 +226,27 @@ completa se lee sin haber interactuado.
   `themes.css`. Se ha pagado cuatro veces; la última ensanchó el disparador de Vice de 168 a 411 px.
 - Gates: `lidia-naive-tester` con una métrica cronometrable, y `vera-art-director` con umbral 7,5.
 
+## Decisiones tomadas al ejecutar
+
+- **Las celdas NO son focalizables.** El plan pedía `tabIndex = 0` para que el apuntado existiera
+  también por teclado. Se implementó así y el naive test midió el coste: siete paradas de tabulador
+  que no llevan a ninguna parte. La celda no es un control —no navega, no abre nada— y su contenido
+  está entero a la vista en reposo, así que el foco no daba acceso a nada que el teclado no tuviera
+  ya; lo único que aportaba era la cuña, que es decoración. Con el `tabIndex` se retiraron las
+  reglas de `:focus-within` y `:focus-visible`, que quedaban muertas. **Si se revierte, hay que
+  devolver las tres cosas a la vez.**
+- **La cuña va al 38 %, no al 22 %.** Al 22 % la tester no la vio en ningún momento. Estado lleva la
+  suya en ámbar: su fondo cálido se traga la naranja.
+- **La placa no lleva alto propio.** Un `min-height: 68vh` llena el encuadre y parece mejor idea,
+  pero estira las filas `fr` y abre hueco muerto bajo Estado y bajo Quién — el mismo "se ve vacío"
+  que el prototipo vino a corregir. La densidad manda sobre el encuadre.
+- **`stackOf("Frontend")` arreglado**, ya con permiso explícito para tocar a Vice: el grupo se llama
+  "Interfaz" en `content.ts:142`, así que la segunda pareja se quedaba sin prueba en los tres temas.
+  Fallaba en silencio porque el `?? []` del helper convierte el grupo ausente en cadena vacía.
+
 ## Pendiente de decisión
 
-1. El defecto de `stackOf("Frontend")`, que toca a Vice y por eso no se arregla aquí.
-2. El tamaño del retrato. Se probó a media escena (demasiado), a una columna de dos filas
+1. El tamaño del retrato. Se probó a media escena (demasiado), a una columna de dos filas
    (demasiado) y en la celda actual de una columna, que es la aprobada. Queda escrito porque el
    equilibrio entre "muestra a alguien" y "no domina la placa" es fino y puede querer revisarse al
    verlo en el sitio real y no en el prototipo.
