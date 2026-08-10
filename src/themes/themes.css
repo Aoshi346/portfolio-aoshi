@@ -1143,6 +1143,28 @@
   --rule: #3d1c1c;
   --haze: #b18c86;
 
+  /* Tonos que solo existen dentro de las siluetas de la hoja de contactos
+     (`sceneNav.siluetas.ts`). Son tinta levantada uno o dos escalones, para
+     piezas que deben leerse como relleno y no como contenido: el ordinal de
+     marca de agua del carril de obra y el hueco del avatar. Estaban en hex
+     crudo dentro del modulo de datos, que es justo lo que la norma del
+     proyecto prohibe — no tenerlos aqui es no poder retematizarlos. */
+  /* Canales de los tokens de luz. `rgba()` no admite un hex dentro de una
+     variable, asi que sin esto cada transparencia reescribia el color a mano y
+     retocar `--l1` dejaba atras el haz, el resplandor, la barra y el flash sin
+     que nada avisara. Mismo defecto que se cerro en las siluetas (719ddf8) y
+     que aqui se quedo. Se declaran junto a su token para que no se separen. */
+  --l1-ch: 255 90 52;
+  --l2-ch: 224 29 60;
+  --l3-ch: 255 160 60;
+
+  --shot-marca: #2c1311;
+  --shot-marca-viva: #371815;
+  --shot-hueco: #5a3a34;
+  /* El fondo del fotograma: un escalon por debajo de `--color-ink`, para que el
+     encuadre se hunda respecto a la pagina. Estaba suelto en hex. */
+  --shot-fondo: #070302;
+
   /* Medido contra `.scene-index` abierto (fondo SOLIDO --color-ink, no el
      shader — el menu no es translucido): .scene-index-title 5.75:1,
      .scene-index-num/-name 6.55:1, .scene-index-blurb 4.74:1 (el mas
@@ -2117,16 +2139,166 @@
   }
 }
 
-/* El disparador de escena flota sobre el fondo generativo directamente (sin
-   `.scene-surface` de por medio): base `.scene-nav-trigger` es transparente
-   y el haz brillante pasando por detras tumbaba "03 · Obra" a 1.95:1
-   (medido). Radio 5px heredado: la navegacion es la unica excepcion al
-   radio 0 del tema (spec). */
+/*
+ * El disparador de Hyprland: el pie de un fotograma. Sin caja.
+ *
+ * Se retira la excepcion de radio del spec de Ascua ("radio 0 en todo salvo la
+ * navegacion"): esa excepcion se escribio para proteger una pastilla concreta,
+ * y con la hoja de contactos la pastilla deja de existir. El tema se queda sin
+ * su unica contradiccion interna.
+ *
+ * Los 44px de area de toque los da `min-height`, no una caja visible. Se mide
+ * la caja del BOTON: un `::after` con `inset` negativo agranda la zona
+ * clicable pero no mueve lo que el criterio mide.
+ *
+ * `top` se despega del 0 que hereda de la regla compartida. Con `top: 0` el
+ * filete del disparador queda calcado al borde del navegador, que es lo que le
+ * quita el aire: sin caja, ese trazo de 1px ES el elemento, y pegado al canto
+ * de la ventana no se lee como pie de fotograma sino como un artefacto del
+ * cromo del navegador. 1.5rem son los mismos 24px que separan del canto al
+ * resto de horizontales del tema.
+ *
+ * El relleno de arriba se queda en 10px: lo que hacia falta era mover el
+ * filete, no empujar el texto por dentro y dejar el trazo donde estaba.
+ */
 :root[data-theme="hyprland"] .scene-nav-trigger {
-  background: color-mix(in srgb, var(--color-ink) 82%, transparent);
+  top: 1.5rem;
+  display: block;
+  min-width: 6.5rem;
+  min-height: 44px;
+  padding: 10px 0 5px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  text-align: right;
 }
+
 :root[data-theme="hyprland"] .scene-nav-trigger:hover {
-  background: color-mix(in srgb, var(--color-ink) 70%, var(--l1) 14%);
+  background: none;
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] {
+  background: none;
+}
+
+/* El filete de arriba se calienta de DERECHA a izquierda: el mismo sentido en
+   el que el disparador esta anclado. */
+:root[data-theme="hyprland"] .scene-nav-trigger::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--rule);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, var(--l2), var(--l3));
+  box-shadow: 0 0 8px 1px rgb(var(--l1-ch) / 0.7);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 320ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger:hover::after,
+:root[data-theme="hyprland"] .scene-nav-trigger:focus-visible::after,
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"]::after {
+  transform: scaleX(1);
+}
+
+/* En Hyprland el rotulo compartido deja el sitio a la version de dos estados,
+   pero NO se quita del DOM: es el nombre accesible del boton. */
+:root[data-theme="hyprland"] .scene-nav-trigger-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger-tc {
+  display: grid;
+  /* Las tres medidas de la celda viven aqui y NADA las repite. El
+     desplazamiento se deriva de ellas con `calc()` en vez de ser un 38 suelto:
+     con el numero a mano, subir la interlinea del nombre de 22 a 24 dejaba la
+     celda en 40 y el rotulo antiguo asomando 2px, y el arnes no lo veria
+     porque su comprobacion de "dentro" tolera +-2px. Es la trampa de
+     `OBRA_TRANSIT`: dos sitios que hay que cambiar a la vez y nada que avise. */
+  --tc-num: 12px;
+  --tc-hueco: 4px;
+  --tc-nombre: 22px;
+  grid-template-columns: 1fr;
+  grid-template-rows: var(--tc-num) var(--tc-nombre);
+  row-gap: var(--tc-hueco);
+  justify-items: end;
+  overflow: hidden;
+  /* El desplazamiento de CADA fila es el alto ENTERO de la celda, no `100%` de
+     su propio alto: `100%` en la fila del numero son sus 12px, que la dejan
+     dentro de la celda. Medido: "Esc" se veia superpuesto sobre "Titulo". */
+  --tc-shift: calc(var(--tc-num) + var(--tc-hueco) + var(--tc-nombre));
+}
+
+/* Las dos versiones ocupan la MISMA celda: se apilan y una sube tapando a la
+   otra. Nada de `opacity`: el corte es la gramatica del tema. */
+:root[data-theme="hyprland"] .scene-nav-trigger-num-a,
+:root[data-theme="hyprland"] .scene-nav-trigger-num-b {
+  grid-row: 1;
+  grid-column: 1;
+  font-size: var(--t-1);
+  line-height: var(--tc-num);
+  letter-spacing: 0.18em;
+  color: var(--haze);
+  transition: transform 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger-name-a,
+:root[data-theme="hyprland"] .scene-nav-trigger-name-b {
+  grid-row: 2;
+  grid-column: 1;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--t-3);
+  line-height: var(--tc-nombre);
+  letter-spacing: -0.034em;
+  text-transform: none;
+  color: var(--color-paper);
+  transition:
+    transform 200ms cubic-bezier(0.7, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger-num-b,
+:root[data-theme="hyprland"] .scene-nav-trigger-name-b {
+  transform: translateY(var(--tc-shift));
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-num-a,
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-name-a {
+  transform: translateY(calc(var(--tc-shift) * -1));
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-num-b,
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-name-b {
+  transform: translateY(0);
+}
+
+:root[data-theme="hyprland"] .scene-nav-trigger:hover .scene-nav-trigger-name-a,
+:root[data-theme="hyprland"] .scene-nav-trigger[aria-expanded="true"] .scene-nav-trigger-name-b {
+  color: var(--l3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .scene-nav-trigger::after,
+  :root[data-theme="hyprland"] .scene-nav-trigger-num-a,
+  :root[data-theme="hyprland"] .scene-nav-trigger-num-b,
+  :root[data-theme="hyprland"] .scene-nav-trigger-name-a,
+  :root[data-theme="hyprland"] .scene-nav-trigger-name-b {
+    transition: none;
+  }
 }
 
 :root[data-theme="hyprland"] .hypr-ignition {
@@ -2144,6 +2316,417 @@
   to {
     opacity: 0;
     visibility: hidden;
+  }
+}
+
+/* ==========================================================================
+   La hoja de contactos: el indice de escenas de Hyprland deja de ser cinco
+   renglones y pasa a cinco fotogramas con la silueta de su escena.
+   Spec: docs/superpowers/specs/2026-08-06-hyprland-cortinilla-hoja-design.md
+   Cualquier selector va bajo [data-theme="hyprland"]: `.scene-index` es el mismo
+   nodo en los tres temas y no hay `[data-scene]` que lo contenga.
+   ========================================================================== */
+:root[data-theme="hyprland"] .scene-index {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  align-content: center;
+  justify-content: center;
+  padding: 26px;
+}
+
+:root[data-theme="hyprland"] .scene-index-title {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+}
+
+:root[data-theme="hyprland"] .scene-index-row {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--rule);
+  background: var(--shot-fondo);
+}
+
+:root[data-theme="hyprland"] .scene-index-row:hover,
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"] {
+  border-color: var(--l1);
+}
+
+/* El filete superior marca la escena en curso sin gastar color en el texto. */
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"]::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto;
+  height: 2px;
+  background: var(--l1);
+  z-index: 6;
+}
+
+/* La guia punteada une dos extremos de una linea. Aqui no hay linea. */
+:root[data-theme="hyprland"] .scene-index-guide {
+  display: none;
+}
+
+/* El encuadre: 16:10, la proporcion de la pantalla del sitio, para que la
+   silueta se lea como un plano y no como un icono. */
+:root[data-theme="hyprland"] .scene-shot {
+  display: block;
+  position: relative;
+  width: 100%;
+  padding-top: 62.5%;
+  overflow: hidden;
+}
+
+/* Consulta de contenedor: la rejilla es fluida (`minmax(0, 1fr)`), asi que el
+   ancho del encuadre cambia con el viewport y con el numero de columnas
+   (5 en escritorio, 2 en movil). Un factor de escala fijo solo acierta en el
+   ancho para el que se calculo — medido: con `--escala: 0.15` el fotograma de
+   268px (no 216px, que asumia un `.scene-index` mas estrecho que el real)
+   dejaba 52px vacios a la derecha de cada silueta, un 19% del encuadre. */
+:root[data-theme="hyprland"] .scene-shot {
+  container-type: inline-size;
+}
+
+/* El plano se dibuja a 1440x900 y se escala al ancho REAL del encuadre.
+   `100cqw` es el ancho del contenedor (el propio `.scene-shot`); dividirlo
+   entre el ancho del plano da el factor exacto sea cual sea el encuadre, sin
+   JS y sin una constante que solo sirve a un ancho de pantalla.
+
+   Se escala el PLANO entero, no cada pieza. `transform: scale()` escala la
+   caja de un elemento pero no su `left`/`top`: escalando pieza a pieza, una en
+   `top: 340px` seguia a 340px dentro de un encuadre de 166px y la recortaba el
+   `overflow: hidden`. Medido: de las seis piezas del hero, CERO caian dentro
+   del encuadre.
+
+   El haz queda fuera del plano — se dibuja sobre el encuadre, a su tamano — y
+   por eso es hermano y no hijo. Antes se apoyaba en un `transform: none` que
+   no se cumplia: ese selector es `(0,3,0)` contra el `(0,3,1)` de la regla de
+   escala, asi que perdia y el haz se encogia a 49,1x30,7 px en la esquina. */
+:root[data-theme="hyprland"] .scene-shot-plano {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1440px;
+  height: 900px;
+  transform-origin: 0 0;
+  transform: scale(calc(100cqw / 1440px));
+}
+
+:root[data-theme="hyprland"] .scene-shot-plano > span {
+  position: absolute;
+}
+
+/* La exposicion hace de navegacion: la escena en curso es la unica revelada. */
+:root[data-theme="hyprland"] .scene-shot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--color-ink);
+  opacity: 0.58;
+  transition: opacity 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"] .scene-shot::after {
+  opacity: 0;
+}
+
+:root[data-theme="hyprland"] .scene-index-row:hover .scene-shot::after {
+  opacity: 0.05;
+}
+
+/* El pie del fotograma: numero, nombre y descriptor. El descriptor SIEMPRE
+   visible, nunca solo en hover — es lo que cerro el hallazgo de que los
+   nombres de cine no comunican, y en tactil no hay hover. */
+:root[data-theme="hyprland"] .scene-index-num,
+:root[data-theme="hyprland"] .scene-index-name,
+:root[data-theme="hyprland"] .scene-index-blurb {
+  position: static;
+  display: block;
+}
+
+:root[data-theme="hyprland"] .scene-shot-rl,
+:root[data-theme="hyprland"] .scene-shot-bar,
+:root[data-theme="hyprland"] .scene-shot-dot {
+  background: var(--haze);
+  opacity: 0.5;
+}
+
+:root[data-theme="hyprland"] .scene-shot-box {
+  border: 1px solid var(--rule);
+}
+
+:root[data-theme="hyprland"] .scene-shot-dot {
+  border-radius: 50%;
+}
+
+:root[data-theme="hyprland"] .scene-shot-disp {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.032em;
+  line-height: 0.94;
+  white-space: nowrap;
+  color: var(--color-paper);
+}
+
+/* El haz cruza los cinco encuadres: es lo unico que aparece en todas las
+   escenas del sitio real, y es lo que hace que la hoja se lea como cinco
+   planos de la misma pelicula en vez de cinco iconos. */
+:root[data-theme="hyprland"] .scene-shot-beam {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    106deg,
+    transparent 20%,
+    rgb(var(--l1-ch) / 0.26) 34%,
+    rgb(var(--l1-ch) / 0.4) 43%,
+    rgb(var(--l2-ch) / 0.18) 56%,
+    transparent 74%
+  );
+}
+
+:root[data-theme="hyprland"] .scene-index-row > .scene-index-num {
+  padding: 9px 11px 0;
+  border-top: 1px solid var(--rule);
+  /* `--t-1` (12px), no los 9,5px del prototipo: el criterio 11 exige que todo
+     tamano sea un escalon declarado, y la escala de Ascua no baja de 12. El
+     numero queda del mismo tamano que el descriptor, asi que lo que lo separa
+     es el `letter-spacing` y el color, no el cuerpo. */
+  font-size: var(--t-1);
+  letter-spacing: 0.18em;
+  color: var(--haze);
+}
+
+:root[data-theme="hyprland"] .scene-index-name {
+  padding: 5px 11px 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--t-3);
+  line-height: 1;
+  letter-spacing: -0.034em;
+  color: var(--color-paper);
+  transition: color 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index-blurb {
+  padding: 4px 11px 11px;
+  font-size: var(--t-1);
+  color: var(--haze);
+}
+
+:root[data-theme="hyprland"] .scene-index-row:hover .scene-index-name,
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"] .scene-index-name,
+:root[data-theme="hyprland"] .scene-index-row[aria-current="true"] > .scene-index-num {
+  color: var(--l3);
+}
+
+/* Dos, dos y la quinta a lo ancho. El quinto fotograma va el ULTIMO en el DOM
+   y toma `grid-column: 1 / -1`: adelantarlo con `order` para "priorizar"
+   contacto romperia la correspondencia entre el recorrido de Tab y lo que se
+   ve (WCAG 2.4.3), y es facil caer en ello justo aqui. */
+@media (max-width: 640px) {
+  :root[data-theme="hyprland"] .scene-index {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+    padding: 56px 16px 16px;
+    align-content: start;
+  }
+
+  :root[data-theme="hyprland"] .scene-index-row:last-of-type {
+    grid-column: 1 / -1;
+  }
+
+  /* La escala ya no se declara aqui: `calc(100cqw / 1440px)` se recalcula
+     sola con el ancho real del encuadre, sea de dos columnas o el quinto a
+     lo ancho completo. Lo unico que sigue siendo del encuadre, no de la
+     escala, es la proporcion del quinto (mas ancho que alto que los otros
+     cuatro): */
+  :root[data-theme="hyprland"] .scene-index-row:last-of-type .scene-shot {
+    padding-top: 31.25%;
+  }
+
+  /* En movil el plano se escala a 0,1184, asi que todo trazo de menos de
+     8,45px de plano renderiza por debajo de un pixel y el navegador lo pinta
+     como una mancha gris. `sceneNav.siluetas.ts` marca esas piezas con
+     `.scene-shot-fino` (ver `GROSOR_MINIMO` alli) y aqui dejan de dibujarse.
+     No se pierde informacion: se deja de pintar lo que ya no se leia y que
+     solo aportaba ruido — hallazgo P1 de `lidia-naive-tester`, que medía
+     2,5-3 s hasta la primera pulsacion correcta sobre un umbral de 2 s.
+
+     La regla vive DENTRO de este bloque a proposito: es el mismo umbral en el
+     que la rejilla pasa a dos columnas, que es lo que fija el ancho del
+     encuadre y por tanto la escala. Separarlos seria dejar dos numeros que hay
+     que cambiar a la vez sin nada que avise. */
+  :root[data-theme="hyprland"] .scene-shot-fino {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Movimiento de la hoja.
+
+   La APERTURA va `linear` y es deliberado: el borde del telon ES la barra, y
+   una barra de luz que cruza es un instrumento fisico a velocidad constante;
+   con la curva de corte del tema frenaria al llegar al borde y volveria a
+   leerse como un panel de interfaz. El instrumento va lineal; los EVENTOS que
+   provoca (exposicion, golpe de luz, cierre) llevan cubic-bezier(.7,0,.2,1).
+   Es la unica desviacion de la tabla de movimiento de Ascua: no la "corrijas".
+   -------------------------------------------------------------------------- */
+:root[data-theme="hyprland"] .scene-index {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 480ms linear;
+}
+
+:root[data-theme="hyprland"] .scene-index-bar {
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--l3);
+  box-shadow: 0 0 22px 6px rgb(var(--l1-ch) / 0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* En % del mismo eje que el recorte, no en px: con un valor fijo la barra y el
+   borde de revelado se despegan en cuanto cambia el ancho de pantalla. */
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-bar {
+  animation: hypr-barrido 480ms linear forwards;
+}
+
+@keyframes hypr-barrido {
+  0% { left: 0; opacity: 1; }
+  82% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Cada fotograma se expone AL PASO de la barra. Los retardos no son un ritmo
+   elegido a ojo: son el momento en que la barra llega a su borde izquierdo.
+
+   Geometria REAL, medida (no la del prototipo): `.scene-index` es
+   `position: fixed; inset: 0`, o sea 1440 de ancho en escritorio, no los 1216
+   del prototipo. Con `padding: 26px` y `gap: 12px`, el contenido mide 1388 y
+   cada fotograma (1388 - 4*12) / 5 = 268, con paso 280. Bordes izquierdos:
+   26, 306, 586, 866, 1146. La barra recorre 1440px en 480ms = 3,0 px/ms:
+     26->9   306->102   586->195   866->289   1146->382.
+
+   Estos retardos son fijos en ms y la rejilla es fluida, asi que solo son
+   exactos a 1440. Medida la deriva: a 1024 los bordes caen en las fracciones
+   0,025 / 0,218 / 0,410 / 0,602 / 0,794 frente a 0,018 / 0,213 / 0,407 /
+   0,601 / 0,796 a 1440 — menos de 0,008 del ancho, es decir **por debajo de
+   4ms**. No compensa complicarlo.
+
+   Cada exposicion dura 140ms mientras la barra tarda 268/3 = 89ms en cruzar un
+   fotograma, asi que el revelado ASIENTA por detras del instrumento y nunca
+   por delante. Verificado por scripts/measure-cortinilla.py. */
+:root[data-theme="hyprland"] .scene-index-row {
+  clip-path: inset(0 100% 0 0);
+  transition:
+    clip-path 110ms cubic-bezier(0.7, 0, 0.2, 1),
+    border-color 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row {
+  clip-path: inset(0 0 0 0);
+  transition:
+    clip-path 140ms cubic-bezier(0.7, 0, 0.2, 1),
+    border-color 200ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1) { transition-delay: 9ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2) { transition-delay: 102ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3) { transition-delay: 195ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4) { transition-delay: 289ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) { transition-delay: 382ms, 0ms; }
+
+/* Cierre: orden INVERSO, se apaga primero el ultimo que se encendio. El
+   contenido se va antes que la sabana (110ms escalonados 20 = 190ms, dentro
+   de los 200 del telon). Salir nunca es ceremonia. */
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(1) { transition-delay: 80ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(2) { transition-delay: 60ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(3) { transition-delay: 40ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(4) { transition-delay: 20ms, 0ms; }
+:root[data-theme="hyprland"] .scene-index-row:nth-of-type(5) { transition-delay: 0ms, 0ms; }
+
+/* El golpe de luz: sobreexpone y asienta. No es brillo decorativo — es el
+   unico momento en que el fotograma dice "acabo de revelarse", que es
+   literalmente lo que hace una hoja de contactos. */
+:root[data-theme="hyprland"] .scene-index-flash {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(106deg, rgb(var(--l3-ch) / 0.55), rgb(var(--l1-ch) / 0.22));
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-flash {
+  animation: hypr-exposicion 300ms cubic-bezier(0.7, 0, 0.2, 1) forwards;
+}
+
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1) .scene-index-flash { animation-delay: 9ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2) .scene-index-flash { animation-delay: 102ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3) .scene-index-flash { animation-delay: 195ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4) .scene-index-flash { animation-delay: 289ms; }
+:root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) .scene-index-flash { animation-delay: 382ms; }
+
+@keyframes hypr-exposicion {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/*
+ * La barra de luz NO se acelera: se retira. Un elemento que atraviesa la
+ * pantalla es en si mismo el efecto de movimiento, no solo su duracion —
+ * a 1ms sigue siendo algo que cruza la pantalla a ojos de quien pidio
+ * `reduce`. Se degrada el viaje, nunca la funcion: foco, Esc, clic fuera y
+ * bloqueo de scroll no cambian, son logica de sceneNav.ts.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .scene-index,
+  :root[data-theme="hyprland"] .scene-index.is-open {
+    transition: none;
+    transition-delay: 0ms;
+  }
+
+  /*
+   * `transition: none` por si sola deja `transition-delay` como un solo
+   * valor ("0s"), no los dos que reporta el arnes (uno por propiedad:
+   * clip-path, border-color). Se declaran ambas listas a mano para que
+   * sigan comparando en pares con la regla normal.
+   */
+  :root[data-theme="hyprland"] .scene-index .scene-index-row,
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row,
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(1),
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(2),
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(3),
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(4),
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-row:nth-of-type(5) {
+    transition-property: clip-path, border-color;
+    transition-duration: 0ms, 0ms;
+    transition-delay: 0ms, 0ms;
+  }
+
+  :root[data-theme="hyprland"] .scene-index-bar,
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-bar {
+    display: none;
+    animation: none;
+  }
+
+  :root[data-theme="hyprland"] .scene-index-flash,
+  :root[data-theme="hyprland"] .scene-index.is-open .scene-index-flash {
+    animation: none;
+    opacity: 0;
   }
 }
 
@@ -3919,6 +4502,24 @@
  * descentrando el rotulo — hallazgo M1 de la revision final de rama.
  */
 .scene-nav-trigger-mark {
+  display: none;
+}
+
+/*
+ * `sceneNav.ts` añade la silueta, el golpe de luz y el pie de dos estados del
+ * disparador en los TRES temas, pero solo Hyprland los usa. Sin este
+ * `display: none` de base se cuelan en Vice y Caelestia como hijos sueltos de
+ * una fila que es `display: flex` — mismo modo de fallo que ya tuvo
+ * `.scene-nav-trigger-mark` (hallazgo M1 de la revision final de rama del hero).
+ *
+ * `-tc` volvio a caer en la misma trampa y se midio: el disparador pasaba de
+ * 168,81 a 415,31 px en Vice y de 152 a 308,22 en Caelestia, pintando
+ * "01ESCTÍTULOCERRAR" al lado del rotulo. Hyprland lo devuelve a `grid`.
+ */
+.scene-shot,
+.scene-index-flash,
+.scene-index-bar,
+.scene-nav-trigger-tc {
   display: none;
 }
 

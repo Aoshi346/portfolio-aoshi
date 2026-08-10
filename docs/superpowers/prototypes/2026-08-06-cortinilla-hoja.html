@@ -1,0 +1,339 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<style>
+.asc{--void:#0b0404; --l1:#ff5a34; --l2:#e01d3c; --l3:#ffa03c;
+  --text:#ffeae6; --haze:#b18c86; --rule:#3d1c1c; --catch:#ffd9cc;
+  --cut:cubic-bezier(.7,0,.2,1);
+  font-family:"Instrument Sans",system-ui,sans-serif;}
+.asc .stage{position:relative; background:var(--void); border:1px solid var(--rule);
+  overflow:hidden; color:var(--text); user-select:none;}
+.asc .n{font-variant-numeric:tabular-nums;}
+.asc .cap{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--haze);}
+.beam{position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(106deg,transparent 20%,rgba(255,90,52,.26) 34%,rgba(255,90,52,.40) 43%,rgba(224,29,60,.18) 56%,transparent 74%);}
+
+/* ---------- el plano, dibujado a 1440x900 y escalado. Minimo: solo la silueta ---------- */
+.shot{position:absolute; left:0; top:0; width:1440px; height:900px; background:var(--void);
+  transform:scale(.15); transform-origin:0 0; font-family:"Instrument Sans",sans-serif;}
+.shot .disp{position:absolute; font-family:"Bricolage Grotesque",sans-serif; font-weight:600;
+  letter-spacing:-.032em; line-height:.94; color:var(--text); white-space:nowrap;}
+.shot .lab{position:absolute; font-size:13px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--l1); white-space:nowrap;}
+.shot .rl{position:absolute; background:var(--rule);}
+.shot .bar{position:absolute; background:var(--haze); opacity:.5;}
+.shot .box{position:absolute; border:1px solid var(--rule);}
+.shot .dot{position:absolute; border-radius:50%;}
+
+/* ---------- la hoja ---------- */
+/* el panel no puede ocultarse de golpe: se lleva por delante el colapso de cierre */
+.h-panel{position:absolute; inset:0; z-index:30; pointer-events:none;
+  visibility:hidden; transition:visibility 0s linear .2s;}
+.open .h-panel{visibility:visible; pointer-events:auto; transition-delay:0s;}
+/* el telon y su contenido son EL MISMO elemento recortado: si el fondo no colapsa
+   con la hoja, al cerrar la pantalla se queda en negro 200ms sobre la pagina */
+.h-wipe{position:absolute; inset:0; background:var(--void); display:flex; flex-direction:column;
+  justify-content:center; align-items:center; padding:26px;
+  clip-path:inset(0 100% 0 0); transition:clip-path .2s var(--cut);}
+/* la APERTURA va lineal, no con la curva de corte, y es deliberado: el borde del
+   telon es la barra. Una barra de luz que cruza es un instrumento fisico a
+   velocidad constante; con ease-out frenaria al llegar al borde y volveria a
+   leerse como un panel de interfaz. Los EVENTOS que provoca (la exposicion de
+   cada fotograma, el flash, el cierre) si llevan la curva de corte del tema. */
+.open .h-wipe{clip-path:inset(0 0 0 0); transition:clip-path .48s linear;}
+/* la barra viaja en % del mismo eje que el recorte: pegadas a cualquier ancho */
+.h-bar{position:absolute; top:0; bottom:0; left:0; width:2px; background:var(--l3);
+  box-shadow:0 0 22px 6px rgba(255,90,52,.55); opacity:0;}
+.open .h-bar{animation:sweep .48s linear forwards;}
+@keyframes sweep{0%{left:0;opacity:1} 82%{opacity:1} 100%{left:100%;opacity:0}}
+
+.h-grid{display:grid; grid-template-columns:repeat(5,216px); gap:12px; margin-top:12px;}
+
+/* cada fotograma se expone AL PASO de la barra, no aparece ya montado.
+   Los retardos no son un ritmo inventado: son el momento en que la barra llega
+   al borde izquierdo de cada fotograma. Rejilla de 1128px centrada en 1216 →
+   margen 44, paso 228. Barra a 1216px/480ms = 2,533 px/ms:
+     44/2,533=17   272→107   500→197   728→287   956→377
+   Cada exposicion dura 140ms: la barra tarda 85ms en cruzar un fotograma, asi
+   que el revelado ASIENTA por detras del instrumento, nunca por delante.
+   Cierre: 110ms escalonados 20ms EN ORDEN INVERSO — se apaga primero el ultimo
+   que se encendio. Contenido antes que telon. */
+.h-frame{clip-path:inset(0 100% 0 0); transition:clip-path .11s var(--cut), border-color .2s var(--cut);}
+.open .h-frame{clip-path:inset(0 0 0 0); transition:clip-path .14s var(--cut), border-color .2s var(--cut);}
+.open .h-frame:nth-child(1){transition-delay:.017s,0s}
+.open .h-frame:nth-child(2){transition-delay:.107s,0s}
+.open .h-frame:nth-child(3){transition-delay:.197s,0s}
+.open .h-frame:nth-child(4){transition-delay:.287s,0s}
+.open .h-frame:nth-child(5){transition-delay:.377s,0s}
+.h-frame:nth-child(1){transition-delay:.08s,0s}
+.h-frame:nth-child(2){transition-delay:.06s,0s}
+.h-frame:nth-child(3){transition-delay:.04s,0s}
+.h-frame:nth-child(4){transition-delay:.02s,0s}
+.h-frame:nth-child(5){transition-delay:0s,0s}
+
+/* el golpe de luz de la exposicion: sobreexpone y asienta. no es brillo decorativo,
+   es el unico momento en que el fotograma dice "acabo de revelarse". */
+.h-flash{position:absolute; inset:0; z-index:8; pointer-events:none; opacity:0;
+  background:linear-gradient(106deg,rgba(255,160,110,.55),rgba(255,90,52,.22));}
+.open .h-flash{animation:expo .3s var(--cut) forwards;}
+.open .h-frame:nth-child(1) .h-flash{animation-delay:.017s}
+.open .h-frame:nth-child(2) .h-flash{animation-delay:.107s}
+.open .h-frame:nth-child(3) .h-flash{animation-delay:.197s}
+.open .h-frame:nth-child(4) .h-flash{animation-delay:.287s}
+.open .h-frame:nth-child(5) .h-flash{animation-delay:.377s}
+@keyframes expo{0%{opacity:1} 100%{opacity:0}}
+
+/* el rotulo entra con el mismo corte, por delante del primer fotograma */
+.h-wipe .cap{clip-path:inset(0 100% 0 0); transition:clip-path .1s var(--cut);}
+.open .h-wipe .cap{clip-path:inset(0 0 0 0); transition:clip-path .2s var(--cut);}
+
+.h-frame{position:relative; border:1px solid var(--rule); cursor:pointer; background:#070302;
+  display:block; color:inherit; text-decoration:none;}
+.h-frame:hover{border-color:var(--l1);}
+.h-frame:focus-visible{outline:2px solid var(--l3); outline-offset:2px;}
+.h-frame.cur{border-color:var(--l1);}
+.h-frame.cur::before{content:""; position:absolute; left:-1px; right:-1px; top:-1px; height:2px;
+  background:var(--l1); z-index:6;}
+.h-mini{position:relative; width:216px; height:135px; overflow:hidden;}
+/* hover 200ms: micro-interaccion, no ceremonia */
+.h-veil{position:absolute; inset:0; background:var(--void); opacity:.58; z-index:5;
+  transition:opacity .2s var(--cut);}
+.h-frame.cur .h-veil{opacity:0;}
+.h-frame:hover .h-veil{opacity:.05;}
+.h-foot{padding:9px 11px 11px; border-top:1px solid var(--rule); position:relative; z-index:7;}
+.h-foot .num{font-size:9.5px; letter-spacing:.18em; color:var(--haze);}
+.h-foot .nm{font-family:"Bricolage Grotesque",sans-serif; font-weight:600; font-size:19px; line-height:1;
+  letter-spacing:-.034em; margin-top:5px; transition:color .2s var(--cut);}
+.h-foot .bl{font-size:10.5px; color:var(--haze); margin-top:4px;}
+.h-frame:hover .nm{color:var(--l3);}
+.h-frame.cur .nm,.h-frame.cur .num{color:var(--l3);}
+
+/* ---------- 390x844 ---------- */
+.m-panel{position:absolute; inset:0; z-index:30; background:var(--void);}
+.m-inner{position:absolute; inset:0; padding:56px 16px 16px;}
+.m-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:13px; margin-top:12px;}
+.m-grid .h-frame{clip-path:none;}
+.m-grid .h-flash{display:none;}
+.m-grid .h-frame:last-child{grid-column:1 / -1;}
+.m-grid .h-mini{width:auto; height:auto; padding-top:62.5%;}
+.m-grid .h-mini .shot{transform:scale(.12);}
+.m-grid .h-frame:last-child .h-mini{padding-top:31.25%;}
+.m-grid .h-frame:last-child .h-mini .shot{transform:scale(.248);}
+
+/* ---------- T-C con estado ---------- */
+.tC{position:absolute; top:14px; right:16px; z-index:60; background:none; border:0; cursor:pointer;
+  padding:9px 0 5px; text-align:right; min-width:104px; min-height:44px;}
+.tC::before{content:""; position:absolute; left:0; right:0; top:0; height:1px; background:var(--rule);}
+.tC::after{content:""; position:absolute; left:0; right:0; top:0; height:1px;
+  background:linear-gradient(90deg,var(--l2),var(--l3)); box-shadow:0 0 8px 1px rgba(255,90,52,.7);
+  transform:scaleX(0); transform-origin:right; transition:transform .32s var(--cut);}
+.tC:hover::after,.tC:focus-visible::after{transform:scaleX(1);}
+/* abierto: el filete queda encendido — el estado se ve sin leer nada */
+.open .tC::after{transform:scaleX(1);}
+/* el rotulo no se funde: se corta y sube, que es la gramatica del tema */
+.tC .swap{position:relative; overflow:hidden; display:block;}
+.tC .swap > span{display:block; transition:transform .2s var(--cut);}
+.tC .swap > span.b{position:absolute; left:0; right:0; top:100%;}
+.open .tC .swap > span{transform:translateY(-100%);}
+.tC .num{font:500 9.5px/12px "Instrument Sans",sans-serif; letter-spacing:.18em; color:var(--haze);
+  text-align:right;}
+.tC .swap.num{height:12px;}
+.tC .nm{font-family:"Bricolage Grotesque",sans-serif; font-weight:600; font-size:20px; line-height:22px;
+  letter-spacing:-.034em; color:var(--text); text-align:right; transition:color .2s var(--cut);}
+.tC .swap.nm{height:22px; margin-top:4px;}
+.tC:hover .nm{color:var(--l3);}
+.open .tC .nm{color:var(--l3);}
+
+.dirnote{font-size:13px; opacity:.8; margin:0 0 14px; max-width:82ch; line-height:1.55;}
+.grp{font:600 11px/1 "Instrument Sans",sans-serif; letter-spacing:.2em; text-transform:uppercase;
+  color:#8a8a8a; border-bottom:1px solid #ddd; padding-bottom:8px; margin:42px 0 16px;}
+.zoomwrap{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:8px;}
+.zoom{position:relative; width:100%; padding-top:62.5%; overflow:hidden; border:1px solid var(--rule);
+  background:#070302;}
+.zoom .shot{transform:scale(.278);}
+.zcap{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#777; margin-top:7px;}
+</style>
+
+<h2>H · Miniaturas mínimas, y el disparador con estado</h2>
+<p class="subtitle">Las miniaturas bajan de "captura fiel" a <b>silueta reconocible</b>: la estructura y las proporciones son las de la escena, el detalle fino desaparece. Pulsa el disparador: ahora cambia con la cortinilla, y al cerrar la hoja colapsa en vez de evaporarse.</p>
+
+<div class="asc">
+  <div class="stage" id="sh" style="height:430px">
+    <div style="position:absolute;inset:0"><div class="shot" style="transform:scale(.845)" id="pgshot"></div></div>
+    <div class="h-panel">
+      <div class="h-wipe">
+        <p class="cap" style="margin-bottom:2px">Índice de escenas</p>
+        <div class="h-grid" id="grid"></div>
+      </div>
+      <div class="h-bar"></div>
+    </div>
+    <button class="tC" id="trig" aria-expanded="false" onclick="tg(this)">
+      <span class="swap num"><span class="a n">03</span><span class="b">Esc</span></span>
+      <span class="swap nm"><span class="a">Obra</span><span class="b">Cerrar</span></span>
+    </button>
+  </div>
+</div>
+
+<p class="grp">390 × 844 — dos, dos y la quinta a lo ancho</p>
+<div class="asc">
+  <div class="stage" id="sm" style="width:390px;height:844px;margin:0 auto">
+    <div class="m-panel"><div class="m-inner">
+      <p class="cap">Índice de escenas</p>
+      <div class="m-grid" id="mgrid"></div>
+    </div></div>
+  </div>
+</div>
+
+<p class="grp">Las cinco, a tamaño de lectura</p>
+<div class="asc zoomwrap" id="zooms"></div>
+
+<p class="grp">Qué cambió</p>
+<p class="dirnote">
+<b>1 · Silueta, no captura.</b> Cada miniatura conserva la estructura y las proporciones reales de su escena —el nombre gigante a sangre, la ficha con avatar, las cinco columnas con numeral, los grupos de palabras, las cuatro vías con guion— y suelta todo el detalle fino. Se reconoce igual y deja de competir con el pie por la atención.<br>
+<b>2 · "Quién soy", no "Quién es".</b> Cambiado. Ojo: el rótulo de la propia escena en el sitio también dice "QUIÉN ES", así que los dos cambian juntos o queda incoherente. Vive en <code>src/data/content.ts</code>.<br>
+<b>3 · El disparador tiene estado.</b> Al abrir, el filete de arriba se queda encendido y el rótulo <b>se corta y sube</b> —no se funde— de <code>03 / Obra</code> a <code>Esc / Cerrar</code>. El corte es la gramática del tema, y la línea de arriba pasa a decir qué tecla cierra: información real, no decoración.<br>
+<b>4 · El cierre ya se ve.</b> Tenía un fallo: el panel se ocultaba de golpe y se comía los 200 ms de colapso que ya estaban declarados. Ahora la hoja se recoge hacia la izquierda, por donde entró, y la barra de luz no vuelve — salir no es ceremonia.
+</p>
+
+<script>
+function tg(b){var s=document.getElementById('sh'); var o=s.classList.toggle('open');
+  b.setAttribute('aria-expanded', o?'true':'false');}
+
+var SC = [
+ {id:'hero', num:'01', nm:'Título', bl:'Desarrollador full stack', html:
+  '<span class="beam" style="opacity:1"></span>'+
+  '<span class="rl" style="left:190px;top:300px;width:1px;height:280px"></span>'+
+  '<span class="disp" style="left:222px;top:340px;font-size:96px;color:#fff4ee">Aoshi Blanco Sanz</span>'+
+  '<span class="bar" style="left:570px;top:470px;width:300px;height:6px;opacity:.42"></span>'+
+  '<span class="rl" style="left:267px;top:530px;width:1120px;height:1px;background:#ff5a34;opacity:.5"></span>'+
+  '<span class="bar" style="left:267px;top:552px;width:180px;height:5px;opacity:.3"></span>'+
+  '<span class="bar" style="left:1180px;top:552px;width:207px;height:5px;opacity:.3"></span>'},
+
+ {id:'quien', num:'02', nm:'Quién soy', bl:'Trayectoria y cifras', html:
+  '<span class="beam" style="opacity:.8"></span>'+
+  '<span class="lab" style="left:100px;top:132px">Quién soy</span>'+
+  '<span class="box" style="left:100px;top:167px;width:1238px;height:280px"></span>'+
+  '<span class="dot" style="left:120px;top:187px;width:48px;height:48px;background:#5a3a34"></span>'+
+  '<span class="disp" style="left:120px;top:246px;font-size:62px;color:#ffd9cc">Aoshi Blanco Sanz</span>'+
+  '<span class="dot" style="left:120px;top:321px;width:8px;height:8px;background:#ff5a34"></span>'+
+  '<span class="bar" style="left:140px;top:321px;width:210px;height:6px;background:#ff5a34;opacity:.7"></span>'+
+  '<span class="bar" style="left:120px;top:352px;width:52px;height:5px;opacity:.32"></span><span class="bar" style="left:196px;top:352px;width:214px;height:5px"></span>'+
+  '<span class="bar" style="left:120px;top:378px;width:52px;height:5px;opacity:.32"></span><span class="bar" style="left:196px;top:378px;width:168px;height:5px"></span>'+
+  '<span class="bar" style="left:120px;top:404px;width:52px;height:5px;opacity:.32"></span><span class="bar" style="left:196px;top:404px;width:132px;height:5px"></span>'+
+  '<span class="bar" style="left:100px;top:500px;width:640px;height:9px;opacity:.42"></span>'+
+  '<span class="rl" style="left:100px;top:586px;width:1238px;height:1px"></span>'+
+  '<span class="bar" style="left:125px;top:660px;width:270px;height:11px;opacity:.6"></span>'+
+  '<span class="bar" style="left:670px;top:664px;width:230px;height:7px;opacity:.45"></span>'+
+  '<span class="rl" style="left:125px;top:742px;width:1190px;height:1px"></span>'+
+  '<span class="bar" style="left:125px;top:790px;width:310px;height:11px;opacity:.6"></span>'+
+  '<span class="bar" style="left:670px;top:794px;width:270px;height:7px;opacity:.45"></span>'},
+
+ {id:'obra', num:'03', nm:'Obra', bl:'Cinco proyectos', html:
+  '<span class="beam" style="opacity:.75"></span>'+
+  '<span class="rl" style="left:287px;top:0;width:1px;height:900px"></span>'+
+  '<span class="rl" style="left:574px;top:0;width:1px;height:900px"></span>'+
+  '<span class="rl" style="left:861px;top:0;width:1px;height:900px"></span>'+
+  '<span class="rl" style="left:1148px;top:0;width:1px;height:900px"></span>'+
+  '<span class="disp" style="left:196px;top:140px;font-size:96px;color:#2c1311">01</span>'+
+  '<span class="disp" style="left:483px;top:160px;font-size:96px;color:#2c1311">02</span>'+
+  '<span class="disp" style="left:770px;top:150px;font-size:96px;color:#371815">03</span>'+
+  '<span class="disp" style="left:1057px;top:130px;font-size:96px;color:#2c1311">04</span>'+
+  '<span class="disp" style="left:1344px;top:150px;font-size:96px;color:#2c1311">05</span>'+
+  '<span class="bar" style="left:22px;top:70px;width:150px;height:6px;background:#ff5a34;opacity:.8"></span>'+
+  '<span class="disp" style="left:22px;top:92px;font-size:30px">EchoPlan</span>'+
+  '<span class="bar" style="left:22px;top:146px;width:200px;height:8px;opacity:.4"></span>'+
+  '<span class="bar" style="left:22px;top:170px;width:150px;height:8px;opacity:.4"></span>'+
+  '<span class="rl" style="left:22px;top:225px;width:240px;height:1px"></span>'+
+  '<span class="bar" style="left:22px;top:250px;width:110px;height:5px;opacity:.3"></span>'+
+  '<span class="bar" style="left:22px;top:275px;width:180px;height:5px;opacity:.3"></span>'+
+  '<span class="bar" style="left:310px;top:196px;width:140px;height:6px;background:#ff5a34;opacity:.8"></span>'+
+  '<span class="disp" style="left:310px;top:218px;font-size:30px">TesisFar</span>'+
+  '<span class="bar" style="left:310px;top:272px;width:210px;height:8px;opacity:.4"></span>'+
+  '<span class="bar" style="left:310px;top:296px;width:160px;height:8px;opacity:.4"></span>'+
+  '<span class="rl" style="left:310px;top:350px;width:240px;height:1px"></span>'+
+  '<span class="bar" style="left:310px;top:375px;width:130px;height:5px;opacity:.3"></span>'+
+  '<span class="bar" style="left:597px;top:36px;width:150px;height:6px;background:#ff5a34;opacity:.8"></span>'+
+  '<span class="disp" style="left:597px;top:58px;font-size:30px">HyprFinance</span>'+
+  '<span class="bar" style="left:597px;top:112px;width:200px;height:8px;opacity:.4"></span>'+
+  '<span class="bar" style="left:597px;top:136px;width:140px;height:8px;opacity:.4"></span>'+
+  '<span class="rl" style="left:597px;top:190px;width:240px;height:1px"></span>'+
+  '<span class="bar" style="left:597px;top:215px;width:150px;height:5px;opacity:.3"></span>'+
+  '<span class="bar" style="left:597px;top:240px;width:190px;height:5px;opacity:.3"></span>'+
+  '<span class="bar" style="left:884px;top:112px;width:130px;height:6px;background:#ff5a34;opacity:.8"></span>'+
+  '<span class="disp" style="left:884px;top:134px;font-size:30px">WatchDog</span>'+
+  '<span class="bar" style="left:884px;top:188px;width:215px;height:8px;opacity:.4"></span>'+
+  '<span class="bar" style="left:884px;top:212px;width:180px;height:8px;opacity:.4"></span>'+
+  '<span class="rl" style="left:884px;top:266px;width:240px;height:1px"></span>'+
+  '<span class="bar" style="left:884px;top:291px;width:160px;height:5px;opacity:.3"></span>'+
+  '<span class="bar" style="left:1171px;top:150px;width:190px;height:6px;background:#ff5a34;opacity:.8"></span>'+
+  '<span class="disp" style="left:1171px;top:186px;font-size:30px">Editor de texto</span>'+
+  '<span class="bar" style="left:1171px;top:240px;width:200px;height:8px;opacity:.4"></span>'+
+  '<span class="bar" style="left:1171px;top:264px;width:150px;height:8px;opacity:.4"></span>'+
+  '<span class="rl" style="left:1171px;top:318px;width:240px;height:1px"></span>'+
+  '<span class="bar" style="left:1171px;top:343px;width:170px;height:5px;opacity:.3"></span>'},
+
+ {id:'creditos', num:'04', nm:'Créditos', bl:'Con qué construyo', html:
+  '<span class="beam" style="opacity:.85"></span>'+
+  '<span class="lab" style="left:100px;top:132px">Con qué construyo</span>'+
+  '<span class="box" style="left:100px;top:165px;width:1000px;height:332px;background:rgba(255,90,52,.05)"></span>'+
+  '<span class="bar" style="left:119px;top:190px;width:78px;height:5px;opacity:.32"></span>'+
+  '<span class="bar" style="left:119px;top:216px;width:74px;height:12px;opacity:.85"></span><span class="bar" style="left:213px;top:216px;width:82px;height:12px"></span><span class="bar" style="left:315px;top:216px;width:118px;height:12px"></span><span class="bar" style="left:453px;top:216px;width:136px;height:12px"></span><span class="bar" style="left:609px;top:216px;width:54px;height:12px"></span><span class="bar" style="left:683px;top:216px;width:70px;height:12px"></span>'+
+  '<span class="bar" style="left:119px;top:270px;width:140px;height:5px;opacity:.32"></span>'+
+  '<span class="bar" style="left:119px;top:296px;width:86px;height:12px"></span><span class="bar" style="left:225px;top:296px;width:84px;height:12px"></span><span class="bar" style="left:329px;top:296px;width:88px;height:12px"></span><span class="bar" style="left:437px;top:296px;width:86px;height:12px"></span>'+
+  '<span class="bar" style="left:119px;top:350px;width:126px;height:5px;opacity:.32"></span>'+
+  '<span class="bar" style="left:119px;top:376px;width:114px;height:12px"></span><span class="bar" style="left:253px;top:376px;width:74px;height:12px"></span><span class="bar" style="left:347px;top:376px;width:60px;height:12px"></span><span class="bar" style="left:427px;top:376px;width:30px;height:12px"></span>'+
+  '<span class="bar" style="left:119px;top:430px;width:106px;height:5px;opacity:.32"></span>'+
+  '<span class="bar" style="left:119px;top:456px;width:48px;height:12px"></span><span class="bar" style="left:187px;top:456px;width:82px;height:12px"></span><span class="bar" style="left:289px;top:456px;width:54px;height:12px"></span><span class="bar" style="left:363px;top:456px;width:134px;height:12px"></span>'+
+  '<span class="box" style="left:100px;top:549px;width:1000px;height:286px;background:rgba(255,90,52,.05)"></span>'+
+  '<span class="dot" style="left:120px;top:572px;width:44px;height:44px;border:3px solid #ff5a34"></span>'+
+  '<span class="disp" style="left:120px;top:624px;font-size:64px;color:#ffd9cc">React</span>'+
+  '<span class="bar" style="left:120px;top:712px;width:340px;height:7px;opacity:.4"></span>'+
+  '<span class="rl" style="left:120px;top:752px;width:960px;height:1px"></span>'+
+  '<span class="box" style="left:120px;top:790px;width:96px;height:28px;border-radius:14px"></span>'+
+  '<span class="box" style="left:236px;top:790px;width:118px;height:28px;border-radius:14px"></span>'},
+
+ {id:'contacto', num:'05', nm:'Fundido', bl:'Contacto', html:
+  '<span class="beam" style="opacity:1"></span>'+
+  '<span class="lab" style="left:124px;top:196px">Contacto</span>'+
+  '<span class="disp" style="left:124px;top:228px;font-size:96px;color:#ffd9cc">Hablemos</span>'+
+  '<span class="bar" style="left:124px;top:352px;width:240px;height:8px;opacity:.42"></span>'+
+  '<span class="bar" style="left:124px;top:422px;width:90px;height:5px;opacity:.3"></span><span class="bar" style="left:238px;top:422px;width:230px;height:5px;opacity:.45"></span>'+
+  '<span class="rl" style="left:100px;top:468px;width:1240px;height:1px"></span>'+
+  '<span class="bar" style="left:200px;top:512px;width:96px;height:5px;opacity:.3"></span>'+
+  '<span class="rl" style="left:876px;top:514px;width:30px;height:2px;background:#ff5a34"></span>'+
+  '<span class="bar" style="left:930px;top:504px;width:410px;height:16px;opacity:.85"></span>'+
+  '<span class="rl" style="left:100px;top:560px;width:1240px;height:1px"></span>'+
+  '<span class="bar" style="left:200px;top:604px;width:110px;height:5px;opacity:.3"></span>'+
+  '<span class="rl" style="left:956px;top:606px;width:30px;height:2px;background:#ff5a34"></span>'+
+  '<span class="bar" style="left:1010px;top:596px;width:330px;height:16px;opacity:.7"></span>'+
+  '<span class="rl" style="left:100px;top:652px;width:1240px;height:1px"></span>'+
+  '<span class="bar" style="left:200px;top:696px;width:104px;height:5px;opacity:.3"></span>'+
+  '<span class="rl" style="left:966px;top:698px;width:30px;height:2px;background:#ff5a34"></span>'+
+  '<span class="bar" style="left:1020px;top:688px;width:320px;height:16px;opacity:.7"></span>'+
+  '<span class="rl" style="left:100px;top:745px;width:1240px;height:1px"></span>'+
+  '<span class="bar" style="left:200px;top:788px;width:88px;height:5px;opacity:.3"></span>'+
+  '<span class="rl" style="left:1066px;top:790px;width:30px;height:2px;background:#ff5a34"></span>'+
+  '<span class="bar" style="left:1120px;top:780px;width:220px;height:16px;opacity:.7"></span>'+
+  '<span class="rl" style="left:100px;top:838px;width:1240px;height:1px"></span>'}
+];
+
+(function(){
+  var g=document.getElementById('grid'), z=document.getElementById('zooms'), mg=document.getElementById('mgrid');
+  SC.forEach(function(s){
+    // un unico <a> por fotograma: 5 paradas de Tab, no 10.
+    // la miniatura va aria-hidden: es decorativa.
+    var f=document.createElement('a');
+    f.href='#'+s.id; f.className='h-frame'+(s.num==='03'?' cur':'');
+    if(s.num==='03') f.setAttribute('aria-current','true');
+    f.innerHTML='<span class="h-flash"></span>'+
+      '<div class="h-mini" aria-hidden="true"><div class="shot">'+s.html+'</div><span class="h-veil"></span></div>'+
+      '<div class="h-foot"><span class="num n">'+s.num+'</span><div class="nm">'+s.nm+'</div><div class="bl">'+s.bl+'</div></div>';
+    g.appendChild(f); mg.appendChild(f.cloneNode(true));
+    var w=document.createElement('div');
+    w.innerHTML='<div class="zoom"><div class="shot">'+s.html+'</div></div><p class="zcap">'+s.num+' · '+s.nm+'</p>';
+    z.appendChild(w);
+  });
+  document.getElementById('pgshot').innerHTML=SC[2].html;
+})();
+</script>

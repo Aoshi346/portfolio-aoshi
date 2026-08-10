@@ -8,6 +8,7 @@
  * los tres temas la necesitan y el cromo de cine solo corre en Vice.
  */
 import { TARGETS, destinationFor } from "./sceneNav.destino";
+import { construirSilueta } from "./sceneNav.siluetas";
 
 export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   /*
@@ -42,6 +43,37 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   trigger.append(triggerLabel);
 
   /*
+   * Disparador de Hyprland: el pie de un fotograma, con dos estados. La
+   * estructura se añade en los tres temas y solo Hyprland le da estilo (ver
+   * themes.css). Vice y Caelestia siguen con `.scene-nav-trigger-label`.
+   *
+   * El rotulo NO se funde entre estados: se corta y sube, que es la gramatica
+   * del tema. Por eso hacen falta las dos versiones en el DOM a la vez, y por
+   * eso el cambio lo hace el CSS y no este modulo: JS solo mantiene la parte
+   * que depende de la escena.
+   */
+  const tc = document.createElement("span");
+  tc.className = "scene-nav-trigger-tc";
+  tc.setAttribute("aria-hidden", "true"); // el nombre accesible lo da `.scene-nav-trigger-label`
+
+  const tcNumA = document.createElement("span");
+  tcNumA.className = "scene-nav-trigger-num-a";
+
+  const tcNumB = document.createElement("span");
+  tcNumB.className = "scene-nav-trigger-num-b";
+  tcNumB.textContent = "Esc";
+
+  const tcNameA = document.createElement("span");
+  tcNameA.className = "scene-nav-trigger-name-a";
+
+  const tcNameB = document.createElement("span");
+  tcNameB.className = "scene-nav-trigger-name-b";
+  tcNameB.textContent = "Cerrar";
+
+  tc.append(tcNumA, tcNumB, tcNameA, tcNameB);
+  trigger.append(tc);
+
+  /*
    * La cortinilla: panel a pantalla completa con el indice de las cinco
    * escenas. `id="scene-index"` porque el disparador ya apunta ahi via
    * `aria-controls`.
@@ -52,11 +84,27 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   panel.setAttribute("role", "dialog");
   panel.setAttribute("aria-modal", "true");
   panel.setAttribute("aria-label", "Selección de escenas");
+  /*
+   * Nace cerrado, luego nace `inert`. `setAbierto` lo mantiene, pero solo corre
+   * al conmutar: sin esta linea el panel pasaba toda la primera visita —que es
+   * la que importa— con sus cinco filas tabulables detras del telon. Medido:
+   * cinco Tab desde el disparador aterrizaban en enlaces invisibles.
+   */
+  panel.setAttribute("inert", "");
 
   const heading = document.createElement("p");
   heading.className = "scene-index-title";
   heading.textContent = "Selección de escenas";
   panel.append(heading);
+
+  /*
+   * La barra de luz del barrido de apertura. Solo Hyprland la usa (ver
+   * themes.css, `display: none` de base). Va al final del panel para que
+   * quede por encima de los fotogramas sin necesidad de z-index alto.
+   */
+  const bar = document.createElement("span");
+  bar.className = "scene-index-bar";
+  bar.setAttribute("aria-hidden", "true");
 
   for (const [i, entry] of TARGETS.entries()) {
     const row = document.createElement("a");
@@ -93,7 +141,22 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
     blurb.className = "scene-index-blurb";
     blurb.textContent = entry.blurb;
 
-    row.append(num, name, guide, blurb);
+    /*
+     * Silueta y golpe de luz: los añaden los tres temas y solo Hyprland les da
+     * estilo (ver themes.css, `display: none` de base). Mismo patron que
+     * `.scene-nav-trigger-mark`. `aria-hidden` en el envoltorio, no pieza a
+     * pieza: la silueta es decorativa y ademas lleva fragmentos de copy
+     * ("Aoshi Blanco Sanz", "Hablemos") que un lector de pantalla leeria
+     * fuera de contexto y duplicados respecto al descriptor.
+     */
+    const shot = construirSilueta(entry.id);
+    shot.setAttribute("aria-hidden", "true");
+
+    const flash = document.createElement("span");
+    flash.className = "scene-index-flash";
+    flash.setAttribute("aria-hidden", "true");
+
+    row.append(shot, flash, num, name, guide, blurb);
     panel.append(row);
   }
 
@@ -130,6 +193,15 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
      * existir (movimiento reducido, o antes de que cargue). Un evento deja a
      * cada modulo con lo suyo, y si nadie escucha, el `overflow` hace de red.
      */
+    /*
+     * Con la cortinilla CERRADA sus cinco filas seguian siendo tabulables: se
+     * oculta con `clip-path` y `pointer-events: none`, que no sacan un enlace
+     * del orden de tabulacion. Medido: cinco Tab desde el disparador
+     * aterrizaban en enlaces invisibles. `inert` los saca del arbol de
+     * accesibilidad y del foco sin tocar el aspecto.
+     */
+    panel.toggleAttribute("inert", !v);
+
     document.documentElement.style.overflow = v ? "hidden" : "";
     window.dispatchEvent(new CustomEvent("scene-nav:toggle", { detail: { abierto: v } }));
     pinta(escenaActual);   // la etiqueta conmuta entre la escena y "Cerrar"
@@ -153,19 +225,36 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
       return;
     }
     if (event.key !== "Tab") return;
-    const f = filas();
+    /*
+     * El disparador entra en el ciclo. Ciclar solo las filas lo dejaba
+     * inalcanzable con el teclado justo cuando ES el boton visible de cerrar
+     * ("Esc / Cerrar" en Hyprland): con raton se ve y se pulsa, con teclado no
+     * existia. `Esc` seguia cerrando, asi que no era un bloqueo, pero si un
+     * control visible al que no se podia llegar.
+     */
+    const f: HTMLElement[] = [...filas(), trigger];
     if (f.length === 0) return;
-    const i = f.indexOf(document.activeElement as HTMLAnchorElement);
+    const i = f.indexOf(document.activeElement as HTMLElement);
     event.preventDefault();
     f[(i + (event.shiftKey ? -1 : 1) + f.length) % f.length].focus();
   };
   document.addEventListener("keydown", onKeydown);
 
-  // Cerrar al pulsar fuera del panel y del disparador.
+  /*
+   * Cerrar al pulsar fuera de lo pulsable.
+   *
+   * Antes se descartaba todo clic dentro de `.scene-index`, y el panel es
+   * `position: fixed; inset: 0`: ocupa el viewport entero, asi que NO habia
+   * "fuera" y el clic nunca cerraba, pese a que el comentario lo prometia.
+   * Medido: un clic en (720, 860) dejaba la cortinilla abierta.
+   *
+   * Con el panel a pantalla completa, "fuera" es su fondo: cualquier sitio que
+   * no sea una fila ni el disparador.
+   */
   const onDocClick = (event: MouseEvent): void => {
     if (!abierto) return;
     const t = event.target as HTMLElement;
-    if (t.closest(".scene-index") || t.closest(".scene-nav-trigger")) return;
+    if (t.closest(".scene-index-row") || t.closest(".scene-nav-trigger")) return;
     setAbierto(false);
   };
   document.addEventListener("click", onDocClick);
@@ -204,6 +293,10 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
      * conmutaba para el lector de pantalla; para el ojo, no conmutaba nada.
      */
     triggerLabel.textContent = abierto ? "Cerrar" : `${n} · ${TARGETS[i].label}`;
+    // Las versiones "b" son estaticas ("Esc"/"Cerrar"): el CSS decide cual se
+    // ve. Aqui solo va lo que depende de la escena.
+    tcNumA.textContent = n;
+    tcNameA.textContent = TARGETS[i].label;
     panel.querySelectorAll<HTMLElement>(".scene-index-row").forEach((row, j) => {
       if (j === i) row.setAttribute("aria-current", "true");
       else row.removeAttribute("aria-current");
@@ -230,6 +323,8 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
     if (s) observer.observe(s);
   }
 
+  panel.append(bar);
+
   root.append(trigger);
   root.append(panel);
 
@@ -244,6 +339,15 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
       document.removeEventListener("keydown", onKeydown);
       document.removeEventListener("click", onDocClick);
       observer.disconnect();
+      /*
+       * Soltar los dos cerrojos del scroll. `destroy()` corre en `pagehide`, y
+       * si la cortinilla estaba abierta dejaba `overflow: hidden` puesto en
+       * `<html>` y a Lenis creyendo que sigue bloqueado. Medido: volver desde
+       * la bfcache daba una pagina que no rueda y ya sin disparador con el que
+       * desbloquearla.
+       */
+      document.documentElement.style.overflow = "";
+      window.dispatchEvent(new CustomEvent("scene-nav:toggle", { detail: { abierto: false } }));
       trigger.remove();
       panel.remove();
       delete (window as unknown as { __navDestino__?: unknown }).__navDestino__;
