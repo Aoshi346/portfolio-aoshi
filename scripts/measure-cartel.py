@@ -171,26 +171,113 @@ def escala_tipografica(pg) -> list[str]:
     )
 
 
+# Constantes declaradas en `src/components/obraCartel.ts` (relevo por hover).
+# Se duplican aqui a proposito, como `OBRA_TRANSIT`/`OBRA_REST` en
+# `vice.choreography.ts`: si cambian alli y no aqui, esta funcion mide la ola
+# equivocada sin fallar sola. Mantenerlas en sync es responsabilidad de quien
+# toque `relevo()`.
+PASO_RELEVO_S = 0.024
+DURACION_RELEVO_S = 0.42
+
+
 def relevo_es_ola(pg) -> list[str]:
-    """El relevo RECORRE la palabra: a 70ms la primera letra se ha movido y la
-    ultima no. Sin esta medida, un cambio simultaneo disfrazado pasaria el
-    arnes. No se juzga por captura: `page.screenshot()` bloquea el compositor
-    en headless y adelanta la timeline."""
-    pg.eval_on_selector('[data-scene="obra"]:nth-child(2) .obra-abrir', "n => n.dispatchEvent(new PointerEvent('pointerenter', {bubbles:true}))")
-    pg.wait_for_timeout(70)
-    return pg.evaluate(
+    """El relevo RECORRE la palabra: la primera letra arranca antes que la
+    ultima, no a la vez. Sin esta medida, un cambio simultaneo disfrazado
+    pasaria el arnes.
+
+    Version anterior: comprobaba un unico instante fijo (70ms) contra un
+    umbral de sub-pixel. Bajo swiftshader esos 70ms de reloj de pared no
+    garantizan un numero fijo de ticks de rAF -- GSAP solo avanza en cada
+    tick, y con la maquina cargada el numero de ticks que caben en 70ms
+    fluctua. La medida cazaba carga de maquina, no la animacion (ver
+    `.claude/rules/verification.md`, "no pongas un umbral mas estrecho que
+    el ruido del instrumento").
+
+    Arreglo: en vez de leer una instantanea, se SONDEA en una ventana
+    generosa (~6x la duracion declarada del relevo) hasta ver que cada letra
+    se ha movido, y se compara el ORDEN/RETRASO relativo entre el arranque de
+    la primera y el de la ultima -- no un instante absoluto. El margen minimo
+    exigido sale del stagger declarado (`PASO_RELEVO_S` por letra) con un
+    factor de seguridad, asi que sigue siendo el valor determinista del
+    codigo, no un numero inventado. El cronometro (la ventana de sondeo) es
+    solo la comprobacion de cordura, con margen explicito frente al peor caso
+    realista (relevo completo + varios frames perdidos).
+
+    No se juzga por captura: `page.screenshot()` bloquea el compositor en
+    headless y adelanta la timeline.
+    """
+    n_tiras = pg.evaluate(
+        """() => document.querySelectorAll('[data-scene="obra"]')[1]
+          .querySelectorAll('.obra-rl').length"""
+    )
+    if n_tiras < 4:
+        return ["el titulo no esta partido en letras"]
+
+    # `t0` se toma DENTRO del navegador, en el mismo tick que el disparo del
+    # gesto: cada sondeo posterior tambien lee `performance.now()` alli
+    # mismo, asi que el tiempo transcurrido que se compara es reloj del
+    # navegador contra reloj del navegador. El viaje IPC de Playwright
+    # (10-40ms por `evaluate()` medidos en esta maquina) queda fuera de la
+    # medida -- es justo el ruido que rompia la version anterior, que
+    # contaba "pasos de sondeo" asumidos en vez de tiempo real transcurrido.
+    t0 = pg.evaluate(
         """() => {
           const fila = document.querySelectorAll('[data-scene="obra"]')[1];
-          const tiras = fila.querySelectorAll('.obra-rl');
-          if (tiras.length < 4) return ['el titulo no esta partido en letras'];
-          const y = e => new DOMMatrixReadOnly(getComputedStyle(e).transform).m42;
-          const primera = y(tiras[0]), ultima = y(tiras[tiras.length - 1]);
-          const fallos = [];
-          if (primera >= -0.5) fallos.push('la primera letra no se ha movido a 70ms');
-          if (ultima < -0.5) fallos.push('la ultima letra ya se movio: no es una ola');
-          return fallos;
+          fila.querySelector('.obra-abrir').dispatchEvent(
+            new PointerEvent('pointerenter', {bubbles: true}),
+          );
+          return performance.now();
         }"""
     )
+
+    # Ventana de sondeo: duracion declarada del relevo + el retraso maximo
+    # declarado entre la primera y la ultima letra, con margen x3. Es el
+    # cronometro-comprobacion-de-cordura, generoso a proposito frente al
+    # peor caso realista (relevo completo + varios frames de rAF perdidos).
+    retraso_declarado_ms = (n_tiras - 1) * PASO_RELEVO_S * 1000
+    ventana_ms = round((DURACION_RELEVO_S * 1000 + retraso_declarado_ms) * 3)
+    primera_en: float | None = None
+    ultima_en: float | None = None
+    while True:
+        t_rel, primera, ultima = pg.evaluate(
+            """(t0) => {
+              const fila = document.querySelectorAll('[data-scene="obra"]')[1];
+              const tiras = fila.querySelectorAll('.obra-rl');
+              const y = e => new DOMMatrixReadOnly(getComputedStyle(e).transform).m42;
+              return [performance.now() - t0, y(tiras[0]), y(tiras[tiras.length - 1])];
+            }""",
+            t0,
+        )
+        if primera_en is None and primera <= -0.5:
+            primera_en = t_rel
+        if ultima_en is None and ultima <= -0.5:
+            ultima_en = t_rel
+        if primera_en is not None and ultima_en is not None:
+            break
+        if t_rel > ventana_ms:
+            break
+        pg.wait_for_timeout(15)
+
+    fallos: list[str] = []
+    if primera_en is None:
+        fallos.append(f"la primera letra no se movio en {ventana_ms}ms")
+    if ultima_en is None:
+        fallos.append(f"la ultima letra no se movio en {ventana_ms}ms")
+    if primera_en is not None and ultima_en is not None:
+        # Se exige solo el 50% del retraso declarado: margen explicito frente
+        # a que el sondeo (paso de 15ms) recorte la medida por el lado bajo,
+        # pero de sobra para distinguir una ola real (~139ms medidos en esta
+        # maquina para un titulo de 8 letras, contra un declarado de 168ms)
+        # de un cambio simultaneo disfrazado (diferencia ~0ms).
+        margen_min_ms = retraso_declarado_ms * 0.5
+        diferencia = ultima_en - primera_en
+        if diferencia < margen_min_ms:
+            fallos.append(
+                f"la primera y la ultima letra arrancaron con {diferencia:.0f}ms de diferencia "
+                f"(reloj del navegador), esperaba >= {margen_min_ms:.0f}ms "
+                f"(retraso declarado {retraso_declarado_ms:.0f}ms)"
+            )
+    return fallos
 
 
 # Numero exacto de bloques que `bloquesDeFicha()` mueve a la ficha: lead,
