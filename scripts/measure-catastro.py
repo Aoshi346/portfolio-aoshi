@@ -112,6 +112,18 @@ en el contexto de Playwright, en los dos viewports:
       (`initScrollReveal` hace early-return antes de invocar
       `theme.choreography()`) y el contenido de esta escena es HTML/CSS
       base, no algo que JS revele.
+
+      RONDA DE ARREGLO 1: la primera version de esta aserción medía
+      `display !== 'none'` + una caja con ancho y alto — eso es PRESENCIA en
+      el layout, no visibilidad. Un nodo con `opacity: 0` o
+      `visibility: hidden` tiene `display: block` y un rect con caja real, y
+      pasaba el filtro sin verse: la red no cazaba por la via que decia
+      cazar (la misma familia de fallo que otras dos aserciones de rondas
+      anteriores de este plan — la aserción mide algo CERCANO a lo que
+      enuncia, no lo que enuncia). Se añadió `visibility` y `opacity` (con
+      `parseFloat`, porque `getComputedStyle().opacity` es una cadena) al
+      filtro `visibles()`, y se rompió a mano para confirmar que caza —
+      resultado exacto en el informe de la tarea 10, ronda 1.
   15. Cero animaciones vivas dentro de `[data-scene="credits"]`
       (`document.getAnimations()`), en reposo. Medido: ya salia en 0 antes
       de esta tarea (la coreografia no corre, luego no hay ni ScrollTrigger
@@ -412,7 +424,16 @@ def main() -> int:
                   const strips = document.querySelectorAll('[data-credit-strip]');
                   const visibles = (ns) => Array.from(ns).filter(n => {
                     const r = n.getBoundingClientRect();
-                    return getComputedStyle(n).display !== 'none' && r.width > 0 && r.height > 0;
+                    const cs = getComputedStyle(n);
+                    // `display !== 'none'` + rect con caja es PRESENCIA en el
+                    // layout, no visibilidad: un nodo con `opacity: 0` (o
+                    // `visibility: hidden`) tiene caja y pasaria este filtro
+                    // sin verse. `opacity` en 0 se lee como cadena "0", de ahi
+                    // el parseFloat en vez de una comparacion de string.
+                    return cs.display !== 'none'
+                      && cs.visibility !== 'hidden'
+                      && parseFloat(cs.opacity) > 0
+                      && r.width > 0 && r.height > 0;
                   }).length;
                   return {
                     parcelasVisibles: visibles(parcelas),
