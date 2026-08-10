@@ -545,3 +545,45 @@ sin resultados.
    de no correrlos — los lanza Aoshi por separado.
 
 Ninguna divergencia tocó `src/data/content.ts`, Vice ni Caelestia.
+
+## El gate visual y la ola de arreglo (2026-08-10)
+
+`lidia-naive-tester`: **verde**. Su respuesta espontánea a "¿qué te cuenta esta sección?", antes
+de analizar nada, fue *"que hace de todo un poco, pero organizado; veo cuatro terrenos"* — lee
+las cuatro etiquetas de área primero y los nombres después, que es la tesis del dispositivo. Y
+la afordancia móvil funciona: toca los tres territorios plegados sin dudar, comparándolos con
+un desplegable. Dedujo además el significado de los tres niveles tipográficos sin que nadie se
+lo explicara.
+
+`vera-art-director`: **BLOCK, 6,75 sobre gate 7,5**. Cuatro hallazgos corregidos en una ola
+(commit `0c9ff51`); el resto queda documentado y aceptado.
+
+**El P0 que once revisiones no vieron.** El nombre apuntado no se apagaba nunca: la luz del
+lindero, el friso y el rótulo revertían en 900ms y el nombre se quedaba en `--l3` con su
+desplazamiento. Tras un barrido por las cuatro columnas quedaban **cuatro nombres acentuados a
+la vez**, permanentes — un rango falso entre 23 elementos comparables, es decir la regla
+central de este spec reintroducida por la puerta de atrás del estado pegajoso. La revisión de
+la tarea 9 lo había descrito como un Menor ("conserva el `translateX` de forma persistente") y
+se aparcó sin reconocer que era el mismo defecto. **El acento pasa a vivir solo mientras hay
+apuntado**; qué muestra cada parcela lo dice su franja, que está debajo con el nombre y el logo.
+
+**La prueba a ciegas salió ámbar, no verde.** Descritas sin decirle qué buscar, "Quién soy" es
+*"una placa, un objeto con habitaciones"* y el catastro *"un registro, cuatro columnas
+paralelas intercambiables"* — dos dispositivos, reconocidos por iniciativa propia. Pero los
+marcos eran idénticos hasta el píxel: misma caja de 1238px, mismo borde de 1px, mismo `x=102`.
+*"El interior cambia de gramática; el envase no cambia de nada."* En escritorio desaparecen el
+borde exterior y las reglas de tapa y suelo, y quedan solo los cuatro linderos verticales: un
+catastro es un territorio parcelado, no una ficha. En móvil se conserva el perímetro, donde el
+dispositivo es un acordeón apilado sin linderos que marquen el límite.
+
+**El presupuesto de acento estaba invertido.** Los cuatro logos de 26px de las franjas ardían en
+`--l1` permanente: eran lo más caliente de la escena en reposo, más que el nombre realmente
+apuntado (`--l3`, un tono más frío). Bajan a `--haze`. Son decorativos (`aria-hidden` +
+`data-decorative`), así que el suelo aplicable es el 3:1 de WCAG 1.4.11, no 4,5; medido con el
+shader activo da 4,65:1.
+
+**Aceptado sin corregir**, con su razón: el dato que genera los tres niveles tipográficos no
+está impreso en escritorio; cinco de las marcas del friso son logotipos ilegibles a 14px; los
+paddings verticales no caen en la rejilla de 4/8; y las parcelas de cinco dejan filas
+reservadas vacías al abrirse en móvil. Ninguno rompe una regla del sistema — son tensiones de
+ejecución, no defectos, y quedan aquí escritas para quien retome la escena.
