@@ -2223,167 +2223,149 @@
 }
 
 /*
-  LA TIRA DE EXPOSICION — el dispositivo de la obra.
-  Equivale al carril horizontal de Vice (la bobina), pero aqui no hay
-  tarjetas: es una banda a sangre partida en escalones de la misma luz, sin
-  radio, con filete de 1px entre ellos y exposicion creciente. El apuntado se
-  abre y los demas se comprimen.
+  EL CARTEL — el dispositivo de la obra en Hyprland.
 
-  NADA de scroll-snap. Medido con A/B en el prototipo: con snap, fijar
-  `scrollLeft = 400` aterriza en 477 porque los anclajes caen cada ~477px, asi
-  que cada incremento de rueda volvia al origen; el carril se quedaba clavado
-  en 34 de 954 y ademas bloqueaba la pagina.
+  Cinco titulares a tamano de cartel, siempre en pantalla. La tipografia ES el
+  dispositivo: no hay tarjetas, ni cajas, ni radio. Sustituye a la tira de
+  exposicion, que repetia el gesto de la hoja de contactos y abandonaba el
+  patron bajo 821px.
+
+  `.scene-surface` pasa a `display: contents` para que los hijos de la ficha
+  participen directamente en la rejilla de la fila sin restructurar el DOM que
+  comparten los tres temas. Solo aqui: en Caelestia sigue siendo la tarjeta.
 */
-@media (min-width: 821px) {
-  /* `.obra-rail` > `.obra-track` los crea `src/main.ts:98-103` para los TRES
-     temas, no la coreografia de Vice: el contenedor existe siempre y el padre
-     directo de las escenas es `.obra-track`. */
-  :root[data-theme="hyprland"] .obra-rail {
-    overflow: hidden;
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-  }
-  :root[data-theme="hyprland"] .obra-track {
-    display: flex;
-    width: 100%;
-    transform: none;
-  }
-
-  :root[data-theme="hyprland"] .obra-track > [data-scene="obra"] {
-    position: relative;
-    flex: 1 1 0;
-    min-width: 0;
-    min-height: 56vh;
-    padding: 1.7rem 1.5rem;
-    border-right: 1px solid var(--rule);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    /* Scrim de legibilidad: casi opaco. Medido con el arnes de contraste —
-       a 0.2/0.65 el haz brillante de fondo se colaba por debajo del texto
-       secundario (dt/dd/p) y tumbaba varias filas de metadatos por debajo
-       de 4.5:1. */
-    background: linear-gradient(180deg, rgba(11, 4, 4, 0.82), rgba(11, 4, 4, 0.94));
-    transition:
-      flex-grow 0.5s var(--hard),
-      background 0.5s var(--slow);
-  }
-  :root[data-theme="hyprland"] [data-scene="obra"]:last-child {
-    border-right: 0;
-  }
-
-  /* El titulo NUNCA se corta a media palabra: comprimido a la anchura minima
-     de un escalon (~168px medido), una sola palabra larga ("HyprFinance",
-     "WatchDog") desbordaba el ancho y `overflow: hidden` del panel lo
-     chapaba en seco a mitad de glifo -- ademas de ilegible, eso dejaba una
-     franja sin poligonos de texto que el arnes de contraste media como
-     fg=bg exacto.
-
-     Un solo `nowrap` + `ellipsis` no basta: a --t-3 (21.33px) una palabra de
-     11 caracteres ("HyprFinance") sigue sin caber en 168px y el ellipsis
-     recorta la palabra igual (medido en la revision de Vera). Dos cambios:
-     tamano de cierre mas pequeno (--t-1..--t-3) y DOS lineas de wrap antes
-     del ellipsis (`-webkit-line-clamp`), no una -- entre las dos, la
-     mayoria de los titulos del sitio caben enteros sin recortar nada.
-     Abierto vuelve a su tamano de firma (tarea 2). */
-  :root[data-theme="hyprland"] [data-scene="obra"] .display-lg {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-    font-size: clamp(var(--t-1), 1.7vw, var(--t-3));
-    line-height: 1.1;
-    white-space: normal;
-    max-width: 100%;
-    transition: font-size 0.5s var(--slow);
-  }
-  :root[data-theme="hyprland"] [data-scene="obra"].is-open .display-lg {
-    display: block;
-    -webkit-line-clamp: unset;
-    font-size: clamp(var(--t-5), 5.2vw, var(--t-7));
-    line-height: var(--display-leading);
-    overflow: visible;
-  }
-
-  /* el escalon: cada uno recibe mas luz que el anterior. Factor bajado de
-     *1% a *0.35%: al *1% el ultimo panel llegaba a 68% de --l1 y tumbaba el
-     * texto secundario del propio panel por debajo de 4.5:1 (medido con el
-     * arnes de contraste) -- el escalon es un acento, no debe competir con
-     * la legibilidad del contenido que anuncia. */
-  :root[data-theme="hyprland"] [data-scene="obra"]::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--l1) calc(var(--hypr-e, 16) * 0.35%), transparent),
-      transparent 62%
-    );
-  }
-
-  :root[data-theme="hyprland"] [data-scene="obra"].is-open {
-    flex-grow: 3.1;
-    background: linear-gradient(180deg, rgba(11, 4, 4, 0.68), rgba(11, 4, 4, 0.9));
-  }
-  :root[data-theme="hyprland"] [data-scene="obra"].is-open::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--l1);
-    box-shadow: 0 0 22px var(--l1);
-  }
-
-  /* el pliegue: solo el abierto muestra su contenido. En un panel comprimido
-     el texto se cortaba a media palabra. */
-  :root[data-theme="hyprland"] [data-scene="obra"] .lead,
-  :root[data-theme="hyprland"] [data-scene="obra"] .obra-meta,
-  :root[data-theme="hyprland"] [data-scene="obra"] [data-mask],
-  :root[data-theme="hyprland"] [data-scene="obra"] [data-gallery] {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.38s var(--slow) 0.1s;
-  }
-  :root[data-theme="hyprland"] [data-scene="obra"].is-open .lead,
-  :root[data-theme="hyprland"] [data-scene="obra"].is-open .obra-meta,
-  :root[data-theme="hyprland"] [data-scene="obra"].is-open [data-mask],
-  :root[data-theme="hyprland"] [data-scene="obra"].is-open [data-gallery] {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* el ordinal, grande y al fondo: el eco del de Vice */
-  :root[data-theme="hyprland"] [data-scene="obra"] [data-ord] {
-    position: absolute;
-    right: 1rem;
-    bottom: 0.2rem;
-    font-family: var(--font-display);
-    font-size: var(--t-8);
-    font-weight: 700;
-    line-height: 1;
-    color: color-mix(in oklab, var(--color-paper) 7%, transparent);
-  }
+:root[data-theme="hyprland"] .obra-rail {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+:root[data-theme="hyprland"] .obra-track {
+  display: flex;
+  flex-direction: column;
+  transform: none;
+}
+:root[data-theme="hyprland"] [data-scene="obra"] {
+  /* `flex-direction` y `justify-content` pisan las utilidades Tailwind
+     `flex-col justify-center` de la marca compartida: sin esto la fila
+     hereda columna y el cartel se apila en vertical. */
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.5rem;
+  min-height: 0;
+  padding: 0.25rem 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+  overflow: visible;
+}
+:root[data-theme="hyprland"] [data-scene="obra"]:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+:root[data-theme="hyprland"] [data-scene="obra"] .scene-surface {
+  display: contents;
 }
 
-/* Bajo 821px o con movimiento reducido: pila vertical, como el resto de temas.
-   Mismo contrato de breakpoint que usa la coreografia (tarea 7). */
-@media (max-width: 820px), (prefers-reduced-motion: reduce) {
-  :root[data-theme="hyprland"] .obra-rail {
-    display: block;
-  }
-  :root[data-theme="hyprland"] [data-scene="obra"] {
-    border-bottom: 1px solid var(--rule);
-  }
-  :root[data-theme="hyprland"] [data-scene="obra"] .lead,
-  :root[data-theme="hyprland"] [data-scene="obra"] .obra-meta,
-  :root[data-theme="hyprland"] [data-scene="obra"] [data-mask],
-  :root[data-theme="hyprland"] [data-scene="obra"] [data-gallery] {
-    opacity: 1;
-    pointer-events: auto;
-  }
+/* el ordinal deja de ser telon y pasa a ser dato: `01`, y el `/ 05` es
+   decorativo (el nodo ya es aria-hidden en projectScene.ts). */
+:root[data-theme="hyprland"] [data-scene="obra"] [data-ord] {
+  position: static;
+  flex: 0 0 34px;
+  align-self: flex-end;
+  padding-bottom: 0.9rem;
+  font-family: var(--font-display);
+  font-size: var(--t-2);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--haze);
+  transition: color 0.42s var(--hard);
+}
+:root[data-theme="hyprland"] [data-scene="obra"] [data-ord]::after {
+  content: " / 05";
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] [data-scene="obra"].is-abierto [data-ord] {
+  color: var(--l1);
+}
+
+:root[data-theme="hyprland"] [data-scene="obra"] h2.display-lg {
+  order: 1;
+  margin: 0;
+  max-width: none;
+  font-size: var(--t-8);
+  line-height: 1.12;
+  letter-spacing: -0.042em;
+  white-space: nowrap;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] [data-scene="obra"] .obra-abrir {
+  /* El disparador cubre la fila entera: el objetivo tactil es la fila, no una
+     palabra. Va por debajo del contenido en z para no taparlo, y sin fondo. */
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+:root[data-theme="hyprland"] [data-scene="obra"] .obra-abrir:focus-visible {
+  outline: 2px solid var(--l1);
+  outline-offset: -2px;
+}
+:root[data-theme="hyprland"] [data-scene="obra"] .hero-kick {
+  order: 2;
+  margin-left: auto;
+  font-size: var(--t-1);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+
+/* el cuadro de imagen PROPIO: sin borde, sin radio, sin sombra, sin hover que
+   levanta y sin rotulo en degradado encima. Nada que ver con el tratamiento
+   generico de `style.css`, que se diseno para Vice. */
+:root[data-theme="hyprland"] [data-scene="obra"] .obra-mini {
+  display: block;
+  order: 3;
+  flex: 0 0 144px;
+  height: calc(var(--t-8) * 1.12); /* = caja del titulo a --t-8 con interlinea 1,12 */
+  margin: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--shot-fondo);
+  clip-path: inset(0 100% 0 0);   /* la abre el modulo, por corte */
+}
+:root[data-theme="hyprland"] .obra-mini-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* En una captura de aplicacion la informacion vive ARRIBA: barra de titulo y
+     cabeceras. `50% 50%` recortaria justo la parte que no dice nada. */
+  object-position: 50% 0%;
+  filter: brightness(0.96);
+}
+:root[data-theme="hyprland"] .obra-mini::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 90, 52, 0.08);
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .obra-mini-pie {
+  display: none;             /* el pie solo existe en el visor grande */
+}
+
+/* en reposo, la ficha no ocupa sitio */
+:root[data-theme="hyprland"] [data-scene="obra"] .lead,
+:root[data-theme="hyprland"] [data-scene="obra"] .obra-meta,
+:root[data-theme="hyprland"] [data-scene="obra"] [data-mask],
+:root[data-theme="hyprland"] [data-scene="obra"] [data-gallery] {
+  display: none;
 }
 
 /*
