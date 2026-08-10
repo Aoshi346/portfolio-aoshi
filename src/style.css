@@ -1140,6 +1140,16 @@ body {
 }
 
 /*
+ * Marca de plegado ("+"/"-"), hija del boton anterior. Decorativa
+ * (`aria-hidden` en `credits.ts`; el estado accesible ya lo lleva
+ * `aria-expanded` en `.credit-group-toggle`, duplicarlo en un segundo nodo
+ * lo empeoraria). Oculta de base como todo lo nuevo de esta seccion.
+ */
+.credit-group-mark {
+  display: none;
+}
+
+/*
  * Fila fantasma: solo existe en los grupos con menos de MAX_FILAS_NOMBRES_M
  * filas de nombres (ver `credits.ts`). Reserva la altura que le falta a un
  * grupo corto para medir lo mismo ABIERTO que el mas largo — sin ella, "la

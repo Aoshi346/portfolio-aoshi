@@ -305,6 +305,14 @@ export function createCredits(): HTMLElement {
      */
     const count = el("span", "credit-group-count", [String(group.items.length)]);
     /*
+     * Marca de plegado ("+" cerrado, "-" abierto): puramente decorativa, el
+     * estado accesible ya lo lleva `aria-expanded` en `.credit-group-toggle`
+     * (de ahi `aria-hidden`, no duplicar el estado). Vive DENTRO del boton
+     * para heredar su color de estado sin un segundo selector de estado.
+     */
+    const mark = el("span", "credit-group-mark", []);
+    mark.setAttribute("aria-hidden", "true");
+    /*
      * El unico tap target para abrir un territorio plegado en movil. Cubre
      * toda la cabecera (`position: absolute; inset: 0` sobre el `<p>`
      * relativo, en `themes.css`) y nace oculto: en escritorio y en los
@@ -312,7 +320,7 @@ export function createCredits(): HTMLElement {
      * entra en el orden de tabulacion de Vice/Caelestia — el patron
      * aditivo no se rompe por tener el nodo en el DOM de los tres temas.
      */
-    const toggle = el("button", "credit-group-toggle", []);
+    const toggle = el("button", "credit-group-toggle", [mark]);
     toggle.type = "button";
     toggle.setAttribute("aria-controls", `credits-strip-${gi}`);
     toggle.setAttribute("aria-expanded", "false");
