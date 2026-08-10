@@ -769,7 +769,7 @@ git commit -m "feat(about): el montaje como entrada de la placa"
 **Ficheros:**
 - Modificar: `src/themes/themes.css` si el móvil lo pide
 
-- [ ] **Paso 1: mirar 390×844 de verdad**
+- [x] **Paso 1: mirar 390×844 de verdad**
 
 Por debajo de 900 la placa cae a dos columnas y las `grid-area` no aplican, así que manda el orden
 del DOM: quién, retrato, estado, hace, obra, puesto, estudia. Comprobar que ese orden se lee bien y
@@ -779,7 +779,7 @@ que ninguna celda desborda.
 python3 scripts/measure-placa.py
 ```
 
-- [ ] **Paso 2: los cuatro gates**
+- [x] **Paso 2: los cuatro gates**
 
 ```bash
 export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH
@@ -795,7 +795,7 @@ python3 scripts/measure-placa.py
 Todos en verde. `verify.py` **se corre solo y sin editar nada**: Vite recarga por HMR ante
 cualquier edición y se lleva el contexto de la página por delante.
 
-- [ ] **Paso 3: anti-mock**
+- [x] **Paso 3: anti-mock**
 
 ```bash
 grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|lorem ipsum|Lorem" \
@@ -804,19 +804,19 @@ grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|l
 
 Esperado: sin resultados en lo tocado.
 
-- [ ] **Paso 4: los dos críticos**
+- [x] **Paso 4: los dos críticos**
 
 Lanzar `lidia-naive-tester` **con una métrica concreta y cronometrable** — propuesta: *tiempo hasta
 decir en voz alta si Aoshi está disponible y qué hace*, en móvil — y `vera-art-director` con umbral
 7,5. Los dos pineados a `sonnet`.
 
-- [ ] **Paso 5: cerrar el registro**
+- [x] **Paso 5: cerrar el registro**
 
 Cambiar `Estado:` del spec de `pendiente de plan` a `implementado` **solo cuando todas las casillas
 de este plan estén marcadas**: `check_spec_plan_consistency()` cruza las dos cosas y falla si el
 spec dice `implementado` con pasos sin marcar.
 
-- [ ] **Paso 6: commit final**
+- [x] **Paso 6: commit final**
 
 ```bash
 git add -A

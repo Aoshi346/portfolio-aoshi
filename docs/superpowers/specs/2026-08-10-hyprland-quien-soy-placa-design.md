@@ -1,6 +1,6 @@
 # La placa — "Quién soy" en Hyprland deja de ser una pila de bloques y pasa a ser una ficha técnica
 
-Estado: pendiente de plan
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-10-hyprland-quien-soy-placa.md`
 Fecha: 2026-08-10
 Alcance: **solo el tema Hyprland**. `[data-scene="about"]` (`src/sections/about.ts`,
