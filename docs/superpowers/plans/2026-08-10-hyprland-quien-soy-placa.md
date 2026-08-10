@@ -447,7 +447,7 @@ git commit -m "feat(about): rejilla de la placa en Hyprland"
 **Ficheros:**
 - Modificar: `src/themes/themes.css`, bloque Hyprland
 
-- [ ] **Paso 1: escala discreta y superficies**
+- [x] **Paso 1: escala discreta y superficies**
 
 ```css
 /* Escalones DISCRETOS. Un `clamp()` sobre tokens devolvia 54,5px a 1440, que
@@ -552,7 +552,7 @@ git commit -m "feat(about): rejilla de la placa en Hyprland"
 }
 ```
 
-- [ ] **Paso 2: el scrim, medido contra el fondo real**
+- [x] **Paso 2: el scrim, medido contra el fondo real**
 
 El fondo no es un plano: la página lleva el shader más `--bg-fallback`, que sube hasta `#3a1008`.
 Hay precedente en el repo — `.about-pairs` necesitó un scrim al 78 % porque el texto secundario
@@ -565,7 +565,7 @@ así que el scrim solo cubre las juntas:
 }
 ```
 
-- [ ] **Paso 3: medir contraste con el shader activo**
+- [x] **Paso 3: medir contraste con el shader activo**
 
 ```bash
 python3 scripts/verify.py --theme hyprland --url http://localhost:4173
@@ -574,7 +574,7 @@ python3 scripts/verify.py --theme hyprland --url http://localhost:4173
 Esperado: sin fallos de contraste nuevos respecto a `scripts/verify-baseline.json`. Si aparece
 alguno, subir el porcentaje del scrim y **volver a medir**, no estimar.
 
-- [ ] **Paso 4: el arnés en verde en tallas y desbordes**
+- [x] **Paso 4: el arnés en verde en tallas y desbordes**
 
 ```bash
 python3 scripts/measure-placa.py
@@ -583,7 +583,7 @@ python3 scripts/measure-placa.py
 Esperado: **cero** fallos de `fuera de la escala` y **cero** desbordes en los dos viewports. Si una
 celda desborda, bajar un escalón el tamaño de esa celda concreta — nunca meter un `clamp`.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add src/themes/themes.css
