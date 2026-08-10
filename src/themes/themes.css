@@ -4610,6 +4610,27 @@
   animation: hypr-lampara 0.4s var(--hard) backwards;
   animation-delay: var(--skill-d);
 }
+/*
+ * `is-caught-still` la pone la coreografia (hypr.choreography.ts, gesto 4)
+ * pasado el tiempo real que tarda la lampara en asentarse, visible o no en
+ * ese instante. Un nombre oculto (`display: none`, el plegado de movil de
+ * la tarea 7) no llega a ejecutar la `animation` aunque ya tenga
+ * `is-caught`: el navegador la retoma de cero en cuanto el nodo vuelve a
+ * pintarse, y ese destello tardio queda fuera del scroll de entrada que le
+ * daba sentido.
+ *
+ * Un `animation-delay` muy negativo, NO `animation: none`: retira solo el
+ * retardo, deja `animation-name` declarado como `hypr-lampara` para
+ * siempre (es lo que vigila el arnes — "las lamparas siguen en CSS" se lee
+ * en `animationName`, no en si la animation esta corriendo). Con el
+ * retardo tan por debajo de cero, cualquier redibujado nace ya mas alla
+ * de los 0.4s de duracion — sin `forwards`, ahi no aplica el 100% del
+ * keyframe y el color vuelve de inmediato al de la cascada normal: cero
+ * fotogramas intermedios, cero destello.
+ */
+:root[data-theme="hyprland"] .credit.is-caught.is-caught-still {
+  animation-delay: calc(var(--skill-d) - 999s);
+}
 
 /*
  * El acento es estado, nunca taxonomia: `data-credit-picked` es el

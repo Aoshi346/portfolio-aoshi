@@ -221,6 +221,29 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
       tl.call(
         () => {
           for (const n of nombres) n.classList.add("is-caught");
+          /*
+           * La lampara es un gesto de ENTRADA, no un estado permanente de
+           * la `animation`. En movil solo la parcela activa muestra sus
+           * nombres (`display: none` en las otras tres) y un nombre oculto
+           * no ejecuta una animation aunque ya tenga la clase — el
+           * navegador la retoma de cero en cuanto el nodo vuelve a
+           * pintarse. Sin este ajuste, abrir despues un territorio plegado
+           * hace destellar sus nombres como si acabaran de entrar, fuera
+           * del scroll que le daba sentido al gesto.
+           *
+           * 1100ms cubre el peor caso real: 620ms (el maximo de
+           * `--skill-d`) + 400ms (duracion de la lampara) + margen. Pasado
+           * ese tiempo, `is-caught-still` empuja el `animation-delay` muy
+           * por debajo de cero (ver themes.css) — visible o no en ese
+           * instante — para que cualquier redibujado nazca ya mas alla del
+           * final y el color vuelva de inmediato al de reposo, sin volver
+           * a recorrer el keyframe. `animation-name` sigue siendo
+           * `hypr-lampara` para siempre: las lamparas nunca dejan de ser
+           * CSS, solo dejan de tener retardo pendiente.
+           */
+          window.setTimeout(() => {
+            for (const n of nombres) n.classList.add("is-caught-still");
+          }, 1100);
         },
         [],
         at + 0.26,

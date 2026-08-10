@@ -377,7 +377,7 @@ cuatro veces.
 | JS extra | **≤ 3 KB gzip** | No hace falta JS para encender las 23 marcas ni para la entrada (CSS + ScrollTrigger `once:true` ya existente) |
 | Nodos DOM | ~181 actuales + 4 parcelas + 4 franjas | Sin marcado extra por icono: pseudo-elementos, no nodos |
 | Listeners | los 69 actuales | Si el friso gana hover propio, **delegación** en el contenedor, nunca 46 listeners nuevos |
-| Animaciones simultáneas | **12** dentro de la escena | Aserto que impide pasar las 23 lámparas a tweens de GSAP |
+| Animaciones concurrentes | sin techo numérico — ver mecanismo | El diseño exige 23 lámparas de `color` (barato) que por construcción se solapan casi todas (medido: pico 23, en efecto y activas a la vez). Lo que se vigila es que **sigan siendo CSS**: `animationName === 'hypr-lampara'` en cada `.credit` visible, y que `window.__hyprSkills` no toque más de **13** targets reales |
 | Trabajo continuo | **cero** rAF/scroll nuevos | La entrada dispara una vez; el apuntado es CSS + `quickTo` |
 | CSS | medir el delta gzip de `index-*.css` | Hoy 19,76 KB gzip, bloqueante de render para los tres temas |
 
@@ -397,7 +397,7 @@ compositor toda la vida de la página.
 | 4 | Acento en reposo | `getComputedStyle` de los 23 nombres: **ninguno** en `--l1`/`--l3`, en los dos viewports |
 | 5 | Duración declarada de la entrada | `tl.duration()` ≤ 1,6s; a `progress(0.546)` los 4 rótulos con `clip-path: inset(0px)` |
 | 6 | El gesto ocurre en pantalla | Al disparar el trigger, el último nombre de la parcela más alta cabe en el viewport |
-| 7 | Concurrencia | `document.getAnimations().length` en la escena ≤ **12** |
+| 7 | Mecanismo de la lámpara, no cuenta cruda | Un techo numérico de `document.getAnimations()` se probó y se descartó (ronda de arreglo 1 de la tarea 8): el diseño exige 23 lámparas de CSS solapadas por construcción (medido: pico 23, en efecto y activas a la vez — filtrar por fase activa tampoco baja el número). Se vigila que **sigan siendo CSS**: `animationName === 'hypr-lampara'` en cada `.credit` visible, y que la timeline de `window.__hyprSkills` no toque más de **13** targets que sean Elementos reales |
 | 8 | Cero reflow | `PerformanceObserver` de `layout-shift` durante la entrada y 20 apuntados: suma 0 |
 | 9 | Rodillo bajo barrido rápido | 6 selecciones en 600ms → **1 solo** `.p-strip-in` |
 | 10 | Contraste | `check_contrast_wcag` con recorte **ajustado al glifo**, shader **activo**, build de producción. El `--haze` a 15px es el más ajustado: ≥ 4,5:1 o se sube el scrim, nunca se toca el token |

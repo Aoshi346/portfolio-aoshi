@@ -46,8 +46,18 @@ ya presentes. Sin dependencias nuevas.
 - **Prohibido animar** `filter`, `backdrop-filter` y `box-shadow` con blur sobre los 23 nodos, y
   `width`/`height` (usar `transform: scale()`). Hay un shader WebGL a pantalla completa en rAF
   continuo detrás.
-- **Techo de 12 animaciones simultáneas** dentro de la escena. GSAP toca 13 nodos como mucho;
-  las 23 lámparas las enciende CSS.
+- **Las 23 lámparas se quedan en CSS; GSAP no toca más de 13 nodos** (4 carriles, 4 rótulos, 4
+  chispas, 1 tween compartido sobre las 4 franjas). **No hay techo numérico de animaciones
+  concurrentes** — se probó y se descartó (ronda de arreglo 1 de la tarea 8): el diseño exige 23
+  lámparas de `color` (barato, no dispara layout) y por construcción casi todas se solapan
+  — medido, muestreo cada 16ms separando "en efecto" de "produciendo valores de verdad"
+  (`effect.getComputedTiming().progress !== null`): las dos cuentas COINCIDEN siempre
+  (`1/1 1/1 1/1 14/14 23/23 22/22 21/21 20/20 18/18 15/15 13/13 10/10`), así que ni filtrar por
+  fase activa evita el pico de 23. Una cuenta cruda de `document.getAnimations()` no distingue
+  eso de 23 tweens de GSAP caros — lo que vigila el arnés es el mecanismo: cada `.credit`
+  visible mantiene `animationName === 'hypr-lampara'` (si alguien las pasa a GSAP, ese nombre
+  desaparece) y la timeline de `window.__hyprSkills` no toca más de 13 targets que sean
+  Elementos reales.
 - **`prefers-reduced-motion` nunca deja nada invisible.**
 - **Cero `console.log`. Cero `any`.**
 - **Node 22 obligatorio.** El del sistema es v18.19.1 y `rolldown-vite` necesita `styleText` de
@@ -1075,8 +1085,16 @@ window.__hyprSkills.pause(); window.__hyprSkills.progress(0.546);
 // los 4 rotulos con clip-path: inset(0px)
 // 3. el orden, por lo que NO ha pasado
 window.__hyprSkills.progress(0.33);       // ningun nombre de las columnas 2-4 en reposo
-// 4. concurrencia
-document.getAnimations().length           // <= 12 dentro de la escena
+// 4. mecanismo, no cuenta cruda (ver "Restricciones globales" — un techo
+// numerico de document.getAnimations() se probo y se descarto: el diseno
+// exige 23 lamparas de CSS solapadas, asi que el numero por si solo no
+// distingue eso de 23 tweens de GSAP caros)
+Array.from(document.querySelectorAll('[data-credit]'))
+  .filter(n => getComputedStyle(n).display !== 'none')
+  .every(n => getComputedStyle(n).animationName === 'hypr-lampara')   // true
+window.__hyprSkills.getChildren(false, true, false)
+  .filter(t => t.targets().length > 0 && t.targets().every(x => x instanceof Element))
+  .length                                                              // <= 13
 ```
 
 - [ ] **Paso 4: commit**

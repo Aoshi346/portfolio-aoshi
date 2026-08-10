@@ -57,6 +57,31 @@ Ocho aserciones, y todas nacieron de un fallo real o de una trampa ya pagada:
       (28.43 / 21.33 / 16px). "El nivel se dice SOLO con tipografia" es el
       contenido de la escena: sin esta aserción esa frase era una intención,
       no algo verificable.
+  12. Las 23 lamparas siguen siendo `animation` de CSS, no tweens de GSAP.
+      Reemplaza a un techo numerico de `document.getAnimations().length`
+      que se probo y se descarto (ronda de arreglo 1 de la tarea 8): el
+      diseño aprobado EXIGE 23 lamparas de `color` (barato, no dispara
+      layout) y por construccion casi todas se solapan — medido, muestreo
+      cada 16ms separando "en efecto" de "produciendo valores de verdad"
+      (`effect.getComputedTiming().progress !== null`): ambas cuentas
+      COINCIDEN siempre (`1/1 1/1 1/1 14/14 23/23 22/22 21/21 20/20 18/18
+      15/15 13/13 10/10`), asi que ni filtrar por fase activa evita el 23.
+      Una cuenta cruda no distingue eso de 23 tweens de GSAP escribiendo
+      estilo inline por fotograma (caro, con un shader WebGL detras) — el
+      numero por si solo no dice CUAL de los dos esta pasando. Lo que si
+      lo dice es el mecanismo: si alguien reescribe la lampara como tween,
+      `getComputedStyle(n).animationName` deja de ser `hypr-lampara` y esta
+      aserción cae. Medida SOLO sobre nombres visibles, mismo motivo que la
+      aserción 8.
+  13. GSAP no toca mas de 13 nodos en el gesto de entrada (`window.__hyprSkills`):
+      4 carriles + 4 rotulos + 4 chispas + 1 tween compartido sobre las 4
+      franjas = 13. Cuenta los hijos de la timeline cuyos `targets()` son
+      Elementos reales (`instanceof Element`), lo que excluye los 4
+      `tl.call()` que reparten `.is-caught` — no tocan un nodo, disparan un
+      callback. Es el complemento exacto de la 12: si las lamparas migraran
+      a GSAP, esta aserción subiria de 13 a 26 (13 + 23 lamparas) y caeria
+      aunque la 12 tambien cayera — dos redes sobre el mismo riesgo, cada
+      una desde su lado.
 """
 import argparse
 import sys
@@ -69,6 +94,7 @@ CALLE_MOVIL = 26
 DIANA_MINIMA = 44
 ALTO_MAXIMO_MOVIL = 1100
 ALTO_MAXIMO_REJILLA_ESCRITORIO = 700
+GSAP_NODOS_MAXIMO = 13
 
 
 def ir_a_creditos(pg) -> bool:
@@ -155,6 +181,18 @@ def main() -> int:
             if desborda:
                 fallos.append(f"[{nombre}] desborda: {desborda}")
 
+            # 12. las lamparas siguen en CSS — mecanismo, no cuenta cruda.
+            # Medido SOLO sobre nombres visibles (mismo motivo que la 8): en
+            # movil tres parcelas ocultan sus `[data-credit]`.
+            sin_lampara = pg.evaluate(
+                "() => Array.from(document.querySelectorAll('[data-credit]'))"
+                " .filter(n => getComputedStyle(n).display !== 'none')"
+                " .filter(n => getComputedStyle(n).animationName !== 'hypr-lampara')"
+                " .map(n => n.textContent.trim())"
+            )
+            if sin_lampara:
+                fallos.append(f"[{nombre}] lamparas sin animationName hypr-lampara: {sin_lampara}")
+
             if nombre == "escritorio":
                 # 2. los cuatro pies a la misma cota
                 cotas = pg.evaluate(
@@ -197,6 +235,26 @@ def main() -> int:
                 if len(set(representativos.values())) != len(representativos):
                     fallos.append(
                         f"[escritorio] los niveles no tienen tamanos distintos: {planos}"
+                    )
+
+                # 13. GSAP no toca mas de 13 nodos en el gesto de entrada.
+                # Cuenta los hijos de `window.__hyprSkills` cuyos `targets()`
+                # son Elementos reales (excluye los 4 `tl.call()` que solo
+                # disparan un callback, sin target de DOM).
+                gsap_nodos = pg.evaluate(
+                    "() => { const tl = window.__hyprSkills; if (!tl) return -1;"
+                    " return tl.getChildren(false, true, false).filter(t => {"
+                    "   try { return typeof t.targets === 'function'"
+                    "     && t.targets().length > 0"
+                    "     && t.targets().every(x => x instanceof Element); }"
+                    "   catch (e) { return false; }"
+                    " }).length; }"
+                )
+                if gsap_nodos < 0:
+                    fallos.append("[escritorio] window.__hyprSkills no existe")
+                elif gsap_nodos > GSAP_NODOS_MAXIMO:
+                    fallos.append(
+                        f"[escritorio] GSAP toca {gsap_nodos} nodos (tope {GSAP_NODOS_MAXIMO})"
                     )
             else:
                 # 6. alto de la seccion
