@@ -2360,6 +2360,47 @@
   display: none;             /* el pie solo existe en el visor grande */
 }
 
+/* la mirilla por letra: arriba la apagada, debajo la encendida. `.obra-en` es
+   la capa de entrada y `.obra-rl` la del relevo — dos transforms separados. */
+:root[data-theme="hyprland"] .obra-ch {
+  display: inline-block;
+  overflow: hidden;
+  height: 1.12em;
+  vertical-align: top;
+}
+:root[data-theme="hyprland"] .obra-ch-hueco {
+  width: 0.26em;
+}
+:root[data-theme="hyprland"] .obra-en,
+:root[data-theme="hyprland"] .obra-rl {
+  display: block;
+}
+:root[data-theme="hyprland"] .obra-rl i {
+  display: block;
+  height: 1.12em;
+  font-style: normal;
+}
+:root[data-theme="hyprland"] .obra-rl i:first-child {
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .obra-rl i:last-child {
+  color: var(--color-paper);
+}
+:root[data-theme="hyprland"] .obra-barrido {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--l1);
+  box-shadow: 0 0 26px var(--l1);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+:root[data-theme="hyprland"] .obra-track {
+  position: relative;   /* ancla de la barra */
+}
+
 /* en reposo, la ficha no ocupa sitio */
 :root[data-theme="hyprland"] [data-scene="obra"] .lead,
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-meta,

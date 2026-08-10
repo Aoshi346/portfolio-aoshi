@@ -140,6 +140,28 @@ def escala_tipografica(pg) -> list[str]:
     )
 
 
+def relevo_es_ola(pg) -> list[str]:
+    """El relevo RECORRE la palabra: a 70ms la primera letra se ha movido y la
+    ultima no. Sin esta medida, un cambio simultaneo disfrazado pasaria el
+    arnes. No se juzga por captura: `page.screenshot()` bloquea el compositor
+    en headless y adelanta la timeline."""
+    pg.eval_on_selector('[data-scene="obra"]:nth-child(2) .obra-abrir', "n => n.dispatchEvent(new PointerEvent('pointerenter', {bubbles:true}))")
+    pg.wait_for_timeout(70)
+    return pg.evaluate(
+        """() => {
+          const fila = document.querySelectorAll('[data-scene="obra"]')[1];
+          const tiras = fila.querySelectorAll('.obra-rl');
+          if (tiras.length < 4) return ['el titulo no esta partido en letras'];
+          const y = e => new DOMMatrixReadOnly(getComputedStyle(e).transform).m42;
+          const primera = y(tiras[0]), ultima = y(tiras[tiras.length - 1]);
+          const fallos = [];
+          if (primera >= -0.5) fallos.push('la primera letra no se ha movido a 70ms');
+          if (ultima < -0.5) fallos.push('la ultima letra ya se movio: no es una ola');
+          return fallos;
+        }"""
+    )
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--base", default="http://localhost:4173")
@@ -158,6 +180,7 @@ def main() -> int:
         else:
             fallos += [f"[hyprland] {f}" for f in cartel_en_reposo(pg)]
             fallos += [f"[hyprland] {f}" for f in escala_tipografica(pg)]
+            fallos += [f"[hyprland] {f}" for f in relevo_es_ola(pg)]
         b.close()
     for f in fallos:
         print(f"FALLO {f}")
