@@ -573,6 +573,103 @@ def movimiento_reducido(pg_reducido) -> list[str]:
     )
 
 
+# Indices en `content.ts` (`caseStudies`) con 2 capturas frente a 1 sola.
+# EchoPlan/TesisFar/HyprFinance/WatchDog declaran 2; Editor de texto, 1.
+CON_SEGUNDA_CAPTURA = [0, 1, 2, 3]
+SIN_SEGUNDA_CAPTURA = [4]
+
+
+def segunda_captura(pg) -> list[str]:
+    """Los proyectos con 2 capturas en `content.ts` muestran su segunda foto
+    como tile bajo la lupa cuando la fila abre; el proyecto con 1 sola
+    (Editor de texto) no pinta ningun tile ni deja un hueco vacio.
+
+    El conteo es explicito (no un `> 0`): con la ficha vacia una condicion
+    vacua tambien pasaria en verde -- el mismo modo de fallo que ya pago
+    esta suite varias veces."""
+    fallos: list[str] = []
+    for i in CON_SEGUNDA_CAPTURA:
+        pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
+        pg.wait_for_timeout(900)
+        n = pg.evaluate(
+            """() => document.querySelectorAll('.obra-track > .obra-otras .obra-otra').length"""
+        )
+        if n != 1:
+            fallos.append(f"fila {i}: {n} tiles de captura restante, esperaba 1")
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(700)
+    for i in SIN_SEGUNDA_CAPTURA:
+        pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
+        pg.wait_for_timeout(900)
+        n = pg.evaluate(
+            """() => document.querySelectorAll('.obra-track > .obra-otras .obra-otra').length"""
+        )
+        if n != 0:
+            fallos.append(f"fila {i}: {n} tiles de captura restante, esperaba 0 (una sola captura)")
+        hueco = pg.evaluate(
+            """() => {
+              const otras = document.querySelector('.obra-track > .obra-otras');
+              return otras ? otras.getBoundingClientRect().height : 0;
+            }"""
+        )
+        if hueco > 1:
+            fallos.append(f"fila {i}: la banda de capturas restantes deja un hueco de {round(hueco)}px")
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(700)
+    return fallos
+
+
+def pulsar_cambia_la_lupa(pg) -> list[str]:
+    """Pulsar el tile de la segunda captura cambia la imagen grande de la
+    lupa (no solo la marca visualmente activa): se compara el `src` de la
+    imagen de la lupa ANTES y DESPUES del clic, y debe pasar a ser el del
+    tile pulsado. Tambien se exige que el tile pulsado quede marcado
+    activo y que la fila NO deje un tile activo tras cerrarse y reabrirse
+    (reset entre aperturas)."""
+    fallos: list[str] = []
+    i = 0  # EchoPlan: 2 capturas
+    pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
+    pg.wait_for_timeout(900)
+    antes = pg.evaluate(
+        """() => document.querySelector('[data-obra-lupa] .obra-mini-img')?.src ?? ''"""
+    )
+    tile_src = pg.evaluate(
+        """() => document.querySelector('.obra-track > .obra-otras .obra-otra-img')?.src ?? ''"""
+    )
+    if not antes or not tile_src:
+        return ["no se pudo leer la imagen de la lupa o del tile"]
+    pg.eval_on_selector_all(".obra-track > .obra-otras .obra-otra", "ns => ns[0].click()")
+    pg.wait_for_timeout(700)
+    despues = pg.evaluate(
+        """() => document.querySelector('[data-obra-lupa] .obra-mini-img')?.src ?? ''"""
+    )
+    if despues != tile_src:
+        fallos.append(f"la lupa sigue mostrando '{antes}' tras pulsar el tile, esperaba '{tile_src}'")
+    activo = pg.evaluate(
+        """() => document.querySelectorAll('.obra-track > .obra-otras .obra-otra.is-activa').length"""
+    )
+    if activo != 1:
+        fallos.append(f"{activo} tiles marcados activos tras el clic, esperaba 1")
+    # Cierra y reabre: la lupa debe volver a la PRIMERA captura, sin tile activo.
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(700)
+    pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
+    pg.wait_for_timeout(900)
+    reabierta = pg.evaluate(
+        """() => document.querySelector('[data-obra-lupa] .obra-mini-img')?.src ?? ''"""
+    )
+    if reabierta != antes:
+        fallos.append(f"al reabrir, la lupa muestra '{reabierta}' en vez de la primera captura '{antes}'")
+    activo_tras_reabrir = pg.evaluate(
+        """() => document.querySelectorAll('.obra-track > .obra-otras .obra-otra.is-activa').length"""
+    )
+    if activo_tras_reabrir != 0:
+        fallos.append(f"{activo_tras_reabrir} tiles activos al reabrir, esperaba 0")
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(700)
+    return fallos
+
+
 def enlace_en_ficha(pg) -> list[str]:
     """El pie del proyecto (enlace al repositorio o nota de "Proyecto
     privado") viaja a la ficha abierta: `bloquesDeFicha()` lo incluye desde
@@ -588,7 +685,11 @@ def enlace_en_ficha(pg) -> list[str]:
         fallo = pg.evaluate(
             """() => {
               const ficha = document.querySelector('[data-obra-ficha]');
-              const link = ficha.querySelector('a[href]');
+              // Acotado a `[data-obra-pie] a[href]`, no a la ficha entera: la
+              // Task 8 anade botones (tiles de capturas) a la ficha, y un
+              // `a[href]` suelto en cualquier otro bloque haria pasar esta
+              // asercion por el motivo equivocado.
+              const link = ficha.querySelector('[data-obra-pie] a[href]');
               if (!link) return 'sin enlace visible en la ficha';
               const r = link.getBoundingClientRect();
               if (r.width === 0 || r.height === 0) return 'enlace presente pero sin caja visible';
@@ -648,6 +749,8 @@ def main() -> int:
             fallos += [f"[hyprland escritorio] {f}" for f in apertura(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in accesibilidad(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in enlace_en_ficha(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in segunda_captura(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in pulsar_cambia_la_lupa(pg)]
         b.close()
 
         # Movimiento reducido: contexto propio con `reduced_motion="reduce"`,

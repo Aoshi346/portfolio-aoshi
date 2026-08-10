@@ -2592,6 +2592,61 @@
 }
 
 /*
+ * Las capturas restantes del proyecto (Task 8): un tile de 96x60 por cada
+ * foto que no sea la primera. `.obra-mini` sigue llenando el 100% de la
+ * lupa (contrato ya medido en `apertura()`), asi que la banda NO vive dentro
+ * de `.obra-lupa` -- viaja directa a `.obra-track` (mismo nivel que la lupa
+ * y la ficha) y se ancla DEBAJO de la caja de la lupa. En reposo (todavia
+ * colgada de su fila, o si el proyecto solo tiene una captura y nunca viaja)
+ * sigue `display: none` (`style.css`).
+ *
+ * Los numeros de "top" salen de sumar top+alto de `.obra-lupa` en ESTE mismo
+ * breakpoint mas 16px de margen (el mismo margen que ya separaba la lupa de
+ * la ficha) -- no estan inventados, y si la geometria de la lupa cambia en
+ * un breakpoint hay que recalcular el suyo aqui.
+ */
+:root[data-theme="hyprland"] .obra-track > .obra-otras {
+  position: absolute;
+  left: 0;
+  top: 623px; /* 132 (top de .obra-lupa) + 475 (alto) + 16 */
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+:root[data-theme="hyprland"] .obra-otra {
+  display: block;
+  flex: 0 0 96px;
+  height: 60px;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: var(--shot-fondo);
+  cursor: pointer;
+}
+:root[data-theme="hyprland"] .obra-otra-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0%;
+  filter: brightness(0.96);
+}
+:root[data-theme="hyprland"] .obra-otra::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 90, 52, 0.08);
+  pointer-events: none;
+}
+/* La brasa significa "esto esta activo" y nada mas: sin borde generico, sin
+   radio, sin sombra que levante -- solo el filete de 2px que ya usa el resto
+   del cartel para marcar estado. */
+:root[data-theme="hyprland"] .obra-otra.is-activa {
+  box-shadow: inset 2px 0 0 var(--l1);
+}
+
+/*
   MOVIL Y TABLETA (Task 6) — el mismo dispositivo, no otro.
 
   Solo cambian tres cosas: (1) la miniatura esta SIEMPRE puesta, no espera a
@@ -2632,14 +2687,20 @@
     width: 336px;
     height: 130px;
   }
+  /* Task 8: banda bajo la lupa (88 + 130 + 8 de margen), y la ficha se
+     empuja 60px (el alto del tile) + el mismo margen para no solaparla. */
+  :root[data-theme="hyprland"] .obra-track > .obra-otras {
+    top: 226px;
+  }
   :root[data-theme="hyprland"] .obra-ficha {
     left: 0;
-    top: 234px;
+    top: 294px;
     width: 100%;
     bottom: 0;
-    /* El scroll interno esta MEDIDO: entre 27 y 85px, el pie de Rol y
-       Periodo quedando medio dedo bajo el pliegue. Si sale mayor, se reduce
-       la lupa antes que el cuerpo del texto (ver `.obra-ficha .lead` y
+    /* El scroll interno esta MEDIDO tras la Task 8 (banda de capturas
+       restantes bajo la lupa, que empuja la ficha 60px mas abajo): el pie
+       de Rol y Periodo sigue quedando dentro del scroll interno, nunca
+       cortado sin posibilidad de desplazarse (ver `.obra-ficha .lead` y
        `[data-mask] .leading-relaxed` mas arriba, que ya vienen comprimidos
        para la ficha de escritorio y siguen aplicando aqui). */
     overflow-y: auto;
@@ -2659,9 +2720,13 @@
     width: 592px;
     height: 370px;
   }
+  /* Task 8: banda bajo la lupa (124 + 370 + 8), ficha empujada 60px + 8. */
+  :root[data-theme="hyprland"] .obra-track > .obra-otras {
+    top: 502px;
+  }
   :root[data-theme="hyprland"] .obra-ficha {
     left: 0;
-    top: 510px;
+    top: 570px;
     width: 100%;
     bottom: 0;
     overflow-y: auto;

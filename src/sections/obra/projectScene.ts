@@ -94,6 +94,28 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
     mini.append(shot, el("figcaption", "obra-mini-pie", [primera.caption]));
   }
 
+  // Las capturas restantes de la galeria (Task 8): un tile por cada foto
+  // que no sea la primera. Nace oculto en los tres temas (`style.css`); solo
+  // Hyprland lo enciende, y solo cuando la fila abre (lo mueve el modulo del
+  // cartel a la banda bajo la lupa). Sin capturas de sobra (Editor de texto,
+  // una sola en `content.ts`) queda vacio y no pinta ningun tile.
+  const otras = el(
+    "div",
+    "obra-otras",
+    project.gallery.slice(1).map((shot) => {
+      const tile = el("button", "obra-otra", []) as HTMLButtonElement;
+      tile.type = "button";
+      const img = el("img", "obra-otra-img") as HTMLImageElement;
+      img.src = shot.src;
+      img.alt = shot.caption;
+      img.loading = "lazy";
+      tile.append(img);
+      tile.setAttribute("aria-label", `Ver ${shot.caption}`);
+      return tile;
+    }),
+  );
+  otras.setAttribute("data-obra-otras", "");
+
   // Las marcas del stack: una por tecnologia con slug conocido en
   // `simple-icons` (Task 5). Sin marca, la tecnologia no pinta tile — su
   // nombre ya esta en la linea de stack de arriba, asi que no se pierde nada.
@@ -121,7 +143,7 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
   // El nombre accesible lo pone el modulo del cartel (Task 3), que es quien
   // conoce el titulo ya partido en letras.
 
-  const children: HTMLElement[] = [tag, title, lead, meta, columns, mini, marcas, abrir];
+  const children: HTMLElement[] = [tag, title, lead, meta, columns, mini, otras, marcas, abrir];
 
   // Las capturas reales de la galeria (Task 11) ya existen y devuelven 200;
   // la galeria se construye siempre que el caso de estudio declare piezas,

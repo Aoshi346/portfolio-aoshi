@@ -23,6 +23,12 @@ interface Fila {
   /** capa de entrada, independiente de la del relevo */
   entradas: HTMLElement[];
   mini: HTMLElement;
+  /** banda de capturas restantes (Task 8) — vacia si el proyecto solo tiene una */
+  otras: HTMLElement;
+  /** contenido original de la miniatura, para devolverla a la primera
+   * captura al cerrar. Sin esto, reabrir una fila donde se pulso un tile
+   * dejaria la lupa con la ultima foto vista, no con `gallery[0]`. */
+  miniOriginal: { src: string; alt: string; pie: string };
 }
 
 const PASO_RELEVO = 0.024;
@@ -156,6 +162,12 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     }
   }
 
+  // Enganche de los tiles de capturas restantes (Task 8): se hace UNA vez al
+  // montar, no en cada `abre()` -- los tiles son estaticos por fila.
+  for (const fila of filas) {
+    sueltas.push(engancharOtras(gsap, fila, motionReducido));
+  }
+
   function abre(indice: number): void {
     if (abierta === indice) {
       cierra();
@@ -198,6 +210,19 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     anclas = piezas.map((nodo) => ({ nodo, padre: nodo.parentNode as Node, siguiente: nodo.nextSibling }));
     ficha.replaceChildren(...piezas);
     gsap.set(ficha, { pointerEvents: "auto" });
+    // La banda de capturas restantes (Task 8) NO viaja a la ficha: vive
+    // bajo la lupa, en `.obra-track`, para que la miniatura pueda seguir
+    // llenando el 100% de la lupa (contrato que ya median las pruebas de
+    // `apertura()`). Si el proyecto solo tiene una captura, `otras` esta
+    // vacia y no se mueve -- no hay nada que mostrar ni hueco que dejar.
+    if (fila.otras.childElementCount > 0) {
+      anclas.push({
+        nodo: fila.otras,
+        padre: fila.otras.parentNode as Node,
+        siguiente: fila.otras.nextSibling,
+      });
+      pista.appendChild(fila.otras);
+    }
     gsap.fromTo(
       ficha,
       { clipPath: "inset(0 100% 0 0)" },
@@ -242,6 +267,7 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     abierta = -1;
     fila.seccion.classList.remove("is-abierto");
     relevo(gsap, fila, false, motionReducido);
+    restauraMini(gsap, fila);
     const estado = Flip.getState(fila.mini);
     fila.seccion.appendChild(fila.mini);
     Flip.from(estado, { duration: motionReducido ? 0 : 0.52, ease: "hard", absolute: true });
@@ -339,7 +365,18 @@ function partirTitulo(seccion: HTMLElement): Fila {
   const boton = seccion.querySelector<HTMLButtonElement>("[data-obra-abrir]");
   const titulo = seccion.querySelector<HTMLElement>("h2.display-lg");
   const mini = seccion.querySelector<HTMLElement>("[data-obra-mini]");
-  if (!boton || !titulo || !mini) throw new Error("Fila de obra sin boton, titulo o miniatura");
+  const otras = seccion.querySelector<HTMLElement>("[data-obra-otras]");
+  if (!boton || !titulo || !mini || !otras) {
+    throw new Error("Fila de obra sin boton, titulo, miniatura o banda de capturas");
+  }
+
+  const miniImg = mini.querySelector<HTMLImageElement>(".obra-mini-img");
+  const miniPie = mini.querySelector<HTMLElement>(".obra-mini-pie");
+  const miniOriginal = {
+    src: miniImg?.src ?? "",
+    alt: miniImg?.alt ?? "",
+    pie: miniPie?.textContent ?? "",
+  };
 
   // Se parte el TITULAR, no el boton: el boton es un hermano vacio que solo
   // hace de disparador accesible (ver Task 1).
@@ -387,6 +424,8 @@ function partirTitulo(seccion: HTMLElement): Fila {
     tiras: Array.from(titulo.querySelectorAll<HTMLElement>(".obra-rl")),
     entradas: Array.from(titulo.querySelectorAll<HTMLElement>(".obra-en")),
     mini,
+    otras,
+    miniOriginal,
   };
 }
 
@@ -399,6 +438,67 @@ function relevo(gsap: Gsap, fila: Fila, encendido: boolean, reducido: boolean): 
     ease: "hard",
     stagger: reducido ? 0 : { each: PASO_RELEVO, from: encendido ? "start" : "end" },
   });
+}
+
+/** Devuelve la miniatura a su PRIMERA captura y limpia el estado "activo" de
+ * los tiles. Se llama SIEMPRE al cerrar: sin esto, reabrir una fila donde se
+ * pulso un tile mostraria la ultima foto vista, no `gallery[0]`. */
+function restauraMini(gsap: Gsap, fila: Fila): void {
+  gsap.killTweensOf(fila.mini);
+  gsap.set(fila.mini, { clipPath: "inset(0 0 0 0)" });
+  const img = fila.mini.querySelector<HTMLImageElement>(".obra-mini-img");
+  const pie = fila.mini.querySelector<HTMLElement>(".obra-mini-pie");
+  if (img) {
+    img.src = fila.miniOriginal.src;
+    img.alt = fila.miniOriginal.alt;
+  }
+  if (pie) pie.textContent = fila.miniOriginal.pie;
+  for (const tile of fila.otras.querySelectorAll(".obra-otra")) tile.classList.remove("is-activa");
+}
+
+/**
+ * Engancha cada tile de `[data-obra-otras]` para que, al pulsarlo,
+ * intercambie lo que muestra la lupa por SU captura: dos recortes de 210ms
+ * en `hard` (oculta -> cambia el contenido -> revela), 420ms en total, sin
+ * fundido. El tile pulsado queda marcado "activo" (filete de --l1); el
+ * anterior lo pierde. No hay Flip aqui: solo viaja `fila.mini`, la banda de
+ * tiles se queda quieta bajo la lupa.
+ *
+ * Devuelve la funcion que suelta los listeners, para `destroy()`.
+ */
+function engancharOtras(gsap: Gsap, fila: Fila, reducido: boolean): () => void {
+  const tiles = Array.from(fila.otras.querySelectorAll<HTMLButtonElement>(".obra-otra"));
+  const soltar: Array<() => void> = [];
+  for (const tile of tiles) {
+    const alPulsar = (): void => {
+      const img = tile.querySelector<HTMLImageElement>(".obra-otra-img");
+      const miniImg = fila.mini.querySelector<HTMLImageElement>(".obra-mini-img");
+      const miniPie = fila.mini.querySelector<HTMLElement>(".obra-mini-pie");
+      if (!img || !miniImg || !miniPie) return;
+      const nuevoSrc = img.src;
+      const nuevoAlt = img.alt;
+      gsap.killTweensOf(fila.mini);
+      const tl = gsap.timeline();
+      tl.to(fila.mini, { clipPath: "inset(0 0 0 100%)", duration: reducido ? 0 : 0.21, ease: "hard" }).call(
+        () => {
+          miniImg.src = nuevoSrc;
+          miniImg.alt = nuevoAlt;
+          miniPie.textContent = nuevoAlt;
+          for (const t of tiles) t.classList.toggle("is-activa", t === tile);
+        },
+      );
+      tl.fromTo(
+        fila.mini,
+        { clipPath: "inset(0 0 0 100%)" },
+        { clipPath: "inset(0 0 0 0)", duration: reducido ? 0 : 0.21, ease: "hard" },
+      );
+    };
+    tile.addEventListener("click", alPulsar);
+    soltar.push(() => tile.removeEventListener("click", alPulsar));
+  }
+  return () => {
+    for (const fn of soltar) fn();
+  };
 }
 
 interface EntradaHandle {
