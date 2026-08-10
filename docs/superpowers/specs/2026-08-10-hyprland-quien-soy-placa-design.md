@@ -108,7 +108,7 @@ dice la celda de Estudia** — unirlas cierra una duplicación, no solo reduce r
   space-between` dejaba un hueco muerto en el centro de cada celda: ese era el motivo real de que
   la placa se viera vacía, no la falta de contenido.
 - La línea de periodo se ancla al **pie** de la celda con `margin-top: auto`. Ojo con la
-  especificidad: `.fz dd { margin: 0 }` (0-1-1) gana a una clase suelta (0-1-0) y anula el `auto`.
+  especificidad: `.placa dd { margin: 0 }` (0-1-1) gana a una clase suelta (0-1-0) y anula el `auto`.
 - El retrato va con **`background-size: contain`**, no `cover`. Con `cover` se recortaba la cara.
   Duotono de brasa con el filtro **solo en la capa de imagen**: puesto en el elemento, el
   `grayscale` agrisa también la capa de brasa antes de mezclarla y el duotono desaparece.
@@ -126,9 +126,9 @@ pasos del tema. Es la regla que `CLAUDE.md` marca como "Never Do".
 | Elemento | < 820 | ≥ 820 | ≥ 1200 |
 |---|---|---|---|
 | Nombre de cabecera | `--t-5` | `--t-6` | `--t-7` |
-| Dato de celda (`.fz-v`) | `--t-3` | `--t-3` | `--t-3` |
+| Dato de celda (`.placa-v`) | `--t-3` | `--t-3` | `--t-3` |
 | Dato de celda grande | `--t-4` | `--t-4` | `--t-5` |
-| Cifra (`.fz-num`) | `--t-5` | `--t-5` | `--t-6` |
+| Cifra (`.placa-num`) | `--t-5` | `--t-5` | `--t-6` |
 | Rótulo | 10 px, tracking `0.26em` | | |
 | Detalle | `--t-1` | | |
 
