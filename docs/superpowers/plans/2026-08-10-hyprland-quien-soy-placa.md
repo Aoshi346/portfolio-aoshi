@@ -66,7 +66,7 @@ cinco y por eso dos defectos graves atravesaron dos revisiones.
 - Produce: ejecutable con `python3 scripts/measure-placa.py [--url URL]`. Sale **0** si todo pasa,
   **1** con el detalle de cada fallo por `stdout`.
 
-- [ ] **Paso 1: escribir el arnés**
+- [x] **Paso 1: escribir el arnés**
 
 ```python
 """Arnes de la placa de "Quien soy" en Hyprland.
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: verlo rojo contra el estado actual**
+- [x] **Paso 2: verlo rojo contra el estado actual**
 
 ```bash
 export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH
@@ -187,7 +187,7 @@ python3 scripts/measure-placa.py
 Esperado: **FALLO** con `la placa no tiene celdas` en los dos viewports, porque todavía no existe.
 Si sale verde, el arnés no mide nada y hay que arreglarlo antes de seguir.
 
-- [ ] **Paso 3: commit**
+- [x] **Paso 3: commit**
 
 ```bash
 git add scripts/measure-placa.py
@@ -207,7 +207,7 @@ git commit -m "test(about): arnes de la placa de Quien soy"
   `data-placa-celda="<clave>"`. Claves: `quien`, `retrato`, `estado`, `hace`, `obra`, `puesto`,
   `estudia`. Se añade a `createAbout()` como último hijo de `.about-body`.
 
-- [ ] **Paso 1: escribir el constructor**
+- [x] **Paso 1: escribir el constructor**
 
 En `src/sections/about.ts`, tras `createPairs()`:
 
@@ -288,7 +288,7 @@ function createPlaca(): HTMLElement {
 
 Y en `createAbout()`, añadir `createPlaca()` como último hijo de `body`.
 
-- [ ] **Paso 2: el `display: none` de base**
+- [x] **Paso 2: el `display: none` de base**
 
 En `src/themes/themes.css`, junto al resto de nodos compartidos ocultos (busca
 `.about-pairs { display: none }`):
@@ -301,7 +301,7 @@ En `src/themes/themes.css`, junto al resto de nodos compartidos ocultos (busca
 }
 ```
 
-- [ ] **Paso 3: comprobar que no se ha movido nada**
+- [x] **Paso 3: comprobar que no se ha movido nada**
 
 ```bash
 export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH
@@ -317,7 +317,7 @@ python3 scripts/measure-placa.py
 Esperado: **FALLO** con `la placa no tiene celdas` en Hyprland (aún oculta), y **sin** fallos de
 Vice ni Caelestia. Si alguno de esos dos aparece, el `display: none` no está donde debe.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add src/sections/about.ts src/themes/themes.css
@@ -335,7 +335,7 @@ git commit -m "feat(about): nodos de la placa, ocultos en los tres temas"
 - Consume: las clases `.placa`, `.placa-c`, `.placa-k`, `.placa-v`, `.placa-s`, `.placa-p`,
   `.placa-num`, `.placa-par`, `.placa-foto` de la tarea 2.
 
-- [ ] **Paso 1: encender y componer**
+- [x] **Paso 1: encender y componer**
 
 ```css
 /*
@@ -386,7 +386,7 @@ git commit -m "feat(about): nodos de la placa, ocultos en los tres temas"
 :root[data-theme="hyprland"] .placa .placa-p { margin-top: auto; }
 ```
 
-- [ ] **Paso 2: ocultar lo que la placa sustituye**
+- [x] **Paso 2: ocultar lo que la placa sustituye**
 
 ```css
 /* La placa dice todo esto y mejor. No se borran del DOM: los otros dos temas
@@ -401,7 +401,7 @@ git commit -m "feat(about): nodos de la placa, ocultos en los tres temas"
 :root[data-theme="hyprland"] .about-grid { grid-template-columns: 1fr; }
 ```
 
-- [ ] **Paso 3: medir**
+- [x] **Paso 3: medir**
 
 ```bash
 export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH
@@ -411,7 +411,7 @@ npm run build && python3 scripts/measure-placa.py
 Esperado: se acabaron los `no tiene celdas`. Es probable que salgan desbordes y tallas fuera de
 escala: **eso es correcto en este punto**, los cierran las tareas 4 y 5. Anotar cuáles salen.
 
-- [ ] **Paso 4: captura**
+- [x] **Paso 4: captura**
 
 ```bash
 python3 - <<'EOF'
@@ -433,7 +433,7 @@ EOF
 Mirarla al lado de `.superpowers/brainstorm/1961497-1786322787/content/ficha-b.html`. Si el arnés
 pasa y la captura no convence, **el arnés mide lo que no es**.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add src/themes/themes.css
@@ -447,7 +447,7 @@ git commit -m "feat(about): rejilla de la placa en Hyprland"
 **Ficheros:**
 - Modificar: `src/themes/themes.css`, bloque Hyprland
 
-- [ ] **Paso 1: escala discreta y superficies**
+- [x] **Paso 1: escala discreta y superficies**
 
 ```css
 /* Escalones DISCRETOS. Un `clamp()` sobre tokens devolvia 54,5px a 1440, que
@@ -552,7 +552,7 @@ git commit -m "feat(about): rejilla de la placa en Hyprland"
 }
 ```
 
-- [ ] **Paso 2: el scrim, medido contra el fondo real**
+- [x] **Paso 2: el scrim, medido contra el fondo real**
 
 El fondo no es un plano: la página lleva el shader más `--bg-fallback`, que sube hasta `#3a1008`.
 Hay precedente en el repo — `.about-pairs` necesitó un scrim al 78 % porque el texto secundario
@@ -565,7 +565,7 @@ así que el scrim solo cubre las juntas:
 }
 ```
 
-- [ ] **Paso 3: medir contraste con el shader activo**
+- [x] **Paso 3: medir contraste con el shader activo**
 
 ```bash
 python3 scripts/verify.py --theme hyprland --url http://localhost:4173
@@ -574,7 +574,7 @@ python3 scripts/verify.py --theme hyprland --url http://localhost:4173
 Esperado: sin fallos de contraste nuevos respecto a `scripts/verify-baseline.json`. Si aparece
 alguno, subir el porcentaje del scrim y **volver a medir**, no estimar.
 
-- [ ] **Paso 4: el arnés en verde en tallas y desbordes**
+- [x] **Paso 4: el arnés en verde en tallas y desbordes**
 
 ```bash
 python3 scripts/measure-placa.py
@@ -583,7 +583,7 @@ python3 scripts/measure-placa.py
 Esperado: **cero** fallos de `fuera de la escala` y **cero** desbordes en los dos viewports. Si una
 celda desborda, bajar un escalón el tamaño de esa celda concreta — nunca meter un `clamp`.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add src/themes/themes.css
@@ -597,7 +597,7 @@ git commit -m "feat(about): tipografia discreta, retrato en duotono y scrim de l
 **Ficheros:**
 - Modificar: `src/themes/themes.css`, bloque Hyprland
 
-- [ ] **Paso 1: la cuña**
+- [x] **Paso 1: la cuña**
 
 ```css
 /*
@@ -643,13 +643,13 @@ git commit -m "feat(about): tipografia discreta, retrato en duotono y scrim de l
 }
 ```
 
-- [ ] **Paso 2: comprobar el teclado**
+- [x] **Paso 2: comprobar el teclado**
 
 Levantar el preview, tabular por la sección y confirmar que **cada una de las siete celdas** recibe
 foco visible y dispara la cuña. Es el mismo criterio que ya usa el gesto 2 del tema:
 `pointerenter` y `focusin` en paralelo, nunca solo hover.
 
-- [ ] **Paso 3: commit**
+- [x] **Paso 3: commit**
 
 ```bash
 git add src/themes/themes.css
@@ -668,7 +668,7 @@ git commit -m "feat(about): el corte de tinta como apuntado de la placa"
 - Consume: `data-placa-celda` de la tarea 2 y las `grid-area` de la tarea 3.
 - Produce: clase `placa-in` en cada celda, con `--placa-d` en milisegundos.
 
-- [ ] **Paso 1: el CSS de la entrada**
+- [x] **Paso 1: el CSS de la entrada**
 
 ```css
 /*
@@ -699,7 +699,7 @@ git commit -m "feat(about): el corte de tinta como apuntado de la placa"
 }
 ```
 
-- [ ] **Paso 2: la coreografía reparte**
+- [x] **Paso 2: la coreografía reparte**
 
 En `src/themes/hypr.choreography.ts`, dentro del gesto 0, tras el bucle de la `RECETA`:
 
@@ -720,7 +720,7 @@ En `src/themes/hypr.choreography.ts`, dentro del gesto 0, tras el bucle de la `R
   });
 ```
 
-- [ ] **Paso 3: comprobar el fotograma intermedio, que es donde falla**
+- [x] **Paso 3: comprobar el fotograma intermedio, que es donde falla**
 
 ```bash
 python3 - <<'EOF'
@@ -747,7 +747,7 @@ Esperado en `/tmp/placa-entrada-medio.png`: **ningún texto cortado a media pala
 subir el retardo de la opacidad, no acortar el recorrido.
 Esperado en `/tmp/placa-entrada-fin.png`: la placa completa, sin nada a medio camino.
 
-- [ ] **Paso 4: comprobar movimiento reducido**
+- [x] **Paso 4: comprobar movimiento reducido**
 
 ```bash
 python3 scripts/verify.py --theme hyprland --reduced --url http://localhost:4173
@@ -755,7 +755,7 @@ python3 scripts/verify.py --theme hyprland --reduced --url http://localhost:4173
 
 Esperado: la placa entera legible sin haber interactuado y sin nada invisible.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add src/themes/hypr.choreography.ts src/themes/themes.css
@@ -769,7 +769,7 @@ git commit -m "feat(about): el montaje como entrada de la placa"
 **Ficheros:**
 - Modificar: `src/themes/themes.css` si el móvil lo pide
 
-- [ ] **Paso 1: mirar 390×844 de verdad**
+- [x] **Paso 1: mirar 390×844 de verdad**
 
 Por debajo de 900 la placa cae a dos columnas y las `grid-area` no aplican, así que manda el orden
 del DOM: quién, retrato, estado, hace, obra, puesto, estudia. Comprobar que ese orden se lee bien y
@@ -779,7 +779,7 @@ que ninguna celda desborda.
 python3 scripts/measure-placa.py
 ```
 
-- [ ] **Paso 2: los cuatro gates**
+- [x] **Paso 2: los cuatro gates**
 
 ```bash
 export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH
@@ -795,7 +795,7 @@ python3 scripts/measure-placa.py
 Todos en verde. `verify.py` **se corre solo y sin editar nada**: Vite recarga por HMR ante
 cualquier edición y se lleva el contexto de la página por delante.
 
-- [ ] **Paso 3: anti-mock**
+- [x] **Paso 3: anti-mock**
 
 ```bash
 grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|lorem ipsum|Lorem" \
@@ -804,19 +804,19 @@ grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|l
 
 Esperado: sin resultados en lo tocado.
 
-- [ ] **Paso 4: los dos críticos**
+- [x] **Paso 4: los dos críticos**
 
 Lanzar `lidia-naive-tester` **con una métrica concreta y cronometrable** — propuesta: *tiempo hasta
 decir en voz alta si Aoshi está disponible y qué hace*, en móvil — y `vera-art-director` con umbral
 7,5. Los dos pineados a `sonnet`.
 
-- [ ] **Paso 5: cerrar el registro**
+- [x] **Paso 5: cerrar el registro**
 
 Cambiar `Estado:` del spec de `pendiente de plan` a `implementado` **solo cuando todas las casillas
 de este plan estén marcadas**: `check_spec_plan_consistency()` cruza las dos cosas y falla si el
 spec dice `implementado` con pasos sin marcar.
 
-- [ ] **Paso 6: commit final**
+- [x] **Paso 6: commit final**
 
 ```bash
 git add -A

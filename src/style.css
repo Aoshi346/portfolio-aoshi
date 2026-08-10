@@ -817,6 +817,16 @@ body {
 }
 
 /*
+ * La placa de "Quien soy" — mismo patron aditivo, misma regla base. Solo
+ * Hyprland la enciende (themes.css). Sin este `display: none` sale en los tres
+ * temas: es el fallo que ya se ha pagado cuatro veces, y la ultima ensancho el
+ * disparador de navegacion de Vice de 168 a 411 px.
+ */
+.placa {
+  display: none;
+}
+
+/*
  * "Obra" — fila de metadatos (Rol / Periodo / Stack / Estado). Vive dentro de
  * `.scene-surface` (ver `projectScene.ts`), asi que en Caelestia hereda la
  * tarjeta translucida Material You: el mismo motivo por el que el `dt` no usa

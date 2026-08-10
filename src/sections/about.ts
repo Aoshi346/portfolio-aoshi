@@ -271,6 +271,85 @@ function createPairs(): HTMLElement {
   return pairs;
 }
 
+/** Una celda de la placa: rotulo, dato, detalle y pie, en ese orden. */
+function celda(clave: string, rotulo: string, nodos: Node[]): HTMLElement {
+  const cell = el("div", "placa-c", [el("dt", "placa-k", [rotulo]), ...nodos]);
+  cell.setAttribute("data-placa-celda", clave);
+  /*
+   * SIN `tabIndex`. La primera version lo puso para que el apuntado existiera
+   * tambien por teclado, y en la prueba a ciegas salio el coste: siete paradas
+   * de tabulador que no llevan a ninguna parte. La celda no es un control —
+   * no navega, no abre nada — y su contenido esta entero a la vista en reposo,
+   * asi que el foco no da acceso a nada que el teclado no tuviera ya. Lo unico
+   * que aportaba era la cuna, que es decoracion.
+   */
+  return cell;
+}
+
+const dato = (texto: string): HTMLElement => el("dd", "placa-v", [texto]);
+const detalle = (texto: string): HTMLElement => el("dd", "placa-s", [texto]);
+const pie = (texto: string): HTMLElement => el("dd", "placa-p", [texto]);
+
+/**
+ * La placa de "Quien soy" en Hyprland. Se anade al DOM de los tres temas y se
+ * envia oculta (`display: none` en la regla base de themes.css, visible solo
+ * bajo `:root[data-theme="hyprland"]`). Patron aditivo estricto: el tema se
+ * sortea por visita y se cambia sin recargar, asi que no se puede construir
+ * segun `data-theme`.
+ *
+ * Cero datos nuevos: todo sale de content.ts. Tres campos que no se usaban en
+ * ningun tema entran aqui — `identity.headline`, `identity.subheadline` y
+ * `aboutCopy[0]`.
+ */
+function createPlaca(): HTMLElement {
+  const foto = el("img", "placa-foto-img");
+  foto.src = identity.githubAvatar;
+  foto.alt = identity.name;
+  foto.width = 150;
+  foto.height = 150;
+  foto.loading = "lazy";
+  foto.decoding = "async";
+  const retrato = celda("retrato", "", [el("span", "placa-foto", [foto])]);
+
+  const placa = el("dl", "placa", [
+    celda("quien", "Quién", [
+      dato(identity.name),
+      detalle(`${identity.role} · ${identity.location}. ${identity.headline}`),
+      pie(identity.subheadline),
+    ]),
+    retrato,
+    celda("estado", "Estado", [
+      dato(identity.availability),
+      detalle(aboutCopy[0] ?? ""),
+      pie(`Ahora · ${identity.now}`),
+    ]),
+    celda(
+      "hace",
+      "Hace",
+      focusAreas.map((area) =>
+        el("dd", "placa-par", [el("b", "", [area.title]), el("span", "", [area.detail])]),
+      ),
+    ),
+    celda("obra", "Obra", [
+      el("dd", "placa-num", [statValue("Proyectos")]),
+      detalle("proyectos"),
+      pie(`${statValue("En producción")} en producción`),
+    ]),
+    celda("puesto", "Último puesto", [
+      dato(experience[0]?.organization ?? ""),
+      detalle(`${experience[0]?.role ?? ""}. ${experience[0]?.description ?? ""}`),
+      pie(experience[0]?.period ?? ""),
+    ]),
+    celda("estudia", "Estudia", [
+      dato(education[0]?.degree ?? ""),
+      detalle(`${education[0]?.institution ?? ""}. ${aboutCopy[1] ?? ""}`),
+      pie(education[0]?.period ?? ""),
+    ]),
+  ]);
+  placa.setAttribute("data-placa", "");
+  return placa;
+}
+
 /**
  * Linea envuelta en su mascara: sube desde detras al entrar.
  *
@@ -294,6 +373,7 @@ export function createAbout(): HTMLElement {
     createLine("note", "block mt-3 text-sm leading-relaxed text-paper/85", aboutCopy[1] ?? ""),
     createStats(),
     createTrack(),
+    createPlaca(),
   ]);
 
   const section = el(

@@ -1976,6 +1976,359 @@
 }
 
 /*
+  LA PLACA — "Quien soy" deja de ser una pila de bloques.
+  Rejilla de 6 columnas con celdas de distinto ancho: una rejilla uniforme es
+  una tabla, y anchos desiguales ordenan por importancia sin cambiar el tamano
+  de la letra. Spec: docs/superpowers/specs/2026-08-10-hyprland-quien-soy-placa-design.md
+
+  `container-type` en el cuerpo y no en la placa: una consulta de contenedor se
+  resuelve contra el ancestro contenedor mas cercano, nunca contra el elemento
+  que la lleva. Sin este contenedor no hay ninguno en toda la seccion y los
+  `@container` de abajo no casan jamas — la placa se quedaria en dos columnas
+  en escritorio sin que nada fallara a la vista.
+*/
+:root[data-theme="hyprland"] .about-body {
+  container-type: inline-size;
+}
+
+:root[data-theme="hyprland"] .placa {
+  display: grid;
+  position: relative;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin: 0;
+  /* El fondo no es un plano: la pagina lleva el shader mas `--bg-fallback`,
+     que sube hasta #3a1008. El fondo opaco de cada celda ya hace de
+     superficie, asi que aqui el scrim solo tiene que cubrir las juntas de 1px
+     entre celdas. Precedente: `.about-pairs` necesito uno al 78% porque el
+     texto secundario caia a 3,20:1. */
+  background: color-mix(in srgb, var(--color-ink) 62%, var(--rule));
+  border: 1px solid var(--rule);
+}
+@container (min-width: 900px) {
+  :root[data-theme="hyprland"] .placa {
+    grid-template-columns: repeat(6, 1fr);
+    /* La fila 2 sube de 0,98 a 1,04: con 0,98 la celda 'hace' se quedaba 3px
+       corta y `overflow: hidden` se la comia sin avisar. */
+    grid-template-rows: 1.02fr 1.04fr 1.05fr;
+    /* SIN alto propio, a proposito. Un `min-height: 68vh` llena el encuadre y
+       parece mejor idea, pero estira las filas `fr` y abre un hueco muerto
+       bajo "Estado" y bajo "Quien": es exactamente el "se ve vacio" que el
+       prototipo vino a corregir. La densidad manda sobre el encuadre.
+       Ojo con el desborde: con filas `fr` y alto automatico, encoger una celda
+       encoge todas las filas y el desborde salta a la de al lado (medido: al
+       bajar un escalon en 'hace', desbordo 'obra'). Se ajusta el ritmo de la
+       celda que desborda, no la altura de la placa. */
+  }
+  :root[data-theme="hyprland"] [data-placa-celda="quien"] { grid-area: 1 / 1 / 2 / 4; }
+  :root[data-theme="hyprland"] [data-placa-celda="retrato"] { grid-area: 1 / 4 / 2 / 5; }
+  :root[data-theme="hyprland"] [data-placa-celda="estado"] { grid-area: 1 / 5 / 3 / 7; }
+  :root[data-theme="hyprland"] [data-placa-celda="hace"] { grid-area: 2 / 1 / 3 / 4; }
+  :root[data-theme="hyprland"] [data-placa-celda="obra"] { grid-area: 2 / 4 / 3 / 5; }
+  :root[data-theme="hyprland"] [data-placa-celda="puesto"] { grid-area: 3 / 1 / 4 / 4; }
+  :root[data-theme="hyprland"] [data-placa-celda="estudia"] { grid-area: 3 / 4 / 4 / 7; }
+}
+
+/* El contenido va PEGADO al borde superior. Separar rotulo y dato con
+   `space-between` dejaba un hueco muerto en el centro de cada celda: ese era
+   el motivo real de que la placa se viera vacia, no la falta de contenido. */
+:root[data-theme="hyprland"] .placa-c {
+  position: relative;
+  overflow: hidden;
+  /* OJO: `overflow: hidden` pone a CERO el minimo automatico de un item de
+     rejilla, asi que la celda deja de aportar su necesidad a la fila y las
+     filas `fr` se reparten solo por proporcion. Traduccion: si una celda no
+     cabe, la fila no crece — la recorta en silencio. No se ve a ojo, y por eso
+     lo mide el arnes. Se arregla en la PROPORCION de la fila, no aqui. */
+  padding: 12px 16px 16px;
+  background: var(--color-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+/* El pie se ancla abajo. Ojo: `.placa dd { margin: 0 }` (0-1-1) gana a
+   `.placa-p` (0-1-0) y anularia el `auto`. */
+:root[data-theme="hyprland"] .placa dd {
+  margin: 0;
+}
+:root[data-theme="hyprland"] .placa .placa-p {
+  margin-top: auto;
+}
+
+/* Escalones DISCRETOS. Un `clamp()` sobre tokens devolvia 54,5px a 1440, que
+   no es ninguno de los diez pasos del tema. */
+/* 12px y no 10: el tema ya subio una etiqueta de 9,92 a 12px por ilegible
+   (ver el comentario del salto en este mismo fichero). Repetir el 10 seria
+   repetir el defecto, y ademas cae fuera de los diez pasos de la escala. */
+:root[data-theme="hyprland"] .placa-k {
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .placa-v {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--t-3);
+  line-height: 1.02;
+  letter-spacing: -0.018em;
+  color: var(--color-paper);
+}
+:root[data-theme="hyprland"] .placa-s {
+  font-size: var(--t-1);
+  line-height: 1.5;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .placa-p {
+  font-size: var(--t-1);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .placa-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--t-5);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--color-paper);
+}
+/* `b` y `span` son hermanos, no un nodo de texto: sin `display: block` corren
+   pegados ("Datos a gran escalaQue la consulta..."). Mismo caso ya visto en
+   `.about-proof-in b` de este mismo tema. */
+:root[data-theme="hyprland"] .placa-par b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--t-3);
+  line-height: 1.04;
+  letter-spacing: -0.018em;
+  color: var(--color-paper);
+}
+:root[data-theme="hyprland"] .placa-par span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: var(--t-1);
+  line-height: 1.45;
+  color: var(--haze);
+}
+/* 0,3rem y no 0,55: con el rotulo de la pareja en `--t-3`, 0,55rem desbordaba
+   la celda 'hace' por 3px (medido: 148 en 145). */
+:root[data-theme="hyprland"] .placa-par + .placa-par {
+  margin-top: 0.3rem;
+}
+
+@container (min-width: 1200px) {
+  :root[data-theme="hyprland"] [data-placa-celda="quien"] .placa-v {
+    font-size: var(--t-5);
+  }
+  :root[data-theme="hyprland"] .placa-num {
+    font-size: var(--t-6);
+  }
+}
+
+/* La celda caliente: el estado es lo unico que se enciende, asi que es lo
+   primero que se lee sin necesidad de ser lo mas grande. */
+:root[data-theme="hyprland"] [data-placa-celda="estado"] {
+  background: linear-gradient(
+    152deg,
+    color-mix(in srgb, var(--l1) 18%, var(--color-ink)),
+    var(--color-ink) 68%
+  );
+}
+:root[data-theme="hyprland"] [data-placa-celda="estado"] .placa-v {
+  color: var(--l1);
+  font-size: var(--t-4);
+}
+/* Estado es la unica celda de DOS filas y llevaba tres bloques cortos: 223px
+   de hueco muerto medidos, el mismo "se ve vacio" que ya se corrigio una vez.
+   Se llena subiendo la voz de la celda caliente, no metiendo contenido que
+   content.ts no tiene. */
+@container (min-width: 900px) {
+  :root[data-theme="hyprland"] .placa-foto {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    /* Alto EXPLICITO y ancho derivado. Con `top`/`bottom` y ancho automatico,
+       la caja se encoge al contenido (la imagen declara 150px) y la razon de
+       aspecto le da 150 de alto: 162 con el margen, en una celda de 142. */
+    height: calc(100% - 24px);
+    width: auto;
+    transform: translate(-50%, -50%);
+  }
+}
+@container (min-width: 900px) {
+  :root[data-theme="hyprland"] [data-placa-celda="estado"] .placa-v {
+    font-size: var(--t-5);
+  }
+  :root[data-theme="hyprland"] [data-placa-celda="estado"] .placa-s {
+    font-size: var(--t-2);
+    line-height: 1.4;
+  }
+}
+:root[data-theme="hyprland"] [data-placa-celda="estado"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  border-top: 1px solid var(--l1);
+  border-left: 1px solid var(--l1);
+}
+
+/* Retrato en duotono de brasa. `contain`, no `cover`: con `cover` se recortaba
+   la cara. Y el filtro va SOLO en la imagen — puesto en el envoltorio, el
+   `grayscale` agrisa tambien la capa de brasa antes de mezclarla y el duotono
+   desaparece. */
+:root[data-theme="hyprland"] [data-placa-celda="retrato"] {
+  padding: 0;
+}
+:root[data-theme="hyprland"] [data-placa-celda="retrato"] .placa-k {
+  display: none;
+}
+/* Caja CUADRADA y centrada, no la celda entera. El avatar es cuadrado y la
+   celda es apaisada: con la caja apaisada, `contain` deja bandas a los lados.
+   Cuadrando la caja desaparecen las bandas sin recortar la cara, que es la
+   condicion que puso Aoshi. */
+/* El cuadrado lo manda el eje CORTO de la celda, y ese eje cambia con el
+   encuadre: en movil la celda es vertical (166x249) y manda el ancho; en
+   escritorio es apaisada (205x141) y manda el alto. Fijar siempre el alto
+   desbordaba la celda por 30px en movil (medido). */
+:root[data-theme="hyprland"] .placa-foto {
+  position: absolute;
+  z-index: 1;
+  left: 12px;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--l3) 10%, var(--color-ink));
+}
+:root[data-theme="hyprland"] .placa-foto-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(1) contrast(1.4) brightness(0.58);
+}
+:root[data-theme="hyprland"] .placa-foto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    196deg,
+    rgba(255, 90, 52, 0.7),
+    rgba(224, 29, 60, 0.28) 46%,
+    rgba(255, 160, 60, 0.1) 76%
+  );
+  mix-blend-mode: screen;
+}
+
+/*
+  ENTRADA — el montaje. Las celdas no aparecen: llegan desde el borde de la
+  placa que les queda mas cerca y encajan en su hueco.
+
+  La OPACIDAD entra mas tarde que el desplazamiento a proposito: sin ese
+  retardo el texto se ve cortado a media llegada contra el `overflow: hidden`
+  de su celda, y lee como fallo en vez de como pieza encajando. Se detecto
+  mirando el fotograma intermedio, no razonando.
+*/
+:root[data-theme="hyprland"] .placa-in {
+  opacity: 0;
+  transform: translate(var(--placa-tx, 0), var(--placa-ty, 0));
+}
+:root[data-theme="hyprland"] .is-lit .placa-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    transform 0.42s var(--hard) var(--placa-d, 0ms),
+    opacity 0.24s linear calc(var(--placa-d, 0ms) + 0.2s);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .placa-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+  ELEMENTO FIRMA — el corte de tinta.
+  Una cuna de brasa entra en diagonal por el borde izquierdo y cubre la celda.
+  La superficie cambia; el contenido no se mueve ni un pixel. Compositor puro:
+  ni maquetacion ni repintado del arbol.
+
+  Encender es un CORTE (420ms --hard), apagar es enfriarse (900ms --slow). La
+  asimetria se declara en reglas separadas porque la transicion la dicta el
+  estado de destino.
+*/
+:root[data-theme="hyprland"] .placa-c::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* 0,38 y no 0,22: al 22% la cuna era invisible en la prueba a ciegas — la
+     tester no la vio en ningun momento y la directora de arte la conto como
+     micro-interaccion fallida. Sigue siendo cambio de SUPERFICIE: el contenido
+     no se mueve. */
+  background: linear-gradient(
+    112deg,
+    rgba(255, 90, 52, 0.38),
+    rgba(224, 29, 60, 0.12) 58%,
+    transparent 84%
+  );
+  clip-path: polygon(0 0, 0 0, -12% 100%, -12% 100%);
+  transition: clip-path 0.9s var(--slow);
+}
+/* Estado tiene fondo calido propio y se traga una cuna naranja: la suya va en
+   ambar, que es el unico tono del tema que separa contra ese degradado. */
+:root[data-theme="hyprland"] [data-placa-celda="estado"]::after {
+  background: linear-gradient(
+    112deg,
+    rgba(255, 160, 60, 0.34),
+    rgba(255, 160, 60, 0.08) 60%,
+    transparent 84%
+  );
+}
+:root[data-theme="hyprland"] .placa-c:hover::after {
+  clip-path: polygon(0 0, 118% 0, 100% 100%, -12% 100%);
+  transition: clip-path 0.42s var(--hard);
+}
+/* El contenido por encima de la cuna. `:not(.placa-foto)` no es cosmetico: la
+   foto ya es `position: absolute` con la misma especificidad y esta regla va
+   despues, asi que sin la exclusion le devuelve `relative` y la tumba dentro
+   de su celda. */
+:root[data-theme="hyprland"] .placa-c > :not(.placa-foto) {
+  position: relative;
+  z-index: 1;
+}
+:root[data-theme="hyprland"] .placa-c .placa-k {
+  transition: color 0.9s var(--slow);
+}
+:root[data-theme="hyprland"] .placa-c:hover .placa-k {
+  color: var(--l3);
+  transition: color 0.42s var(--hard);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .placa-c::after {
+    transition: none;
+  }
+}
+
+/* La placa dice todo esto y mejor. No se borran del DOM: los otros dos temas
+   los siguen usando tal cual, y por eso sus reglas de Hyprland siguen escritas
+   mas arriba aunque ya no pinten nada. */
+:root[data-theme="hyprland"] .about-card,
+:root[data-theme="hyprland"] .about-stats,
+:root[data-theme="hyprland"] .about-track,
+:root[data-theme="hyprland"] .about-pairs,
+:root[data-theme="hyprland"] .about-body > [data-line] {
+  display: none;
+}
+
+/*
   LA TIRA DE EXPOSICION — el dispositivo de la obra.
   Equivale al carril horizontal de Vice (la bobina), pero aqui no hay
   tarjetas: es una banda a sangre partida en escalones de la misma luz, sin
