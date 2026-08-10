@@ -4354,25 +4354,65 @@
   border-color: var(--color-accent);
 }
 
-/* ---------------------------------------------------- Hyprland: el reparto */
+/* ------------------------------------------------ Hyprland: el catastro */
 /*
-  EL REPARTO — equivale al cartel de reparto de Vice: el rol aparece UNA vez
-  como rotulo y los nombres fluyen como prosa atribuida, no como rejilla de
-  fichas. Aqui el rol va a la izquierda en su columna y los nombres a la
-  derecha, separados por filete.
+  EL CATASTRO — cuatro parcelas contiguas que se reparten el encuadre entero,
+  con el ancho proporcional a cuantas tecnologias contiene cada una. El area
+  en pantalla ES el dato. Radio 0, filetes de 1px, perimetro cerrado: la
+  oposicion deliberada a las bandas del contacto, que van a sangre.
+
+  La lista sigue PLANA (`display: contents`) porque `scene4Credits` de Vice
+  anima los hijos directos de `[data-credit-roll]`. La columnizacion la
+  hacen `--skill-col`/`--skill-row`, que credits.ts escribe inline y que Vice
+  y Caelestia no leen.
 */
 :root[data-theme="hyprland"] .credits-grid {
-  grid-template-columns: 1fr;
-  max-width: 1000px;
+  display: grid;
+  grid-template-columns: var(--parcela-cols);
+  /* El 8 de `repeat(8, 1fr)` esta acoplado a MAX_ITEMS de credits.ts (hoy 8:
+     `filaDe()` reparte un grupo de 8 en las filas 3-10). Si algun grupo de
+     content.ts pasa de 8 tecnologias, los dos numeros cambian juntos o la
+     rejilla se queda corta. */
+  grid-template-rows: auto auto repeat(8, 1fr) auto;
+  /* La base en style.css pone `align-items: start`: con eso un item de
+     contenido vacio (la parcela decorativa, sin texto propio) se encoge a
+     0px de alto en vez de llenar su tramo de filas. `stretch` es lo que
+     hace que `.credits-parcela` (grid-row: 1 / -1) dibuje el lindero de
+     arriba abajo. */
+  align-items: stretch;
+  max-width: none;
+  width: 100%;
+  border: 1px solid var(--rule);
+  /* Scrim propio: sin superficie, `--haze` a 15px cae por debajo de AA sobre
+     la fase clara del fondo. El precedente es `.about-pairs` al 78%. */
+  background: color-mix(in srgb, var(--void) 78%, transparent);
 }
+
 :root[data-theme="hyprland"] .credits-list {
-  display: block;
+  display: contents;
 }
-/* Base: `display: none` en style.css:1094 — solo Vice lo enciende hoy. Sin
-   este `display: block` el rotulo del grupo seguiria oculto. */
-:root[data-theme="hyprland"] .credit-group-label {
+
+:root[data-theme="hyprland"] .credits-parcela {
   display: block;
-  margin-top: 1.1rem;
+  position: relative;
+  grid-column: calc(var(--parcela-i) + 1);
+  grid-row: 1 / -1;
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .credits-parcela + .credits-parcela {
+  border-left: 1px solid var(--rule);
+}
+
+:root[data-theme="hyprland"] .credit-group-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  grid-column: var(--skill-col);
+  grid-row: var(--skill-row);
+  margin: 0;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--rule);
   font-family: var(--font-body);
   font-size: var(--t-1);
   font-weight: 600;
@@ -4380,42 +4420,101 @@
   text-transform: uppercase;
   color: var(--haze);
 }
-:root[data-theme="hyprland"] .credit-group-label:first-child {
-  margin-top: 0;
+
+/*
+ * Las cuatro filas de friso viven DENTRO de `.credits-marks`, que la regla
+ * base apaga y solo Vice enciende. Sin disolver ese contenedor, las filas no
+ * son items de la rejilla del catastro y su `grid-column` no aplica a nada:
+ * el `display: contents` de aqui es lo que las sube un nivel. Es la imagen
+ * simetrica de lo que Vice hace con las filas para conservar su friso de 23.
+ */
+:root[data-theme="hyprland"] .credits-marks {
+  display: contents;
 }
+
+:root[data-theme="hyprland"] .credits-marks-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.62rem;
+  grid-row: 2;
+  padding: 0.62rem 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+/*
+ * `credits.ts` no escribe `--skill-col` en las filas de friso (solo en
+ * rotulos y `.credit`; ver vocabulario de ganchos) — sin esta regla la
+ * variable llega invalida a `grid-column` y las cuatro filas caen en
+ * `auto`, que crea columnas implicitas y desborda la rejilla (medido: 8
+ * columnas en vez de 4). Las cuatro filas son las unicas hijas de
+ * `.credits-marks` y llegan en orden de grupo, asi que `nth-of-type` basta
+ * sin tocar `credits.ts`.
+ */
+:root[data-theme="hyprland"] .credits-marks-row:nth-of-type(1) { grid-column: 1; }
+:root[data-theme="hyprland"] .credits-marks-row:nth-of-type(2) { grid-column: 2; }
+:root[data-theme="hyprland"] .credits-marks-row:nth-of-type(3) { grid-column: 3; }
+:root[data-theme="hyprland"] .credits-marks-row:nth-of-type(4) { grid-column: 4; }
+:root[data-theme="hyprland"] .credits-mark {
+  width: 14px;
+  height: 14px;
+  color: var(--haze);
+}
+
 :root[data-theme="hyprland"] .credit {
-  /* Sin esto el navegador ignora `display: inline` en un `<button>` con
-     `appearance: auto` y lo computa como `inline-block` — comprobado en
-     Chrome real, no un artefacto de swiftshader. */
   appearance: none;
-  display: inline;
+  grid-column: var(--skill-col);
+  grid-row: var(--skill-row);
+  align-self: center;
+  justify-self: start;
   width: auto;
-  padding: 0;
+  padding: 0.2rem 1rem;
   border: 0;
   background: none;
   font-family: var(--font-display);
-  font-size: clamp(var(--t-3), 2.2vw, var(--t-4));
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.014em;
-  line-height: 1.3;
+  line-height: 1.2;
   color: var(--color-paper);
-  transition: color 0.3s var(--slow);
 }
-:root[data-theme="hyprland"] .credit:hover,
-:root[data-theme="hyprland"] .credit:focus-visible,
-:root[data-theme="hyprland"] .credit.is-active {
-  color: var(--l1);
-  background: none;
-  border: 0;
+/* El nivel se dice SOLO con tipografia. El acento es estado. */
+:root[data-theme="hyprland"] .credit[data-credit-tier="alto"]  { font-size: var(--t-4); }
+:root[data-theme="hyprland"] .credit[data-credit-tier="medio"] { font-size: var(--t-3); }
+:root[data-theme="hyprland"] .credit[data-credit-tier="bajo"]  {
+  font-size: var(--t-2);
+  color: var(--haze);
 }
-:root[data-theme="hyprland"] .credit:not(:last-child)::after {
-  content: "  /  ";
-  color: var(--rule);
+/* El rol se muestra una vez como cabecera de grupo, no por fila. Sigue en el
+   DOM: es un gate del arnes, no deuda tecnica. */
+:root[data-theme="hyprland"] .credit-role { display: none; }
+/* La prosa con barras muere aqui. */
+:root[data-theme="hyprland"] .credit:not(:last-child)::after { content: none; }
+
+/* La franja: altura FIJA, no minima. Con minima, la parcela cuyo cruce ocupa
+   mas lineas sube su pie y el rectangulo deja de cerrar. Medido: los cuatro
+   pies a la misma cota. */
+:root[data-theme="hyprland"] .credits-strip {
+  display: block;
+  grid-column: var(--skill-col-strip);
+  grid-row: -2 / -1;
+  height: 126px;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+  overflow: hidden;
+  position: relative;
 }
-/* El rol se muestra una vez como cabecera de grupo, no por fila. */
-:root[data-theme="hyprland"] .credit-role {
-  display: none;
+/* Los DOS nodos del rodillo van siempre en absoluto: cambiar de absoluto a
+   estatico a mitad de gesto desplaza el contenido (un absoluto se posiciona
+   contra la caja de padding) y pega un tiron al terminar. */
+:root[data-theme="hyprland"] .credits-strip-in {
+  position: absolute;
+  inset: 0;
+  padding: 0.75rem 1rem 0.875rem;
 }
+
+/* El panel compartido no se usa aqui: cada parcela tiene su propia franja.
+   `display: none` lo saca tambien del arbol de accesibilidad, que es lo que
+   evita dos regiones vivas anunciando a la vez. */
+:root[data-theme="hyprland"] .credits-panel { display: none; }
 
 /* ------------------------------------------------- Hyprland: las bandas */
 /*
