@@ -44,6 +44,12 @@ Se aplican a **todas** las tareas.
   opacidad sólo se admite en el canto de brasa, que es una fuente de luz.
 - **Dos curvas y ninguna más:** `--hard` `cubic-bezier(0.7,0,0.2,1)` y `--slow`
   `cubic-bezier(0.16,0.84,0.28,1)`. Se registran con `CustomEase` como `"hard"` y `"slow"`.
+  **Única excepción, decidida por Aoshi el 2026-08-10:** la barra del barrido de entrada va con
+  `ease: "none"`. El movimiento uniforme no es una curva de carácter — es el requisito de un
+  barrido del que se derivan otros tiempos. El retardo de cada letra sale de `(x / ancho) × 1,05 s`,
+  que es un mapeo lineal: si la barra acelerase, dejaría de estar donde la letra cree que está y
+  el gesto se partiría en dos. La alternativa (curvar la barra y derivar los retardos con esa misma
+  curva) es más código, más frágil y visualmente equivalente.
 - **`--l1` significa una sola cosa:** esta pieza está activa.
 - **Nada de `console.log`.** Sólo `console.error` justificado.
 - **Sin pin de ScrollTrigger nuevo.** El cartel no es scrubbed.
