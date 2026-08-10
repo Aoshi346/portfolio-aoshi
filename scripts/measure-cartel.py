@@ -30,27 +30,97 @@ PAPEL_RGB = (0xFF, 0xEA, 0xE6)    # --color-paper (titular encendido)
 L1_RGB = (0xFF, 0x5A, 0x34)       # --l1
 AA_MINIMO = 4.5
 
-# "portatil" (1280) cierra el hueco 1200-1439px que destapo la revision de la
-# Task 4: la lupa (760) y la ficha (520, a 800px del borde) suman 1320px y los
-# dos `@media` de esta tarea solo cubren hasta 1199 -- sin geometria propia
-# aqui, un portatil de 1280 abre la ficha fuera de la pista.
-ANCHOS = [("movil", 390, 844), ("tableta", 820, 1024), ("portatil", 1280, 800), ("escritorio", 1440, 900)]
+# Los anchos NO son decorativos: cada uno existe porque un tramo del CSS no lo
+# ejercia nadie.
+#   - "tableta" era 820, que cae DENTRO de `@media (max-width: 820px)`: medía
+#     la rama de movil, asi que el bloque `(min-width: 821px) and (max-width:
+#     1199px)` no lo tocaba ninguna asercion. Ahi vivia una ficha de alto 0
+#     (`top: 570px` sobre un carril de 482) en TODO el tramo. Ahora es 821.
+#   - 1000 y 1024 barren ese mismo tramo por dentro, no solo en su borde.
+#   - 1200 es el otro borde: donde el titular salta a `--t-8` y la maqueta pasa
+#     a dos columnas.
+#   - 1280 cierra el hueco 1200-1439px que destapo la revision de la Task 4.
+ANCHOS = [
+    ("movil", 390, 844),
+    ("tableta", 821, 1024),
+    ("tableta ancha", 1000, 800),
+    ("portatil chico", 1024, 768),
+    ("umbral", 1200, 800),
+    ("portatil", 1280, 800),
+    ("escritorio", 1440, 900),
+]
+# Anchos donde el dispositivo es de una sola columna y la miniatura no espera a
+# un hover que no existe. Coincide con `@media (max-width: 820px)`.
+SIN_HOVER = 820
 
 
-def movil(pg) -> list[str]:
+def movil(pg, sin_hover: bool) -> list[str]:
     """La miniatura esta SIEMPRE puesta cuando no hay hover, el objetivo tactil
-    llega a 44px, y ninguna fila degrada a pila generica."""
+    llega a 44px, y ninguna fila degrada a pila generica.
+
+    El conteo de filas es explicito: sin el, un `querySelectorAll` vacio hace
+    que el bucle no itere, no se empuje ningun fallo y esta funcion salga
+    verde sin haber comprobado nada -- el mismo verde vacuo que ya destapo la
+    revision de la Task 1 en `titulo_intacto`.
+
+    `sin_hover` acota la comprobacion del recorte al tramo donde el CSS lo
+    apaga (`max-width: 820px`). Por encima la miniatura SI nace recortada y la
+    abre la entrada del cartel, asi que exigirlo ahi mediria el reloj de la
+    animacion, no el dispositivo.
+    """
     return pg.evaluate(
-        """() => {
+        """(sinHover) => {
           const f = [];
-          for (const sec of document.querySelectorAll('[data-scene="obra"]')) {
+          const filas = Array.from(document.querySelectorAll('[data-scene="obra"]'));
+          if (filas.length !== 5) return [`${filas.length} filas, esperaba 5`];
+          for (const sec of filas) {
             const mini = sec.querySelector('[data-obra-mini]');
+            if (!mini) { f.push('fila sin miniatura'); continue; }
             const cs = getComputedStyle(mini);
             if (cs.display === 'none') f.push('sin miniatura en movil');
-            if (cs.clipPath !== 'none' && cs.clipPath.includes('100%')) {
+            if (sinHover && cs.clipPath !== 'none' && cs.clipPath.includes('100%')) {
               f.push('la miniatura espera a un hover que no existe');
             }
             if (sec.getBoundingClientRect().height < 44) f.push('fila por debajo del objetivo tactil');
+          }
+          return f;
+        }""",
+        sin_hover,
+    )
+
+
+def proporciones(pg) -> list[str]:
+    """La miniatura y la lupa conservan SU proporcion, no solo su altura.
+
+    Nace de dos desviaciones que el arnes no podia ver porque solo comparaba
+    alturas: la miniatura era `flex: 0 0 144px` con 100,63 de alto (1,43:1, no
+    la 16:10 del spec -- el ancho se quedo del prototipo cuando se corrigio el
+    alto), y la lupa tenia el ancho en `cqw` con el alto en px fijo, asi que
+    pasaba de 1,6:1 a 1440 a 1,42:1 a 1280 y con `object-fit: cover` recortaba
+    mas cuanto mas estrecha la ventana.
+    """
+    return pg.evaluate(
+        """() => {
+          const f = [];
+          const filas = Array.from(document.querySelectorAll('[data-scene="obra"]'));
+          if (filas.length !== 5) return [`${filas.length} filas, esperaba 5`];
+          for (const sec of filas) {
+            const r = sec.querySelector('[data-obra-mini]').getBoundingClientRect();
+            if (r.height < 1) { f.push('miniatura sin caja'); continue; }
+            const ratio = r.width / r.height;
+            if (Math.abs(ratio - 1.6) > 0.03) {
+              f.push(`miniatura ${Math.round(r.width)}x${Math.round(r.height)} = ${ratio.toFixed(2)}:1, esperaba 16:10`);
+            }
+          }
+          // La lupa: 16:10 salvo en movil, donde el spec pide 336x190.
+          const lupa = document.querySelector('[data-obra-lupa]');
+          if (!lupa) return [...f, 'no hay lupa'];
+          const lr = lupa.getBoundingClientRect();
+          if (lr.height < 1) return [...f, 'lupa sin caja'];
+          const esperado = window.innerWidth <= 820 ? 336 / 190 : 1.6;
+          const ratio = lr.width / lr.height;
+          if (Math.abs(ratio - esperado) > 0.03) {
+            f.push(`lupa ${Math.round(lr.width)}x${Math.round(lr.height)} = ${ratio.toFixed(2)}:1, esperaba ${esperado.toFixed(2)}:1`);
           }
           return f;
         }"""
@@ -83,10 +153,18 @@ def ir_a_obra(pg) -> bool:
 
 
 def nodos_ocultos(pg) -> list[str]:
+    """Los CUATRO nodos del cartel nacen apagados en los temas ajenos.
+
+    `[data-obra-otras]` y `[data-obra-abrir]` se anadieron despues y nadie los
+    metio en esta lista. El segundo es un `<button>` a pantalla completa
+    (`position: absolute; inset: 0`): si se escapara en Vice se comeria la
+    fila entera, y el arnes no lo veria.
+    """
     return pg.evaluate(
         """() => {
           const fallos = [];
-          for (const sel of ['[data-obra-mini]', '[data-obra-marcas]']) {
+          for (const sel of ['[data-obra-mini]', '[data-obra-marcas]',
+                             '[data-obra-otras]', '[data-obra-abrir]']) {
             const nodos = Array.from(document.querySelectorAll(sel));
             if (nodos.length !== 5) { fallos.push(`${sel}: ${nodos.length} nodos, esperaba 5`); }
             for (const n of nodos) {
@@ -439,19 +517,64 @@ def apertura(pg) -> list[str]:
               const secs = document.querySelectorAll('[data-scene="obra"]');
               const abierta = secs[i];
               if (!abierta.classList.contains('is-abierto')) f.push(`fila ${i}: no se abrio`);
+              const disparador = abierta.querySelector('[data-obra-abrir]');
+              if (disparador?.getAttribute('aria-expanded') !== 'true') {
+                f.push(`fila ${i}: el disparador sigue diciendo aria-expanded="${disparador?.getAttribute('aria-expanded')}" con la ficha abierta`);
+              }
+              const otros = Array.from(document.querySelectorAll('[data-obra-abrir]'))
+                .filter((b, j) => j !== i && b.getAttribute('aria-expanded') !== 'false');
+              if (otros.length) f.push(`fila ${i}: ${otros.length} disparadores ajenos siguen marcados como abiertos`);
               const lupa = document.querySelector('[data-obra-lupa]');
               const mini = document.querySelector(`[data-check-fila="${i}"]`);
               if (!lupa || !mini || mini.parentElement !== lupa) f.push(`fila ${i}: la captura no viajo a la lupa`);
               const ficha = document.querySelector('[data-obra-ficha]');
               const pista = document.querySelector('[data-obra-track]');
-              const desborde = ficha.getBoundingClientRect().bottom - pista.getBoundingClientRect().bottom;
-              if (desborde > 0) f.push(`fila ${i}: la ficha desborda ${Math.round(desborde)}px`);
-              // El hueco 1200-1439px (Task 6): lupa (760) + ficha (520, a 800px
-              // del borde) suman 1320px en pixeles fijos. Sin geometria propia
-              // ahi, un portatil de 1280 saca la ficha por la DERECHA de la
-              // pista sin que el desborde vertical de arriba lo note nunca.
-              const desbordeH = ficha.getBoundingClientRect().right - pista.getBoundingClientRect().right;
-              if (desbordeH > 1) f.push(`fila ${i}: la ficha desborda ${Math.round(desbordeH)}px por la derecha`);
+              // ENCAJE DE LOS TRES, no solo de la ficha. La asimetria anterior
+              // (solo `[data-obra-ficha]`) hizo pagar dos apretones de
+              // espaciado a la ficha para caber en una caja de la que su
+              // hermana, la lupa, se salia 59px sin que nadie se enterara. Y
+              // la banda de capturas caia 75px por debajo del carril, encima
+              // de la seccion siguiente.
+              const cajaPista = pista.getBoundingClientRect();
+              // La banda solo viaja si el proyecto tiene mas de una captura
+              // (Editor de texto tiene una): si sigue colgando de la fila, se
+              // exige que este VACIA -- una banda con tiles que no viajo es
+              // un fallo, una banda vacia que no viaja es lo correcto.
+              const bandaEnFila = abierta.querySelector('[data-obra-otras]');
+              const bandaEnVisor = document.querySelector('[data-obra-visor] > .obra-otras');
+              if (bandaEnFila && bandaEnFila.childElementCount > 0) {
+                f.push(`fila ${i}: la banda tiene ${bandaEnFila.childElementCount} tiles y no viajo al visor`);
+              }
+              const partes = [
+                ['lupa', document.querySelector('[data-obra-lupa]')],
+                ['ficha', ficha],
+                ...(bandaEnFila ? [] : [['banda de capturas', bandaEnVisor]]),
+              ];
+              for (const [nombre, nodo] of partes) {
+                if (!nodo) { f.push(`fila ${i}: no existe ${nombre}`); continue; }
+                const r = nodo.getBoundingClientRect();
+                // Una banda vacia (proyecto de una sola captura) no tiene caja
+                // que encajar: se comprueba en `segunda_captura`.
+                if (r.width < 1 && r.height < 1) continue;
+                if (r.bottom - cajaPista.bottom > 1) f.push(`fila ${i}: ${nombre} desborda ${Math.round(r.bottom - cajaPista.bottom)}px por abajo`);
+                if (cajaPista.top - r.top > 1) f.push(`fila ${i}: ${nombre} desborda ${Math.round(cajaPista.top - r.top)}px por arriba`);
+                if (r.right - cajaPista.right > 1) f.push(`fila ${i}: ${nombre} desborda ${Math.round(r.right - cajaPista.right)}px por la derecha`);
+                if (cajaPista.left - r.left > 1) f.push(`fila ${i}: ${nombre} desborda ${Math.round(cajaPista.left - r.left)}px por la izquierda`);
+                if (r.height < 1) f.push(`fila ${i}: ${nombre} con alto 0`);
+              }
+              // Hit-testing REAL sobre el centro del tile. `.click()`
+              // programatico (lo que usa `pulsar_intercambia_y_vuelve`)
+              // ignora quien esta encima: con la banda fuera del carril,
+              // `elementFromPoint` devolvia la seccion siguiente y la segunda
+              // captura no se podia pulsar en escritorio ni en portatil,
+              // mientras las dos pruebas de tiles seguian en verde.
+              for (const tile of document.querySelectorAll('[data-obra-visor] > .obra-otras .obra-otra')) {
+                const b = tile.getBoundingClientRect();
+                const encima = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+                if (!encima || !tile.contains(encima)) {
+                  f.push(`fila ${i}: el tile de captura no es alcanzable, en su centro manda ${encima ? (encima.getAttribute('data-scene') || encima.className || encima.tagName) : 'nada'}`);
+                }
+              }
               if (getComputedStyle(ficha).pointerEvents !== 'auto') f.push(`fila ${i}: ficha abierta sin puntero`);
               if (ficha.children.length !== nBloques) {
                 f.push(`fila ${i}: ficha con ${ficha.children.length} bloques, esperaba ${nBloques}`);
@@ -555,6 +678,10 @@ def accesibilidad(pg) -> list[str]:
             const etiqueta = b.getAttribute('aria-label') || '';
             if (!etiqueta.startsWith('Mostrar ')) f.push('disparador sin nombre accesible');
             if (b.tabIndex < 0) f.push('disparador fuera del orden de tabulacion');
+            // El disparador es un CONMUTADOR: abre y cierra la misma ficha.
+            // Sin `aria-expanded` seguia anunciandose "Mostrar EchoPlan" con
+            // la ficha ya abierta.
+            if (b.getAttribute('aria-expanded') === null) f.push('disparador sin aria-expanded');
           }
           const anuncio = document.querySelector('[data-obra-anuncio]');
           if (!anuncio || anuncio.getAttribute('aria-live') !== 'polite') f.push('sin region aria-live');
@@ -601,7 +728,7 @@ def segunda_captura(pg) -> list[str]:
         pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
         pg.wait_for_timeout(900)
         n = pg.evaluate(
-            """() => document.querySelectorAll('.obra-track > .obra-otras .obra-otra').length"""
+            """() => document.querySelectorAll('[data-obra-visor] > .obra-otras .obra-otra').length"""
         )
         if n != 1:
             fallos.append(f"fila {i}: {n} tiles de captura restante, esperaba 1")
@@ -611,13 +738,13 @@ def segunda_captura(pg) -> list[str]:
         pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
         pg.wait_for_timeout(900)
         n = pg.evaluate(
-            """() => document.querySelectorAll('.obra-track > .obra-otras .obra-otra').length"""
+            """() => document.querySelectorAll('[data-obra-visor] > .obra-otras .obra-otra').length"""
         )
         if n != 0:
             fallos.append(f"fila {i}: {n} tiles de captura restante, esperaba 0 (una sola captura)")
         hueco = pg.evaluate(
             """() => {
-              const otras = document.querySelector('.obra-track > .obra-otras');
+              const otras = document.querySelector('[data-obra-visor] > .obra-otras');
               return otras ? otras.getBoundingClientRect().height : 0;
             }"""
         )
@@ -633,7 +760,7 @@ def _leer_lupa_y_tile(pg) -> tuple[str, str]:
         """() => document.querySelector('[data-obra-lupa] .obra-mini-img')?.src ?? ''"""
     )
     tile = pg.evaluate(
-        """() => document.querySelector('.obra-track > .obra-otras .obra-otra-img')?.src ?? ''"""
+        """() => document.querySelector('[data-obra-visor] > .obra-otras .obra-otra-img')?.src ?? ''"""
     )
     return lupa, tile
 
@@ -658,7 +785,7 @@ def pulsar_intercambia_y_vuelve(pg) -> list[str]:
     if not lupa0 or not tile0:
         return ["no se pudo leer la imagen de la lupa o del tile"]
 
-    pg.eval_on_selector_all(".obra-track > .obra-otras .obra-otra", "ns => ns[0].click()")
+    pg.eval_on_selector_all("[data-obra-visor] > .obra-otras .obra-otra", "ns => ns[0].click()")
     pg.wait_for_timeout(700)
     lupa1, tile1 = _leer_lupa_y_tile(pg)
     if lupa1 != tile0:
@@ -668,7 +795,7 @@ def pulsar_intercambia_y_vuelve(pg) -> list[str]:
 
     # SEGUNDO clic sobre el MISMO tile, sin cerrar la ficha: debe deshacer el
     # primero. Esta es la comprobacion que faltaba en la ronda anterior.
-    pg.eval_on_selector_all(".obra-track > .obra-otras .obra-otra", "ns => ns[0].click()")
+    pg.eval_on_selector_all("[data-obra-visor] > .obra-otras .obra-otra", "ns => ns[0].click()")
     pg.wait_for_timeout(700)
     lupa2, tile2 = _leer_lupa_y_tile(pg)
     if lupa2 != lupa0:
@@ -700,7 +827,7 @@ def destroy_revierte_intercambio(pg) -> list[str]:
     lupa0, _ = _leer_lupa_y_tile(pg)
     if not lupa0:
         return ["no se pudo leer la imagen original de la lupa"]
-    pg.eval_on_selector_all(".obra-track > .obra-otras .obra-otra", "ns => ns[0].click()")
+    pg.eval_on_selector_all("[data-obra-visor] > .obra-otras .obra-otra", "ns => ns[0].click()")
     pg.wait_for_timeout(700)
     lupa_tras_clic, _ = _leer_lupa_y_tile(pg)
     if lupa_tras_clic == lupa0:
@@ -873,6 +1000,18 @@ def contraste_fondo_real(pg) -> list[str]:
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--base", default="http://localhost:4173")
+    # `contraste_fondo_real` mide un hallazgo de producto ABIERTO (el techo de
+    # brillo del shader, decision de Aoshi) y por tanto empuja fallos SIEMPRE:
+    # con el detras de esta bandera el arnes de geometria vuelve a ser un
+    # semaforo que se puede leer. Un gate permanentemente en rojo no lo lee
+    # nadie -- es el modo de fallo que describe `rules/verification.md`. La
+    # medicion no se toca: se corre con `--contraste` cuando se quiera el
+    # numero.
+    p.add_argument(
+        "--contraste",
+        action="store_true",
+        help="anade la medida de contraste contra el fondo real (16,8s y hallazgo abierto)",
+    )
     args = p.parse_args()
     fallos: list[str] = []
     with sync_playwright() as pw:
@@ -892,6 +1031,7 @@ def main() -> int:
             # abajo, cada uno en su propia pagina.
             fallos += [f"[hyprland escritorio] {f}" for f in cartel_en_reposo(pg, 1440)]
             fallos += [f"[hyprland escritorio] {f}" for f in escala_tipografica(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in proporciones(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in relevo_es_ola(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in nombre_accesible_intacto(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in marcas_del_stack(pg)]
@@ -907,14 +1047,16 @@ def main() -> int:
 
             # Contraste contra el fondo REAL (Task 9): pagina propia, limpia
             # y SIN ficha abierta -- la de arriba ya la abrio `apertura()`, y
-            # la ficha tapa justo la zona alta que hay que medir.
-            pg_contraste = b.new_page(viewport={"width": 1440, "height": 900})
-            abre(pg_contraste, args.base, "hyprland")
-            if ir_a_obra(pg_contraste):
-                fallos += [f"[hyprland contraste] {f}" for f in contraste_fondo_real(pg_contraste)]
-            else:
-                fallos.append('[hyprland contraste] no existe [data-scene="obra"]')
-            pg_contraste.close()
+            # la ficha tapa justo la zona alta que hay que medir. Solo con
+            # `--contraste`: ver el comentario de la bandera.
+            if args.contraste:
+                pg_contraste = b.new_page(viewport={"width": 1440, "height": 900})
+                abre(pg_contraste, args.base, "hyprland")
+                if ir_a_obra(pg_contraste):
+                    fallos += [f"[hyprland contraste] {f}" for f in contraste_fondo_real(pg_contraste)]
+                else:
+                    fallos.append('[hyprland contraste] no existe [data-scene="obra"]')
+                pg_contraste.close()
         b.close()
 
         # Movimiento reducido: contexto propio con `reduced_motion="reduce"`,
@@ -947,8 +1089,11 @@ def main() -> int:
                 continue
             fallos += [f"[hyprland {nombre}] {f}" for f in cartel_en_reposo(pg2, ancho)]
             fallos += [f"[hyprland {nombre}] {f}" for f in escala_tipografica(pg2)]
-            if nombre in ("movil", "tableta"):
-                fallos += [f"[hyprland {nombre}] {f}" for f in movil(pg2)]
+            fallos += [f"[hyprland {nombre}] {f}" for f in proporciones(pg2)]
+            # En TODOS los anchos por debajo del escritorio, no solo en dos
+            # elegidos a mano: el objetivo tactil y la miniatura puesta valen
+            # igual en una tableta de 1024 que en un movil de 390.
+            fallos += [f"[hyprland {nombre}] {f}" for f in movil(pg2, ancho <= SIN_HOVER)]
             fallos += [f"[hyprland {nombre}] {f}" for f in apertura(pg2)]
             b2.close()
     for f in fallos:
