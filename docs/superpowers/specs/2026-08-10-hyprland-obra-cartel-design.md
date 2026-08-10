@@ -229,25 +229,43 @@ entre temas es lo que este proyecto tiene prohibido.
 `--bg-fallback`, que sube hasta #3a1008. Referencias ya medidas en el repo: `--haze` sobre tinta
 6,81:1; `--haze` sobre #3a1008 5,54:1; `--l1` sobre tinta 6,61:1.
 
-**Medido con el arnés (Task 9, `contraste_fondo_real` en `measure-cartel.py`) y FALLA AA.** El
-fondo real no se queda en el techo estático `#3a1008`: `hyprEmber.ts` mezcla el color de `--l1`
-(`vec3(1.0, 0.353, 0.204)` = `#ff5a34`, el mismo hex de la marca activa) directamente en el haz, y
-`.bg-theme` es `position: fixed` — el fondo no depende del scroll, así que la fila puede posarse
-sobre cualquier fotograma del shader. Muestreando el viewport entero durante 16,8 s (p99.5, mismo
-criterio que `measure-bg-luma.py`) el peor caso real es rgb(255, 94, 60), casi idéntico a `--l1`:
+**Medido con el arnés (Task 9, `contraste_fondo_real` en `measure-cartel.py`) — corregido tras
+revisión.** La primera medida de esta tarea muestreaba el **viewport entero** (el peor píxel de
+toda la pantalla en 16,8 s), no el fondo bajo los glifos, y salió sobrestimada: `--haze` 1,01:1,
+`--l1` 1,02:1, papel 2,63:1. Repetida con la técnica que ya usa `verify.py`
+(`check_contrast_wcag`: franja de 5 px alrededor del `rect` real del texto, fg tomado del glifo
+efectivamente visible — el titular lleva dos copias por letra, una en `--haze` y otra en papel,
+tapada por `overflow: hidden` según el estado) los números son otros, y mucho menos graves:
 
-| Contra el peor fondo real medido | Ratio | AA (4,5:1) |
-|---|---|---|
-| `--haze` | 1,01:1 | **NO PASA** |
-| `--l1` | 1,02:1 | **NO PASA** (esperado: es la misma pieza que activa el haz) |
-| papel (titular encendido) | 2,63:1 | **NO PASA** |
+| Contra el fondo real, muestreado alrededor del glifo | Típico (p50) | Peor caso (p99,5) | AA (4,5:1) |
+|---|---|---|---|
+| Titular en reposo (`--haze`) | 5,42:1 | **3,88:1** | el peor caso NO llega, el típico sí |
+| Área / `.hero-kick` (`--haze`) | 6,36:1 | 5,48:1 | pasa siempre |
+| Ordinal en reposo (`--haze`) | 6,85:1 | 5,04:1 | pasa siempre |
+| Titular encendido (papel) | 16,04:1 | 12,82:1 | pasa con margen amplio |
+| Ordinal encendido (`--l1`) | 6,65:1 | 6,49:1 | pasa siempre |
+| Cuerpo de la ficha (`.leading-relaxed`) | — | — | no medido, ver nota |
 
-Es un hallazgo real, no maquillado: el techo de brillo del shader de Hyprland (`hyprEmber.ts`) no
-tiene ningún límite equivalente al que `measure-bg-luma.py` impone sobre Vice. **Pendiente de
-decisión de producto** — no se corrige en esta tarea (un contraste que no pasa AA no se arregla
-por cuenta propia). Alternativas típicas para una sesión futura: bajar el pico del haz en el propio
-shader (mismo patrón que el techo de Vice), o dar a `--haze`/papel un scrim propio dentro de la
-franja donde vive el cartel.
+**El hallazgo real es mucho más acotado que la primera medida:** solo el titular en reposo, y solo
+en su peor caso (el 0,5% de fotogramas más brillantes del shader en esa zona), cae por debajo de
+AA — 3,88:1, no 1,01:1. No se midió cuánto dura ese peor caso en tiempo real (pendiente), ni el
+cuerpo de la ficha (el script de verificación falló al parsear su color, que resultó ser
+`color-mix(in oklab, var(--color-paper) 84%, transparent)` — semitransparente sobre el fondo real,
+no el `#e8c9c2` sólido que describía la versión anterior de este apartado — y no se repitió por
+priorizar liberar el puerto de preview para otro trabajo en curso).
+
+**La placa de "Quién soy" no es comparable por scrim al 78%: es más fuerte que eso.** Cada celda
+(`.placa-c`) lleva `background: var(--color-ink)` — **opaco**, no una capa translúcida. El texto de
+la placa nunca toca el fondo real; el 78% que aparece en un comentario de `themes.css` es el de
+`.about-pairs`, un componente de **Vice** citado ahí solo como precedente, no el tratamiento propio
+de la placa. Confirma la misma causa: la placa no tiene este problema porque no expone el shader
+donde hay texto, y el cartel sí (ni `.obra-lupa` ni `.obra-ficha` llevan fondo propio).
+
+**Pendiente de decisión de producto**, con el alcance real ya acotado: no es una alarma de "el
+titular es ilegible", es un techo de brillo del shader que roza AA solo en el peor 0,5% de
+fotogramas del titular apagado. `hyprEmber.ts` no tiene ningún límite de brillo equivalente al que
+`measure-bg-luma.py` ya impone sobre Vice — esa es la vía de arreglo de fondo (arreglaría el cartel,
+la placa y lo que venga después a la vez), y es una sesión propia, no de esta tarea.
 
 ---
 
@@ -432,7 +450,11 @@ Cierre 2026-08-10 (Task 9). Lo que se desvió del plan durante la ejecución, y 
 - **El intercambio de capturas restantes (Task 8) es un conmutador literal reversible**, no un
   selector con estado "activo" — el tile intercambia su foto con la de la lupa, y `destroy()`
   revierte el intercambio si el módulo se desmonta con una fila abierta.
-- **El contraste contra el fondo real falla AA y queda documentado, no corregido** (ver
-  `## Color y contraste`): `--haze` 1,01:1, papel 2,63:1 contra el peor caso medido del shader real
-  — muy por debajo del 4,5:1 que exige el propio criterio de aceptación de este spec. Es una
-  decisión de producto pendiente, fuera del alcance de esta tarea.
+- **El contraste contra el fondo real queda documentado, no corregido** (ver `## Color y
+  contraste`). La primera medida muestreaba el viewport entero y sobrestimaba el problema (`--haze`
+  1,01:1, papel 2,63:1); repetida por glifo real (misma técnica que `check_contrast_wcag` de
+  `verify.py`) el hallazgo se acota a un solo punto: el titular en reposo cae a 3,88:1 solo en el
+  peor 0,5% de fotogramas del shader — todo lo demás (área, ordinal, titular encendido) pasa AA con
+  margen. El cuerpo de la ficha no se llegó a medir. Es una decisión de producto pendiente
+  (techo de brillo en `hyprEmber.ts`, mismo patrón que `measure-bg-luma.py` sobre Vice), fuera del
+  alcance de esta tarea.

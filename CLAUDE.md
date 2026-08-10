@@ -37,9 +37,12 @@
   background (`hyprGradient.ts` / `caelestiaBlobs.ts`), palette, and typography — see `src/themes/themes.css`.
   The obra section in Hyprland has a new device (the cartel, `2026-08-10-hyprland-obra-cartel`
   plan and spec): five titles always on screen, captured screenshot travels with GSAP Flip into a
-  large viewer on click. Measured contrast failure against the real shader background pending a
-  product decision (see the spec's `Registro de implementación`). The "Con qué construyo" section
-  is still being redesigned on a separate branch — Hyprland overall stays IN PROGRESS.
+  large viewer on click. Contrast against the real shader background measured per-glyph (not
+  viewport-wide, which overstated it): only the resting title dips below AA, and only in the
+  shader's brightest 0.5% of frames (3.88:1) — a shader brightness ceiling, pending a product
+  decision, not an illegibility problem (see the spec's `Registro de implementación` /
+  `Color y contraste`). The "Con qué construyo" section is still being redesigned on a separate
+  branch — Hyprland overall stays IN PROGRESS.
 
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**
