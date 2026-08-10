@@ -70,15 +70,34 @@ def marcas_del_stack(pg) -> list[str]:
     vacuamente exigente: 0 esperadas, 0 encontradas, verde falso). Ademas,
     ningun SVG trae su color de marca: todos deben heredar `currentColor`
     del contenedor.
+
+    Ronda de revision 1: la version anterior localizaba la `dd` del stack
+    buscando cual de las `dd` de `.obra-meta` contenia el separador ' · ',
+    y se saltaba la seccion entera (`continue`, sin fallo) si ninguna lo
+    llevaba -- un proyecto con un solo elemento en el stack (sin ' · ') se
+    dejaria de comprobar en silencio, la misma familia de fallo que ya
+    pago esta suite cuatro veces. Se arregla en dos frentes:
+      1. La `dd` del stack se localiza por lo que ES (la entrada cuyo `dt`
+         dice literalmente "Stack", el mismo texto que escribe
+         `metaEntry("Stack", ...)` en `projectScene.ts`), no por si su
+         contenido tiene o no un separador.
+      2. Se cuenta cuantas secciones se han comprobado de verdad y se
+         exige que sean 5 -- sin este conteo, una seccion sin entrada de
+         Stack (marcado roto, o la entrada renombrada) se saltaria igual
+         de silenciosa.
     """
     return pg.evaluate(
         """(sinMarca) => {
           const f = [];
-          for (const sec of document.querySelectorAll('[data-scene="obra"]')) {
-            const nombres = Array.from(sec.querySelectorAll('.obra-meta dd'))
-              .map(d => d.textContent).find(t => t && t.includes(' · '));
-            if (!nombres) continue;
-            const esperadas = nombres.split(' · ').filter(n => !sinMarca.includes(n)).length;
+          const secciones = document.querySelectorAll('[data-scene="obra"]');
+          let comprobadas = 0;
+          for (const sec of secciones) {
+            const entrada = Array.from(sec.querySelectorAll('.obra-meta > div'))
+              .find(d => d.querySelector('dt')?.textContent === 'Stack');
+            const dd = entrada?.querySelector('dd');
+            if (!dd) { f.push('seccion sin entrada "Stack" en .obra-meta'); continue; }
+            comprobadas += 1;
+            const esperadas = dd.textContent.split(' · ').filter(n => !sinMarca.includes(n)).length;
             const tiles = sec.querySelectorAll('[data-obra-marcas] .obra-marca').length;
             if (tiles !== esperadas) f.push(`${tiles} marcas, esperaba ${esperadas}`);
             for (const svg of sec.querySelectorAll('[data-obra-marcas] svg')) {
@@ -87,6 +106,12 @@ def marcas_del_stack(pg) -> list[str]:
                 f.push(`marca con color propio: ${fill}`);
               }
             }
+          }
+          // 5, no `secciones.length`: si `querySelectorAll('[data-scene="obra"]')`
+          // devolviera menos de 5 filas por un fallo de render, comparar
+          // contra su propia longitud lo daria vacuamente por bueno.
+          if (comprobadas !== 5) {
+            f.push(`${comprobadas} secciones comprobadas, esperaba 5`);
           }
           return f;
         }""",
