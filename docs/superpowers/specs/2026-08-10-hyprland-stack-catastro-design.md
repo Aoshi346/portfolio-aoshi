@@ -198,17 +198,27 @@ Resultado: Git y GitHub encabezan Herramientas (5 obras), TypeScript encabeza In
 Python encabeza Backend (2). Quedan **7 nombres en el nivel bajo repartidos 1/2/3/1** entre las
 cuatro parcelas. Ninguna parcela queda apagada. **Ni una cadena nueva en `content.ts`.**
 
-### Regla de color: el acento es estado, nunca taxonomía
+### Regla de color: el acento no marca rango entre elementos comparables
 
-`--l1`/`--l3` significan **encendido** en toda la escena: el recuento, la luz del lindero, el
-mojón activo, el rótulo del territorio al activarse. Usarlos además como nivel tipográfico
-hacía que seis nombres se leyeran como permanentemente apuntados — un falso hover, detectado
-en revisión y corregido en el prototipo.
+`--l1`/`--l3` significan **encendido** en toda la escena: la luz del lindero, el mojón activo,
+el rótulo del territorio al activarse. Usarlos **además** como nivel tipográfico hacía que seis
+nombres se leyeran como permanentemente apuntados — un falso hover, detectado en revisión y
+corregido en el prototipo.
 
-- **El nivel se dice solo con tipografía** (23/20/15px). Los nombres viven en `--text` o
-  `--haze`.
-- **El acento aparece únicamente en lo apuntado.** Liberado, el nombre apuntado puede ir a
-  `--l3`, que separa mucho más que el `--catch` pálido que se usaba antes.
+La primera redacción de esta regla decía "el acento es estado, nunca taxonomía", y se
+contradecía con la tabla de arriba, que da `--l1` al recuento de cada parcela. Se corrigió
+tras cazar la contradicción al implementar: **lo que no se puede hacer es ordenar con color un
+conjunto de elementos comparables entre sí**. Los 23 nombres lo son, y ahí el color mentía. El
+recuento no compite con ellos: hay uno por territorio, no es seleccionable y no cambia de
+estado nunca, así que su naranja se lee como la cifra del sitio y no como algo encendido.
+
+- **El nivel de una tecnología se dice solo con tipografía** (23/20/15px). Los nombres viven en
+  `--text` o `--haze`, nunca en un acento.
+- **Entre los nombres, el acento aparece únicamente en lo apuntado.** Liberado, el nombre
+  apuntado puede ir a `--l3`, que separa mucho más que el `--catch` pálido que se usaba antes.
+- **El recuento de la parcela va en `--l1` en las cuatro cabeceras.** No se enciende solo en la
+  abierta: en escritorio las cuatro están siempre abiertas, y hacerlo dependiente del estado
+  daría al mismo elemento significados distintos según el ancho de pantalla.
 - **En reposo no hay ningún nombre encendido**, tampoco el sembrado inicial. La franja arranca
   **llena** para no dejar un hueco esperando interacción, pero llenar no es encender: en reposo
   todavía no ha pasado nada. Es una aserción, no una intención: `getComputedStyle` de los 23

@@ -33,8 +33,10 @@ ya presentes. Sin dependencias nuevas.
 - **La lista NO se envuelve por grupo.** Ni ahora ni como "refactor de limpieza".
 - **Todo nodo nuevo lleva `display: none` en la regla base compartida** de `src/style.css`. Se
   ha pagado cuatro veces; la última ensanchó el disparador de Vice de 168 a 411px.
-- **El acento es estado, nunca taxonomía.** `--l1`/`--l3` solo aparecen en lo apuntado. El
-  nivel tipográfico va en `--text`/`--haze`.
+- **El acento no marca rango entre elementos comparables.** Los 23 nombres son comparables
+  entre sí: su nivel va en `--text`/`--haze` y solo el apuntado recibe `--l3`. El recuento de
+  cada parcela sí va en `--l1` en las cuatro cabeceras — hay uno por territorio, no es
+  seleccionable y no cambia de estado, así que no compite con el naranja del apuntado.
 - **Nunca `gsap.from`.** `fromTo` con los dos extremos escritos a mano. `Array.from(...)` para
   colecciones vivas.
 - **Nada de `clamp()` sobre tokens de escala.** Escalones discretos por `@container`/`@media`.
