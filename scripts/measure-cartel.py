@@ -4,10 +4,10 @@ Las aserciones nacen de fallos reales, como en `measure-placa.py`:
   1. Los nodos del cartel existen en el DOM y estan OCULTOS en Vice y en
      Caelestia. El patron aditivo se ha roto cuatro veces por olvidar el
      `display: none` de base.
-  2. El boton de apertura no altera la maquetacion de Vice ni de Caelestia.
-     Chrome computa `display: inline` como `inline-block` en un <button>
-     salvo que se ponga `appearance: none`; ese fallo exacto ya se pago en
-     el marcador de identidad de los creditos.
+  2. Hay CINCO disparadores y los cinco titulares conservan su texto. Un
+     `querySelectorAll` vacio hace que el bucle de comprobacion no itere y
+     el arnes salga verde sin comprobar nada: eso paso en la primera
+     version de este mismo fichero.
 """
 import argparse
 import sys
@@ -38,15 +38,25 @@ def nodos_ocultos(pg) -> list[str]:
     )
 
 
-def boton_neutral(pg) -> list[str]:
+def titulo_intacto(pg) -> list[str]:
+    """El titular sigue diciendo lo que dice `content.ts` despues de que el
+    tema lo parta en caracteres, y hay CINCO disparadores.
+
+    El conteo no es decorativo: sin el, un `querySelectorAll` que devuelve 0
+    hace que el bucle no itere, no se empuje ningun fallo y el arnes salga
+    verde sin haber comprobado nada. Es el modo de fallo que destapo la
+    revision de la Task 1.
+    """
     return pg.evaluate(
         """() => {
           const fallos = [];
-          for (const b of document.querySelectorAll('[data-obra-abrir]')) {
-            const cs = getComputedStyle(b);
-            if (cs.display !== 'inline') fallos.push(`display ${cs.display}, esperaba inline`);
-            if (cs.appearance !== 'none') fallos.push(`appearance ${cs.appearance}`);
-            if (parseFloat(cs.paddingLeft) !== 0) fallos.push('padding heredado del UA');
+          const botones = document.querySelectorAll('[data-obra-abrir]');
+          if (botones.length !== 5) fallos.push(`${botones.length} disparadores, esperaba 5`);
+          const titulos = Array.from(document.querySelectorAll('[data-scene="obra"] h2.display-lg'));
+          if (titulos.length !== 5) fallos.push(`${titulos.length} titulares, esperaba 5`);
+          for (const t of titulos) {
+            const texto = (t.textContent || '').trim();
+            if (!texto) fallos.push('titular sin texto tras el split de caracteres');
           }
           return fallos;
         }"""
@@ -64,7 +74,7 @@ def main() -> int:
         for tema in TEMAS_AJENOS:
             abre(pg, args.base, tema)
             fallos += [f"[{tema}] {f}" for f in nodos_ocultos(pg)]
-            fallos += [f"[{tema}] {f}" for f in boton_neutral(pg)]
+            fallos += [f"[{tema}] {f}" for f in titulo_intacto(pg)]
         b.close()
     for f in fallos:
         print(f"FALLO {f}")

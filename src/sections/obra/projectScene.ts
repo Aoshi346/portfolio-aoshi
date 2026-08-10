@@ -35,13 +35,9 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
 
   const tag = el("p", "hero-kick", [project.tag]);
 
-  // Un <h2> no puede ir dentro de un <button> (el modelo de contenido del
-  // boton es phrasing), asi que va al reves: el boton dentro del encabezado.
-  const abrir = el("button", "obra-abrir", [project.title]);
-  abrir.setAttribute("data-obra-abrir", "");
-  abrir.type = "button";
-
-  const title = el("h2", "display-lg mt-5 max-w-3xl text-[clamp(2rem,6vw,4.6rem)]", [abrir]);
+  const title = el("h2", "display-lg mt-5 max-w-3xl text-[clamp(2rem,6vw,4.6rem)]", [
+    project.title,
+  ]);
   title.setAttribute("data-reveal", "chars");
   title.setAttribute("data-title", "");
 
@@ -101,7 +97,17 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
   marcas.setAttribute("data-obra-marcas", "");
   marcas.setAttribute("aria-hidden", "true");
 
-  const children: HTMLElement[] = [tag, title, lead, meta, columns, mini, marcas];
+  // El disparador va FUERA del <h2>. Dentro no sobrevive: `reveal.ts` (que es
+  // lo que usa Caelestia) y `vice.choreography.ts` parten el titular con
+  // `target.textContent = ""` y se llevarian el boton por delante. En Hyprland
+  // este boton cubre la fila entera; en los otros dos temas no existe.
+  const abrir = el("button", "obra-abrir", []);
+  abrir.setAttribute("data-obra-abrir", "");
+  abrir.type = "button";
+  // El nombre accesible lo pone el modulo del cartel (Task 3), que es quien
+  // conoce el titulo ya partido en letras.
+
+  const children: HTMLElement[] = [tag, title, lead, meta, columns, mini, marcas, abrir];
 
   // Las capturas reales de la galeria (Task 11) ya existen y devuelven 200;
   // la galeria se construye siempre que el caso de estudio declare piezas,
