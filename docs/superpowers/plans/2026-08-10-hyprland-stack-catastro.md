@@ -1298,7 +1298,7 @@ git commit -m "fix(skills): movimiento reducido y limpieza del catastro"
 **Ficheros:**
 - Modificar: `scripts/verify.py` (líneas 1159-1174, rama Hyprland)
 
-- [ ] **Paso 1: actualizar la aserción**
+- [x] **Paso 1: actualizar la aserción**
 
 La rama de Hyprland comprueba hoy `.credits-list` en `flex-direction: row` con `.credit-role`
 oculto. La lista pasa a `display: contents` con los `.credit` como ítems de rejilla. Se
@@ -1313,7 +1313,7 @@ oculto. La lista pasa a `display: contents` con los `.credit` como ítems de rej
 Comprobar: `getComputedStyle('.credits-list').display === 'contents'`,
 `getComputedStyle('.credit').gridColumnStart !== 'auto'`, `.credit-role` en `display: none`.
 
-- [ ] **Paso 2: correr el arnés general, solo y sin editar nada**
+- [x] **Paso 2: correr el arnés general, solo y sin editar nada**
 
 ```bash
 python3 scripts/verify.py --theme hyprland
@@ -1324,7 +1324,7 @@ python3 scripts/verify.py --theme caelestia
 Esperado: salida 0 en los tres, contra `scripts/verify-baseline.json`. Si se arregla un fallo
 que está en la base, actualizarla con `--update-baseline` y revisar el diff antes de commitear.
 
-- [ ] **Paso 3: commit**
+- [x] **Paso 3: commit**
 
 ```bash
 git add scripts/verify.py

@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from io import BytesIO
 from pathlib import Path
@@ -1170,7 +1171,12 @@ def check_theme_identity(page, theme: str) -> None:
     Caelestia) y paso a su propio reparto — rol una vez como rotulo de grupo,
     nombres fluyendo como prosa con filete. Caelestia sigue en pildoras
     exactamente igual que antes; separar el marcador es lo que permite que
-    el cambio de Hyprland no fuerce relajar (o mentir) el de Caelestia."""
+    el cambio de Hyprland no fuerce relajar (o mentir) el de Caelestia.
+
+    Hyprland: el catastro (2026-08-10). La lista se disuelve
+    (`display: contents`) y cada `.credit` es un item de la rejilla con su
+    columna asignada. `.credit-role` sigue oculto, como en el reparto
+    anterior."""
     hero_surface = page.evaluate("""(() => {
       const el = document.querySelector('.hero-surface');
       if (!el) return null;
@@ -1250,35 +1256,40 @@ def check_theme_identity(page, theme: str) -> None:
         )
 
     if theme == "hyprland":
-        # Ascua NO son pildoras: el rol va una vez como cabecera de grupo y los
-        # nombres fluyen como prosa atribuida, igual que el cartel de reparto de
-        # Vice pero en su propio material. Si alguien reintroduce el bloque
-        # compartido con Caelestia, esto salta.
-        reparto = page.evaluate("""(() => {
+        # El catastro (2026-08-10): la lista se disuelve (`display: contents`)
+        # y cada `.credit` es un item de la rejilla del catastro con su propia
+        # columna asignada, no un elemento de prosa (`display: inline`) ni una
+        # pildora de Caelestia. `.credit-role` sigue oculto: sigue en el DOM a
+        # proposito, es un gate del arnes, no deuda tecnica. Si alguien
+        # reintroduce el bloque compartido con Caelestia (pildoras) o vuelve
+        # al reparto en prosa de "Ascua", esto salta.
+        catastro = page.evaluate("""(() => {
+          const list = document.querySelector('.credits-list');
           const credit = document.querySelector('.credit');
-          const label = document.querySelector('.credit-group-label');
-          if (!credit) return null;
-          const s = getComputedStyle(credit);
+          const role = document.querySelector('.credit-role');
+          if (!list || !credit) return null;
           return {
-            display: s.display,
-            borderWidth: s.borderTopWidth,
-            radius: s.borderTopLeftRadius,
-            tieneRotulo: Boolean(label),
+            listDisplay: getComputedStyle(list).display,
+            gridColumnStart: getComputedStyle(credit).gridColumnStart,
+            roleDisplay: role ? getComputedStyle(role).display : null,
           };
         })()""")
         check(
-            reparto is not None and reparto["display"] == "inline",
-            f"hyprland: .credit fluye como prosa, no como pildora "
-            f"(display={reparto['display'] if reparto else None})",
+            catastro is not None and catastro["listDisplay"] == "contents",
+            f"hyprland: .credits-list se disuelve (display: contents) para que "
+            f"los .credit sean items de la rejilla del catastro "
+            f"(listDisplay={catastro['listDisplay'] if catastro else None})",
         )
         check(
-            reparto is not None and reparto["borderWidth"] == "0px",
-            f"hyprland: .credit no lleva caja "
-            f"(borderWidth={reparto['borderWidth'] if reparto else None})",
+            catastro is not None and catastro["gridColumnStart"] != "auto",
+            f"hyprland: .credit tiene columna de rejilla asignada por el "
+            f"catastro (gridColumnStart="
+            f"{catastro['gridColumnStart'] if catastro else None})",
         )
         check(
-            reparto is not None and reparto["tieneRotulo"],
-            "hyprland: el rol aparece una vez como .credit-group-label",
+            catastro is not None and catastro["roleDisplay"] == "none",
+            f"hyprland: el rol sigue oculto en el catastro "
+            f"(roleDisplay={catastro['roleDisplay'] if catastro else None})",
         )
 
         # Radio 0 es la decision estructural del tema: Ascua es luz con CANTO.
@@ -1323,6 +1334,57 @@ def check_reduced_motion_chrome(browser, url: str, theme: str) -> None:
         )
     finally:
         context.close()
+
+
+def check_catastro_measure(url: str) -> None:
+    """Tarea 11 (encargo 2): engancha `measure-catastro.py` al flujo normal de
+    `verify.py --theme hyprland` en vez de dejarlo como un arnes aparte que
+    hay que acordarse de correr a mano. El catastro depende de que el padding
+    de escena siga siendo `7vw` (las calles de movil se calculan con
+    `calc(26px - 7vw)`, ver asercion 7 de `measure-catastro.py`); si alguien
+    cambia ese token por otro motivo (ajustando el respiro de otra escena,
+    por ejemplo), hasta ahora nada en el flujo de siempre lo gritaba.
+
+    Se lanza como SUBPROCESO, no importado ni corrido dentro del mismo
+    `sync_playwright()` de arriba: `measure-catastro.py` abre su propio
+    navegador y recorre sus propios viewports y temas. Corre DESPUES de que
+    este `run()` cierra su pagina y su navegador (`browser.close()`), asi
+    que nunca hay dos instancias de Playwright compitiendo por el mismo
+    servidor a la vez — la trampa ya pagada de este proyecto
+    ("no se pueden lanzar dos instancias contra el mismo servidor") es sobre
+    procesos SIMULTANEOS, no sobre dos pasadas secuenciales.
+
+    Solo corre para `--theme hyprland`: `measure-catastro.py` ya visita los
+    tres temas internamente (su asercion 9 confirma que el catastro no se ve
+    en Vice ni en Caelestia), asi que engancharlo tambien en esos dos temas
+    solo lo ejecutaria por triplicado sin anadir cobertura.
+    """
+    script = REPO_ROOT / "scripts" / "measure-catastro.py"
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script), "--url", url],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+    except subprocess.TimeoutExpired:
+        check(False, "measure-catastro.py (catastro Hyprland: padding 7vw, columnas, calles) no termino en 180s")
+        return
+
+    ok = result.returncode == 0
+    salida = result.stdout.strip().splitlines()
+    resumen = salida[-1] if salida else "sin salida"
+    check(
+        ok,
+        f"measure-catastro.py sale 0 (catastro Hyprland: padding 7vw de escena, "
+        f"columnas de rejilla, calles de movil) [{resumen}]",
+    )
+    if not ok:
+        for line in salida:
+            if line.startswith("FALLO"):
+                print(f"       {line}")
+        if result.stderr.strip():
+            print(f"       stderr: {result.stderr.strip().splitlines()[-1]}")
 
 
 def run(
@@ -1785,6 +1847,15 @@ def run(
             if page:
                 page.close()
             browser.close()
+
+    # Fuera del `with sync_playwright()`: el navegador de arriba ya esta
+    # cerrado, asi que `measure-catastro.py` no compite por el servidor con
+    # una segunda instancia de Playwright activa a la vez (ver docstring de
+    # `check_catastro_measure`). No corre en la pasada `--reduced`: esa
+    # pasada ya repite el mismo tema para otra cosa (Task 12) y correrlo dos
+    # veces por invocacion no anade cobertura, solo tiempo.
+    if theme == "hyprland" and not reduced:
+        check_catastro_measure(url)
 
 
 def main() -> int:
