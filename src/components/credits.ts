@@ -376,6 +376,20 @@ export function createCredits(): HTMLElement {
           }
         }
         /*
+         * Territorio movil: la parcela, su fila de friso y su franja
+         * "abiertas" son el estado de "cual estoy mirando", distinto del
+         * acento de mas abajo. Se mueven en CUALQUIER llamada a `select()`,
+         * incluida la sintetica de sembrado — por eso el sembrado inicial de
+         * `rows[0]` deja la primera parcela abierta sin encender ningun
+         * nombre (el acento sigue detras del guardia `ev?.isTrusted`). En
+         * movil solo una franja puede estar visible a la vez o el arnes de
+         * calles/desborde vuelve a fallar con las cuatro a la vez.
+         */
+        parcelas.forEach((p, idx) => p.classList.toggle("is-open", idx === gi));
+        markRows.forEach((r, idx) => r.classList.toggle("is-open", idx === gi));
+        strips.forEach((s, idx) => s.classList.toggle("is-open", idx === gi));
+
+        /*
          * Marcador propio de Hyprland, encima del `.is-active` global de
          * arriba: uno por parcela (cuatro a la vez), nunca uno solo para las
          * 23. `.is-active`/`aria-pressed` no se tocan aqui — siguen siendo
@@ -421,6 +435,12 @@ export function createCredits(): HTMLElement {
   groups.forEach((group, gi) => {
     const base = filaM;
     const filasNombres = Math.ceil(group.items.length / 2);
+    // La parcela decorativa no sobrevive al apilado por si sola: el CSS de
+    // movil le pide grid-row a partir de --skill-row-m/--skill-span-m igual
+    // que a la etiqueta, el friso y la franja. Sin escribirlas aqui cae en
+    // colocacion automatica y el lindero deja de cubrir su territorio.
+    parcelas[gi].style.setProperty("--skill-row-m", String(base));
+    parcelas[gi].style.setProperty("--skill-span-m", String(3 + filasNombres));
     labels[gi].style.setProperty("--skill-row-m", String(base));
     markRows[gi].style.setProperty("--skill-row-m", String(base + 1));
     group.items.forEach((_, i) => {

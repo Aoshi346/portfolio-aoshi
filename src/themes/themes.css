@@ -4651,6 +4651,86 @@
    evita dos regiones vivas anunciando a la vez. */
 :root[data-theme="hyprland"] .credits-panel { display: none; }
 
+/*
+ * El catastro en movil: se apila en dos columnas por parcela. La rejilla de
+ * escritorio (columnas proporcionales al dato, filas por indice de item) no
+ * cabe en 390px de ancho, asi que aqui la colocacion la deciden
+ * --skill-*-m, escritas por `credits.ts` en el mismo bucle que ya calculaba
+ * las filas: la parcela, su etiqueta, su fila de friso, cada nombre y su
+ * franja comparten el mismo tramo de filas (parcela y franja llevan
+ * ademas --skill-span-m, el numero de filas que ocupa ese grupo).
+ */
+@media (max-width: 820px) {
+  /*
+   * El resto de las escenas de Hyprland respiran con `padding: 15vh 7vw
+   * 17vh` (regla base, arriba) porque son una pantalla de contenido corto.
+   * El catastro apilado no lo es: 23 tecnologias en filas de 44px minimo
+   * (diana tactil, no negociable) mas la franja de 128px ya suman ~951px
+   * de rejilla. Con el respiro generico puesto la seccion media 1239px,
+   * por encima del tope de 1100. El acortamiento es solo de ESTA escena
+   * (selector por `[data-scene="credits"]`, no toca hero/about/contacto).
+   */
+  :root[data-theme="hyprland"] [data-scene="credits"] {
+    padding-top: 3.4rem;
+    padding-bottom: 3.4rem;
+  }
+  /*
+   * Calle FIJA de 26px, no derivada del 5vw del tema: a 390px ese 5vw deja
+   * 20 y un rectangulo de borde duro queda casi a sangre.
+   */
+  :root[data-theme="hyprland"] .credits-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: none;
+    grid-auto-rows: min-content;
+    /*
+     * `[data-scene]` de Hyprland ya trae `padding: 0 7vw` (escenas a sangre,
+     * ver mas arriba). Un `margin: 0 26px` liso se suma a ese padding — medido
+     * [53, 53] en vez de [26, 26], justo el doble. `calc(26px - 7vw)` cancela
+     * el 7vw variable del tema y deja la calle en 26px fijos para cualquier
+     * ancho de este breakpoint, que es la razon de ser del numero: a 390px el
+     * 7vw del tema deja 27.3px y un rectangulo de borde duro queda casi a
+     * sangre.
+     */
+    margin: 0 calc(26px - 7vw);
+    width: auto;
+  }
+  /* La parcela decorativa no sobrevive al apilado: el lindero pasa al canto
+     izquierdo de la rejilla y la luz se posiciona sobre la fila. */
+  :root[data-theme="hyprland"] .credits-parcela {
+    grid-column: 1 / -1;
+    grid-row: var(--skill-row-m) / span var(--skill-span-m);
+    border-left: 0;
+  }
+  :root[data-theme="hyprland"] .credit-group-label,
+  :root[data-theme="hyprland"] .credits-marks-row,
+  :root[data-theme="hyprland"] .credits-strip {
+    grid-column: 1 / -1;
+    grid-row: var(--skill-row-m);
+  }
+  :root[data-theme="hyprland"] .credit {
+    grid-column: var(--skill-col-m);
+    grid-row: var(--skill-row-m);
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.3rem 1.1rem;
+  }
+  /*
+   * El friso solo en el territorio activo: con los cuatro a la vez son 23
+   * iconos de 14px compitiendo con 23 nombres en 390px de ancho. `is-open`
+   * la reparte `select()` en credits.ts, sobre la parcela, el friso y la
+   * franja del grupo tocado — y la primera parcela nace abierta (el
+   * sembrado inicial dispara la misma llamada) sin encender ningun nombre,
+   * que sigue detras del guardia `ev.isTrusted`.
+   */
+  :root[data-theme="hyprland"] .credits-marks-row { display: none; }
+  :root[data-theme="hyprland"] .credits-marks-row.is-open { display: flex; }
+  /* Una sola franja abierta: la que se abre y la que se cierra lo hacen a la
+     vez y con la misma duracion, asi que la altura total no cambia. */
+  :root[data-theme="hyprland"] .credits-strip { display: none; height: 128px; }
+  :root[data-theme="hyprland"] .credits-strip.is-open { display: block; }
+}
+
 /* ------------------------------------------------- Hyprland: las bandas */
 /*
   LAS BANDAS — equivale a la carta de ajuste de Vice: el cierre. Alli eran
