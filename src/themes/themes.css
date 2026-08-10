@@ -2429,6 +2429,28 @@
     titulares fantasma, ordinales y miniaturas superpuestos a "Con que
     construyo" -- medido a 1440 y a 1000. En el prototipo salian de cuadro
     porque el marco recortaba; aqui no habia marco.
+
+    Efecto secundario de recortar: este elemento pasa a ser CONTENEDOR DE
+    SCROLL. Las cuatro filas apartadas seguian siendo tabulables (su boton
+    no llevaba `inert` ni `tabindex="-1"`) y su `y` de apartado cae dentro de
+    la region desbordada -- tabular desde la fila abierta hacia una apartada
+    hacia que el navegador desplazara ESTE elemento para revelar un boton
+    invisible, sin barra ni gesto para volver. `obraCartel.ts` pone `inert`
+    en las filas apartadas mientras hay una abierta (lo retira en `cierra()`
+    y en `destroy()`).
+
+    NOTA para quien mida el carril: definirlo como "lo que contenga al
+    panel" (mas abajo, `--cartel-fila` + el `min-height` que crece) le quita
+    al arnes la capacidad de vigilar la composicion. La asercion "todo cabe
+    en el carril" solo puede fallar si algo se sale del propio carril -- y el
+    carril se ha definido para que NUNCA le pase eso: crece hasta contener
+    exactamente lo que haya. Un panel de 840px de alto en una tableta de 800
+    "cabe" siempre, por definicion, aunque la ficha quede por debajo del
+    pliegue. Esa asercion ya no detecta un problema de composicion, solo
+    detectaria un error de la propia medida (que el panel calculado no
+    coincida con el panel real). El crecimiento a 1440 y el alto abierto
+    entre 1000-1199px son decision de composicion de Aoshi, no algo que este
+    CSS ni `measure-cartel.py` puedan aprobar o rechazar por si solos.
   */
   overflow: hidden;
   /*

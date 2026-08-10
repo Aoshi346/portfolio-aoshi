@@ -691,19 +691,37 @@ def apertura(pg) -> list[str]:
 
 def accesibilidad(pg) -> list[str]:
     """Los cinco disparadores tienen nombre accesible, orden de tabulacion
-    visual (nada de `tabindex` negativo) y hay una region `aria-live` para
-    anunciar apertura/cierre. El conteo explicito de disparadores sigue el
-    mismo patron que el resto del arnes: un `querySelectorAll` vacio no debe
-    poder dar un verde vacuo."""
+    CONDICIONAL AL ESTADO, y hay una region `aria-live` para anunciar
+    apertura/cierre. El conteo explicito de disparadores sigue el mismo
+    patron que el resto del arnes: un `querySelectorAll` vacio no debe poder
+    dar un verde vacuo.
+
+    El orden de tabulacion no es un `tabIndex >= 0` fijo para los cinco: eso
+    era correcto con el cartel cerrado y es FALSO con uno abierto, donde las
+    cuatro filas apartadas llevan `inert` a proposito (ver `.obra-track` en
+    themes.css y `abre()` en `obraCartel.ts`) y deben quedar fuera del orden
+    de tabulacion. Relajar la asercion del todo (quitar el chequeo) dejaria
+    de comprobar lo que si importa en reposo -- se condiciona en su lugar: la
+    fila abierta (o las cinco, si no hay ninguna) exige `tabIndex >= 0`; las
+    apartadas exigen justo lo contrario.
+    """
     return pg.evaluate(
         """() => {
           const f = [];
           const botones = Array.from(document.querySelectorAll('[data-obra-abrir]'));
           if (botones.length !== 5) f.push(`${botones.length} disparadores, esperaba 5`);
+          const secciones = Array.from(document.querySelectorAll('[data-scene="obra"]'));
+          const hayAbierta = secciones.some(s => s.classList.contains('is-abierto'));
           for (const b of botones) {
             const etiqueta = b.getAttribute('aria-label') || '';
             if (!etiqueta.startsWith('Mostrar ')) f.push('disparador sin nombre accesible');
-            if (b.tabIndex < 0) f.push('disparador fuera del orden de tabulacion');
+            const seccion = b.closest('[data-scene="obra"]');
+            const apartado = hayAbierta && seccion && !seccion.classList.contains('is-abierto');
+            if (apartado) {
+              if (b.tabIndex >= 0) f.push('disparador apartado sigue en el orden de tabulacion');
+            } else if (b.tabIndex < 0) {
+              f.push('disparador fuera del orden de tabulacion');
+            }
             // El disparador es un CONMUTADOR: abre y cierra la misma ficha.
             // Sin `aria-expanded` seguia anunciandose "Mostrar EchoPlan" con
             // la ficha ya abierta.
@@ -714,6 +732,50 @@ def accesibilidad(pg) -> list[str]:
           return f;
         }"""
     )
+
+
+def tabulacion_no_se_escapa(pg) -> list[str]:
+    """Tras abrir una fila, tabular repetidas veces desde su disparador NO
+    debe desplazar el carril ni dejar el foco en un boton apartado.
+
+    `.obra-track` recorta (`overflow: hidden`) y por eso mismo es un
+    CONTENEDOR DE SCROLL: si un boton apartado (fuera de cuadro por su `y`)
+    sigue siendo tabulable, el navegador desplaza el propio carril para
+    revelarlo -- el panel se va de cuadro y no hay barra ni gesto para
+    volver. Se mide lo que de verdad delata el fallo (`scrollTop`/
+    `scrollLeft` del carril, que solo un navegador real cambia al enfocar un
+    elemento desbordado), no una propiedad calculada que pueda mentir.
+    """
+    pg.eval_on_selector_all("[data-obra-abrir]", "ns => ns[0].click()")
+    pg.wait_for_timeout(900)
+    pg.eval_on_selector("[data-obra-abrir]", "n => n.focus()")
+    fallos: list[str] = []
+    for paso in range(20):
+        pg.keyboard.press("Tab")
+        estado = pg.evaluate(
+            """() => {
+              const pista = document.querySelector('[data-obra-track]');
+              const activo = document.activeElement;
+              return {
+                scrollTop: pista.scrollTop,
+                scrollLeft: pista.scrollLeft,
+                focoApartado: !!(activo && activo.matches('[data-obra-abrir]')
+                  && activo.closest('[inert]')),
+              };
+            }"""
+        )
+        if estado["scrollTop"] != 0 or estado["scrollLeft"] != 0:
+            fallos.append(
+                f"el carril se desplazo al tabular (paso {paso + 1}, "
+                f"scrollTop={estado['scrollTop']}, scrollLeft={estado['scrollLeft']})"
+            )
+            break
+        if estado["focoApartado"]:
+            fallos.append(f"el foco cayo en un disparador apartado (paso {paso + 1})")
+            break
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(700)
+    return fallos
 
 
 def movimiento_reducido(pg_reducido) -> list[str]:
@@ -1063,6 +1125,7 @@ def main() -> int:
             fallos += [f"[hyprland escritorio] {f}" for f in marcas_del_stack(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in apertura(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in accesibilidad(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in tabulacion_no_se_escapa(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in enlace_en_ficha(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in segunda_captura(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in pulsar_intercambia_y_vuelve(pg)]

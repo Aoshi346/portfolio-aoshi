@@ -246,7 +246,10 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     //   3. las filas se apartan por el alto FINAL de la pista, no por el que
     //      tenia antes de crecer: con el viejo, la fila siguiente aterrizaba
     //      dentro del carril ya crecido y se leia bajo el panel.
-    pista.style.setProperty("--cartel-fila", `${Math.round(fila.seccion.getBoundingClientRect().height)}px`);
+    // `Math.ceil`, no `Math.round`: igual que `alturaPista` unas lineas mas
+    // abajo. Redondear hacia abajo dejaba hasta 0,5px de solape entre el
+    // panel y el borde inferior de la fila abierta.
+    pista.style.setProperty("--cartel-fila", `${Math.ceil(fila.seccion.getBoundingClientRect().height)}px`);
     // El `min-height` se suelta ANTES de medir: si esta apertura viene de
     // cerrar otra fila, el tween de vuelta sigue en vuelo y `clientHeight`
     // devolveria el alto inflado del panel anterior en vez del natural.
@@ -271,6 +274,17 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     filas.forEach((otra, j) => {
       const destino =
         j === indice ? -arriba : j < indice ? -(arriba + alturaPista) : alturaPista;
+      // `.obra-track` recorta (Requisito 2), y eso lo convierte en
+      // CONTENEDOR DE SCROLL: las cuatro filas apartadas siguen su `y` fuera
+      // del carril, pero su `<button data-obra-abrir>` seguia siendo
+      // tabulable. Sin esto, tabular desde la fila abierta hacia la
+      // siguiente apartada hacia que el navegador desplazara el carril para
+      // revelar un boton invisible -- el panel se iba de cuadro sin barra ni
+      // gesto para volver. `inert` saca la fila entera (boton, titular,
+      // miniatura) del arbol de foco y de accesibilidad mientras esta
+      // apartada; se retira en `cierra()` y en `destroy()`.
+      if (j === indice) otra.seccion.removeAttribute("inert");
+      else otra.seccion.setAttribute("inert", "");
       gsap.to(otra.seccion, {
         y: destino,
         duration: motionReducido ? 0 : 0.62,
@@ -323,6 +337,10 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     abierta = -1;
     fila.seccion.classList.remove("is-abierto");
     fila.boton.setAttribute("aria-expanded", "false");
+    // Devuelve las cuatro filas apartadas al orden de tabulacion: `abre()`
+    // les puso `inert` mientras estaban fuera del carril, y con el cartel
+    // cerrado las cinco vuelven a ser alcanzables.
+    for (const otra of filas) otra.seccion.removeAttribute("inert");
     relevo(gsap, fila, false, motionReducido);
     restauraMini(gsap, fila);
     const estado = Flip.getState(fila.mini);
@@ -338,6 +356,19 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     // alto de las filas y solo entonces se suelta el `min-height`: bajar a 0
     // de golpe deja caer la seccion siguiente de un tiron a mitad del gesto.
     gsap.killTweensOf(pista);
+    // Se mide con `fila.mini` ya de vuelta en `fila.seccion` (el `appendChild`
+    // de arriba) pero todavia con el `position: absolute` que le puso el
+    // `Flip.from({absolute: true})` de mas abajo -- GSAP lo revierte solo,
+    // pero no antes de que arranque su propio tween, sino al terminarlo. En
+    // este instante sincrono la miniatura NO contribuye al flujo de la fila,
+    // asi que `alturaNatural()` puede quedarse corta durante los ~520ms del
+    // cierre y dar un tiron pequeno cuando Flip la devuelve al flujo casi a
+    // la vez que este tween llega a su propio final. No se corrige aqui:
+    // forzar el orden exigiria o bien retrasar esta medida a un frame donde
+    // Flip ya haya revertido (arriesga desincronizar el arranque del gesto
+    // de cierre) o bien duplicar a mano el calculo de layout que ya hace
+    // Flip. Documentado en vez de parcheado a ciegas sin poder verificarlo
+    // fotograma a fotograma.
     const natural = alturaNatural(pista);
     gsap.to(pista, {
       minHeight: natural,
@@ -428,6 +459,11 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       for (const fila of filas) {
         fila.seccion.classList.remove("is-abierto");
         fila.boton.setAttribute("aria-expanded", "false");
+        // Misma razon que en `cierra()`: sin esto, `destroy()` a mitad de
+        // una apertura deja hasta cuatro filas `inert` para siempre. Con
+        // bfcache la pagina no se remonta al volver, asi que quedarian
+        // permanentemente fuera del foco y de la accesibilidad.
+        fila.seccion.removeAttribute("inert");
       }
       // El crecimiento de la pista es un estilo en linea y una variable CSS:
       // con bfcache la pagina no se remonta, asi que sin soltarlos el carril
