@@ -207,7 +207,7 @@ git commit -m "test(about): arnes de la placa de Quien soy"
   `data-placa-celda="<clave>"`. Claves: `quien`, `retrato`, `estado`, `hace`, `obra`, `puesto`,
   `estudia`. Se añade a `createAbout()` como último hijo de `.about-body`.
 
-- [ ] **Paso 1: escribir el constructor**
+- [x] **Paso 1: escribir el constructor**
 
 En `src/sections/about.ts`, tras `createPairs()`:
 
@@ -288,7 +288,7 @@ function createPlaca(): HTMLElement {
 
 Y en `createAbout()`, añadir `createPlaca()` como último hijo de `body`.
 
-- [ ] **Paso 2: el `display: none` de base**
+- [x] **Paso 2: el `display: none` de base**
 
 En `src/themes/themes.css`, junto al resto de nodos compartidos ocultos (busca
 `.about-pairs { display: none }`):
@@ -301,7 +301,7 @@ En `src/themes/themes.css`, junto al resto de nodos compartidos ocultos (busca
 }
 ```
 
-- [ ] **Paso 3: comprobar que no se ha movido nada**
+- [x] **Paso 3: comprobar que no se ha movido nada**
 
 ```bash
 export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH
@@ -317,7 +317,7 @@ python3 scripts/measure-placa.py
 Esperado: **FALLO** con `la placa no tiene celdas` en Hyprland (aún oculta), y **sin** fallos de
 Vice ni Caelestia. Si alguno de esos dos aparece, el `display: none` no está donde debe.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add src/sections/about.ts src/themes/themes.css

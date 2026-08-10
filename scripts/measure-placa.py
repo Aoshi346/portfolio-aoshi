@@ -1,11 +1,17 @@
 """Arnes de la placa de "Quien soy" en Hyprland.
 
-Tres aserciones, y las tres nacieron de un fallo real del prototipo:
-  1. Ninguna celda desborda su caja. Es el fallo de "las letras se montan
+Cuatro aserciones, y todas nacieron de un fallo real:
+  1. La placa se VE en Hyprland. Sin esto el arnes sale verde con la placa
+     apagada: los nodos existen en el DOM de los tres temas desde que se
+     anaden, asi que contar celdas no prueba nada, y una celda con
+     `display: none` no desborda y no tiene tamano fuera de escala. Es decir,
+     las otras tres aserciones se autoanulan si esta falta. Medido: con los
+     nodos ya en el DOM y todavia sin encender, el arnes daba 0 fallos.
+  2. Ninguna celda desborda su caja. Es el fallo de "las letras se montan
      encima de otras", que se colo dos veces y no se ve a ojo.
-  2. Ningun tamano de fuente cae fuera de los diez pasos de la escala. Un
+  3. Ningun tamano de fuente cae fuera de los diez pasos de la escala. Un
      `clamp()` sobre tokens devolvia 54,5px a 1440, que no existe.
-  3. La placa no existe en Vice ni en Caelestia. El patron aditivo se ha
+  4. La placa no existe en Vice ni en Caelestia. El patron aditivo se ha
      roto cuatro veces por olvidar el `display: none` de base.
 """
 import argparse
@@ -29,6 +35,15 @@ def ir_a_about(pg):
     return True
 
 
+def placa_visible(pg) -> bool:
+    return pg.evaluate(
+        "() => { const n = document.querySelector('[data-placa]');"
+        " if (!n) return false;"
+        " const r = n.getBoundingClientRect();"
+        " return getComputedStyle(n).display !== 'none' && r.width > 0 && r.height > 0; }"
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:4173")
@@ -50,6 +65,9 @@ def main() -> int:
                 fallos.append(f"[{nombre}] no existe [data-scene=about]")
                 pg.close()
                 continue
+
+            if not placa_visible(pg):
+                fallos.append(f"[{nombre}] la placa NO se ve en Hyprland")
 
             celdas = pg.evaluate(
                 "() => Array.from(document.querySelectorAll('[data-placa-celda]')).map(c => ({"
@@ -82,13 +100,7 @@ def main() -> int:
             pg.goto(f"{args.url}/?theme={tema}", wait_until="domcontentloaded", timeout=60000)
             pg.wait_for_timeout(9000)
             ir_a_about(pg)
-            visible = pg.evaluate(
-                "() => { const n = document.querySelector('[data-placa]');"
-                " if (!n) return false;"
-                " const r = n.getBoundingClientRect();"
-                " return getComputedStyle(n).display !== 'none' && r.width > 0 && r.height > 0; }"
-            )
-            if visible:
+            if placa_visible(pg):
                 fallos.append(f"[{tema}] la placa esta VISIBLE y no deberia")
             pg.close()
 
