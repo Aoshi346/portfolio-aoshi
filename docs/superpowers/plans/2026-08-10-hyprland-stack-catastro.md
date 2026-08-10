@@ -922,7 +922,7 @@ git commit -m "feat(skills): seleccion por parcela y region viva propia por fran
    * iconos de 14px compitiendo con 23 nombres en 390px de ancho.
    */
   :root[data-theme="hyprland"] .credits-marks-row { display: none; }
-  :root[data-theme="hyprland"] .credits-parcela.is-open ~ * .credits-marks-row { display: flex; }
+  :root[data-theme="hyprland"] .credits-marks-row.is-open { display: flex; }
   /* Una sola franja abierta: la que se abre y la que se cierra lo hacen a la
      vez y con la misma duracion, asi que la altura total no cambia. */
   :root[data-theme="hyprland"] .credits-strip { display: none; height: 128px; }
