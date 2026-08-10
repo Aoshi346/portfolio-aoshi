@@ -329,6 +329,15 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       // tween de entrada no lo mata el `killTweensOf(ficha)` de arriba.
       gsap.killTweensOf(ficha.querySelectorAll(".obra-marca"));
       cortaParticion();
+      // Deshace cualquier intercambio de captura ANTES de devolver nada a su
+      // sitio: si `destroy()` llega con una ficha abierta y una foto
+      // intercambiada, el DOM real (`obra-mini-img.src`, su `alt`, el pie)
+      // se quedaria mutado tras `pagehide`. Con bfcache la pagina no se
+      // remonta al volver -- el siguiente `partirTitulo()` leeria esa
+      // mutacion como si fuera `gallery[0]`, y la primera captura quedaria
+      // inaccesible el resto de la sesion. Se hace para TODAS las filas, no
+      // solo la abierta: es un no-op seguro en las que nunca se tocaron.
+      for (const fila of filas) restauraMini(gsap, fila);
       // Si `destroy()` llega a mitad de una apertura O de un cierre, la
       // miniatura y los bloques de la ficha no pueden quedar huerfanos fuera
       // de su fila. `devuelveBloques()` es un no-op seguro si no hay nada
@@ -440,9 +449,14 @@ function relevo(gsap: Gsap, fila: Fila, encendido: boolean, reducido: boolean): 
   });
 }
 
-/** Devuelve la miniatura a su PRIMERA captura y limpia el estado "activo" de
- * los tiles. Se llama SIEMPRE al cerrar: sin esto, reabrir una fila donde se
- * pulso un tile mostraria la ultima foto vista, no `gallery[0]`. */
+/** Devuelve la miniatura y los tiles a su estado ORIGINAL (`gallery[0]` en la
+ * lupa, cada tile con SU captura), deshaciendo cualquier intercambio. Se
+ * llama SIEMPRE al cerrar (`cierra()`) y al destruir el modulo
+ * (`destroy()`): sin lo primero, reabrir una fila donde se pulso un tile
+ * mostraria la ultima foto vista, no `gallery[0]`; sin lo segundo, el DOM
+ * real se queda mutado tras `pagehide` y el siguiente `partirTitulo()` (al
+ * volver de la bfcache) leeria esa mutacion como si fuera la primera
+ * captura -- `gallery[0]` quedaria inaccesible el resto de la sesion. */
 function restauraMini(gsap: Gsap, fila: Fila): void {
   gsap.killTweensOf(fila.mini);
   gsap.set(fila.mini, { clipPath: "inset(0 0 0 0)" });
@@ -453,16 +467,34 @@ function restauraMini(gsap: Gsap, fila: Fila): void {
     img.alt = fila.miniOriginal.alt;
   }
   if (pie) pie.textContent = fila.miniOriginal.pie;
-  for (const tile of fila.otras.querySelectorAll(".obra-otra")) tile.classList.remove("is-activa");
+  for (const tile of fila.otras.querySelectorAll<HTMLButtonElement>(".obra-otra")) {
+    const tileImg = tile.querySelector<HTMLImageElement>(".obra-otra-img");
+    if (!tileImg) continue;
+    const origSrc = tileImg.dataset.origSrc;
+    const origAlt = tileImg.dataset.origAlt;
+    if (origSrc !== undefined) tileImg.src = origSrc;
+    if (origAlt !== undefined) {
+      tileImg.alt = origAlt;
+      tile.setAttribute("aria-label", `Ver ${origAlt}`);
+    }
+  }
 }
 
 /**
  * Engancha cada tile de `[data-obra-otras]` para que, al pulsarlo,
- * intercambie lo que muestra la lupa por SU captura: dos recortes de 210ms
- * en `hard` (oculta -> cambia el contenido -> revela), 420ms en total, sin
- * fundido. El tile pulsado queda marcado "activo" (filete de --l1); el
- * anterior lo pierde. No hay Flip aqui: solo viaja `fila.mini`, la banda de
- * tiles se queda quieta bajo la lupa.
+ * INTERCAMBIE su captura con la que muestra la lupa: conmutador reversible,
+ * sin marca de "activo" (no hace falta -- lo que ves en el tile es
+ * precisamente lo que NO estas viendo en grande). Con un solo tile por
+ * proyecto, un segundo clic sobre el mismo tile deshace el primero: vuelve a
+ * la primera captura SIN cerrar la ficha.
+ *
+ * El intercambio es un recorte de 210ms en `hard` para ocultar + 210ms para
+ * revelar (420ms en total, sin fundido). No hay Flip aqui: solo se anima
+ * `fila.mini`, la banda de tiles se queda quieta bajo la lupa.
+ *
+ * `dataset.origSrc`/`dataset.origAlt` se fijan aqui, UNA vez al montar,
+ * antes de cualquier clic: son el punto de retorno que usa `restauraMini()`
+ * para devolver los tiles a su captura propia al cerrar/destruir.
  *
  * Devuelve la funcion que suelta los listeners, para `destroy()`.
  */
@@ -470,21 +502,32 @@ function engancharOtras(gsap: Gsap, fila: Fila, reducido: boolean): () => void {
   const tiles = Array.from(fila.otras.querySelectorAll<HTMLButtonElement>(".obra-otra"));
   const soltar: Array<() => void> = [];
   for (const tile of tiles) {
+    const img = tile.querySelector<HTMLImageElement>(".obra-otra-img");
+    if (img) {
+      img.dataset.origSrc = img.src;
+      img.dataset.origAlt = img.alt;
+    }
     const alPulsar = (): void => {
-      const img = tile.querySelector<HTMLImageElement>(".obra-otra-img");
       const miniImg = fila.mini.querySelector<HTMLImageElement>(".obra-mini-img");
       const miniPie = fila.mini.querySelector<HTMLElement>(".obra-mini-pie");
       if (!img || !miniImg || !miniPie) return;
-      const nuevoSrc = img.src;
-      const nuevoAlt = img.alt;
+      // Se guardan ANTES del `.call()`: para entonces `miniImg`/`img` ya
+      // llevan su valor nuevo, y sin esta copia el intercambio se
+      // duplicaria en vez de invertirse.
+      const srcTile = img.src;
+      const altTile = img.alt;
+      const srcLupa = miniImg.src;
+      const altLupa = miniImg.alt;
       gsap.killTweensOf(fila.mini);
       const tl = gsap.timeline();
       tl.to(fila.mini, { clipPath: "inset(0 0 0 100%)", duration: reducido ? 0 : 0.21, ease: "hard" }).call(
         () => {
-          miniImg.src = nuevoSrc;
-          miniImg.alt = nuevoAlt;
-          miniPie.textContent = nuevoAlt;
-          for (const t of tiles) t.classList.toggle("is-activa", t === tile);
+          miniImg.src = srcTile;
+          miniImg.alt = altTile;
+          miniPie.textContent = altTile;
+          img.src = srcLupa;
+          img.alt = altLupa;
+          tile.setAttribute("aria-label", `Ver ${altLupa}`);
         },
       );
       tl.fromTo(

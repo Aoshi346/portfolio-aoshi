@@ -2604,6 +2604,11 @@
  * breakpoint mas 16px de margen (el mismo margen que ya separaba la lupa de
  * la ficha) -- no estan inventados, y si la geometria de la lupa cambia en
  * un breakpoint hay que recalcular el suyo aqui.
+ *
+ * Sin marca de "activo": el tile INTERCAMBIA su foto con la de la lupa
+ * (`obraCartel.ts`, `engancharOtras`) -- es un conmutador reversible, no un
+ * selector, asi que no hay "cual esta activo" que marcar. Lo que ves en el
+ * tile es precisamente lo que no estas viendo en grande.
  */
 :root[data-theme="hyprland"] .obra-track > .obra-otras {
   position: absolute;
@@ -2639,13 +2644,6 @@
   background: rgba(255, 90, 52, 0.08);
   pointer-events: none;
 }
-/* La brasa significa "esto esta activo" y nada mas: sin borde generico, sin
-   radio, sin sombra que levante -- solo el filete de 2px que ya usa el resto
-   del cartel para marcar estado. */
-:root[data-theme="hyprland"] .obra-otra.is-activa {
-  box-shadow: inset 2px 0 0 var(--l1);
-}
-
 /*
   MOVIL Y TABLETA (Task 6) — el mismo dispositivo, no otro.
 

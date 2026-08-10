@@ -619,55 +619,99 @@ def segunda_captura(pg) -> list[str]:
     return fallos
 
 
-def pulsar_cambia_la_lupa(pg) -> list[str]:
-    """Pulsar el tile de la segunda captura cambia la imagen grande de la
-    lupa (no solo la marca visualmente activa): se compara el `src` de la
-    imagen de la lupa ANTES y DESPUES del clic, y debe pasar a ser el del
-    tile pulsado. Tambien se exige que el tile pulsado quede marcado
-    activo y que la fila NO deje un tile activo tras cerrarse y reabrirse
-    (reset entre aperturas)."""
+def _leer_lupa_y_tile(pg) -> tuple[str, str]:
+    lupa = pg.evaluate(
+        """() => document.querySelector('[data-obra-lupa] .obra-mini-img')?.src ?? ''"""
+    )
+    tile = pg.evaluate(
+        """() => document.querySelector('.obra-track > .obra-otras .obra-otra-img')?.src ?? ''"""
+    )
+    return lupa, tile
+
+
+def pulsar_intercambia_y_vuelve(pg) -> list[str]:
+    """Pulsar el tile INTERCAMBIA su foto con la de la lupa: un conmutador
+    reversible, no un selector. Con un solo tile (proyectos de 2 capturas),
+    un SEGUNDO clic sobre el mismo tile debe deshacer el primero -- se puede
+    volver a la primera captura sin cerrar la ficha, que es precisamente la
+    regresion que reporto la ronda de revision 1 (antes, `restauraMini()`
+    solo se llamaba desde `cierra()`).
+
+    Se comprueban tanto la lupa como el propio tile en los tres momentos
+    (antes / tras el primer clic / tras el segundo), porque un intercambio
+    a medias (solo la lupa cambia, el tile se queda con la misma foto que ya
+    tenia) pasaria una asercion que solo mirara la lupa."""
     fallos: list[str] = []
     i = 0  # EchoPlan: 2 capturas
     pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
     pg.wait_for_timeout(900)
-    antes = pg.evaluate(
-        """() => document.querySelector('[data-obra-lupa] .obra-mini-img')?.src ?? ''"""
-    )
-    tile_src = pg.evaluate(
-        """() => document.querySelector('.obra-track > .obra-otras .obra-otra-img')?.src ?? ''"""
-    )
-    if not antes or not tile_src:
+    lupa0, tile0 = _leer_lupa_y_tile(pg)
+    if not lupa0 or not tile0:
         return ["no se pudo leer la imagen de la lupa o del tile"]
+
     pg.eval_on_selector_all(".obra-track > .obra-otras .obra-otra", "ns => ns[0].click()")
     pg.wait_for_timeout(700)
-    despues = pg.evaluate(
-        """() => document.querySelector('[data-obra-lupa] .obra-mini-img')?.src ?? ''"""
-    )
-    if despues != tile_src:
-        fallos.append(f"la lupa sigue mostrando '{antes}' tras pulsar el tile, esperaba '{tile_src}'")
-    activo = pg.evaluate(
-        """() => document.querySelectorAll('.obra-track > .obra-otras .obra-otra.is-activa').length"""
-    )
-    if activo != 1:
-        fallos.append(f"{activo} tiles marcados activos tras el clic, esperaba 1")
-    # Cierra y reabre: la lupa debe volver a la PRIMERA captura, sin tile activo.
-    pg.keyboard.press("Escape")
+    lupa1, tile1 = _leer_lupa_y_tile(pg)
+    if lupa1 != tile0:
+        fallos.append(f"tras el 1er clic la lupa muestra '{lupa1}', esperaba la del tile '{tile0}'")
+    if tile1 != lupa0:
+        fallos.append(f"tras el 1er clic el tile muestra '{tile1}', esperaba la de la lupa '{lupa0}'")
+
+    # SEGUNDO clic sobre el MISMO tile, sin cerrar la ficha: debe deshacer el
+    # primero. Esta es la comprobacion que faltaba en la ronda anterior.
+    pg.eval_on_selector_all(".obra-track > .obra-otras .obra-otra", "ns => ns[0].click()")
     pg.wait_for_timeout(700)
-    pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
-    pg.wait_for_timeout(900)
-    reabierta = pg.evaluate(
-        """() => document.querySelector('[data-obra-lupa] .obra-mini-img')?.src ?? ''"""
-    )
-    if reabierta != antes:
-        fallos.append(f"al reabrir, la lupa muestra '{reabierta}' en vez de la primera captura '{antes}'")
-    activo_tras_reabrir = pg.evaluate(
-        """() => document.querySelectorAll('.obra-track > .obra-otras .obra-otra.is-activa').length"""
-    )
-    if activo_tras_reabrir != 0:
-        fallos.append(f"{activo_tras_reabrir} tiles activos al reabrir, esperaba 0")
+    lupa2, tile2 = _leer_lupa_y_tile(pg)
+    if lupa2 != lupa0:
+        fallos.append(f"tras el 2o clic (vuelta) la lupa muestra '{lupa2}', esperaba la original '{lupa0}'")
+    if tile2 != tile0:
+        fallos.append(f"tras el 2o clic (vuelta) el tile muestra '{tile2}', esperaba el original '{tile0}'")
+
     pg.keyboard.press("Escape")
     pg.wait_for_timeout(700)
     return fallos
+
+
+def destroy_revierte_intercambio(pg) -> list[str]:
+    """`destroy()` (disparado en `pagehide`, la ruta real de la bfcache) debe
+    deshacer cualquier intercambio pendiente ANTES de soltar el modulo. Sin
+    esto, `obra-mini-img.src`/`.alt` y el pie quedan mutados en el DOM real:
+    al volver de la bfcache la pagina no se remonta, y el siguiente
+    `partirTitulo()` leeria esa mutacion como si fuera `gallery[0]` --
+    `gallery[0]` quedaria inaccesible el resto de la sesion.
+
+    Se dispara `pagehide` de verdad (el listener real de `main.ts`, no una
+    llamada directa a `destroy()` que no existe en el `window`), se
+    intercambia ANTES de dispararlo, y se comprueba el `src` real tras el
+    evento -- el punto exacto que reporto la ronda de revision 1.
+    """
+    i = 0  # EchoPlan: 2 capturas
+    pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
+    pg.wait_for_timeout(900)
+    lupa0, _ = _leer_lupa_y_tile(pg)
+    if not lupa0:
+        return ["no se pudo leer la imagen original de la lupa"]
+    pg.eval_on_selector_all(".obra-track > .obra-otras .obra-otra", "ns => ns[0].click()")
+    pg.wait_for_timeout(700)
+    lupa_tras_clic, _ = _leer_lupa_y_tile(pg)
+    if lupa_tras_clic == lupa0:
+        return ["el clic no intercambio nada, la prueba de destroy() no comprueba nada real"]
+
+    pg.evaluate("""() => window.dispatchEvent(new Event('pagehide'))""")
+    pg.wait_for_timeout(300)
+    fallo = pg.evaluate(
+        """(esperado) => {
+          const secs = document.querySelectorAll('[data-scene="obra"]');
+          const mini = secs[0].querySelector('[data-obra-mini] .obra-mini-img');
+          if (!mini) return 'sin miniatura tras destroy()';
+          if (mini.src !== esperado) {
+            return `la miniatura quedo en '${mini.src}' tras destroy(), esperaba la original '${esperado}'`;
+          }
+          return null;
+        }""",
+        lupa0,
+    )
+    return [fallo] if fallo else []
 
 
 def enlace_en_ficha(pg) -> list[str]:
@@ -750,7 +794,11 @@ def main() -> int:
             fallos += [f"[hyprland escritorio] {f}" for f in accesibilidad(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in enlace_en_ficha(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in segunda_captura(pg)]
-            fallos += [f"[hyprland escritorio] {f}" for f in pulsar_cambia_la_lupa(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in pulsar_intercambia_y_vuelve(pg)]
+            # SIEMPRE la ultima prueba en esta pagina: dispara `destroy()`
+            # de verdad (via `pagehide`), asi que cualquier asercion
+            # posterior en `pg` correria contra un modulo ya desmontado.
+            fallos += [f"[hyprland escritorio] {f}" for f in destroy_revierte_intercambio(pg)]
         b.close()
 
         # Movimiento reducido: contexto propio con `reduced_motion="reduce"`,
