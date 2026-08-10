@@ -4427,6 +4427,49 @@
   border-left: 1px solid var(--rule);
 }
 
+/*
+ * Base geometrica del carril y la chispa (gesto 4, hypr.choreography.ts).
+ * Sin altura propia `spark.offsetHeight` da 0 y la formula de recorrido
+ * (100 * parcela/spark) se vuelve Infinity. El carril nace VISIBLE, sin
+ * transform: mejora progresiva, la linea ya esta ahi sin JS. Solo el
+ * gesto 4 la escribe a `scaleY: 0` al reproducirse (`immediateRender:
+ * false`), nunca esta hoja. La chispa nace invisible por CSS (`opacity:
+ * 0`): es decorativa (`aria-hidden`) y su unico estado visible es el del
+ * recorrido, nunca un reposo con JS desactivado.
+ */
+:root[data-theme="hyprland"] .credits-rail {
+  position: absolute;
+  left: -1px;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: var(--rule);
+  z-index: 2;
+}
+:root[data-theme="hyprland"] .credits-parcela:first-child .credits-rail {
+  left: 0;
+}
+:root[data-theme="hyprland"] .credits-spark {
+  position: absolute;
+  left: -1.5px;
+  /* -11px, no 0: el gesto 4 la traslada `parcela.offsetHeight` PIXELES
+     hacia abajo (la formula en yPercent es solo la misma cifra escrita
+     relativa a su propia altura) desde este `top`. Con `top: 0` esa
+     traslacion deja su canto inferior 11px (su propia altura) por debajo
+     del pie de la parcela — desborde real, medido con el arnes. Arrancar
+     11px por encima del borde compensa exactamente ese resto, asi que
+     llega con el canto inferior a ras del pie, no metida en el.  */
+  top: -11px;
+  width: 2px;
+  height: 11px;
+  background: var(--l3);
+  opacity: 0;
+  z-index: 5;
+}
+:root[data-theme="hyprland"] .credits-parcela:first-child .credits-spark {
+  left: -0.5px;
+}
+
 :root[data-theme="hyprland"] .credit-group-label {
   display: flex;
   align-items: baseline;
@@ -4522,6 +4565,50 @@
   font-weight: inherit;
   letter-spacing: inherit;
   text-transform: inherit;
+  /*
+   * Anula la `transition: color 200ms ease` de la base compartida
+   * (`style.css`, pensada para el hover de Vice/Caelestia, donde
+   * `.credit-name` trae su propio color). Aqui el color es `inherit` puro:
+   * cada fotograma de la `animation` del boton (gesto 4, `.is-caught`)
+   * cambia el color heredado, y sin este reset la transicion de 200ms se
+   * relanzaba en cada fotograma — medido: hasta 46 `Animation` activas a
+   * la vez dentro de la escena (`document.getAnimations()`), muy por
+   * encima del techo de 12. `transition: none` deja que el color lo pinte
+   * SOLO la `animation` del padre, sin una segunda transicion peleando por
+   * la misma propiedad heredada.
+   */
+  transition: none;
+}
+
+/*
+ * La lampara de cada nombre (gesto 4, "la corriente"): 23 nodos, asi que la
+ * lleva el motor de estilo (una `animation` CSS), no 23 tweens de GSAP
+ * escribiendo estilo inline por fotograma con un shader detras.
+ *
+ * El fotograma 100% es IDENTICO al valor de reposo — no lo declara, y
+ * queda vacio a proposito — y el relleno es `backwards`, no `forwards`:
+ * una `animation` con `forwards` gana a una `transition` en la cascada y
+ * dejaria el nombre sin su color de reposo (el de `data-credit-tier` o el
+ * de `data-credit-picked` si el gesto 9 ya lo apunto). Es el primo hermano
+ * del "transform inline de GSAP gana a la regla CSS". El color anima en el
+ * boton (`.credit`), no en `.credit-name`: el span hereda con `color:
+ * inherit` de arriba, asi que un solo `animation` basta para los dos.
+ */
+@keyframes hypr-lampara {
+  0% {
+    opacity: 0.28;
+    color: var(--haze);
+  }
+  35% {
+    opacity: 1;
+    color: var(--catch);
+  }
+  100% {
+  }
+}
+:root[data-theme="hyprland"] .credit.is-caught {
+  animation: hypr-lampara 0.4s var(--hard) backwards;
+  animation-delay: var(--skill-d);
 }
 
 /*

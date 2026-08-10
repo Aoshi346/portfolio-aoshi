@@ -1,6 +1,12 @@
-import type { Choreography } from "./choreography";
+import type { Choreography, Gsap } from "./choreography";
 
 const ID = "hypr";
+
+// Los dos regimenes de tiempo del vocabulario global (corte / atmosfera),
+// mismos valores que `--hard`/`--slow` en themes.css. Duplicados aqui porque
+// GSAP no puede leer un `cubic-bezier()` desde una custom property de CSS.
+const HARD = "cubic-bezier(0.7, 0, 0.2, 1)";
+const SLOW = "cubic-bezier(0.16, 0.84, 0.28, 1)";
 
 /**
  * Ascua: tres gestos, no uno repetido a distintas escalas.
@@ -157,6 +163,82 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
       root.style.setProperty("--by", `${26 + p * 32}%`);
     },
   });
+
+  // Gesto 4 — la corriente. El orden ES el orden del argumento: primero el
+  // limite (el carril), luego el nombre del sitio (el rotulo), luego lo que
+  // hay dentro (los nombres), y al final donde se comprueba (las franjas).
+  // Si los nombres entraran antes que los rotulos, la escena diria "23
+  // tecnologias agrupadas de alguna manera", que es lo que decia antes.
+  const parcelas = Array.from(root.querySelectorAll<HTMLElement>("[data-credit-parcela]"));
+  if (parcelas.length > 0) {
+    const R = 0.09; // entre territorios, no los 70ms del paso interno del tema
+    const tl = gsap.timeline({
+      scrollTrigger: { id: `${ID}-skills`, trigger: parcelas[0], start: "top 82%", once: true },
+    });
+
+    parcelas.forEach((parcela, c) => {
+      const at = c * R;
+      const rail = parcela.querySelector<HTMLElement>(".credits-rail");
+      const spark = parcela.querySelector<HTMLElement>(".credits-spark");
+      const gi = parcela.dataset.parcela ?? "0";
+      const label = root.querySelector<HTMLElement>(`[data-credit-group="${gi}"]`);
+      const nombres = Array.from(
+        root.querySelectorAll<HTMLElement>(`[data-credit][data-parcela="${gi}"]`),
+      );
+
+      if (rail) {
+        tl.fromTo(
+          rail,
+          { scaleY: 0, transformOrigin: "0 0" },
+          { scaleY: 1, duration: 0.5, ease: HARD, immediateRender: false },
+          at,
+        );
+      }
+      if (label) {
+        tl.fromTo(
+          label,
+          { clipPath: "inset(0 100% 0 0)" },
+          { clipPath: "inset(0 0% 0 0)", duration: 0.42, ease: HARD, immediateRender: false },
+          at + 0.14,
+        );
+      }
+      if (spark) {
+        // Velocidad constante y misma duracion en las cuatro: como las
+        // parcelas miden lo mismo, las cuatro chispas llegan abajo A LA VEZ.
+        tl.fromTo(
+          spark,
+          { yPercent: 0, opacity: 1 },
+          {
+            yPercent: 100 * (parcela.offsetHeight / spark.offsetHeight),
+            opacity: 0,
+            duration: 0.62,
+            ease: "none",
+            immediateRender: false,
+          },
+          at + 0.26,
+        );
+      }
+      tl.call(
+        () => {
+          for (const n of nombres) n.classList.add("is-caught");
+        },
+        [],
+        at + 0.26,
+      );
+    });
+
+    const strips = Array.from(root.querySelectorAll<HTMLElement>("[data-credit-strip]"));
+    tl.fromTo(
+      strips,
+      { opacity: 0, y: 14 },
+      { opacity: 1, y: 0, duration: 0.62, ease: SLOW, immediateRender: false },
+      0.9,
+    );
+
+    // Sonda del arnes: el ritmo se mide con tl.progress() desde dentro de la
+    // pagina; page.screenshot() en headless perturba GSAP.
+    (window as unknown as { __hyprSkills?: ReturnType<Gsap["timeline"]> }).__hyprSkills = tl;
+  }
 };
 
 export default hyprChoreography;
