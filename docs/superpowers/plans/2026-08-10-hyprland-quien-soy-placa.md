@@ -66,7 +66,7 @@ cinco y por eso dos defectos graves atravesaron dos revisiones.
 - Produce: ejecutable con `python3 scripts/measure-placa.py [--url URL]`. Sale **0** si todo pasa,
   **1** con el detalle de cada fallo por `stdout`.
 
-- [ ] **Paso 1: escribir el arnés**
+- [x] **Paso 1: escribir el arnés**
 
 ```python
 """Arnes de la placa de "Quien soy" en Hyprland.
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: verlo rojo contra el estado actual**
+- [x] **Paso 2: verlo rojo contra el estado actual**
 
 ```bash
 export PATH=~/.nvm/versions/node/v22.22.3/bin:$PATH
@@ -187,7 +187,7 @@ python3 scripts/measure-placa.py
 Esperado: **FALLO** con `la placa no tiene celdas` en los dos viewports, porque todavía no existe.
 Si sale verde, el arnés no mide nada y hay que arreglarlo antes de seguir.
 
-- [ ] **Paso 3: commit**
+- [x] **Paso 3: commit**
 
 ```bash
 git add scripts/measure-placa.py
