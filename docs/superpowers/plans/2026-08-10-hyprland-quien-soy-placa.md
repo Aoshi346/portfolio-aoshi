@@ -597,7 +597,7 @@ git commit -m "feat(about): tipografia discreta, retrato en duotono y scrim de l
 **Ficheros:**
 - Modificar: `src/themes/themes.css`, bloque Hyprland
 
-- [ ] **Paso 1: la cuña**
+- [x] **Paso 1: la cuña**
 
 ```css
 /*
@@ -643,13 +643,13 @@ git commit -m "feat(about): tipografia discreta, retrato en duotono y scrim de l
 }
 ```
 
-- [ ] **Paso 2: comprobar el teclado**
+- [x] **Paso 2: comprobar el teclado**
 
 Levantar el preview, tabular por la sección y confirmar que **cada una de las siete celdas** recibe
 foco visible y dispara la cuña. Es el mismo criterio que ya usa el gesto 2 del tema:
 `pointerenter` y `focusin` en paralelo, nunca solo hover.
 
-- [ ] **Paso 3: commit**
+- [x] **Paso 3: commit**
 
 ```bash
 git add src/themes/themes.css

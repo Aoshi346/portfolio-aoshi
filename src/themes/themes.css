@@ -2160,6 +2160,7 @@
 }
 :root[data-theme="hyprland"] .placa-foto {
   position: absolute;
+  z-index: 1;
   inset: 12px;
   overflow: hidden;
   background: #2a1310;
@@ -2181,6 +2182,63 @@
     rgba(255, 160, 60, 0.1) 76%
   );
   mix-blend-mode: screen;
+}
+
+/*
+  ELEMENTO FIRMA — el corte de tinta.
+  Una cuna de brasa entra en diagonal por el borde izquierdo y cubre la celda.
+  La superficie cambia; el contenido no se mueve ni un pixel. Compositor puro:
+  ni maquetacion ni repintado del arbol.
+
+  Encender es un CORTE (420ms --hard), apagar es enfriarse (900ms --slow). La
+  asimetria se declara en reglas separadas porque la transicion la dicta el
+  estado de destino.
+*/
+:root[data-theme="hyprland"] .placa-c::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    rgba(255, 90, 52, 0.22),
+    rgba(224, 29, 60, 0.06) 58%,
+    transparent 82%
+  );
+  clip-path: polygon(0 0, 0 0, -12% 100%, -12% 100%);
+  transition: clip-path 0.9s var(--slow);
+}
+:root[data-theme="hyprland"] .placa-c:hover::after,
+:root[data-theme="hyprland"] .placa-c:focus-within::after {
+  clip-path: polygon(0 0, 118% 0, 100% 100%, -12% 100%);
+  transition: clip-path 0.42s var(--hard);
+}
+/* El contenido por encima de la cuna. `:not(.placa-foto)` no es cosmetico: la
+   foto ya es `position: absolute` con la misma especificidad y esta regla va
+   despues, asi que sin la exclusion le devuelve `relative` y la tumba dentro
+   de su celda. */
+:root[data-theme="hyprland"] .placa-c > :not(.placa-foto) {
+  position: relative;
+  z-index: 1;
+}
+:root[data-theme="hyprland"] .placa-c .placa-k {
+  transition: color 0.9s var(--slow);
+}
+:root[data-theme="hyprland"] .placa-c:hover .placa-k,
+:root[data-theme="hyprland"] .placa-c:focus-within .placa-k {
+  color: var(--l3);
+  transition: color 0.42s var(--hard);
+}
+/* Anillo de foco propio: el del sistema casi no separa sobre esta tinta. */
+:root[data-theme="hyprland"] .placa-c:focus-visible {
+  outline: 2px solid var(--l3);
+  outline-offset: -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .placa-c::after {
+    transition: none;
+  }
 }
 
 /* La placa dice todo esto y mejor. No se borran del DOM: los otros dos temas
