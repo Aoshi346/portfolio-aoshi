@@ -83,6 +83,37 @@ def titulo_intacto(pg) -> list[str]:
     )
 
 
+# Orden de `src/data/content.ts` (`caseStudies`). Se hardcodea aqui a
+# proposito: es la unica forma de distinguir "nombre accesible correcto" de
+# "nombre accesible duplicado" sin volver a implementar el split en Python.
+TITULOS = ["EchoPlan", "TesisFar", "HyprFinance", "WatchDog", "Editor de texto"]
+
+
+def nombre_accesible_intacto(pg) -> list[str]:
+    """El <h2> sigue siendo un encabezado con el titulo real como nombre
+    accesible, no la ristra de letras duplicadas que deja el split visual.
+
+    Se lee `aria-label` (no el `textContent`, que sigue duplicado: eso es
+    intencion, las letras visuales quedan `aria-hidden`) y se compara contra
+    los CINCO titulos de `content.ts`, en orden. El conteo es explicito por
+    el mismo motivo que en `titulo_intacto`: una coleccion vacia no debe
+    poder dar un arnes verde.
+    """
+    nombres = pg.evaluate(
+        """() => {
+          const titulos = Array.from(document.querySelectorAll('[data-scene="obra"] h2.display-lg'));
+          return titulos.map(t => t.getAttribute('aria-label'));
+        }"""
+    )
+    fallos = []
+    if len(nombres) != 5:
+        return [f"{len(nombres)} titulares, esperaba 5"]
+    for nombre, esperado in zip(nombres, TITULOS):
+        if nombre != esperado:
+            fallos.append(f"nombre accesible '{nombre}' distinto del titulo '{esperado}'")
+    return fallos
+
+
 ESCALA = [12, 16, 21.33, 28.43, 37.9, 50.52, 67.4, 89.85, 119.77, 159.66]
 
 
@@ -181,6 +212,7 @@ def main() -> int:
             fallos += [f"[hyprland] {f}" for f in cartel_en_reposo(pg)]
             fallos += [f"[hyprland] {f}" for f in escala_tipografica(pg)]
             fallos += [f"[hyprland] {f}" for f in relevo_es_ola(pg)]
+            fallos += [f"[hyprland] {f}" for f in nombre_accesible_intacto(pg)]
         b.close()
     for f in fallos:
         print(f"FALLO {f}")

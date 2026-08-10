@@ -55,13 +55,20 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     }
   }
 
-  if (!motionReducido) entrada(gsap, root, filas);
+  let entradaHandle: EntradaHandle | null = null;
+  if (!motionReducido) entradaHandle = entrada(gsap, root, filas);
   else asentar(gsap, filas);
 
   return {
     destroy(): void {
       for (const soltar of sueltas) soltar();
       gsap.killTweensOf(filas.flatMap((f) => [...f.tiras, ...f.entradas, f.mini]));
+      // La barra de brasa vive fuera de `filas`: sin esto su tween sigue vivo
+      // si `destroy()` llega a mitad del barrido (p.ej. bfcache).
+      if (entradaHandle) {
+        entradaHandle.tl.kill();
+        entradaHandle.barra.remove();
+      }
     },
   };
 }
@@ -77,12 +84,22 @@ function partirTitulo(seccion: HTMLElement): Fila {
   // hace de disparador accesible (ver Task 1).
   const texto = titulo.textContent ?? "";
   titulo.textContent = "";
+
+  // Patron estandar para texto partido en letras: el CONTENEDOR (el <h2>)
+  // lleva el nombre accesible real via `aria-label`, y los trozos visuales
+  // quedan fuera del arbol de accesibilidad con `aria-hidden`. Sin esto, el
+  // <h2> sigue siendo un encabezado pero su nombre calculado a partir del
+  // contenido seria cada letra duplicada ("EEcchhooPPllaann"): el contenedor
+  // se queda, el duplicado desaparece del arbol.
+  titulo.setAttribute("aria-label", texto);
+  const capas = document.createElement("span");
+  capas.setAttribute("aria-hidden", "true");
   for (const caracter of texto) {
     const mirilla = document.createElement("span");
     mirilla.className = "obra-ch";
     if (caracter === " ") {
       mirilla.classList.add("obra-ch-hueco");
-      titulo.appendChild(mirilla);
+      capas.appendChild(mirilla);
       continue;
     }
     const capaEntrada = document.createElement("span");
@@ -96,8 +113,9 @@ function partirTitulo(seccion: HTMLElement): Fila {
     }
     capaEntrada.appendChild(tira);
     mirilla.appendChild(capaEntrada);
-    titulo.appendChild(mirilla);
+    capas.appendChild(mirilla);
   }
+  titulo.appendChild(capas);
   // El texto partido deja de ser legible para un lector de pantalla: se le
   // devuelve entero por `aria-label`.
   boton.setAttribute("aria-label", `Mostrar ${texto}`);
@@ -122,14 +140,19 @@ function relevo(gsap: Gsap, fila: Fila, encendido: boolean, reducido: boolean): 
   });
 }
 
+interface EntradaHandle {
+  tl: ReturnType<Gsap["timeline"]>;
+  barra: HTMLElement;
+}
+
 /**
  * Entrada: UNA barra de brasa cruza el cartel y todo lo demas cuelga de ella.
  * El retardo de cada letra no se escribe a mano: sale de su posicion x real,
  * asi que la barra atraviesa los cinco titulares a la vez, por columnas.
  */
-function entrada(gsap: Gsap, root: HTMLElement, filas: Fila[]): void {
+function entrada(gsap: Gsap, root: HTMLElement, filas: Fila[]): EntradaHandle | null {
   const pista = root.querySelector<HTMLElement>("[data-obra-track]");
-  if (!pista) return;
+  if (!pista) return null;
   const caja = pista.getBoundingClientRect();
   const ancho = caja.width || 1;
 
@@ -140,6 +163,10 @@ function entrada(gsap: Gsap, root: HTMLElement, filas: Fila[]): void {
 
   const tl = gsap.timeline({ onComplete: () => barra.remove() });
   tl.set(barra, { opacity: 1, x: 0 })
+    // "none", no una de las dos curvas del tema: este barrido es lineal a
+    // proposito. El retardo de cada letra sale de `(x / ancho) * BARRIDO`,
+    // que asume velocidad constante — si la barra acelerase, dejaria de
+    // coincidir con donde cada letra cree que esta y el gesto se partiria.
     .to(barra, { x: ancho, duration: BARRIDO, ease: "none" }, 0)
     .to(barra, { opacity: 0, duration: 0.22, ease: "slow" }, BARRIDO);
 
@@ -157,6 +184,8 @@ function entrada(gsap: Gsap, root: HTMLElement, filas: Fila[]): void {
       Math.max(0, (xm / ancho) * BARRIDO),
     );
   }
+
+  return { tl, barra };
 }
 
 /** Con movimiento reducido el cartel esta tejido desde el primer fotograma. */
