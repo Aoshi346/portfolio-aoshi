@@ -990,7 +990,10 @@ el objetivo táctil sea la fila entera):
     });
 
     ficha.replaceChildren(...bloquesDeFicha(fila.seccion));
-    gsap.set(ficha, { opacity: 1, pointerEvents: "auto" });
+    // La ficha entra por recorte, nunca por opacidad (ley de la seccion).
+    gsap.set(ficha, { pointerEvents: "auto" });
+    gsap.fromTo(ficha, { clipPath: "inset(0 100% 0 0)" },
+      { clipPath: "inset(0 0 0 0)", duration: motionReducido ? 0 : 0.42, ease: "hard" });
     if (!motionReducido) {
       const partido = new SplitText(ficha.querySelectorAll("p, .obra-stack"), {
         type: "lines",
@@ -1018,9 +1021,18 @@ el objetivo táctil sea la fila entera):
     gsap.to(filas.map((f) => f.seccion), {
       y: 0, duration: motionReducido ? 0 : 0.52, ease: "hard", stagger: 0.03,
     });
+    // Sale tambien por recorte, y el contenido se devuelve DESPUES: si se
+    // vacia antes, lo que se retira durante la animacion es una caja vacia y
+    // el gesto de cierre no existe. La guarda evita que una reapertura a
+    // media salida se lleve por delante el contenido recien puesto.
+    const turno = ++cierreEnCurso;
     gsap.to(ficha, {
-      opacity: 0, duration: motionReducido ? 0 : 0.24,
-      onComplete: () => gsap.set(ficha, { pointerEvents: "none" }),
+      clipPath: "inset(0 100% 0 0)", duration: motionReducido ? 0 : 0.42, ease: "hard",
+      onComplete: () => {
+        if (turno !== cierreEnCurso) return;
+        devuelveBloques();
+        gsap.set(ficha, { pointerEvents: "none" });
+      },
     });
     anuncio.textContent = "Ficha cerrada.";
   }
@@ -1096,7 +1108,11 @@ vez: sin ella la region de anuncio se pinta como un parrafo visible bajo el cart
   left: 800px;
   top: 132px;
   width: 520px;
-  opacity: 0;
+  /* La ficha entra y sale por RECORTE, no por opacidad. La ley de la seccion
+     es que aqui nada se desvanece, y una ficha que aparece con un fundido la
+     rompe en el sitio mas visible. Decidido por Aoshi el 2026-08-10, corrigiendo
+     una version anterior de este plan que usaba opacity. */
+  clip-path: inset(0 100% 0 0);
   /* Sin esto la ficha cerrada tapa las filas y no se puede pulsar ninguna.
      Medido en el prototipo: el arnes se quedo 30s intentando el clic. */
   pointer-events: none;
@@ -1106,7 +1122,25 @@ vez: sin ella la region de anuncio se pinta como un parrafo visible bajo el cart
 :root[data-theme="hyprland"] .obra-ficha [data-mask] {
   display: block;
 }
-:root[data-theme="hyprland"] [data-scene="obra"].is-abierto .obra-mini {
+/*
+  La miniatura, YA DENTRO de la lupa. Es imprescindible: todas sus reglas de
+  tamano y caja cuelgan de `[data-scene="obra"] .obra-mini`, y al viajar a la
+  lupa el nodo deja de casar ese selector — se queda sin alto, sin `overflow` y
+  con `position: static`, con lo que el pie absoluto se posiciona contra la
+  lupa en vez de contra la foto y se despega.
+
+  Y por eso NO vale `.is-abierto .obra-mini`, que es lo que decia una version
+  anterior de este plan: cuando la fila abre, el nodo ya no cuelga de la
+  seccion, asi que ese selector no puede casar nunca.
+*/
+:root[data-theme="hyprland"] .obra-lupa .obra-mini {
+  display: block;
+  position: relative;
+  flex: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
   clip-path: inset(0 0 0 0);
 }
 :root[data-theme="hyprland"] .obra-lupa .obra-mini-pie {
