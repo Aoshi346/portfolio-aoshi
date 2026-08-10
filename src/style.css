@@ -1302,6 +1302,16 @@ body {
 }
 
 /*
+ * Nodos del catastro de Hyprland. Nacen apagados para los tres temas y solo
+ * `:root[data-theme="hyprland"]` los enciende. El patron aditivo se ha roto
+ * cuatro veces por saltarse esto.
+ */
+.credits-parcela,
+.credits-strip {
+  display: none;
+}
+
+/*
  * `currentColor` y no `var(--color-accent)` como en `.credits-svg`: la marca
  * del friso alterna entre apagada y encendida, asi que el color lo decide el
  * contenedor via `.is-active` y el SVG solo lo hereda.

@@ -112,9 +112,54 @@ export function createCredits(): HTMLElement {
    * puede volver a recorrer el DOM en cada disparo.
    */
   const marks = new Map<string, HTMLElement>();
-  const markNodes: HTMLElement[] = [];
 
-  for (const group of groups) {
+  /*
+   * El catastro de Hyprland: cuatro parcelas, cuatro franjas de detalle y
+   * cuatro filas de friso, una por grupo. Se construyen ANTES del bucle de
+   * items porque `markRows[gi]` recibe cada marca segun se crea mas abajo.
+   * Son hermanas de `.credits-list`, nunca envoltorios: `scene4Credits`
+   * anima los hijos directos de `[data-credit-roll]`, igual que con el
+   * friso de Vice (ver comentario de `frieze`).
+   */
+  const parcelas: HTMLElement[] = [];
+  const strips: HTMLElement[] = [];
+  const markRows: HTMLElement[] = [];
+
+  groups.forEach((_group, gi) => {
+    /*
+     * Caja decorativa de columna. NO es un envoltorio: la lista sigue plana
+     * y esta caja es una hermana que ocupa la columna entera de la rejilla.
+     * Es lo que permite tener un lindero continuo de arriba abajo y un
+     * sitio donde vive la luz, sin agrupar los `.credit` bajo un padre.
+     */
+    const parcela = el("div", "credits-parcela", [
+      el("span", "credits-rail", []),
+      el("span", "credits-glow", []),
+      el("span", "credits-spark", []),
+    ]);
+    parcela.setAttribute("data-credit-parcela", "");
+    parcela.dataset.parcela = String(gi);
+    parcela.setAttribute("aria-hidden", "true");
+    parcela.setAttribute("data-decorative", "");
+    parcelas.push(parcela);
+
+    const strip = el("div", "credits-strip", [el("div", "credits-strip-in", [])]);
+    strip.setAttribute("data-credit-strip", "");
+    strip.dataset.parcela = String(gi);
+    strip.id = `credits-strip-${gi}`;
+    strip.setAttribute("role", "status");
+    strip.setAttribute("aria-live", "polite");
+    strips.push(strip);
+
+    const row = el("div", "credits-marks-row", []);
+    row.setAttribute("data-credit-marks-row", "");
+    row.dataset.parcela = String(gi);
+    row.setAttribute("aria-hidden", "true");
+    row.setAttribute("data-decorative", "");
+    markRows.push(row);
+  });
+
+  groups.forEach((group, gi) => {
     const groupLabel = el("p", "credit-group-label", [group.label]);
     groupLabel.setAttribute("data-credit-group", "");
     listChildren.push(groupLabel);
@@ -151,7 +196,7 @@ export function createCredits(): HTMLElement {
       mark.setAttribute("data-decorative", "");
       mark.dataset.markSlug = entry.slug;
       marks.set(entry.slug, mark);
-      markNodes.push(mark);
+      markRows[gi].appendChild(mark);
 
       const select = () => {
         for (const other of rows) {
@@ -198,7 +243,7 @@ export function createCredits(): HTMLElement {
       rows.push(row);
       listChildren.push(row);
     }
-  }
+  });
 
   const list = el("div", "credits-list", listChildren);
   list.setAttribute("data-credit-roll", "");
@@ -208,8 +253,11 @@ export function createCredits(): HTMLElement {
    * `[data-credit-roll]`: `scene4Credits` anima los hijos DIRECTOS de ese
    * contenedor, y meter aqui 23 nodos mas ahogaria el escalonado del reparto.
    * Los otros dos temas lo apagan con una sola regla sin tocar su flex-wrap.
+   * Ahora contiene las cuatro `markRows` (una por parcela) en vez de las 23
+   * marcas sueltas; Vice las disuelve con `display: contents` en
+   * `themes.css` para conservar su `flex-wrap` de 23 items.
    */
-  const frieze = el("div", "credits-marks", markNodes);
+  const frieze = el("div", "credits-marks", markRows);
   frieze.setAttribute("data-credit-marks", "");
   frieze.setAttribute("aria-hidden", "true");
   frieze.setAttribute("data-decorative", "");
@@ -219,5 +267,5 @@ export function createCredits(): HTMLElement {
   // vacio.
   rows[0]?.dispatchEvent(new MouseEvent("mouseenter"));
 
-  return el("div", "credits-grid", [list, panel, frieze]);
+  return el("div", "credits-grid", [list, panel, frieze, ...parcelas, ...strips]);
 }

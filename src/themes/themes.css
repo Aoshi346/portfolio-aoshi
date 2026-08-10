@@ -3525,6 +3525,15 @@
   border-top: 1px solid color-mix(in srgb, var(--color-accent) 16%, transparent);
 }
 
+/*
+ * El friso pasa a tener cuatro filas (una por parcela) para Hyprland. Vice
+ * las disuelve para conservar su `flex-wrap` de 23 marcas en una sola caja:
+ * sin esto, su friso pasaria de 23 items a 4 y perderia el ajuste de linea.
+ */
+:root[data-theme="vice"] .credits-marks-row {
+  display: contents;
+}
+
 :root[data-theme="vice"] .credits-mark {
   width: 18px;
   height: 18px;
