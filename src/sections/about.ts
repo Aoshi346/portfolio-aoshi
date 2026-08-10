@@ -275,8 +275,14 @@ function createPairs(): HTMLElement {
 function celda(clave: string, rotulo: string, nodos: Node[]): HTMLElement {
   const cell = el("div", "placa-c", [el("dt", "placa-k", [rotulo]), ...nodos]);
   cell.setAttribute("data-placa-celda", clave);
-  // Focalizable: el apuntado tiene que existir tambien por teclado.
-  cell.tabIndex = 0;
+  /*
+   * SIN `tabIndex`. La primera version lo puso para que el apuntado existiera
+   * tambien por teclado, y en la prueba a ciegas salio el coste: siete paradas
+   * de tabulador que no llevan a ninguna parte. La celda no es un control —
+   * no navega, no abre nada — y su contenido esta entero a la vista en reposo,
+   * asi que el foco no da acceso a nada que el teclado no tuviera ya. Lo unico
+   * que aportaba era la cuna, que es decoracion.
+   */
   return cell;
 }
 

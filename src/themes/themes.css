@@ -2040,8 +2040,8 @@
      filas `fr` se reparten solo por proporcion. Traduccion: si una celda no
      cabe, la fila no crece — la recorta en silencio. No se ve a ojo, y por eso
      lo mide el arnes. Se arregla en la PROPORCION de la fila, no aqui. */
-  padding: 0.8rem 1rem 0.9rem;
-  background: #0c0403;
+  padding: 12px 16px 16px;
+  background: var(--color-ink);
   display: flex;
   flex-direction: column;
   gap: 0.32rem;
@@ -2131,11 +2131,41 @@
 /* La celda caliente: el estado es lo unico que se enciende, asi que es lo
    primero que se lee sin necesidad de ser lo mas grande. */
 :root[data-theme="hyprland"] [data-placa-celda="estado"] {
-  background: linear-gradient(152deg, #33130a, #0c0403 68%);
+  background: linear-gradient(
+    152deg,
+    color-mix(in srgb, var(--l1) 18%, var(--color-ink)),
+    var(--color-ink) 68%
+  );
 }
 :root[data-theme="hyprland"] [data-placa-celda="estado"] .placa-v {
   color: var(--l1);
   font-size: var(--t-4);
+}
+/* Estado es la unica celda de DOS filas y llevaba tres bloques cortos: 223px
+   de hueco muerto medidos, el mismo "se ve vacio" que ya se corrigio una vez.
+   Se llena subiendo la voz de la celda caliente, no metiendo contenido que
+   content.ts no tiene. */
+@container (min-width: 900px) {
+  :root[data-theme="hyprland"] .placa-foto {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    /* Alto EXPLICITO y ancho derivado. Con `top`/`bottom` y ancho automatico,
+       la caja se encoge al contenido (la imagen declara 150px) y la razon de
+       aspecto le da 150 de alto: 162 con el margen, en una celda de 142. */
+    height: calc(100% - 24px);
+    width: auto;
+    transform: translate(-50%, -50%);
+  }
+}
+@container (min-width: 900px) {
+  :root[data-theme="hyprland"] [data-placa-celda="estado"] .placa-v {
+    font-size: var(--t-5);
+  }
+  :root[data-theme="hyprland"] [data-placa-celda="estado"] .placa-s {
+    font-size: var(--t-2);
+    line-height: 1.4;
+  }
 }
 :root[data-theme="hyprland"] [data-placa-celda="estado"]::before {
   content: "";
@@ -2158,12 +2188,24 @@
 :root[data-theme="hyprland"] [data-placa-celda="retrato"] .placa-k {
   display: none;
 }
+/* Caja CUADRADA y centrada, no la celda entera. El avatar es cuadrado y la
+   celda es apaisada: con la caja apaisada, `contain` deja bandas a los lados.
+   Cuadrando la caja desaparecen las bandas sin recortar la cara, que es la
+   condicion que puso Aoshi. */
+/* El cuadrado lo manda el eje CORTO de la celda, y ese eje cambia con el
+   encuadre: en movil la celda es vertical (166x249) y manda el ancho; en
+   escritorio es apaisada (205x141) y manda el alto. Fijar siempre el alto
+   desbordaba la celda por 30px en movil (medido). */
 :root[data-theme="hyprland"] .placa-foto {
   position: absolute;
   z-index: 1;
-  inset: 12px;
+  left: 12px;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  aspect-ratio: 1;
   overflow: hidden;
-  background: #2a1310;
+  background: color-mix(in srgb, var(--l3) 10%, var(--color-ink));
 }
 :root[data-theme="hyprland"] .placa-foto-img {
   width: 100%;
@@ -2227,17 +2269,30 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* 0,38 y no 0,22: al 22% la cuna era invisible en la prueba a ciegas — la
+     tester no la vio en ningun momento y la directora de arte la conto como
+     micro-interaccion fallida. Sigue siendo cambio de SUPERFICIE: el contenido
+     no se mueve. */
   background: linear-gradient(
     112deg,
-    rgba(255, 90, 52, 0.22),
-    rgba(224, 29, 60, 0.06) 58%,
-    transparent 82%
+    rgba(255, 90, 52, 0.38),
+    rgba(224, 29, 60, 0.12) 58%,
+    transparent 84%
   );
   clip-path: polygon(0 0, 0 0, -12% 100%, -12% 100%);
   transition: clip-path 0.9s var(--slow);
 }
-:root[data-theme="hyprland"] .placa-c:hover::after,
-:root[data-theme="hyprland"] .placa-c:focus-within::after {
+/* Estado tiene fondo calido propio y se traga una cuna naranja: la suya va en
+   ambar, que es el unico tono del tema que separa contra ese degradado. */
+:root[data-theme="hyprland"] [data-placa-celda="estado"]::after {
+  background: linear-gradient(
+    112deg,
+    rgba(255, 160, 60, 0.34),
+    rgba(255, 160, 60, 0.08) 60%,
+    transparent 84%
+  );
+}
+:root[data-theme="hyprland"] .placa-c:hover::after {
   clip-path: polygon(0 0, 118% 0, 100% 100%, -12% 100%);
   transition: clip-path 0.42s var(--hard);
 }
@@ -2252,15 +2307,9 @@
 :root[data-theme="hyprland"] .placa-c .placa-k {
   transition: color 0.9s var(--slow);
 }
-:root[data-theme="hyprland"] .placa-c:hover .placa-k,
-:root[data-theme="hyprland"] .placa-c:focus-within .placa-k {
+:root[data-theme="hyprland"] .placa-c:hover .placa-k {
   color: var(--l3);
   transition: color 0.42s var(--hard);
-}
-/* Anillo de foco propio: el del sistema casi no separa sobre esta tinta. */
-:root[data-theme="hyprland"] .placa-c:focus-visible {
-  outline: 2px solid var(--l3);
-  outline-offset: -3px;
 }
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="hyprland"] .placa-c::after {
