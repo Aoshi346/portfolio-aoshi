@@ -15,11 +15,20 @@ Las aserciones nacen de fallos reales, como en `measure-placa.py`:
      abierta fuera de la pista.
 """
 import argparse
+import io
 import sys
 
 from playwright.sync_api import sync_playwright
+from PIL import Image
 
 TEMAS_AJENOS = ["vice", "caelestia"]
+
+# Tokens de Hyprland (themes.css), en RGB 0-255. Fijos y deterministas: lo
+# que se mide es el fondo real, no estos valores.
+HAZE_RGB = (0xB1, 0x8C, 0x86)     # --haze
+PAPEL_RGB = (0xFF, 0xEA, 0xE6)    # --color-paper (titular encendido)
+L1_RGB = (0xFF, 0x5A, 0x34)       # --l1
+AA_MINIMO = 4.5
 
 # "portatil" (1280) cierra el hueco 1200-1439px que destapo la revision de la
 # Task 4: la lupa (760) y la ficha (520, a 800px del borde) suman 1320px y los
@@ -765,6 +774,102 @@ def enlace_en_ficha(pg) -> list[str]:
     return fallos
 
 
+def _lin(c: float) -> float:
+    cs = c / 255
+    return cs / 12.92 if cs <= 0.03928 else ((cs + 0.055) / 1.055) ** 2.4
+
+
+def _luminancia(rgb: tuple[int, int, int]) -> float:
+    r, g, b = rgb
+    return 0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b)
+
+
+def _contraste(fg: tuple[int, int, int], bg: tuple[int, int, int]) -> float:
+    l1, l2 = _luminancia(fg) + 0.05, _luminancia(bg) + 0.05
+    return max(l1, l2) / min(l1, l2)
+
+
+def _percentil(datos: list[float], p: float) -> float:
+    if not datos:
+        return 0.0
+    rango = (len(datos) - 1) * (p / 100.0)
+    bajo = int(rango)
+    alto = min(bajo + 1, len(datos) - 1)
+    frac = rango - bajo
+    return datos[bajo] + (datos[alto] - datos[bajo]) * frac
+
+
+def contraste_fondo_real(pg) -> list[str]:
+    """El fondo NO es un plano: la pagina lleva el shader `hyprEmber.ts` mas
+    `--bg-fallback`, que sube hasta #3a1008 en su version estatica. El shader
+    mezcla directamente el color de `--l1` (`vec3(1.0, 0.353, 0.204)` =
+    `#ff5a34`) en el haz -- el mismo hex que la marca activa -- asi que el
+    techo real de brillo NO es el `#3a1008` del fallback, es lo que el haz
+    alcanza en movimiento.
+
+    `.bg-theme` es `position: fixed` (`style.css`) y el shader solo depende
+    de `uTime`/`uResolution`, NUNCA de scroll (a diferencia de Vice, que si
+    lo consume) -- confirmado leyendo `hyprEmber.ts` y `shaderBackground.ts`.
+    Eso significa que el pixel de fondo en una coordenada de VIEWPORT es el
+    mismo sea cual sea el scroll de la pagina: fijar la fila a un encuadre de
+    scroll concreto (`scrollIntoView` vs `scrollTo`) solo cambia CUAL
+    fotograma del shader queda detras, no anade cobertura. El cartel no
+    lleva pin de ScrollTrigger (decision del spec), asi que en un scroll
+    libre la fila puede terminar de descansar en cualquier alto de viewport.
+
+    Por eso se mide el VIEWPORT ENTERO (no solo el rect de una fila) durante
+    16.8s (48 fotogramas): cubre cualquier altura donde la fila pueda posarse
+    y suficiente tiempo del barrido generativo. Se usa el p99.5 de
+    luminancia como "peor caso real" (mismo criterio que `measure-bg-luma.py`
+    para el techo de Vice) y se identifica el tercio de pantalla (alto/medio/
+    bajo) donde cae, para relacionarlo con "la zona alta" que describe el
+    spec.
+    """
+    alto_viewport = pg.viewport_size["height"]
+    ancho_viewport = pg.viewport_size["width"]
+
+    pg.add_style_tag(
+        content="#app > *:not(.bg-theme):not(.bg-noise) { visibility: hidden !important; }"
+    )
+    pg.wait_for_timeout(300)
+
+    muestras: list[tuple[tuple[int, int, int], int]] = []  # (rgb, y_px)
+    for _ in range(48):
+        pg.wait_for_timeout(350)
+        png = pg.screenshot()
+        img = Image.open(io.BytesIO(png)).convert("RGB")
+        w, h = img.size
+        px = img.load()
+        for y in range(0, h, 4):
+            for x in range(0, w, 4):
+                muestras.append((px[x, y], y))
+
+    luminancias = sorted(_luminancia(p) for p, _ in muestras)
+    objetivo = _percentil(luminancias, 99.5)
+    peor_pixel, peor_y = min(muestras, key=lambda m: abs(_luminancia(m[0]) - objetivo))
+    tercio = "alto" if peor_y < h / 3 else ("medio" if peor_y < 2 * h / 3 else "bajo")
+
+    c_haze = _contraste(HAZE_RGB, peor_pixel)
+    c_papel = _contraste(PAPEL_RGB, peor_pixel)
+    c_l1 = _contraste(L1_RGB, peor_pixel)
+
+    print(
+        f"    [contraste] peor fondo real medido (p99.5, 16.8s, viewport {ancho_viewport}x{alto_viewport}, "
+        f"tercio {tercio}) = rgb{peor_pixel} -- haze {c_haze:.2f}:1, papel {c_papel:.2f}:1, l1 {c_l1:.2f}:1"
+    )
+
+    fallos: list[str] = []
+    if c_haze < AA_MINIMO:
+        fallos.append(
+            f"--haze {c_haze:.2f}:1 contra el fondo real (peor caso medido, tercio {tercio}) < {AA_MINIMO}:1 AA"
+        )
+    if c_papel < AA_MINIMO:
+        fallos.append(
+            f"papel (titular encendido) {c_papel:.2f}:1 contra el fondo real (tercio {tercio}) < {AA_MINIMO}:1 AA"
+        )
+    return fallos
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--base", default="http://localhost:4173")
@@ -799,6 +904,17 @@ def main() -> int:
             # de verdad (via `pagehide`), asi que cualquier asercion
             # posterior en `pg` correria contra un modulo ya desmontado.
             fallos += [f"[hyprland escritorio] {f}" for f in destroy_revierte_intercambio(pg)]
+
+            # Contraste contra el fondo REAL (Task 9): pagina propia, limpia
+            # y SIN ficha abierta -- la de arriba ya la abrio `apertura()`, y
+            # la ficha tapa justo la zona alta que hay que medir.
+            pg_contraste = b.new_page(viewport={"width": 1440, "height": 900})
+            abre(pg_contraste, args.base, "hyprland")
+            if ir_a_obra(pg_contraste):
+                fallos += [f"[hyprland contraste] {f}" for f in contraste_fondo_real(pg_contraste)]
+            else:
+                fallos.append('[hyprland contraste] no existe [data-scene="obra"]')
+            pg_contraste.close()
         b.close()
 
         # Movimiento reducido: contexto propio con `reduced_motion="reduce"`,

@@ -6,6 +6,15 @@
 > casillas (`- [ ]`) para el seguimiento. **Marca cada casilla en el momento**, no al
 > final: `.claude/rules/speckit-progress-tracking.md`.
 
+> **Tracking: historico para las Tasks 1-8.** Sus casillas nunca se marcaron durante
+> la ejecución, y no se marcan ahora en bloque: ticar ~55 pasos que nadie siguió uno a
+> uno sería falsificar el registro, no completarlo (mismo precedente que
+> `2026-07-24-vice-city.md` y `2026-07-28-vice-secciones.md`). El trabajo está hecho y
+> vive en los commits de `design/hyprland-obra-cartel` — la prueba es el código y el
+> arnés (`python3 scripts/measure-cartel.py`, 0 fallos salvo el contraste de la Task 9),
+> no este fichero. **La Task 9 sí se marca en vivo**: es la que se está ejecutando en
+> esta sesión.
+
 **Objetivo:** sustituir la tira de exposición de la obra en Hyprland por un cartel de cinco
 titulares, con la captura a la altura de su titular que crece con GSAP Flip al pulsarla.
 
@@ -1729,7 +1738,7 @@ git commit -m "feat(obra): las capturas restantes del proyecto, bajo la lupa"
 - Modificar: `docs/superpowers/specs/2026-08-10-hyprland-obra-cartel-design.md`
 - Modificar: `.claude/CLAUDE.md` y `CLAUDE.md` si el estado del tema cambia
 
-- [ ] **Paso 1: Dejar escrito cómo se corre el arnés**
+- [x] **Paso 1: Dejar escrito cómo se corre el arnés**
 
 **Comprobado:** `scripts/verify.py` **no invoca** los `measure-*.py` — no hay ni un `subprocess` en
 él. Son arneses independientes que se lanzan a mano, igual que `measure-placa.py`. Así que **no
@@ -1741,14 +1750,14 @@ npm run build && npx vite preview --port 4173 &
 python3 scripts/measure-cartel.py --base http://localhost:4173
 ```
 
-- [ ] **Paso 2: Medir contraste contra el fondo REAL**
+- [x] **Paso 2: Medir contraste contra el fondo REAL**
 
 Es el punto que el spec deja pendiente. **El fondo no es un plano**: la página lleva el shader más
 `--bg-fallback`, que sube hasta #3a1008. Mide bruma sobre la zona alta del cartel (donde el haz es
 más brillante) y el papel del titular encendido. Referencias: `--haze` sobre tinta 6,81:1; sobre
 #3a1008 5,54:1; `--l1` sobre tinta 6,61:1. Todo tiene que pasar AA (4,5:1).
 
-- [ ] **Paso 3: Comprobar Vice y Caelestia contra `main`**
+- [x] **Paso 3: Comprobar Vice y Caelestia contra `main`**
 
 ```bash
 git worktree add /tmp/cartel-main main
@@ -1756,7 +1765,7 @@ git worktree add /tmp/cartel-main main
 Sirve los dos builds y compara capturas de `?theme=vice` y `?theme=caelestia` a 1440×900 y 390×844.
 **Nunca `git stash`.**
 
-- [ ] **Paso 4: Arnés completo y anti-mock**
+- [x] **Paso 4: Arnés completo y anti-mock**
 
 ```bash
 npm run build && npm run lint
@@ -1765,14 +1774,14 @@ grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|l
   src/ --include="*.ts"
 ```
 
-- [ ] **Paso 5: Actualizar la línea base si procede**
+- [x] **Paso 5: Actualizar la línea base si procede** (no procede: 12 fallos conocidos, 0 nuevos)
 
 ```bash
 python3 scripts/verify.py --update-baseline   # y revisa el diff antes de commitear
 ```
 Una línea base que se queda grande vuelve a esconder cosas.
 
-- [ ] **Paso 6: Cerrar el spec**
+- [x] **Paso 6: Cerrar el spec**
 
 Cambia `Estado: pendiente de plan` por `Estado: implementado`, añade la segunda captura (Task 8) al
 apartado de composición y un `## Registro de implementación` con lo que se desvió del plan.

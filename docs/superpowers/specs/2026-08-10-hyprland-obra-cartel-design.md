@@ -1,6 +1,6 @@
 # El cartel — la obra en Hyprland deja de ser un acordeón y pasa a ser cinco titulares
 
-Estado: pendiente de plan
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-10-hyprland-obra-cartel.md`
 Fecha: 2026-08-10
 Alcance: **solo el tema Hyprland**. `[data-scene="obra"]` (`src/sections/obra/projectScene.ts`,
@@ -179,6 +179,22 @@ no es captura real"*, y por eso existe la bandera `--allow-gallery-placeholder` 
 **El diseño no lleva estado de "captura ausente"**: el `.gallery-fallback` actual se conserva como
 red de seguridad ante un fallo de carga puntual, que es su propósito legítimo.
 
+### Las capturas restantes (Task 8)
+
+Corrección 2026-08-10: **este apartado no estaba en el spec original.** `project.gallery` puede
+llevar más de una captura por proyecto (EchoPlan, TesisFar, HyprFinance y WatchDog llevan dos; solo
+«Editor de texto» lleva una) y la primera versión de esta sección solo daba sitio a la primera —
+las demás se habrían perdido en silencio. Se detectó al revisar la Task 6 y se añadió al plan como
+Task 8, antes de cerrar.
+
+Cada foto que no sea la primera se planta como un tile de **96×60 px**, en una banda
+(`[data-obra-otras]`) anclada **bajo la lupa**, con el mismo margen (16 px) que ya separaba la lupa
+de la ficha. El tile **intercambia** su foto con la de la lupa — un conmutador literal y reversible
+(`engancharOtras`, `obraCartel.ts`), no un selector con estado "activo": lo que se ve en el tile es
+precisamente lo que no se ve en grande en ese momento, y `destroy()` revierte el intercambio.
+Sin fotos de sobra (el caso de «Editor de texto») la banda queda vacía y no pinta ningún tile —
+mismo criterio que las marcas del stack sin `simple-icon`.
+
 ---
 
 ## Tipografía
@@ -211,9 +227,27 @@ entre temas es lo que este proyecto tiene prohibido.
 
 **El contraste se mide contra el fondo real**, que no es un plano: la página lleva el shader más
 `--bg-fallback`, que sube hasta #3a1008. Referencias ya medidas en el repo: `--haze` sobre tinta
-6,81:1; `--haze` sobre #3a1008 5,54:1; `--l1` sobre tinta 6,61:1. **Pendiente de medir con el
-arnés** en este diseño: bruma sobre el fondo real en la zona alta del cartel, donde el haz es más
-brillante, y el papel del titular encendido.
+6,81:1; `--haze` sobre #3a1008 5,54:1; `--l1` sobre tinta 6,61:1.
+
+**Medido con el arnés (Task 9, `contraste_fondo_real` en `measure-cartel.py`) y FALLA AA.** El
+fondo real no se queda en el techo estático `#3a1008`: `hyprEmber.ts` mezcla el color de `--l1`
+(`vec3(1.0, 0.353, 0.204)` = `#ff5a34`, el mismo hex de la marca activa) directamente en el haz, y
+`.bg-theme` es `position: fixed` — el fondo no depende del scroll, así que la fila puede posarse
+sobre cualquier fotograma del shader. Muestreando el viewport entero durante 16,8 s (p99.5, mismo
+criterio que `measure-bg-luma.py`) el peor caso real es rgb(255, 94, 60), casi idéntico a `--l1`:
+
+| Contra el peor fondo real medido | Ratio | AA (4,5:1) |
+|---|---|---|
+| `--haze` | 1,01:1 | **NO PASA** |
+| `--l1` | 1,02:1 | **NO PASA** (esperado: es la misma pieza que activa el haz) |
+| papel (titular encendido) | 2,63:1 | **NO PASA** |
+
+Es un hallazgo real, no maquillado: el techo de brillo del shader de Hyprland (`hyprEmber.ts`) no
+tiene ningún límite equivalente al que `measure-bg-luma.py` impone sobre Vice. **Pendiente de
+decisión de producto** — no se corrige en esta tarea (un contraste que no pasa AA no se arregla
+por cuenta propia). Alternativas típicas para una sesión futura: bajar el pico del haz en el propio
+shader (mismo patrón que el techo de Vice), o dar a `--haze`/papel un scrim propio dentro de la
+franja donde vive el cartel.
 
 ---
 
@@ -363,3 +397,42 @@ largo. Es el único scroll interno que este diseño acepta.
 3. **El ordinal gigante actual** (`projectScene.ts`, `clamp(7rem,26vw,22rem)` a
    `paper/[0.06]`) es un dispositivo de Vice. En el cartel se sustituye por `01` a 16 px. Hay que
    ocultarlo sólo en Hyprland.
+
+---
+
+## Registro de implementación
+
+Cierre 2026-08-10 (Task 9). Lo que se desvió del plan durante la ejecución, y por qué:
+
+- **El disparador (`[data-obra-abrir]`) salió del `<h2>`.** Dentro, `reveal.ts` (la receta genérica
+  que usa Caelestia) y `vice.choreography.ts` lo habrían borrado a los pocos ms: los dos hacen
+  `target.textContent = ""` sobre `[data-title]` para partir el titular en caracteres. El botón
+  pasó a ser hermano del `<h2>`, cubriendo la fila entera en Hyprland; en los otros dos temas no
+  existe (oculto por `style.css`, patrón aditivo).
+- **La miniatura se deriva del token, no de un número a mano.** El primer borrador de este spec
+  decía 144×90 px, arrastrado del prototipo (que usaba interlínea 1). El alto real es
+  `--t-8 × 1,12 = 100,63 px` — la caja exacta del título con su interlínea de 1,12 — corregido
+  antes de la Task 2.
+- **La ficha entra y sale por recorte (`clip-path`), no por opacidad.** Consistente con la ley de
+  la sección ("aquí nada se desvanece"); una ficha con fundido la rompía en el punto más visible.
+- **El hueco 1200-1439 px.** La geometría de la lupa/ficha estaba en píxeles fijos (760/800/520
+  sobre 1440) y los `@media` de móvil/tableta solo cubrían hasta 1199: un portátil de 1280 sacaba
+  la ficha por la derecha de la pista. Se cerró derivando la geometría de `cqw` sobre el ancho real
+  de `.obra-track` (`container-type: inline-size`), no con un tercer breakpoint — los mismos
+  números medidos (760/800/520) se conservan exactos a 1440 y encogen sin desbordar por debajo.
+- **Las marcas del stack usan `simple-icons`** (ya estaba en el repo vía `src/utils/icons.ts`), no
+  monogramas dibujados a mano, y comparten gramática con el catastro de "Con qué construyo": friso
+  monocromo sin caja, sin filete, sin radio — no tiles con borde. `Zustand` no tiene marca en
+  `simple-icons` y no pinta tile; su nombre ya está en la línea de stack de arriba, así que no se
+  pierde información.
+- **`problem` no aparece en la ficha, y el enlace al repositorio sí.** Decisión de Aoshi del
+  2026-08-10 que corrigió un hueco real del spec original: la primera versión describía la ficha
+  con "Qué pasaba antes" y sin el enlace, dejando el único gesto accionable de la sección (el
+  repositorio, que tienen tres de los cinco proyectos) sin sitio en ninguna parte.
+- **El intercambio de capturas restantes (Task 8) es un conmutador literal reversible**, no un
+  selector con estado "activo" — el tile intercambia su foto con la de la lupa, y `destroy()`
+  revierte el intercambio si el módulo se desmonta con una fila abierta.
+- **El contraste contra el fondo real falla AA y queda documentado, no corregido** (ver
+  `## Color y contraste`): `--haze` 1,01:1, papel 2,63:1 contra el peor caso medido del shader real
+  — muy por debajo del 4,5:1 que exige el propio criterio de aceptación de este spec. Es una
+  decisión de producto pendiente, fuera del alcance de esta tarea.
