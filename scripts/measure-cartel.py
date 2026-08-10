@@ -562,6 +562,32 @@ def apertura(pg) -> list[str]:
                 if (cajaPista.left - r.left > 1) f.push(`fila ${i}: ${nombre} desborda ${Math.round(cajaPista.left - r.left)}px por la izquierda`);
                 if (r.height < 1) f.push(`fila ${i}: ${nombre} con alto 0`);
               }
+              // Las filas apartadas NO pueden pintar fuera del carril.
+              //
+              // Se comprueba en dos mitades porque ninguna basta sola:
+              //   (a) que las cuatro filas apartadas esten de verdad FUERA de
+              //       la caja del carril -- si no, esto no estaria midiendo
+              //       nada;
+              //   (b) que el carril las RECORTE. Aqui si se mira una propiedad
+              //       calculada, a proposito: recortar no cambia el rectangulo
+              //       de nadie, y el hit-testing tampoco lo delata (la seccion
+              //       siguiente esta por encima en el orden del documento, asi
+              //       que `elementFromPoint` devuelve esa seccion tanto si las
+              //       filas fantasma se ven como si no -- comprobado
+              //       reintroduciendo `overflow: visible`). Lo que se veia:
+              //       titulares, ordinales y miniaturas superpuestos a "Con
+              //       que construyo".
+              const fuera = [...secs].filter((s, j) => {
+                if (j === i) return false;
+                const r = s.getBoundingClientRect();
+                return r.top > cajaPista.bottom - 1 || r.bottom < cajaPista.top + 1;
+              });
+              if (fuera.length !== 4) {
+                f.push(`fila ${i}: ${fuera.length} filas apartadas fuera del carril, esperaba 4`);
+              }
+              if (getComputedStyle(pista).overflow !== 'hidden') {
+                f.push(`fila ${i}: el carril no recorta (overflow: ${getComputedStyle(pista).overflow}), las filas apartadas pintan sobre la seccion siguiente`);
+              }
               // Hit-testing REAL sobre el centro del tile. `.click()`
               // programatico (lo que usa `pulsar_intercambia_y_vuelve`)
               // ignora quien esta encima: con la banda fuera del carril,

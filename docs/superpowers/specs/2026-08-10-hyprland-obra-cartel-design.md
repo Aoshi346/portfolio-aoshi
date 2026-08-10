@@ -458,3 +458,56 @@ Cierre 2026-08-10 (Task 9). Lo que se desvió del plan durante la ejecución, y 
   margen. El cuerpo de la ficha no se llegó a medir. Es una decisión de producto pendiente
   (techo de brillo en `hyprEmber.ts`, mismo patrón que `measure-bg-luma.py` sobre Vice), fuera del
   alcance de esta tarea.
+
+---
+
+## Revisión de conjunto — la geometría del estado abierto se rehace (2026-08-10)
+
+Las nueve tareas pasaron su revisión individual; la de conjunto dictaminó **no integrable**. La
+raíz era una sola: **el estado abierto estaba maquetado en píxeles absolutos contra un marco de
+1400 × 820 que solo existía en el prototipo**, y que además recortaba. En el DOM real
+`.obra-track` mide 482-548 px y no recortaba nada. Medido en el build servido:
+
+| Ancho | Carril | Antes | Ahora |
+|---|---|---|---|
+| 821 / 1000 / 1024 | 482 | ficha con **alto 0** (`top: 570px`) | ficha completa, carril 786 / 835 / 846 |
+| 1280 | 548 | lupa 59 px fuera, banda 75 px fuera | todo dentro, carril 631 |
+| 1440 | 548 | ídem, tile no pulsable (`elementFromPoint` → sección siguiente) | todo dentro, carril 683 |
+
+Lo que cambia respecto a lo escrito más arriba en este documento:
+
+- **El carril crece mientras hay una ficha abierta.** Es la decisión de diseño de esta revisión.
+  Con la lupa de 760 × 475 ya aprobada, el estado abierto pide 683 px y el carril natural da 548:
+  o crecía el carril, o había que encoger la lupa o mudar la banda de capturas. Crece el carril,
+  animado con la misma curva (`hard`) que la apertura, y vuelve a su alto natural al cerrar.
+- **Los tres hijos cuelgan de un panel en rejilla** (`.obra-panel` > `.obra-visor` [lupa + banda]
+  + `.obra-ficha`), no de tres posiciones absolutas sueltas. El hueco superior lo fija
+  `--cartel-fila`, que es el alto **real** de la fila abierta medido en cada apertura, no un 132
+  escrito a mano (se equivocaba en 3 de los 4 anchos medidos, y en móvil se comía 26 px del
+  propio titular).
+- **`.obra-track` recorta** (`overflow: hidden`). Las cuatro filas apartadas pintaban sobre "Con
+  qué construyo": nadie las paraba.
+- **La lupa lleva el alto por proporción** (`aspect-ratio`), no en píxeles: con ancho en `cqw` y
+  alto fijo pasaba de 1,6:1 a 1440 a 1,42:1 a 1280, y con `object-fit: cover` recortaba más
+  cuanto más estrecha la ventana.
+- **La miniatura también** (`aspect-ratio: 16/10` sobre su alto): era `flex: 0 0 144px` con alto
+  100,63 → 1,43:1, no los **161 × 100,6** que este spec ya pedía. El ancho se había quedado del
+  prototipo cuando se corrigió el alto.
+- **El visor móvil recupera los 336 × 190 del spec.** La Task 8 lo había bajado a 336 × 130
+  (2,58:1) para hacer sitio a la banda contra un carril que no crecía.
+- **Desaparece el scroll interno de la ficha** en móvil y tableta: el carril crece hasta
+  contenerla, así que se lee desplazando la página. La tabla de "desplazamiento interno" de más
+  arriba queda sin efecto.
+- **La ficha recupera su espaciado.** Los dos apretones (interlínea 1,625 → 1,375 y margen de las
+  marcas 12 → 8 px "porque desbordaba 3 px") se pagaron para caber en el marco imaginario,
+  mientras la hermana de al lado se salía 59 px sin que nadie lo midiera.
+- **Bajo 1200 px el panel es de una sola columna** y la lupa mide 66cqw (542 px a 821, 791 a
+  1199), en vez de 592 × 370 fijos. A 821 px una segunda columna mediría 296 px, que no es una
+  columna de lectura.
+
+Y en el arnés (`scripts/measure-cartel.py`): se miden **los tres** hijos por sus cuatro lados (no
+solo la ficha), el tile se comprueba con hit-testing real, `ANCHOS` deja de medir la tableta a
+820 —que cae dentro de `@media (max-width: 820px)`, o sea la rama de móvil: el tramo 821-1199 no
+lo ejercía **nadie**— y suma 821, 1000, 1024 y 1200. `contraste_fondo_real` pasa detrás de
+`--contraste`: mide un hallazgo de producto abierto, así que empujaba fallos siempre y dejaba el
+semáforo de geometría permanentemente en rojo.
