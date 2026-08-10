@@ -8,7 +8,11 @@ Ocho aserciones, y todas nacieron de un fallo real o de una trampa ya pagada:
      otras siete aserciones se autoanulan si esta falta.
   2. Los cuatro pies cierran a la misma cota en escritorio. Con altura
      minima en vez de fija, la parcela cuyo cruce ocupa mas lineas sube su
-     pie y el rectangulo deja de cerrar.
+     pie y el rectangulo deja de cerrar. Distingue "faltan franjas" (menos
+     de 4 nodos `[data-credit-strip]`) de "las franjas existentes no
+     alinean" (4 nodos, cotas distintas): son dos defectos distintos y en
+     un estado intermedio de la implementacion (1-3 franjas) confundirlos
+     habria dado un mensaje que miente.
   3. Ningun nombre lleva acento en reposo, en los dos viewports. El acento
      es estado; seis nombres se leian como apuntados sin estarlo, y en
      movil lo provocaba ademas la siembra inicial de la franja.
@@ -116,7 +120,9 @@ def main() -> int:
                     "() => Array.from(document.querySelectorAll('[data-credit-strip]'))"
                     " .map(s => Math.round(s.getBoundingClientRect().top))"
                 )
-                if len(set(cotas)) != 1:
+                if len(cotas) != 4:
+                    fallos.append(f"[escritorio] faltan franjas: {len(cotas)} de 4 [data-credit-strip]")
+                elif len(set(cotas)) != 1:
                     fallos.append(f"[escritorio] los pies no cierran a la misma cota: {cotas}")
             else:
                 # 6. alto de la seccion
