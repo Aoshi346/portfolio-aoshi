@@ -496,8 +496,13 @@ En su lugar:
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-mini {
   display: block;
   order: 3;
-  flex: 0 0 144px;
-  height: 90px;              /* = caja del titulo a --t-8 con interlinea 1,12 */
+  /* La miniatura mide EXACTAMENTE la caja del titulo. No se escribe el numero
+     a mano: `--t-8` son 89,85px y 89,85 x 1,12 = 100,63 — el "90px" que decia
+     antes este plan era un error de aritmetica, arrastrado del prototipo, que
+     usaba interlinea 1. Derivarlo del token lo mantiene cuadrado solo.
+     El ancho conserva la proporcion apaisada 16:10 de la captura. */
+  flex: 0 0 calc(var(--t-8) * 1.12 * 1.6);
+  height: calc(var(--t-8) * 1.12);
   margin: 0;
   position: relative;
   overflow: hidden;
@@ -1365,6 +1370,26 @@ def movil(pg) -> list[str]:
 ```
 
 Llama a `cartel_en_reposo`, `escala_tipografica` y `apertura` **en los tres anchos** de `ANCHOS`.
+
+**Una aserción hay que acotarla por ancho, y es importante.** `cartel_en_reposo` exige que la
+miniatura mida lo mismo que la caja del título. Eso **sólo se sostiene a partir de 1200 px**, que es
+donde el título vale `--t-8`. Por debajo, el título encoge a `--t-6` (caja de 56,6 px) y a `--t-4`
+(31,8 px), y una miniatura de ese tamaño no enseñaría nada: por eso el diseño le da medidas propias
+(152×95 en tableta, 96×60 en móvil). Añade el ancho como parámetro y comprueba la igualdad sólo en
+escritorio:
+
+```python
+def cartel_en_reposo(pg, ancho: int) -> list[str]:
+    ...
+            # La miniatura iguala la caja del titulo SOLO a partir de 1200px.
+            # Por debajo el titulo encoge a --t-6 y --t-4 y la miniatura
+            # tendria 90 y 51px de ancho: ilegible. Ahi lleva medida propia.
+            if ancho >= 1200 and abs(mr.height - tr.height) > 2:
+                fallos.push(...)
+```
+
+Lo que **sí** se comprueba en los tres anchos: que la miniatura está alineada verticalmente con el
+título, que el título no se corta, y que las cinco filas caben en el viewport.
 
 - [ ] **Paso 2: Ejecutarlo y ver que falla**
 

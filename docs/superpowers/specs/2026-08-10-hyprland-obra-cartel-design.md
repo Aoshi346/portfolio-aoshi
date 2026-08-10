@@ -95,7 +95,7 @@ mandan sobre los píxeles**: el encuadre pasa a ser el área de contenido de `[d
 | Ordinal (`01`) | `--t-2` 16 px, peso 700, bruma, alineado al pie de la caja del título |
 | Título | `--t-8` 89,85 px, peso 600, `letter-spacing: -0.042em`, `line-height: 1.12`, bruma |
 | Área (`tag`) | 12 px, tracking `0.26em`, versalitas, bruma, pegada al canto derecho del bloque de texto |
-| Miniatura | **144 × 90 px** — 90 px es exactamente la caja del título a `--t-8` con interlínea 1,12 |
+| Miniatura | **161 × 100,6 px** — el alto es exactamente la caja del título: `--t-8` (89,85) × 1,12. El ancho conserva la proporción apaisada 16:10 de la captura. Se deriva del token, no se escribe a mano: la primera versión de este spec decía 144 × 90, arrastrando el prototipo, que usaba interlínea 1 |
 | Filete entre filas | 1 px `--rule`, arriba de cada fila y bajo la última |
 
 La miniatura **recorta, no reduce**: `object-fit: cover` con `object-position: 50% 0%`. A ese
