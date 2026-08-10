@@ -1148,12 +1148,33 @@ git commit -m "feat(obra): la captura viaja de la fila a la lupa con Flip"
   slug desconocido, a propósito.
 - Produce: `slugDeStack(nombre: string): string | null` en `src/utils/stackIcons.ts`.
 
-**Corrección del spec:** el spec dice que las marcas serían monogramas dibujados a mano porque los
-logos «traen su propio color». Es **falso** en este repo: `src/utils/icons.ts` ya inlinea
-`simple-icons`, que son de un solo trazo y heredan `currentColor`. Se usan los iconos reales,
-monocromos. La conclusión (monocromía) no cambia; el medio sí. **Zustand no existe en
-`simple-icons`**: un nombre sin marca no pinta tile — el nombre ya está escrito en la línea de
-stack, así que no se pierde información y no se inventa un logotipo.
+**Corrección del spec, dos cosas.**
+
+**Primera:** el spec dice que las marcas serían monogramas dibujados a mano porque los logos «traen
+su propio color». Es **falso** en este repo: `src/utils/icons.ts` ya inlinea `simple-icons`, que son
+de un solo trazo y heredan `currentColor`. Se usan los iconos reales, monocromos. La conclusión
+(monocromía) no cambia; el medio sí. **Zustand no existe en `simple-icons`**: un nombre sin marca no
+pinta nada — el nombre ya está escrito en la línea de stack, así que no se pierde información y no
+se inventa un logotipo.
+
+**Segunda: el spec describe tiles cuadrados de 34 px con filete de brasa, y eso se retira.** Aoshi
+decidió el 2026-08-10 que las marcas **comparten gramática con el catastro**, la sección «Con qué
+construyo» que se está rediseñando en paralelo
+(`docs/superpowers/specs/2026-08-10-hyprland-stack-catastro-design.md`, rama
+`worktree-hyprland-stack-catastro`). Su elemento firma es **un friso de estas mismas marcas de
+`simple-icons`**, a 14 px, en `--haze`, sin caja. Un tile con filete aquí haría que la misma marca
+se leyera de dos formas distintas dentro del mismo tema.
+
+Manda la firma: allí el friso **es** el dispositivo, aquí las marcas son un detalle de apoyo. Esta
+ficha adopta el tratamiento y sólo cambia el tamaño, que es lo único que puede depender del
+contexto. La regla común: **monocromas, `--haze` en reposo, `--l1` sólo cuando algo está activo, y
+nunca un logotipo con su color de marca.**
+
+Lo que **no** se comparte, y es correcto: el catastro apaga las marcas vecinas con `opacity: 0.42`
+al apuntar una. Aquí eso lo prohíbe la ley de la sección. La gramática común es de **tratamiento**,
+no de movimiento.
+
+El paso 7 de esta tarea corrige el spec con las dos cosas.
 
 - [ ] **Paso 1: Añadir la aserción que falla**
 
@@ -1249,18 +1270,16 @@ creación vacía de la Task 1:
 ```css
 :root[data-theme="hyprland"] .obra-ficha .obra-marcas {
   display: flex;
-  gap: 8px;
+  gap: 14px;
   margin-top: 12px;
   flex-wrap: wrap;
+  color: var(--haze);
 }
 :root[data-theme="hyprland"] .obra-marca {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--l1) 42%, var(--rule));
-  color: var(--catch);
+  /* Sin caja, sin filete, sin radio: misma gramatica que el friso del catastro,
+     que es donde ese friso es la firma. Aqui solo cambia el tamano, que es lo
+     unico que puede depender del contexto. */
+  display: block;
   clip-path: inset(0 100% 0 0);   /* entran por corte, con escalonado */
 }
 :root[data-theme="hyprland"] .obra-marca-svg svg {
