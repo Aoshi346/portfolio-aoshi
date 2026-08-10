@@ -295,7 +295,7 @@ Medidas del prototipo:
 | Visor grande | 336 × 190 | 592 × 370 |
 | Objetivo táctil de fila | ~86 px de alto | ~120 px |
 
-**No se cae ningún bloque en móvil**: la ficha abierta lleva los mismos seis que en escritorio (y `problem` no está en ninguno de los dos desde la decisión del 2026-08-10). La hoja abierta se desplaza
+**No se cae ningún bloque en móvil**: la ficha abierta lleva los mismos seis que en escritorio (y `problem` no está en ninguno de los dos desde la decisión del 2026-08-10). Los números de desplazamiento interno que siguen son el **techo medido en el prototipo**, no un suelo: con el contenido real puede salir menos, y menos es mejor. La hoja abierta se desplaza
 dentro de sí misma entre **27 y 85 px en móvil** y entre **43 y 74 px en tableta**, según el
 proyecto — el pie de Rol y Periodo queda medio dedo por debajo del pliegue en los de texto más
 largo. Es el único scroll interno que este diseño acepta.
