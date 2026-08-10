@@ -261,6 +261,136 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
     // Sonda del arnes: el ritmo se mide con tl.progress() desde dentro de la
     // pagina; page.screenshot() en headless perturba GSAP.
     (window as unknown as { __hyprSkills?: ReturnType<Gsap["timeline"]> }).__hyprSkills = tl;
+
+    // Colores resueltos una vez, fuera del bucle de interaccion: `--l3` y
+    // `--haze` son estaticos en Hyprland (themes.css), y GSAP interpola mejor
+    // un hex resuelto que un `var()` crudo, que no siempre se parsea igual en
+    // todos los navegadores dentro de un tween de color.
+    const vars = getComputedStyle(root);
+    const L3 = vars.getPropertyValue("--l3").trim() || "#ffa03c";
+    const HAZE = vars.getPropertyValue("--haze").trim() || "#b18c86";
+
+    // Gesto 5 — el apuntado. Vive FUERA de `tl` a proposito: la asercion 13
+    // del arnes cuenta los targets de `window.__hyprSkills`, y estos tweens
+    // no son del gesto de entrada (que pasa UNA vez) sino de una interaccion
+    // que se repite sin fin. Colgarlos de `tl` los mezclaria y ademas
+    // rompería esa cuenta.
+    parcelas.forEach((parcela, gi) => {
+      const glow = parcela.querySelector<HTMLElement>(".credits-glow");
+      if (!glow) return;
+
+      const strip = root.querySelector<HTMLElement>(`[data-credit-strip][data-parcela="${gi}"]`);
+      const marcasRow = root.querySelector<HTMLElement>(
+        `[data-credit-marks-row][data-parcela="${gi}"]`,
+      );
+      const marcas = marcasRow
+        ? Array.from(marcasRow.querySelectorAll<HTMLElement>(".credits-mark"))
+        : [];
+      const label = root.querySelector<HTMLElement>(`[data-credit-group="${gi}"]`);
+      const nombres = Array.from(
+        root.querySelectorAll<HTMLElement>(`[data-credit][data-parcela="${gi}"]`),
+      );
+
+      /*
+       * La luz del lindero no salta a la fila: la lleva un `quickTo`, asi
+       * que al recorrer nombres VIAJA por el carril y un salto de Git a
+       * Gemini CLI se ve recorrer. Es la misma idea de la entrada —
+       * corriente por un cable — sostenida dentro del apuntado en vez de
+       * abandonada al acabar: hay un objeto fisico moviendose, no estados
+       * relevandose.
+       */
+      const mover = gsap.quickTo(glow, "y", { duration: 0.42, ease: "power4.out" });
+
+      const apuntar = (boton: HTMLElement, i: number): void => {
+        mover(boton.offsetTop + boton.offsetHeight / 2 - 19);
+        gsap.to(glow, { opacity: 1, duration: 0.42 });
+        // Se realza QUITANDO, no anadiendo: nada de `filter` ni
+        // `box-shadow`, la linea roja con un shader a pantalla completa
+        // detras.
+        if (marcas.length > 0) {
+          gsap.to(marcas, { opacity: 0.42, scale: 1, duration: 0.42, ease: "power3.out" });
+          const marcaActiva = marcas[i];
+          if (marcaActiva) {
+            gsap.to(marcaActiva, { opacity: 1, scale: 1.28, duration: 0.42, ease: "power3.out" });
+          }
+        }
+        // El rotulo del area va lento A PROPOSITO: apuntar Django no solo
+        // enciende Django, calienta despacio "Backend y datos". Lo rapido es
+        // la accion, lo lento es el contexto.
+        if (label) gsap.to(label, { color: L3, duration: 0.9, ease: "power3.out" });
+      };
+
+      const apagar = (relatedTarget: EventTarget | null): void => {
+        // Moverse ENTRE nombres de la MISMA parcela no apaga nada: solo la
+        // luz viaja de uno a otro. Apagar aqui reintroduciria el parpadeo
+        // fila a fila que el `quickTo` existe para evitar.
+        if (relatedTarget instanceof HTMLElement && nombres.includes(relatedTarget)) return;
+        gsap.to(glow, { opacity: 0, duration: 0.9 });
+        if (marcas.length > 0) {
+          gsap.to(marcas, { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" });
+        }
+        if (label) gsap.to(label, { color: HAZE, duration: 0.9, ease: "power3.out" });
+      };
+
+      nombres.forEach((boton, i) => {
+        boton.addEventListener("mouseenter", () => apuntar(boton, i));
+        boton.addEventListener("focus", () => apuntar(boton, i));
+        boton.addEventListener("mouseleave", (ev) => apagar((ev as MouseEvent).relatedTarget));
+        boton.addEventListener("focusout", (ev) => apagar((ev as FocusEvent).relatedTarget));
+      });
+
+      /*
+       * El rodillo de la franja: sustituye el `replaceChildren` nativo de la
+       * franja por una entrada/salida animada. El unico punto de union con
+       * `credits.ts` es un metodo del DOM que `select()` ya llama — no hace
+       * falta tocar ese fichero para esta tarea.
+       */
+      if (strip) {
+        const nativo = strip.replaceChildren.bind(strip);
+        strip.replaceChildren = ((...nodes: Array<Node | string>) => {
+          const nuevo = nodes[0];
+          if (
+            nodes.length !== 1 ||
+            !(nuevo instanceof HTMLElement) ||
+            !nuevo.classList.contains("credits-strip-in")
+          ) {
+            nativo(...nodes);
+            return;
+          }
+          /*
+           * Lo viejo sale por arriba mientras lo nuevo entra por abajo.
+           * Antes solo entraba lo nuevo, que es un fundido disfrazado.
+           *
+           * Barrido antes de montar: recorriendo nombres rapido llegan
+           * varias selecciones dentro de los 420ms del rodillo y los nodos
+           * se apilaban sin limite. Verificado con 6 selecciones en 600ms:
+           * debe quedar 1.
+           */
+          const previos = Array.from(strip.querySelectorAll<HTMLElement>(".credits-strip-in"));
+          const viejo = previos.pop() ?? null;
+          for (const n of previos) {
+            gsap.killTweensOf(n);
+            n.remove();
+          }
+          strip.appendChild(nuevo);
+          gsap.fromTo(
+            nuevo,
+            { yPercent: 100, opacity: 0 },
+            { yPercent: 0, opacity: 1, duration: 0.42, ease: "power4.out" },
+          );
+          if (viejo) {
+            gsap.killTweensOf(viejo);
+            gsap.to(viejo, {
+              yPercent: -100,
+              opacity: 0,
+              duration: 0.3,
+              ease: "power2.in",
+              onComplete: () => viejo.remove(),
+            });
+          }
+        }) as typeof strip.replaceChildren;
+      }
+    });
   }
 };
 

@@ -4449,6 +4449,49 @@
 :root[data-theme="hyprland"] .credits-parcela:first-child .credits-rail {
   left: 0;
 }
+/*
+ * El ambiente del gesto 5 (el apuntado): el carril lee `--by`, la posicion
+ * de la luz de la pagina que el gesto 3 YA escribe en `:root` en cada
+ * `onUpdate` del scroll. Cero rAF nuevos, cero timers, cero nodos: es un
+ * `background-image` que se repinta cuando la variable cambia, y la
+ * variable ya cambia. Va DESPUES de la regla de arriba a proposito: mismo
+ * selector, misma especificidad, y solo toca `background-image` — la
+ * cascada lo resuelve por orden de aparicion sin pisar el `background-color`
+ * (`var(--rule)`) de la regla anterior.
+ */
+:root[data-theme="hyprland"] .credits-rail {
+  background-image: linear-gradient(
+    to bottom,
+    var(--rule) 0%,
+    color-mix(in oklab, var(--l1) 22%, var(--rule)) var(--by, 50%),
+    var(--rule) 100%
+  );
+}
+
+/*
+ * La luz que viaja (gesto 5). Nace invisible: su unico estado visible es el
+ * del apuntado, nunca un reposo con JS desactivado — mismo contrato que la
+ * chispa de arriba. Altura de 38px: `boton.offsetTop + boton.offsetHeight /
+ * 2 - 19` en la coreografia centra la luz en el nombre apuntado, y 19 es la
+ * mitad de esos 38px. `y` (transform) es lo que mueve el `quickTo`, nunca
+ * `top`: un `top` animado dispara layout con el shader detras.
+ */
+:root[data-theme="hyprland"] .credits-glow {
+  position: absolute;
+  left: -3px;
+  top: 0;
+  width: 5px;
+  height: 38px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, transparent, var(--l3), transparent);
+  box-shadow: 0 0 10px 2px rgb(var(--l1-ch) / 0.55);
+  opacity: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+:root[data-theme="hyprland"] .credits-parcela:first-child .credits-glow {
+  left: -2px;
+}
 :root[data-theme="hyprland"] .credits-spark {
   position: absolute;
   left: -1.5px;
@@ -4578,6 +4621,57 @@
    * la misma propiedad heredada.
    */
   transition: none;
+}
+
+/*
+ * El apuntado (gesto 5, hypr.choreography.ts): el nombre se desplaza 6px y
+ * calienta a `--l3` al pasar el foco o el raton — en el HIJO, nunca en el
+ * `<button>`: un `transform` inline de GSAP siempre gana a una regla CSS, y
+ * aqui el que anima es CSS puro, pero el mismo botón (`.credit`) ya recibe
+ * `color` por la `animation` de la lampara (arriba), asi que el desplazamiento
+ * tiene que vivir en el span o competiria con ella.
+ *
+ * El prototipo pedia `.credit.is-active` como tercer disparador, junto a
+ * `:hover`/`:focus-visible`. Se cambia por `[data-credit-picked]`: `.is-active`
+ * es GLOBAL y lo pone `select()` en CUALQUIER invocacion, incluida la
+ * sintetica de sembrado (`credits.ts`, `rows[0].dispatchEvent(new
+ * MouseEvent("mouseenter"))`, `isTrusted: false`). Con `.is-active` en esta
+ * regla, la primera tecnologia sembrada quedaba con el acento encendido
+ * desde el arranque sin que nadie la senalara — medido, rompia la asercion
+ * "acento en reposo" del arnes en los dos viewports. `[data-credit-picked]`
+ * es el mismo interruptor que ya usa Hyprland mas abajo para el acento
+ * persistente: solo lo pone la coreografia de `credits.ts` tras una
+ * interaccion real (`ev.isTrusted`), nunca en el sembrado.
+ *
+ * La transicion NUNCA se concede sin condicion: eso es exactamente la
+ * carrera que el bloque de arriba ya explica y apago con `transition: none`.
+ * Aqui se reabre, pero SOLO fuera de la ventana activa de la lampara
+ * (`.is-caught` sin `.is-caught-still` todavia) — la misma pareja de
+ * condiciones que ya distingue `.credit.is-caught.is-caught-still`. Medido
+ * tras esto: el pico de `document.getAnimations()` durante la entrada sigue
+ * en el mismo numero que documenta la asercion 12 (informe de la tarea 9).
+ */
+:root[data-theme="hyprland"] .credit:hover .credit-name,
+:root[data-theme="hyprland"] .credit:focus-visible .credit-name,
+:root[data-theme="hyprland"] .credit[data-credit-picked] .credit-name {
+  color: var(--l3);
+  transform: translateX(6px);
+}
+:root[data-theme="hyprland"] .credit:not(.is-caught) .credit-name,
+:root[data-theme="hyprland"] .credit.is-caught-still .credit-name {
+  transition: transform 0.9s var(--slow), color 0.9s var(--slow);
+}
+:root[data-theme="hyprland"] .credit:not(.is-caught):hover .credit-name,
+:root[data-theme="hyprland"] .credit:not(.is-caught):focus-visible .credit-name,
+:root[data-theme="hyprland"] .credit:not(.is-caught)[data-credit-picked] .credit-name,
+:root[data-theme="hyprland"] .credit.is-caught-still:hover .credit-name,
+:root[data-theme="hyprland"] .credit.is-caught-still:focus-visible .credit-name,
+:root[data-theme="hyprland"] .credit.is-caught-still[data-credit-picked] .credit-name {
+  transition: transform 0.42s var(--hard), color 0.42s var(--hard);
+}
+:root[data-theme="hyprland"] .credit:focus-visible {
+  outline: 2px solid var(--l3);
+  outline-offset: 3px;
 }
 
 /*
