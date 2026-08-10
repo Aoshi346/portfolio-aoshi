@@ -1,3 +1,4 @@
+import { STRIP_REPAINT_EVENT, type StripRepaintDetail } from "../components/credits";
 import type { Choreography, Gsap } from "./choreography";
 
 const ID = "hypr";
@@ -332,6 +333,17 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
         if (label) gsap.to(label, { color: HAZE, duration: 0.9, ease: "power3.out" });
       };
 
+      /*
+       * `credits.ts` registra SUS propios `mouseenter`/`focus`/`click` en
+       * `select()` sobre estos mismos botones — pinta el panel/franja
+       * compartidos y marca `.is-active`/`data-credit-picked`. Los dos
+       * conjuntos de listeners son independientes (ninguno lee ni cancela
+       * lo que escribe el otro: este solo mueve la luz, el friso y el
+       * rotulo) y el navegador los ejecuta en el orden en que se
+       * registraron, asi que el orden importa solo si algun dia uno de los
+       * dos empieza a depender de un efecto secundario del otro dentro del
+       * mismo evento — hoy no ocurre.
+       */
       nombres.forEach((boton, i) => {
         boton.addEventListener("mouseenter", () => apuntar(boton, i));
         boton.addEventListener("focus", () => apuntar(boton, i));
@@ -340,55 +352,67 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
       });
 
       /*
-       * El rodillo de la franja: sustituye el `replaceChildren` nativo de la
-       * franja por una entrada/salida animada. El unico punto de union con
-       * `credits.ts` es un metodo del DOM que `select()` ya llama — no hace
-       * falta tocar ese fichero para esta tarea.
+       * El rodillo de la franja: escucha `STRIP_REPAINT_EVENT` (ver
+       * `credits.ts`, `repintarFranja`) en vez de parchear el
+       * `replaceChildren` nativo del nodo. Diferencia real frente a la
+       * version anterior: el gancho ahora es un evento tipado con nombre
+       * propio, declarado y exportado por `credits.ts` — grepeable desde el
+       * fichero que de verdad pinta la franja — en vez de depender de una
+       * firma implicita ("select() llama `strip.replaceChildren(<nodo>)`")
+       * que ningun tipo protegia. Si `repintarFranja` cambiara de metodo de
+       * insercion, el rodillo se enteraria del cambio de compilar, no
+       * dejaria de dispararse en silencio.
+       *
+       * `dataset.hyprRodillo` evita el enganche doble: `hyprChoreography`
+       * puede volver a ejecutarse (resize, refresh de ScrollTrigger) sobre
+       * el MISMO nodo `strip`, y un segundo `addEventListener` produciria
+       * dos rodillos corriendo a la vez sobre la misma franja.
        */
-      if (strip) {
-        const nativo = strip.replaceChildren.bind(strip);
-        strip.replaceChildren = ((...nodes: Array<Node | string>) => {
-          const nuevo = nodes[0];
-          if (
-            nodes.length !== 1 ||
-            !(nuevo instanceof HTMLElement) ||
-            !nuevo.classList.contains("credits-strip-in")
-          ) {
-            nativo(...nodes);
-            return;
+      if (strip && !strip.dataset.hyprRodillo) {
+        strip.dataset.hyprRodillo = "1";
+        // Solo un `viejo` puede estar "saliendo" a la vez: si llega un
+        // repintado nuevo mientras el anterior sigue en su animacion de
+        // salida (barrido rapido, varias selecciones dentro de los 420ms
+        // del rodillo), se corta ya en vez de dejar que se apilen dos
+        // salidas — verificado con 6 selecciones en 600ms: debe quedar 1
+        // `.credits-strip-in`.
+        let saliendo: HTMLElement | null = null;
+        strip.addEventListener(STRIP_REPAINT_EVENT, ((ev: CustomEvent<StripRepaintDetail>) => {
+          const { nuevo, viejo } = ev.detail;
+          if (saliendo) {
+            gsap.killTweensOf(saliendo);
+            saliendo.remove();
+            saliendo = null;
           }
-          /*
-           * Lo viejo sale por arriba mientras lo nuevo entra por abajo.
-           * Antes solo entraba lo nuevo, que es un fundido disfrazado.
-           *
-           * Barrido antes de montar: recorriendo nombres rapido llegan
-           * varias selecciones dentro de los 420ms del rodillo y los nodos
-           * se apilaban sin limite. Verificado con 6 selecciones en 600ms:
-           * debe quedar 1.
-           */
-          const previos = Array.from(strip.querySelectorAll<HTMLElement>(".credits-strip-in"));
-          const viejo = previos.pop() ?? null;
-          for (const n of previos) {
-            gsap.killTweensOf(n);
-            n.remove();
-          }
-          strip.appendChild(nuevo);
+          // Lo nuevo entra por abajo. `credits.ts` ya lo dejo como hijo
+          // real de `strip` antes de disparar el evento — `immediateRender`
+          // (por defecto en `fromTo`) aplica el estado inicial en el mismo
+          // tick, asi que no hay fotograma intermedio visible con el nodo a
+          // pelo.
           gsap.fromTo(
             nuevo,
             { yPercent: 100, opacity: 0 },
             { yPercent: 0, opacity: 1, duration: 0.42, ease: "power4.out" },
           );
+          // Lo viejo sale por arriba. `replaceChildren` ya lo retiro del
+          // DOM antes de que este listener lo viera — se reinserta para
+          // poder animarlo, superpuesto a `nuevo` (los dos van siempre en
+          // `position: absolute`, ver `.credits-strip-in` en themes.css).
           if (viejo) {
-            gsap.killTweensOf(viejo);
+            strip.appendChild(viejo);
+            saliendo = viejo;
             gsap.to(viejo, {
               yPercent: -100,
               opacity: 0,
               duration: 0.3,
               ease: "power2.in",
-              onComplete: () => viejo.remove(),
+              onComplete: () => {
+                viejo.remove();
+                if (saliendo === viejo) saliendo = null;
+              },
             });
           }
-        }) as typeof strip.replaceChildren;
+        }) as EventListener);
       }
     });
   }

@@ -23,6 +23,32 @@ interface CreditEntry {
 
 const PANEL_ID = "credits-panel";
 
+/**
+ * Punto de extension explicito del rodillo de la franja (Hyprland, tarea 9).
+ * `repintarFranja` es la UNICA via por la que la franja cambia de contenido
+ * tras el sembrado inicial, y dispara este evento en el propio nodo cada vez
+ * que lo hace. `hypr.choreography.ts` (gesto 5) lo escucha para animar la
+ * entrada/salida; si nadie escucha, la franja igual queda correcta — el
+ * `replaceChildren` real ya paso antes de disparar el evento, asi que el
+ * gancho es aditivo, nunca la unica via de pintar.
+ *
+ * Antes esto era un parche de `strip.replaceChildren` hecho desde fuera
+ * (`hypr.choreography.ts`), enganchado a una firma que este fichero no
+ * declaraba en ningun sitio: si `repintarFranja` cambiara de metodo de
+ * insercion (`innerHTML`, `append`, reconstruir `strip`), el rodillo dejaba
+ * de dispararse SIN un solo error. Con el evento, quien busque por que la
+ * franja se anima encuentra el gancho aqui, grepeable, con tipo.
+ */
+export const STRIP_REPAINT_EVENT = "credits:strip-repaint";
+
+export interface StripRepaintDetail {
+  /** El nodo `.credits-strip-in` que acaba de quedar como hijo real de `strip`. */
+  nuevo: HTMLElement;
+  /** El que había antes, ya retirado del DOM por `replaceChildren` — se manda
+   *  por referencia porque sin ella no hay forma de animarlo saliendo. */
+  viejo: HTMLElement | null;
+}
+
 type Tier = "alto" | "medio" | "bajo";
 
 function toEntry(role: string, item: SkillGroup["items"][number]): CreditEntry {
@@ -110,6 +136,22 @@ function pintarFranja(_strip: HTMLElement, entry: CreditEntry): HTMLElement {
 
   dentro.replaceChildren(...hijos);
   return dentro;
+}
+
+/**
+ * Repinta una franja tras una interaccion real y avisa por evento (ver
+ * `STRIP_REPAINT_EVENT` arriba). El `replaceChildren` real pasa SIEMPRE,
+ * escuche alguien o no — el evento es un extra para quien quiera animar la
+ * transicion, nunca la unica via de pintar. `viejo` se lee ANTES de
+ * reemplazar porque despues ya no esta en el DOM.
+ */
+function repintarFranja(strip: HTMLElement, entry: CreditEntry): void {
+  const viejo = strip.querySelector<HTMLElement>(".credits-strip-in");
+  const nuevo = pintarFranja(strip, entry);
+  strip.replaceChildren(nuevo);
+  strip.dispatchEvent(
+    new CustomEvent<StripRepaintDetail>(STRIP_REPAINT_EVENT, { detail: { nuevo, viejo } }),
+  );
 }
 
 /**
@@ -464,10 +506,20 @@ export function createCredits(): HTMLElement {
           for (const otra of filasPorGrupo[gi]) {
             otra.toggleAttribute("data-credit-picked", otra === row);
           }
-          strips[gi].replaceChildren(pintarFranja(strips[gi], entry));
+          repintarFranja(strips[gi], entry);
         }
       };
 
+      /*
+       * `hypr.choreography.ts` (gesto 5, "el apuntado") registra SUS
+       * propios `mouseenter`/`focus` sobre este mismo boton — mueve la luz
+       * del lindero, no toca `select()` ni este estado. Los dos listeners
+       * son independientes (ninguno cancela ni depende del otro) y GSAP no
+       * consulta nada de lo que `select()` deja escrito, asi que el orden
+       * de registro no importa para el resultado visual. Se deja anotado
+       * aqui porque es un acoplamiento implicito: dos modulos reaccionando
+       * al mismo evento sobre el mismo nodo sin que ninguno lo declare.
+       */
       row.addEventListener("mouseenter", select);
       row.addEventListener("focus", select);
       row.addEventListener("click", select);
