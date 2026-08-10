@@ -68,7 +68,10 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
   const ficha = document.createElement("div");
   ficha.className = "obra-ficha";
   ficha.setAttribute("data-obra-ficha", "");
-  gsap.set(ficha, { opacity: 0, pointerEvents: "none" });
+  // La ficha entra y sale por RECORTE, nunca por opacidad: la ley de la
+  // seccion es que aqui nada se desvanece. El `clip-path` de reposo vive en
+  // el CSS (`.obra-ficha`); aqui solo se fija el estado de puntero.
+  gsap.set(ficha, { pointerEvents: "none" });
   const anuncio = document.createElement("p");
   anuncio.className = "sr-only";
   anuncio.setAttribute("data-obra-anuncio", "");
@@ -78,6 +81,10 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
   let abierta = -1;
   let anclas: Ancla[] = [];
   let particion: InstanceType<typeof SplitText> | null = null;
+  // Se incrementa en cada cierre: el `onComplete` de un cierre anterior lo
+  // comprueba antes de tocar `anclas`, para no llevarse por delante el
+  // contenido que una apertura posterior ya coloco en la ficha.
+  let cierreEnCurso = 0;
 
   /** Los bloques salen de los nodos que ya existen: content.ts no se toca. */
   function bloquesDeFicha(seccion: HTMLElement): HTMLElement[] {
@@ -144,6 +151,14 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       return;
     }
     if (abierta >= 0) cierra();
+    // Invalida cualquier cierre todavia en vuelo y devuelve sus bloques ya:
+    // si la fila anterior cerro pero su recorte de salida no habia
+    // terminado, sus piezas seguian dentro de `ficha` sin restaurar (el
+    // `onComplete` que las iba a devolver aun no ha corrido). Sin este
+    // flush, el `replaceChildren` de mas abajo las desconecta del DOM sin
+    // que nadie las recupere: quedarian huerfanas para siempre.
+    cierreEnCurso += 1;
+    devuelveBloques();
     abierta = indice;
     const fila = filas[indice];
     fila.seccion.classList.add("is-abierto");
@@ -171,7 +186,12 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
     const piezas = bloquesDeFicha(fila.seccion);
     anclas = piezas.map((nodo) => ({ nodo, padre: nodo.parentNode as Node, siguiente: nodo.nextSibling }));
     ficha.replaceChildren(...piezas);
-    gsap.set(ficha, { opacity: 1, pointerEvents: "auto" });
+    gsap.set(ficha, { pointerEvents: "auto" });
+    gsap.fromTo(
+      ficha,
+      { clipPath: "inset(0 100% 0 0)" },
+      { clipPath: "inset(0 0 0 0)", duration: motionReducido ? 0 : 0.42, ease: "hard" },
+    );
     if (!motionReducido) {
       particion = new SplitText(ficha.querySelectorAll("p, .obra-stack"), {
         type: "lines",
@@ -209,11 +229,21 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       stagger: 0.03,
     });
     cortaParticion();
-    devuelveBloques();
+    // Sale tambien por recorte, y el contenido se devuelve DESPUES: si se
+    // vacia antes, lo que se anima durante el cierre es una caja vacia y el
+    // gesto no existe. La guarda de turno evita que este `onComplete` —si ya
+    // esta obsoleto porque se abrio otra fila mientras el recorte corria—
+    // toque `anclas`, que para entonces ya apunta a la fila nueva.
+    const turno = ++cierreEnCurso;
     gsap.to(ficha, {
-      opacity: 0,
-      duration: motionReducido ? 0 : 0.24,
-      onComplete: () => gsap.set(ficha, { pointerEvents: "none" }),
+      clipPath: "inset(0 100% 0 0)",
+      duration: motionReducido ? 0 : 0.42,
+      ease: "hard",
+      onComplete: () => {
+        if (turno !== cierreEnCurso) return;
+        devuelveBloques();
+        gsap.set(ficha, { pointerEvents: "none" });
+      },
     });
     anuncio.textContent = "Ficha cerrada.";
   }
@@ -247,13 +277,24 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
       gsap.killTweensOf(filas.flatMap((f) => [...f.tiras, ...f.entradas, f.mini, f.seccion]));
       gsap.killTweensOf(ficha);
       cortaParticion();
-      // Si `destroy()` llega a mitad de una apertura, la miniatura y los
-      // bloques de la ficha no pueden quedar huerfanos fuera de su fila.
+      // Si `destroy()` llega a mitad de una apertura O de un cierre, la
+      // miniatura y los bloques de la ficha no pueden quedar huerfanos fuera
+      // de su fila. `devuelveBloques()` es un no-op seguro si no hay nada
+      // pendiente (anclas vacio).
       if (abierta >= 0) {
         const fila = filas[abierta];
         fila.seccion.appendChild(fila.mini);
-        devuelveBloques();
       }
+      devuelveBloques();
+      // Este modulo se destruye en `pagehide` precisamente por el bfcache: al
+      // restaurar la pagina no se remonta, asi que sin esto el cartel
+      // volveria con las cinco filas desplazadas fuera de pantalla (el `y`
+      // que dejo el ultimo `abre()`/`cierra()`) y la miniatura con los
+      // estilos inline que le fijo Flip (`absolute: true` escribe
+      // position/top/left/width/height a mano).
+      gsap.set(filas.map((f) => f.seccion), { clearProps: "all" });
+      gsap.set(filas.map((f) => f.mini), { clearProps: "all" });
+      for (const fila of filas) fila.seccion.classList.remove("is-abierto");
       lupa.remove();
       ficha.remove();
       anuncio.remove();

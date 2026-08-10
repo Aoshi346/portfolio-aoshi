@@ -193,14 +193,34 @@ def relevo_es_ola(pg) -> list[str]:
     )
 
 
-def apertura(pg) -> list[str]:
-    """La miniatura y la grande son EL MISMO nodo, la ficha no desborda, y la
-    ficha cerrada no roba el puntero.
+# Numero exacto de bloques que `bloquesDeFicha()` mueve a la ficha: lead,
+# las DOS columnas de `[data-mask]` (Problema/Solucion), las marcas de stack
+# y la fila de metadatos. Los cinco existen SIEMPRE en `projectScene.ts`
+# (incluso `data-obra-marcas`, vacio hasta la Task 5), asi que el numero es
+# constante y no un ">0" que una ficha vacia tambien pasaria.
+BLOQUES_FICHA = 5
 
-    Lo ultimo es un defecto medido en el prototipo: con `opacity: 0` el panel
-    sigue siendo alcanzable y tapa las filas — el arnes se quedo 30s
+
+def apertura(pg) -> list[str]:
+    """La miniatura y la grande son EL MISMO nodo, la ficha no desborda, la
+    ficha cerrada no roba el puntero, Y la ficha abierta lleva sus 5 bloques
+    de contenido (no una caja vacia: `ficha.children.length === N`, no
+    `> 0` — con la ficha vacia la altura es 0 y "no desborda" saldria
+    vacuamente cierto, exactamente el verde falso que dejaria pasar el
+    defecto (b) de `cierra()` vaciando antes de animar).
+
+    Lo del puntero es un defecto medido en el prototipo: con `opacity: 0` el
+    panel sigue siendo alcanzable y tapa las filas — el arnes se quedo 30s
     intentando pulsar hasta que Chrome dijo que elemento interceptaba.
     """
+    # Contenido de referencia de cada `.lead`, leido ANTES de abrir nada: sirve
+    # para comprobar en la segunda pasada que la fila reabierta trae SU propio
+    # contenido, no el de la fila visitada entre medias (la regresion real:
+    # "abrir A, cerrar, abrir B, volver a A" perdia el contenido de A).
+    leads_originales = pg.evaluate(
+        """() => Array.from(document.querySelectorAll('[data-scene="obra"] .lead'))
+          .map(n => n.textContent)"""
+    )
     fallos = pg.evaluate(
         """() => {
           const f = [];
@@ -212,6 +232,37 @@ def apertura(pg) -> list[str]:
           return f;
         }"""
     )
+
+    def abre_y_comprueba(i: int) -> list[str]:
+        pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
+        pg.wait_for_timeout(900)
+        return pg.evaluate(
+            """(args) => {
+              const [i, leadEsperado, nBloques] = args;
+              const f = [];
+              const secs = document.querySelectorAll('[data-scene="obra"]');
+              const abierta = secs[i];
+              if (!abierta.classList.contains('is-abierto')) f.push(`fila ${i}: no se abrio`);
+              const lupa = document.querySelector('[data-obra-lupa]');
+              const mini = document.querySelector(`[data-check-fila="${i}"]`);
+              if (!lupa || !mini || mini.parentElement !== lupa) f.push(`fila ${i}: la captura no viajo a la lupa`);
+              const ficha = document.querySelector('[data-obra-ficha]');
+              const pista = document.querySelector('[data-obra-track]');
+              const desborde = ficha.getBoundingClientRect().bottom - pista.getBoundingClientRect().bottom;
+              if (desborde > 0) f.push(`fila ${i}: la ficha desborda ${Math.round(desborde)}px`);
+              if (getComputedStyle(ficha).pointerEvents !== 'auto') f.push(`fila ${i}: ficha abierta sin puntero`);
+              if (ficha.children.length !== nBloques) {
+                f.push(`fila ${i}: ficha con ${ficha.children.length} bloques, esperaba ${nBloques}`);
+              }
+              const lead = ficha.querySelector('.lead');
+              if (!lead || lead.textContent !== leadEsperado) {
+                f.push(`fila ${i}: el lead de la ficha no es el de esta fila`);
+              }
+              return f;
+            }""",
+            [i, leads_originales[i], BLOQUES_FICHA],
+        )
+
     for i in range(5):
         # Se marca la miniatura de la fila ANTES del clic: una vez viaja a la
         # lupa (que vive al nivel de `.obra-track`, no dentro de `abierta`)
@@ -227,31 +278,37 @@ def apertura(pg) -> list[str]:
             }""",
             i,
         )
-        pg.eval_on_selector_all(
-            "[data-obra-abrir]", f"ns => ns[{i}].click()"
-        )
-        pg.wait_for_timeout(900)
-        fallos += pg.evaluate(
+        fallos += [f"pasada 1, {f}" for f in abre_y_comprueba(i)]
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(700)
+
+    # Segunda pasada: REABRIR filas ya visitadas, no solo recorrer 0..4 una
+    # vez. La primera pasada nunca vuelve atras, asi que "abrir A, cerrar,
+    # abrir B, volver a A" —la regresion real que corrigio esta tarea, donde
+    # A se quedaba sin ficha— vivia solo en un script de autorrevision
+    # desechable y el arnes no la veria. Se visita B (fila 3) entre A y la
+    # reapertura de A (fila 0), y se repite con otro par (fila 1 tras fila 4).
+    for a, b in [(0, 3), (1, 4)]:
+        pg.evaluate(
             """(i) => {
-              const f = [];
               const secs = document.querySelectorAll('[data-scene="obra"]');
-              const abierta = secs[i];
-              if (!abierta.classList.contains('is-abierto')) f.push(`fila ${i}: no se abrio`);
-              const lupa = document.querySelector('[data-obra-lupa]');
-              // el MISMO nodo, no una copia: se recupera por la marca puesta
-              // antes del clic, no por posicion en el documento (que cambia
-              // cuando el nodo viaja a la lupa).
-              const mini = document.querySelector(`[data-check-fila="${i}"]`);
-              if (!lupa || !mini || mini.parentElement !== lupa) f.push(`fila ${i}: la captura no viajo a la lupa`);
-              const ficha = document.querySelector('[data-obra-ficha]');
-              const pista = document.querySelector('[data-obra-track]');
-              const desborde = ficha.getBoundingClientRect().bottom - pista.getBoundingClientRect().bottom;
-              if (desborde > 0) f.push(`fila ${i}: la ficha desborda ${Math.round(desborde)}px`);
-              if (getComputedStyle(ficha).pointerEvents !== 'auto') f.push(`fila ${i}: ficha abierta sin puntero`);
-              return f;
+              const mini = secs[i].querySelector('[data-obra-mini]');
+              if (mini) mini.setAttribute('data-check-fila', String(i));
             }""",
-            i,
+            b,
         )
+        fallos += [f"pasada 2 (via fila {b}), {f}" for f in abre_y_comprueba(b)]
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(700)
+        pg.evaluate(
+            """(i) => {
+              const secs = document.querySelectorAll('[data-scene="obra"]');
+              const mini = secs[i].querySelector('[data-obra-mini]');
+              if (mini) mini.setAttribute('data-check-fila', String(i));
+            }""",
+            a,
+        )
+        fallos += [f"reapertura de fila {a} tras fila {b}, {f}" for f in abre_y_comprueba(a)]
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(700)
     return fallos
