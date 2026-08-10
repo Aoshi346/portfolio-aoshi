@@ -4488,6 +4488,29 @@
 /* La prosa con barras muere aqui. */
 :root[data-theme="hyprland"] .credit:not(:last-child)::after { content: none; }
 
+/*
+ * Mismo caso que `:root[data-theme="vice"] .credit-name` (linea ~3324): el
+ * nombre lo pinta el `<span class="credit-name">` de dentro del boton, no el
+ * boton. La regla base de `style.css` fija en `.credit-name` su propio
+ * `font-size: 1.2rem`, `line-height: 1`, `font-family`, `font-weight`,
+ * `text-transform` y `color` (62% de `--color-paper`) — al estar en el hijo
+ * gana a todo lo que declare `.credit` de arriba, y los tres niveles se
+ * pintaban iguales pese a que el boton si tenia `font-size` distinto por
+ * nivel. Medido: `[data-credit-tier]` variaba 28.43/21.33/16px pero
+ * `.credit-name` computaba 19.2px fijo, y ese span es quien se ve. Aqui "el
+ * nivel se dice SOLO con tipografia" es el contenido de la escena, asi que
+ * es la tercera vez que se paga esta trampa y la ultima que deberia hacer
+ * falta el comentario.
+ */
+:root[data-theme="hyprland"] .credit-name {
+  font-size: inherit;
+  color: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
 /* La franja: altura FIJA, no minima. Con minima, la parcela cuyo cruce ocupa
    mas lineas sube su pie y el rectangulo deja de cerrar. Medido: los cuatro
    pies a la misma cota. */

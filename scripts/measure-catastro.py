@@ -34,6 +34,17 @@ Ocho aserciones, y todas nacieron de un fallo real o de una trampa ya pagada:
       cuatro seguían cerrando a la MISMA cota, solo que esa cota estaba a
       1146px. El tope de 700px deja margen sobre los 562px del prototipo
       para variaciones de fuente sin dejar pasar un descuadre del doble.
+  11. Los tres niveles (`data-credit-tier`) tienen tamanos de fuente
+      distintos entre si, medidos sobre el nodo que PINTA el texto. Nacio de
+      un falso verde real (ronda de arreglo 2 de la tarea 4): la aserción 3
+      ya media color sobre `[data-credit]`, pero `.credit-name` (el `<span>`
+      de dentro) trae su propio `font-size: 1.2rem` y su propio `color` en
+      la base de `style.css` — al estar en el hijo ganaba a todo lo que
+      declarara el boton, y los tres niveles se veian iguales (19.2px fijo)
+      aunque `[data-credit-tier]` si tuviera `font-size` distinto por nivel
+      (28.43 / 21.33 / 16px). "El nivel se dice SOLO con tipografia" es el
+      contenido de la escena: sin esta aserción esa frase era una intención,
+      no algo verificable.
 """
 import argparse
 import sys
@@ -95,9 +106,14 @@ def main() -> int:
             if not catastro_visible(pg):
                 fallos.append(f"[{nombre}] el catastro no se ve: 4 parcelas con caja")
 
-            # 3. acento en reposo
+            # 3. acento en reposo — medido sobre el nodo que PINTA el texto
+            # (`.credit-name` si existe, si no el propio boton). El color se
+            # fija en `.credit`, pero un hijo con su propio `color` gana:
+            # medir el boton daba un falso verde real (ronda 2 de la tarea 4,
+            # el mismo defecto que "el tamano" mas abajo).
             encendidos = pg.evaluate(
                 "(acentos) => Array.from(document.querySelectorAll('[data-credit]'))"
+                " .map(n => n.querySelector('.credit-name') ?? n)"
                 " .filter(n => acentos.includes(getComputedStyle(n).color))"
                 " .map(n => n.textContent.trim())",
                 list(ACENTOS),
@@ -144,6 +160,28 @@ def main() -> int:
                     fallos.append(
                         f"[escritorio] la rejilla mide {alto_rejilla}px"
                         f" (tope {ALTO_MAXIMO_REJILLA_ESCRITORIO})"
+                    )
+
+                # 11. el nivel se dice con tipografia — medido sobre el nodo
+                # que pinta, no sobre el boton. Un `.credit-name` con su
+                # propio `font-size` en la base ganaba al boton y los tres
+                # niveles se veian iguales aunque el boton si variara.
+                tamanos = pg.evaluate(
+                    "() => { const porNivel = {};"
+                    " document.querySelectorAll('[data-credit-tier]').forEach(n => {"
+                    "   const t = n.dataset.creditTier;"
+                    "   const pintor = n.querySelector('.credit-name') ?? n;"
+                    "   const size = parseFloat(getComputedStyle(pintor).fontSize);"
+                    "   (porNivel[t] ??= new Set()).add(size);"
+                    " });"
+                    " return Object.fromEntries("
+                    "   Object.entries(porNivel).map(([k, v]) => [k, [...v]])); }"
+                )
+                planos = {t: sorted(vs) for t, vs in tamanos.items()}
+                representativos = {t: vs[0] for t, vs in planos.items() if vs}
+                if len(set(representativos.values())) != len(representativos):
+                    fallos.append(
+                        f"[escritorio] los niveles no tienen tamanos distintos: {planos}"
                     )
             else:
                 # 6. alto de la seccion
