@@ -167,7 +167,13 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
   }
 
   if (footerChildren.length > 0) {
-    children.push(el("div", "mt-10", footerChildren));
+    // `data-obra-pie`: gancho explicito para el cartel de Hyprland
+    // (`obraCartel.ts`, Task 7). Antes solo se podia seleccionar por
+    // `.mt-10:not(.grid)`, que es fragil (depende de que ningun otro bloque
+    // de la escena reuse esa combinacion de clases) y ya causo un fallo.
+    const pie = el("div", "mt-10", footerChildren);
+    pie.setAttribute("data-obra-pie", "");
+    children.push(pie);
   }
 
   // `scene-surface` es el gancho compartido que Caelestia viste como tarjeta

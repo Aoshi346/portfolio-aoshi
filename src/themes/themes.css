@@ -2418,25 +2418,22 @@
 /*
  * En reposo, la ficha no ocupa sitio.
  *
- * `.mt-10:not(.grid)` es el pie del proyecto ("Ver repositorio" o "Proyecto
- * privado de empresa", `projectScene.ts`): no es uno de los 5 bloques que
- * `bloquesDeFicha()` traslada a la ficha (lead, las dos columnas, marcas,
- * meta), asi que se queda colgando de `.scene-surface` (display:contents) y
- * pasa a ser un flex-item mas de la fila -- el mismo patron aditivo que ya
- * rompio 4 veces (comentario de `style.css`), solo que este bloque no
- * llegaba nunca a la lista. Destapado por la Task 6: a partir de 820px el
- * cartel llevaba desde la Task 4 con este pie flotando dentro de la fila
- * (112x24px, sin romper nada visible a 1440 por casualidad de layout), y en
- * movil desplazaba el titulo a otra linea de flex-wrap. `:not(.grid)` lo
- * distingue del otro `.mt-10` de esta escena (el contenedor de las columnas
- * Problema/Solucion, que ya se vacia via `[data-mask]` y no necesita esta
- * regla).
+ * `[data-obra-pie]` es el pie del proyecto ("Ver repositorio" o "Proyecto
+ * privado de empresa", `projectScene.ts`): desde la Task 7 es uno de los 5
+ * bloques que `bloquesDeFicha()` traslada a la ficha (sustituye a
+ * "Problema"), asi que aqui, en reposo, se apaga igual que el resto -- si no
+ * se queda colgando de `.scene-surface` (display:contents) y pasa a ser un
+ * flex-item mas de la fila, el mismo patron aditivo que ya rompio 4 veces
+ * (comentario de `style.css`). Antes se seleccionaba por `.mt-10:not(.grid)`
+ * (fragil: dependia de que ningun otro bloque de la escena reutilizara esa
+ * combinacion de clases, y ya causo un fallo en la Task 6); el gancho
+ * explicito lo reemplaza.
  */
 :root[data-theme="hyprland"] [data-scene="obra"] .lead,
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-meta,
 :root[data-theme="hyprland"] [data-scene="obra"] [data-mask],
 :root[data-theme="hyprland"] [data-scene="obra"] [data-gallery],
-:root[data-theme="hyprland"] [data-scene="obra"] .mt-10:not(.grid) {
+:root[data-theme="hyprland"] [data-scene="obra"] [data-obra-pie] {
   display: none;
 }
 
@@ -2486,7 +2483,8 @@
   pointer-events: none;
 }
 :root[data-theme="hyprland"] .obra-ficha .lead,
-:root[data-theme="hyprland"] .obra-ficha [data-mask] {
+:root[data-theme="hyprland"] .obra-ficha [data-mask],
+:root[data-theme="hyprland"] .obra-ficha [data-obra-pie] {
   display: block;
 }
 /*

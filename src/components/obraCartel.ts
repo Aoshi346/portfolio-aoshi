@@ -86,14 +86,21 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
   // contenido que una apertura posterior ya coloco en la ficha.
   let cierreEnCurso = 0;
 
-  /** Los bloques salen de los nodos que ya existen: content.ts no se toca. */
+  /** Los bloques salen de los nodos que ya existen: content.ts no se toca.
+   *
+   * El pie del proyecto (enlace al repositorio o nota de "Proyecto privado",
+   * `data-obra-pie` en `projectScene.ts`) sustituye a `mascaras[0]`
+   * ("Problema"): decision de Aoshi (2026-08-10) para que el enlace al
+   * repositorio entre en la ficha sin sumar un sexto bloque. Va ANTES del
+   * `meta` de Rol y Periodo, segun el spec. */
   function bloquesDeFicha(seccion: HTMLElement): HTMLElement[] {
     const piezas: HTMLElement[] = [];
     const lead = seccion.querySelector<HTMLElement>(".lead");
     const mascaras = Array.from(seccion.querySelectorAll<HTMLElement>("[data-mask]"));
     const meta = seccion.querySelector<HTMLElement>(".obra-meta");
     const marcas = seccion.querySelector<HTMLElement>("[data-obra-marcas]");
-    for (const pieza of [lead, mascaras[1], marcas, mascaras[0], meta]) {
+    const pie = seccion.querySelector<HTMLElement>("[data-obra-pie]");
+    for (const pieza of [lead, mascaras[1], marcas, pie, meta]) {
       if (pieza) piezas.push(pieza);
     }
     return piezas;

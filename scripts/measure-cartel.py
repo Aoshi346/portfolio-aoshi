@@ -531,6 +531,53 @@ def apertura(pg) -> list[str]:
     return fallos
 
 
+def enlace_en_ficha(pg) -> list[str]:
+    """El pie del proyecto (enlace al repositorio o nota de "Proyecto
+    privado") viaja a la ficha abierta: `bloquesDeFicha()` lo incluye desde
+    la Task 7. El conteo de bloques (`BLOQUES_FICHA`) no lo detecta -- sigue
+    siendo 5 porque el pie sustituye a `problem` -- asi que hay que mirar el
+    CONTENIDO de la ficha abierta, no solo su tamano."""
+    con_link = [1, 3, 4]  # TesisFar, WatchDog, Editor de texto (content.ts)
+    con_nota = [0, 2]  # EchoPlan, HyprFinance
+    fallos: list[str] = []
+    for i in con_link:
+        pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
+        pg.wait_for_timeout(900)
+        fallo = pg.evaluate(
+            """() => {
+              const ficha = document.querySelector('[data-obra-ficha]');
+              const link = ficha.querySelector('a[href]');
+              if (!link) return 'sin enlace visible en la ficha';
+              const r = link.getBoundingClientRect();
+              if (r.width === 0 || r.height === 0) return 'enlace presente pero sin caja visible';
+              return null;
+            }"""
+        )
+        if fallo:
+            fallos.append(f"fila {i}: {fallo}")
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(700)
+    for i in con_nota:
+        pg.eval_on_selector_all("[data-obra-abrir]", f"ns => ns[{i}].click()")
+        pg.wait_for_timeout(900)
+        fallo = pg.evaluate(
+            """() => {
+              const ficha = document.querySelector('[data-obra-ficha]');
+              const nota = Array.from(ficha.querySelectorAll('p'))
+                .find(p => p.textContent.includes('Proyecto privado'));
+              if (!nota) return 'sin nota de proyecto privado en la ficha';
+              const r = nota.getBoundingClientRect();
+              if (r.width === 0 || r.height === 0) return 'nota presente pero sin caja visible';
+              return null;
+            }"""
+        )
+        if fallo:
+            fallos.append(f"fila {i}: {fallo}")
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(700)
+    return fallos
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--base", default="http://localhost:4173")
@@ -557,6 +604,7 @@ def main() -> int:
             fallos += [f"[hyprland escritorio] {f}" for f in nombre_accesible_intacto(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in marcas_del_stack(pg)]
             fallos += [f"[hyprland escritorio] {f}" for f in apertura(pg)]
+            fallos += [f"[hyprland escritorio] {f}" for f in enlace_en_ficha(pg)]
         b.close()
 
         # Movil, tableta y portatil (Task 6): el mismo dispositivo, no otro.
