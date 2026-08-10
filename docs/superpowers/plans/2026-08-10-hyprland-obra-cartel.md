@@ -1390,7 +1390,7 @@ git commit -m "feat(obra): marcas del stack con simple-icons en la ficha del car
 - [ ] **Paso 1: Añadir las aserciones que fallan**
 
 ```python
-ANCHOS = [("movil", 390, 844), ("tableta", 820, 1024), ("escritorio", 1440, 900)]
+ANCHOS = [("movil", 390, 844), ("tableta", 820, 1024), ("portatil", 1280, 800), ("escritorio", 1440, 900)]
 
 
 def movil(pg) -> list[str]:
@@ -1434,6 +1434,21 @@ def cartel_en_reposo(pg, ancho: int) -> list[str]:
 
 Lo que **sí** se comprueba en los tres anchos: que la miniatura está alineada verticalmente con el
 título, que el título no se corta, y que las cinco filas caben en el viewport.
+
+### Y un hueco que hay que cerrar: el tramo 1200-1439 px
+
+La geometría del estado abierto está escrita en píxeles fijos: lupa de 760 a la izquierda, ficha de
+520 a 800 px del borde. Suman **1320 px**, y los dos `@media` de esta tarea sólo cubren hasta 1199.
+Entre 1200 y 1439 no hay ninguna regla, así que un portátil de 1280 abre la ficha fuera de la
+pista. Lo destapó la revisión de la Task 4 y nadie lo ha medido todavía.
+
+**No lo arregles con otro breakpoint.** Deriva la geometría del ancho real del contenedor: la lupa
+ocupa una fracción de `.obra-track` y la ficha el resto, con el hueco entre medias. A 1440 tiene que
+seguir dando los mismos números que hoy —760 / 800 / 520, que son los medidos y aprobados— y por
+debajo encoger sola. Un `calc()` sobre porcentajes basta; no hace falta JS.
+
+Añade al arnés **1280×800** a la lista de anchos, y comprueba en él que la ficha abierta no desborda
+la pista. Es la anchura de portátil más común y hoy no está cubierta por nada.
 
 - [ ] **Paso 2: Ejecutarlo y ver que falla**
 
