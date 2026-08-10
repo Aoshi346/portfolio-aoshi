@@ -668,7 +668,7 @@ git commit -m "feat(about): el corte de tinta como apuntado de la placa"
 - Consume: `data-placa-celda` de la tarea 2 y las `grid-area` de la tarea 3.
 - Produce: clase `placa-in` en cada celda, con `--placa-d` en milisegundos.
 
-- [ ] **Paso 1: el CSS de la entrada**
+- [x] **Paso 1: el CSS de la entrada**
 
 ```css
 /*
@@ -699,7 +699,7 @@ git commit -m "feat(about): el corte de tinta como apuntado de la placa"
 }
 ```
 
-- [ ] **Paso 2: la coreografía reparte**
+- [x] **Paso 2: la coreografía reparte**
 
 En `src/themes/hypr.choreography.ts`, dentro del gesto 0, tras el bucle de la `RECETA`:
 
@@ -720,7 +720,7 @@ En `src/themes/hypr.choreography.ts`, dentro del gesto 0, tras el bucle de la `R
   });
 ```
 
-- [ ] **Paso 3: comprobar el fotograma intermedio, que es donde falla**
+- [x] **Paso 3: comprobar el fotograma intermedio, que es donde falla**
 
 ```bash
 python3 - <<'EOF'
@@ -747,7 +747,7 @@ Esperado en `/tmp/placa-entrada-medio.png`: **ningún texto cortado a media pala
 subir el retardo de la opacidad, no acortar el recorrido.
 Esperado en `/tmp/placa-entrada-fin.png`: la placa completa, sin nada a medio camino.
 
-- [ ] **Paso 4: comprobar movimiento reducido**
+- [x] **Paso 4: comprobar movimiento reducido**
 
 ```bash
 python3 scripts/verify.py --theme hyprland --reduced --url http://localhost:4173
@@ -755,7 +755,7 @@ python3 scripts/verify.py --theme hyprland --reduced --url http://localhost:4173
 
 Esperado: la placa entera legible sin haber interactuado y sin nada invisible.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add src/themes/hypr.choreography.ts src/themes/themes.css

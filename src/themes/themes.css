@@ -2185,6 +2185,33 @@
 }
 
 /*
+  ENTRADA — el montaje. Las celdas no aparecen: llegan desde el borde de la
+  placa que les queda mas cerca y encajan en su hueco.
+
+  La OPACIDAD entra mas tarde que el desplazamiento a proposito: sin ese
+  retardo el texto se ve cortado a media llegada contra el `overflow: hidden`
+  de su celda, y lee como fallo en vez de como pieza encajando. Se detecto
+  mirando el fotograma intermedio, no razonando.
+*/
+:root[data-theme="hyprland"] .placa-in {
+  opacity: 0;
+  transform: translate(var(--placa-tx, 0), var(--placa-ty, 0));
+}
+:root[data-theme="hyprland"] .is-lit .placa-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    transform 0.42s var(--hard) var(--placa-d, 0ms),
+    opacity 0.24s linear calc(var(--placa-d, 0ms) + 0.2s);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .placa-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
   ELEMENTO FIRMA — el corte de tinta.
   Una cuna de brasa entra en diagonal por el borde izquierdo y cubre la celda.
   La superficie cambia; el contenido no se mueve ni un pixel. Compositor puro:

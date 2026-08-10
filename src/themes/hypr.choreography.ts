@@ -56,6 +56,47 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
     });
   });
 
+  // Gesto 0b — el montaje de la placa.
+  // El retardo sale de la POSICION en la rejilla, no del orden del DOM: fila
+  // mas columna, asi que la llegada cruza la placa en diagonal en vez de
+  // recorrer una lista. Y la direccion sale de la misma lectura, no de una
+  // tabla escrita a mano que habria que mantener en dos sitios.
+  const placa = root.querySelector<HTMLElement>("[data-placa]");
+  const celdas = Array.from(root.querySelectorAll<HTMLElement>("[data-placa-celda]"));
+  if (placa && celdas.length > 0) {
+    // Numero real de columnas: en escritorio son 6 y las celdas van colocadas a
+    // mano; por debajo de la consulta de contenedor son 2 y van automaticas.
+    const columnas = getComputedStyle(placa).gridTemplateColumns.split(" ").filter(Boolean).length;
+
+    celdas.forEach((celda, i) => {
+      const area = getComputedStyle(celda)
+        .gridArea.split("/")
+        .map((trozo) => parseInt(trozo, 10));
+
+      // Con colocacion automatica `grid-area` sale `auto / auto / auto / auto`
+      // y `parseInt` da NaN. Sin este respaldo, en movil ninguna celda recibe
+      // la clase y la entrada desaparece entera — justo donde el dispositivo
+      // tenia que ser el mismo que en escritorio.
+      const explicita = area.length === 4 && !Number.isNaN(area[0]) && !Number.isNaN(area[1]);
+      const fila = explicita ? (area[0] as number) : Math.floor(i / columnas) + 1;
+      const col = explicita ? (area[1] as number) : (i % columnas) + 1;
+      const filaFin = explicita ? (area[2] as number) : fila + 1;
+      const colFin = explicita ? (area[3] as number) : col + 1;
+      const ultimaFila = Math.ceil(celdas.length / columnas) + 1;
+
+      celda.classList.add("placa-in");
+      celda.style.setProperty("--placa-d", `${(fila - 1 + (col - 1)) * 70}ms`);
+      celda.style.setProperty(
+        "--placa-tx",
+        col === 1 ? "-22px" : colFin > columnas ? "22px" : "0px",
+      );
+      celda.style.setProperty(
+        "--placa-ty",
+        fila === 1 ? "-18px" : filaFin >= (explicita ? 4 : ultimaFila) ? "18px" : "0px",
+      );
+    });
+  }
+
   // Gesto 1 — la escena se enciende. Las clases hacen el trabajo; GSAP solo
   // decide CUANDO, para que el CSS siga siendo la fuente de los tiempos.
   scenes.forEach((scene, i) => {
