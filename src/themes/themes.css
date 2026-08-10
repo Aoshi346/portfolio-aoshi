@@ -1149,9 +1149,21 @@
      marca de agua del carril de obra y el hueco del avatar. Estaban en hex
      crudo dentro del modulo de datos, que es justo lo que la norma del
      proyecto prohibe — no tenerlos aqui es no poder retematizarlos. */
+  /* Canales de los tokens de luz. `rgba()` no admite un hex dentro de una
+     variable, asi que sin esto cada transparencia reescribia el color a mano y
+     retocar `--l1` dejaba atras el haz, el resplandor, la barra y el flash sin
+     que nada avisara. Mismo defecto que se cerro en las siluetas (719ddf8) y
+     que aqui se quedo. Se declaran junto a su token para que no se separen. */
+  --l1-ch: 255 90 52;
+  --l2-ch: 224 29 60;
+  --l3-ch: 255 160 60;
+
   --shot-marca: #2c1311;
   --shot-marca-viva: #371815;
   --shot-hueco: #5a3a34;
+  /* El fondo del fotograma: un escalon por debajo de `--color-ink`, para que el
+     encuadre se hunda respecto a la pagina. Estaba suelto en hex. */
+  --shot-fondo: #070302;
 
   /* Medido contra `.scene-index` abierto (fondo SOLIDO --color-ink, no el
      shader — el menu no es translucido): .scene-index-title 5.75:1,
@@ -2185,7 +2197,7 @@
   inset: 0 0 auto;
   height: 1px;
   background: linear-gradient(90deg, var(--l2), var(--l3));
-  box-shadow: 0 0 8px 1px rgba(255, 90, 52, 0.7);
+  box-shadow: 0 0 8px 1px rgb(var(--l1-ch) / 0.7);
   transform: scaleX(0);
   transform-origin: right;
   transition: transform 320ms cubic-bezier(0.7, 0, 0.2, 1);
@@ -2334,7 +2346,7 @@
   overflow: hidden;
   padding: 0;
   border: 1px solid var(--rule);
-  background: #070302;
+  background: var(--shot-fondo);
 }
 
 :root[data-theme="hyprland"] .scene-index-row:hover,
@@ -2468,9 +2480,9 @@
   background: linear-gradient(
     106deg,
     transparent 20%,
-    rgba(255, 90, 52, 0.26) 34%,
-    rgba(255, 90, 52, 0.4) 43%,
-    rgba(224, 29, 60, 0.18) 56%,
+    rgb(var(--l1-ch) / 0.26) 34%,
+    rgb(var(--l1-ch) / 0.4) 43%,
+    rgb(var(--l2-ch) / 0.18) 56%,
     transparent 74%
   );
 }
@@ -2580,7 +2592,7 @@
   left: 0;
   width: 2px;
   background: var(--l3);
-  box-shadow: 0 0 22px 6px rgba(255, 90, 52, 0.55);
+  box-shadow: 0 0 22px 6px rgb(var(--l1-ch) / 0.55);
   opacity: 0;
   pointer-events: none;
 }
@@ -2655,7 +2667,7 @@
   z-index: 8;
   pointer-events: none;
   opacity: 0;
-  background: linear-gradient(106deg, rgba(255, 160, 110, 0.55), rgba(255, 90, 52, 0.22));
+  background: linear-gradient(106deg, rgb(var(--l3-ch) / 0.55), rgb(var(--l1-ch) / 0.22));
 }
 
 :root[data-theme="hyprland"] .scene-index.is-open .scene-index-flash {

@@ -84,6 +84,13 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
   panel.setAttribute("role", "dialog");
   panel.setAttribute("aria-modal", "true");
   panel.setAttribute("aria-label", "Selección de escenas");
+  /*
+   * Nace cerrado, luego nace `inert`. `setAbierto` lo mantiene, pero solo corre
+   * al conmutar: sin esta linea el panel pasaba toda la primera visita —que es
+   * la que importa— con sus cinco filas tabulables detras del telon. Medido:
+   * cinco Tab desde el disparador aterrizaban en enlaces invisibles.
+   */
+  panel.setAttribute("inert", "");
 
   const heading = document.createElement("p");
   heading.className = "scene-index-title";
@@ -186,6 +193,15 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
      * existir (movimiento reducido, o antes de que cargue). Un evento deja a
      * cada modulo con lo suyo, y si nadie escucha, el `overflow` hace de red.
      */
+    /*
+     * Con la cortinilla CERRADA sus cinco filas seguian siendo tabulables: se
+     * oculta con `clip-path` y `pointer-events: none`, que no sacan un enlace
+     * del orden de tabulacion. Medido: cinco Tab desde el disparador
+     * aterrizaban en enlaces invisibles. `inert` los saca del arbol de
+     * accesibilidad y del foco sin tocar el aspecto.
+     */
+    panel.toggleAttribute("inert", !v);
+
     document.documentElement.style.overflow = v ? "hidden" : "";
     window.dispatchEvent(new CustomEvent("scene-nav:toggle", { detail: { abierto: v } }));
     pinta(escenaActual);   // la etiqueta conmuta entre la escena y "Cerrar"
@@ -209,19 +225,36 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
       return;
     }
     if (event.key !== "Tab") return;
-    const f = filas();
+    /*
+     * El disparador entra en el ciclo. Ciclar solo las filas lo dejaba
+     * inalcanzable con el teclado justo cuando ES el boton visible de cerrar
+     * ("Esc / Cerrar" en Hyprland): con raton se ve y se pulsa, con teclado no
+     * existia. `Esc` seguia cerrando, asi que no era un bloqueo, pero si un
+     * control visible al que no se podia llegar.
+     */
+    const f: HTMLElement[] = [...filas(), trigger];
     if (f.length === 0) return;
-    const i = f.indexOf(document.activeElement as HTMLAnchorElement);
+    const i = f.indexOf(document.activeElement as HTMLElement);
     event.preventDefault();
     f[(i + (event.shiftKey ? -1 : 1) + f.length) % f.length].focus();
   };
   document.addEventListener("keydown", onKeydown);
 
-  // Cerrar al pulsar fuera del panel y del disparador.
+  /*
+   * Cerrar al pulsar fuera de lo pulsable.
+   *
+   * Antes se descartaba todo clic dentro de `.scene-index`, y el panel es
+   * `position: fixed; inset: 0`: ocupa el viewport entero, asi que NO habia
+   * "fuera" y el clic nunca cerraba, pese a que el comentario lo prometia.
+   * Medido: un clic en (720, 860) dejaba la cortinilla abierta.
+   *
+   * Con el panel a pantalla completa, "fuera" es su fondo: cualquier sitio que
+   * no sea una fila ni el disparador.
+   */
   const onDocClick = (event: MouseEvent): void => {
     if (!abierto) return;
     const t = event.target as HTMLElement;
-    if (t.closest(".scene-index") || t.closest(".scene-nav-trigger")) return;
+    if (t.closest(".scene-index-row") || t.closest(".scene-nav-trigger")) return;
     setAbierto(false);
   };
   document.addEventListener("click", onDocClick);
@@ -306,6 +339,15 @@ export function mountSceneNav(root: HTMLElement): { destroy: () => void } {
       document.removeEventListener("keydown", onKeydown);
       document.removeEventListener("click", onDocClick);
       observer.disconnect();
+      /*
+       * Soltar los dos cerrojos del scroll. `destroy()` corre en `pagehide`, y
+       * si la cortinilla estaba abierta dejaba `overflow: hidden` puesto en
+       * `<html>` y a Lenis creyendo que sigue bloqueado. Medido: volver desde
+       * la bfcache daba una pagina que no rueda y ya sin disparador con el que
+       * desbloquearla.
+       */
+      document.documentElement.style.overflow = "";
+      window.dispatchEvent(new CustomEvent("scene-nav:toggle", { detail: { abierto: false } }));
       trigger.remove();
       panel.remove();
       delete (window as unknown as { __navDestino__?: unknown }).__navDestino__;

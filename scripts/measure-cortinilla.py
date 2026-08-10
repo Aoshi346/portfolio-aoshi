@@ -438,9 +438,11 @@ def medir_estados_y_foco():
 
         # Criterio 5: Tab da exactamente cinco paradas y vuelve a la primera.
         visitados = []
-        for _ in range(6):
+        for _ in range(7):
             visitados.append(pg.evaluate(
-                "() => document.activeElement?.getAttribute('href') ?? null"))
+                "() => document.activeElement?.getAttribute('href')"
+                " ?? (document.activeElement?.classList.contains('scene-nav-trigger')"
+                "     ? 'disparador' : null)"))
             pg.keyboard.press("Tab")
             pg.wait_for_timeout(60)
         pg.keyboard.press("Escape")
@@ -465,10 +467,16 @@ def comprobar_estados(cerrado, abierto, visitados, tras_esc):
         fallos.append("abierto: se sigue viendo la version de escena")
     if abierto["textoB"] != "Cerrar":
         fallos.append(f"el rotulo abierto dice {abierto['textoB']!r}, debe decir 'Cerrar'")
+    # Seis paradas, no cinco: las cinco filas MAS el disparador. Entro en la
+    # trampa porque en Hyprland es el boton visible de cerrar ("Esc / Cerrar") y
+    # ciclar solo las filas lo dejaba inalcanzable con el teclado.
     unicos = [v for v in visitados[:5] if v]
     if len(set(unicos)) != 5:
-        fallos.append(f"Tab no da cinco paradas distintas: {visitados}")
-    if visitados[5] != visitados[0]:
+        fallos.append(f"Tab no da cinco paradas de escena distintas: {visitados}")
+    if visitados[5] != "disparador":
+        fallos.append(
+            f"Tab no llega al disparador, que es el boton visible de cerrar: {visitados}")
+    if visitados[6] != visitados[0]:
         fallos.append(f"Tab no vuelve a la primera fila: {visitados}")
     if not tras_esc:
         fallos.append("tras Esc el foco no vuelve al disparador")
