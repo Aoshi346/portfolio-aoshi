@@ -1212,8 +1212,12 @@ se leyera de dos formas distintas dentro del mismo tema.
 
 Manda la firma: allí el friso **es** el dispositivo, aquí las marcas son un detalle de apoyo. Esta
 ficha adopta el tratamiento y sólo cambia el tamaño, que es lo único que puede depender del
-contexto. La regla común: **monocromas, `--haze` en reposo, `--l1` sólo cuando algo está activo, y
-nunca un logotipo con su color de marca.**
+contexto. La regla común: **monocromas, sin caja, y nunca un logotipo con su color de marca.** Sobre la
+brasa, la regla es una **prohibición, no un mandato**: `--l1` no se usa para nada que no esté
+activo. **Aquí las marcas no tienen estado activo y no deben tenerlo**: son decorativas
+(`aria-hidden`), no son enlaces, no son alcanzables por teclado y viven dentro de una ficha ya
+abierta — encender una al apuntarla prometería una acción que no existe. En el catastro sí lo
+tienen porque allí cada marca es un objetivo real.
 
 Lo que **no** se comparte, y es correcto: el catastro apaga las marcas vecinas con `opacity: 0.42`
 al apuntar una. Aquí eso lo prohíbe la ley de la sección. La gramática común es de **tratamiento**,
