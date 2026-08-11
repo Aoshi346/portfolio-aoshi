@@ -48,6 +48,21 @@ body {
   overflow-x: hidden;
 }
 
+/* Region de anuncio para lectores de pantalla: fuera de la vista, dentro del
+   flujo de accesibilidad. Se crea aqui porque es donde se usa por primera vez
+   (`data-obra-anuncio`, cartel de obra en Hyprland). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 ::selection {
   background-color: var(--color-accent);
   color: var(--color-ink);
@@ -1625,4 +1640,21 @@ body {
   :root.js-leader .intro-leader {
     display: none !important;
   }
+}
+
+/*
+ * Nodos del cartel de obra (`projectScene.ts`). Nacen apagados para los TRES
+ * temas: solo el bloque Hyprland de `themes.css` los enciende. El patron
+ * aditivo se ha roto cuatro veces por olvidar justo esto.
+ *
+ * `.obra-abrir` es HERMANO del <h2>, no hijo: dentro lo borraria el split de
+ * caracteres de `reveal.ts` (Caelestia) y de `vice.choreography.ts`, que hacen
+ * `target.textContent = ""`. Estando fuera basta con ocultarlo, y ademas no
+ * hay que pelear con el `appearance` del agente de usuario.
+ */
+.obra-mini,
+.obra-marcas,
+.obra-otras,
+.obra-abrir {
+  display: none;
 }

@@ -1,6 +1,6 @@
 # El cartel — la obra en Hyprland deja de ser un acordeón y pasa a ser cinco titulares
 
-Estado: pendiente de plan
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-10-hyprland-obra-cartel.md`
 Fecha: 2026-08-10
 Alcance: **solo el tema Hyprland**. `[data-scene="obra"]` (`src/sections/obra/projectScene.ts`,
@@ -95,7 +95,7 @@ mandan sobre los píxeles**: el encuadre pasa a ser el área de contenido de `[d
 | Ordinal (`01`) | `--t-2` 16 px, peso 700, bruma, alineado al pie de la caja del título |
 | Título | `--t-8` 89,85 px, peso 600, `letter-spacing: -0.042em`, `line-height: 1.12`, bruma |
 | Área (`tag`) | 12 px, tracking `0.26em`, versalitas, bruma, pegada al canto derecho del bloque de texto |
-| Miniatura | **144 × 90 px** — 90 px es exactamente la caja del título a `--t-8` con interlínea 1,12 |
+| Miniatura | **161 × 100,6 px** — el alto es exactamente la caja del título: `--t-8` (89,85) × 1,12. El ancho conserva la proporción apaisada 16:10 de la captura. Se deriva del token, no se escribe a mano: la primera versión de este spec decía 144 × 90, arrastrando el prototipo, que usaba interlínea 1 |
 | Filete entre filas | 1 px `--rule`, arriba de cada fila y bajo la última |
 
 La miniatura **recorta, no reduce**: `object-fit: cover` con `object-position: 50% 0%`. A ese
@@ -113,8 +113,19 @@ es la que se lee.
 | Los otros cuatro | **se apartan a los bordes**, no se encogen: los de arriba salen por arriba, los de abajo por abajo, con 30 ms de escalonado |
 
 La ficha lleva **seis bloques**, en este orden: `lead` (Instrument Serif, `--t-4`), *Qué construí*
-(`solution`), *Stack* (línea de texto + fila de marcas), estado con testigo de 8×8 px, *Qué pasaba
-antes* (`problem`) y un pie con *Rol* y *Periodo* separado por filete.
+(`solution`), *Stack* (línea de texto + fila de marcas), estado con testigo de 8×8 px, el **enlace
+al repositorio** (`link`) o la nota de proyecto privado, y un pie con *Rol* y *Periodo* separado por
+filete.
+
+**`problem` no aparece, y el enlace sí. Decisión de Aoshi del 2026-08-10, corrigiendo un hueco de
+este spec.** La primera versión describía la ficha con *Qué pasaba antes* y **sin el enlace**, con
+lo que el único gesto accionable de toda la sección —el repositorio, que tienen tres de los cinco
+proyectos— no aparecía en ninguna parte. Era un fallo del spec, no de la implementación.
+
+Se cambia contexto por acción: `problem` explica qué pasaba antes, `link` es lo que un reclutador
+pulsa. Y resuelve de paso el apretón que se arrastraba: la ficha llevaba dos recortes de espaciado
+consecutivos (interlineado y márgenes) para que los cinco proyectos cupieran en el alto de la
+pista, porque `problem` es el bloque más largo de los seis.
 
 **Este ancho está medido, no elegido a ojo.** Con la ficha a 412 px, tres de los cinco proyectos
 desbordaban el encuadre por abajo: WatchDog **+64 px**, TesisFar **+39**, «Editor de texto» **+27**.
@@ -124,14 +135,31 @@ real, no al filo.
 
 ### Las marcas del stack
 
-Fila de tiles cuadrados de **34 px** con filete de brasa al 42 %, radio 0, monocromas. React, Vite
-y Electron llevan su silueta real; el resto, monograma en Bricolage (`Py`, `dj`, `TS`, `JS`, `N`,
-`Rx`, `Z`, `GS`, `C`, `GTK`).
+Corrección 2026-08-10 (Task 5): esta sección describía tiles cuadrados con monogramas dibujados a
+mano. Las dos cosas eran incorrectas y se corrigen aquí.
 
-**Decisión y motivo:** los logotipos oficiales traen su propio color —el azul de Python, el cian de
-React, el verde de Django— y meterían cinco paletas ajenas en una sección que sólo tiene tinta,
-papel y brasa. Un juego monocromo uniforme además no se rompe cuando aparezca una tecnología nueva.
-Si alguna vez se quieren los logos de marca en color, es un cambio de criterio, no un ajuste.
+**Son iconos reales, no monogramas.** `src/utils/icons.ts` ya inlinea `simple-icons` — de un solo
+trazo, sin color propio, heredan `currentColor` — para 23 slugs. No hay que dibujar `Py`, `dj`,
+`TS`... a mano: la marca real de cada tecnología ya está disponible y ya es monocroma. La
+conclusión de monocromía no cambia; el medio sí. **Zustand no existe en `simple-icons`**: una
+tecnología sin marca no pinta tile — su nombre ya está escrito en la línea de stack de arriba, así
+que no se pierde información y no se inventa un logotipo que no existe.
+
+**No son tiles con filete, comparten gramática con el catastro.** Aoshi decidió el 2026-08-10 que
+estas marcas siguen el mismo tratamiento que el friso de «Con qué construyo»
+(`2026-08-10-hyprland-stack-catastro-design.md`): **monocromas, `--haze` en reposo, `--l1` sólo
+cuando algo está activo, sin caja, sin filete, sin radio.** Lo único que cambia con el contexto es
+el tamaño — 14 px en el friso, donde es el dispositivo firma de la sección; 20 px aquí, donde son
+un detalle de apoyo dentro de la ficha. Un tile con filete de brasa haría que la misma marca se
+leyera de dos formas distintas dentro del mismo tema. Lo que **no** se comparte: el catastro apaga
+las marcas vecinas con `opacity: 0.42` al apuntar una; aquí esa opacidad está prohibida por la ley
+de la sección (nada se presenta ni se retira por opacidad, salvo el canto de brasa del barrido).
+
+**Decisión y motivo (se mantiene):** un logotipo con su color de marca —el azul de Python, el cian
+de React, el verde de Django— metería cinco paletas ajenas en una sección que sólo tiene tinta,
+papel y brasa. `simple-icons` ya resuelve esto: son de un solo trazo y heredan el color del tema sin
+que haya que renunciar al icono real. Un juego monocromo uniforme además no se rompe cuando
+aparezca una tecnología nueva sin marca disponible.
 
 ### El cuadro de la imagen
 
@@ -150,6 +178,22 @@ Habrá capturas reales (confirmado por Aoshi el 2026-08-10). Hoy los nueve fiche
 no es captura real"*, y por eso existe la bandera `--allow-gallery-placeholder` de `verify.py`.
 **El diseño no lleva estado de "captura ausente"**: el `.gallery-fallback` actual se conserva como
 red de seguridad ante un fallo de carga puntual, que es su propósito legítimo.
+
+### Las capturas restantes (Task 8)
+
+Corrección 2026-08-10: **este apartado no estaba en el spec original.** `project.gallery` puede
+llevar más de una captura por proyecto (EchoPlan, TesisFar, HyprFinance y WatchDog llevan dos; solo
+«Editor de texto» lleva una) y la primera versión de esta sección solo daba sitio a la primera —
+las demás se habrían perdido en silencio. Se detectó al revisar la Task 6 y se añadió al plan como
+Task 8, antes de cerrar.
+
+Cada foto que no sea la primera se planta como un tile de **96×60 px**, en una banda
+(`[data-obra-otras]`) anclada **bajo la lupa**, con el mismo margen (16 px) que ya separaba la lupa
+de la ficha. El tile **intercambia** su foto con la de la lupa — un conmutador literal y reversible
+(`engancharOtras`, `obraCartel.ts`), no un selector con estado "activo": lo que se ve en el tile es
+precisamente lo que no se ve en grande en ese momento, y `destroy()` revierte el intercambio.
+Sin fotos de sobra (el caso de «Editor de texto») la banda queda vacía y no pinta ningún tile —
+mismo criterio que las marcas del stack sin `simple-icon`.
 
 ---
 
@@ -183,9 +227,45 @@ entre temas es lo que este proyecto tiene prohibido.
 
 **El contraste se mide contra el fondo real**, que no es un plano: la página lleva el shader más
 `--bg-fallback`, que sube hasta #3a1008. Referencias ya medidas en el repo: `--haze` sobre tinta
-6,81:1; `--haze` sobre #3a1008 5,54:1; `--l1` sobre tinta 6,61:1. **Pendiente de medir con el
-arnés** en este diseño: bruma sobre el fondo real en la zona alta del cartel, donde el haz es más
-brillante, y el papel del titular encendido.
+6,81:1; `--haze` sobre #3a1008 5,54:1; `--l1` sobre tinta 6,61:1.
+
+**Medido con el arnés (Task 9, `contraste_fondo_real` en `measure-cartel.py`) — corregido tras
+revisión.** La primera medida de esta tarea muestreaba el **viewport entero** (el peor píxel de
+toda la pantalla en 16,8 s), no el fondo bajo los glifos, y salió sobrestimada: `--haze` 1,01:1,
+`--l1` 1,02:1, papel 2,63:1. Repetida con la técnica que ya usa `verify.py`
+(`check_contrast_wcag`: franja de 5 px alrededor del `rect` real del texto, fg tomado del glifo
+efectivamente visible — el titular lleva dos copias por letra, una en `--haze` y otra en papel,
+tapada por `overflow: hidden` según el estado) los números son otros, y mucho menos graves:
+
+| Contra el fondo real, muestreado alrededor del glifo | Típico (p50) | Peor caso (p99,5) | AA (4,5:1) |
+|---|---|---|---|
+| Titular en reposo (`--haze`) | 5,42:1 | **3,88:1** | el peor caso NO llega, el típico sí |
+| Área / `.hero-kick` (`--haze`) | 6,36:1 | 5,48:1 | pasa siempre |
+| Ordinal en reposo (`--haze`) | 6,85:1 | 5,04:1 | pasa siempre |
+| Titular encendido (papel) | 16,04:1 | 12,82:1 | pasa con margen amplio |
+| Ordinal encendido (`--l1`) | 6,65:1 | 6,49:1 | pasa siempre |
+| Cuerpo de la ficha (`.leading-relaxed`) | — | — | no medido, ver nota |
+
+**El hallazgo real es mucho más acotado que la primera medida:** solo el titular en reposo, y solo
+en su peor caso (el 0,5% de fotogramas más brillantes del shader en esa zona), cae por debajo de
+AA — 3,88:1, no 1,01:1. No se midió cuánto dura ese peor caso en tiempo real (pendiente), ni el
+cuerpo de la ficha (el script de verificación falló al parsear su color, que resultó ser
+`color-mix(in oklab, var(--color-paper) 84%, transparent)` — semitransparente sobre el fondo real,
+no el `#e8c9c2` sólido que describía la versión anterior de este apartado — y no se repitió por
+priorizar liberar el puerto de preview para otro trabajo en curso).
+
+**La placa de "Quién soy" no es comparable por scrim al 78%: es más fuerte que eso.** Cada celda
+(`.placa-c`) lleva `background: var(--color-ink)` — **opaco**, no una capa translúcida. El texto de
+la placa nunca toca el fondo real; el 78% que aparece en un comentario de `themes.css` es el de
+`.about-pairs`, un componente de **Vice** citado ahí solo como precedente, no el tratamiento propio
+de la placa. Confirma la misma causa: la placa no tiene este problema porque no expone el shader
+donde hay texto, y el cartel sí (ni `.obra-lupa` ni `.obra-ficha` llevan fondo propio).
+
+**Pendiente de decisión de producto**, con el alcance real ya acotado: no es una alarma de "el
+titular es ilegible", es un techo de brillo del shader que roza AA solo en el peor 0,5% de
+fotogramas del titular apagado. `hyprEmber.ts` no tiene ningún límite de brillo equivalente al que
+`measure-bg-luma.py` ya impone sobre Vice — esa es la vía de arreglo de fondo (arreglaría el cartel,
+la placa y lo que venga después a la vez), y es una sesión propia, no de esta tarea.
 
 ---
 
@@ -267,7 +347,7 @@ Medidas del prototipo:
 | Visor grande | 336 × 190 | 592 × 370 |
 | Objetivo táctil de fila | ~86 px de alto | ~120 px |
 
-**No se cae ningún bloque**: la ficha abierta lleva los mismos seis. La hoja abierta se desplaza
+**No se cae ningún bloque en móvil**: la ficha abierta lleva los mismos seis que en escritorio (y `problem` no está en ninguno de los dos desde la decisión del 2026-08-10). Los números de desplazamiento interno que siguen son el **techo medido en el prototipo**, no un suelo: con el contenido real puede salir menos, y menos es mejor. La hoja abierta se desplaza
 dentro de sí misma entre **27 y 85 px en móvil** y entre **43 y 74 px en tableta**, según el
 proyecto — el pie de Rol y Periodo queda medio dedo por debajo del pliegue en los de texto más
 largo. Es el único scroll interno que este diseño acepta.
@@ -335,3 +415,99 @@ largo. Es el único scroll interno que este diseño acepta.
 3. **El ordinal gigante actual** (`projectScene.ts`, `clamp(7rem,26vw,22rem)` a
    `paper/[0.06]`) es un dispositivo de Vice. En el cartel se sustituye por `01` a 16 px. Hay que
    ocultarlo sólo en Hyprland.
+
+---
+
+## Registro de implementación
+
+Cierre 2026-08-10 (Task 9). Lo que se desvió del plan durante la ejecución, y por qué:
+
+- **El disparador (`[data-obra-abrir]`) salió del `<h2>`.** Dentro, `reveal.ts` (la receta genérica
+  que usa Caelestia) y `vice.choreography.ts` lo habrían borrado a los pocos ms: los dos hacen
+  `target.textContent = ""` sobre `[data-title]` para partir el titular en caracteres. El botón
+  pasó a ser hermano del `<h2>`, cubriendo la fila entera en Hyprland; en los otros dos temas no
+  existe (oculto por `style.css`, patrón aditivo).
+- **La miniatura se deriva del token, no de un número a mano.** El primer borrador de este spec
+  decía 144×90 px, arrastrado del prototipo (que usaba interlínea 1). El alto real es
+  `--t-8 × 1,12 = 100,63 px` — la caja exacta del título con su interlínea de 1,12 — corregido
+  antes de la Task 2.
+- **La ficha entra y sale por recorte (`clip-path`), no por opacidad.** Consistente con la ley de
+  la sección ("aquí nada se desvanece"); una ficha con fundido la rompía en el punto más visible.
+- **El hueco 1200-1439 px.** La geometría de la lupa/ficha estaba en píxeles fijos (760/800/520
+  sobre 1440) y los `@media` de móvil/tableta solo cubrían hasta 1199: un portátil de 1280 sacaba
+  la ficha por la derecha de la pista. Se cerró derivando la geometría de `cqw` sobre el ancho real
+  de `.obra-track` (`container-type: inline-size`), no con un tercer breakpoint — los mismos
+  números medidos (760/800/520) se conservan exactos a 1440 y encogen sin desbordar por debajo.
+- **Las marcas del stack usan `simple-icons`** (ya estaba en el repo vía `src/utils/icons.ts`), no
+  monogramas dibujados a mano, y comparten gramática con el catastro de "Con qué construyo": friso
+  monocromo sin caja, sin filete, sin radio — no tiles con borde. `Zustand` no tiene marca en
+  `simple-icons` y no pinta tile; su nombre ya está en la línea de stack de arriba, así que no se
+  pierde información.
+- **`problem` no aparece en la ficha, y el enlace al repositorio sí.** Decisión de Aoshi del
+  2026-08-10 que corrigió un hueco real del spec original: la primera versión describía la ficha
+  con "Qué pasaba antes" y sin el enlace, dejando el único gesto accionable de la sección (el
+  repositorio, que tienen tres de los cinco proyectos) sin sitio en ninguna parte.
+- **El intercambio de capturas restantes (Task 8) es un conmutador literal reversible**, no un
+  selector con estado "activo" — el tile intercambia su foto con la de la lupa, y `destroy()`
+  revierte el intercambio si el módulo se desmonta con una fila abierta.
+- **El contraste contra el fondo real queda documentado, no corregido** (ver `## Color y
+  contraste`). La primera medida muestreaba el viewport entero y sobrestimaba el problema (`--haze`
+  1,01:1, papel 2,63:1); repetida por glifo real (misma técnica que `check_contrast_wcag` de
+  `verify.py`) el hallazgo se acota a un solo punto: el titular en reposo cae a 3,88:1 solo en el
+  peor 0,5% de fotogramas del shader — todo lo demás (área, ordinal, titular encendido) pasa AA con
+  margen. El cuerpo de la ficha no se llegó a medir. Es una decisión de producto pendiente
+  (techo de brillo en `hyprEmber.ts`, mismo patrón que `measure-bg-luma.py` sobre Vice), fuera del
+  alcance de esta tarea.
+
+---
+
+## Revisión de conjunto — la geometría del estado abierto se rehace (2026-08-10)
+
+Las nueve tareas pasaron su revisión individual; la de conjunto dictaminó **no integrable**. La
+raíz era una sola: **el estado abierto estaba maquetado en píxeles absolutos contra un marco de
+1400 × 820 que solo existía en el prototipo**, y que además recortaba. En el DOM real
+`.obra-track` mide 482-548 px y no recortaba nada. Medido en el build servido:
+
+| Ancho | Carril | Antes | Ahora |
+|---|---|---|---|
+| 821 / 1000 / 1024 | 482 | ficha con **alto 0** (`top: 570px`) | ficha completa, carril 786 / 835 / 846 |
+| 1280 | 548 | lupa 59 px fuera, banda 75 px fuera | todo dentro, carril 631 |
+| 1440 | 548 | ídem, tile no pulsable (`elementFromPoint` → sección siguiente) | todo dentro, carril 683 |
+
+Lo que cambia respecto a lo escrito más arriba en este documento:
+
+- **El carril crece mientras hay una ficha abierta.** Es la decisión de diseño de esta revisión.
+  Con la lupa de 760 × 475 ya aprobada, el estado abierto pide 683 px y el carril natural da 548:
+  o crecía el carril, o había que encoger la lupa o mudar la banda de capturas. Crece el carril,
+  animado con la misma curva (`hard`) que la apertura, y vuelve a su alto natural al cerrar.
+- **Los tres hijos cuelgan de un panel en rejilla** (`.obra-panel` > `.obra-visor` [lupa + banda]
+  + `.obra-ficha`), no de tres posiciones absolutas sueltas. El hueco superior lo fija
+  `--cartel-fila`, que es el alto **real** de la fila abierta medido en cada apertura, no un 132
+  escrito a mano (se equivocaba en 3 de los 4 anchos medidos, y en móvil se comía 26 px del
+  propio titular).
+- **`.obra-track` recorta** (`overflow: hidden`). Las cuatro filas apartadas pintaban sobre "Con
+  qué construyo": nadie las paraba.
+- **La lupa lleva el alto por proporción** (`aspect-ratio`), no en píxeles: con ancho en `cqw` y
+  alto fijo pasaba de 1,6:1 a 1440 a 1,42:1 a 1280, y con `object-fit: cover` recortaba más
+  cuanto más estrecha la ventana.
+- **La miniatura también** (`aspect-ratio: 16/10` sobre su alto): era `flex: 0 0 144px` con alto
+  100,63 → 1,43:1, no los **161 × 100,6** que este spec ya pedía. El ancho se había quedado del
+  prototipo cuando se corrigió el alto.
+- **El visor móvil recupera los 336 × 190 del spec.** La Task 8 lo había bajado a 336 × 130
+  (2,58:1) para hacer sitio a la banda contra un carril que no crecía.
+- **Desaparece el scroll interno de la ficha** en móvil y tableta: el carril crece hasta
+  contenerla, así que se lee desplazando la página. La tabla de "desplazamiento interno" de más
+  arriba queda sin efecto.
+- **La ficha recupera su espaciado.** Los dos apretones (interlínea 1,625 → 1,375 y margen de las
+  marcas 12 → 8 px "porque desbordaba 3 px") se pagaron para caber en el marco imaginario,
+  mientras la hermana de al lado se salía 59 px sin que nadie lo midiera.
+- **Bajo 1200 px el panel es de una sola columna** y la lupa mide 66cqw (542 px a 821, 791 a
+  1199), en vez de 592 × 370 fijos. A 821 px una segunda columna mediría 296 px, que no es una
+  columna de lectura.
+
+Y en el arnés (`scripts/measure-cartel.py`): se miden **los tres** hijos por sus cuatro lados (no
+solo la ficha), el tile se comprueba con hit-testing real, `ANCHOS` deja de medir la tableta a
+820 —que cae dentro de `@media (max-width: 820px)`, o sea la rama de móvil: el tramo 821-1199 no
+lo ejercía **nadie**— y suma 821, 1000, 1024 y 1200. `contraste_fondo_real` pasa detrás de
+`--contraste`: mide un hallazgo de producto abierto, así que empujaba fallos siempre y dejaba el
+semáforo de geometría permanentemente en rojo.

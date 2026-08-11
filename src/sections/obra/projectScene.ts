@@ -1,6 +1,8 @@
 import { createGallery } from "../../components/gallery";
 import type { CaseStudy } from "../../data/content";
-import { el } from "../../utils/dom";
+import { el, elFromMarkup } from "../../utils/dom";
+import { getIconMarkup } from "../../utils/icons";
+import { slugDeStack } from "../../utils/stackIcons";
 
 function metaEntry(label: string, value: string): HTMLElement {
   const entry = el("div", "", [el("dt", "", [label]), el("dd", "", [value])]);
@@ -76,7 +78,72 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
   ]);
   columns.setAttribute("data-reveal", "fade-up");
 
-  const children: HTMLElement[] = [tag, title, lead, meta, columns];
+  // El cartel de Hyprland necesita UNA captura por proyecto, no el carril
+  // arrastrable: `gallery.ts` construye un carril y aqui hace falta un solo
+  // nodo que pueda viajar con Flip. Nace oculto para los tres temas
+  // (`style.css`) y solo el bloque Hyprland lo enciende.
+  const mini = el("figure", "obra-mini", []);
+  mini.setAttribute("data-obra-mini", "");
+  const primera = project.gallery[0];
+  if (primera) {
+    const shot = el("img", "obra-mini-img") as HTMLImageElement;
+    shot.src = primera.src;
+    shot.alt = primera.caption;
+    shot.loading = "lazy";
+    shot.decoding = "async";
+    mini.append(shot, el("figcaption", "obra-mini-pie", [primera.caption]));
+  }
+
+  // Las capturas restantes de la galeria (Task 8): un tile por cada foto
+  // que no sea la primera. Nace oculto en los tres temas (`style.css`); solo
+  // Hyprland lo enciende, y solo cuando la fila abre (lo mueve el modulo del
+  // cartel a la banda bajo la lupa). Sin capturas de sobra (Editor de texto,
+  // una sola en `content.ts`) queda vacio y no pinta ningun tile.
+  const otras = el(
+    "div",
+    "obra-otras",
+    project.gallery.slice(1).map((shot) => {
+      const tile = el("button", "obra-otra", []) as HTMLButtonElement;
+      tile.type = "button";
+      const img = el("img", "obra-otra-img") as HTMLImageElement;
+      img.src = shot.src;
+      img.alt = shot.caption;
+      img.loading = "lazy";
+      tile.append(img);
+      tile.setAttribute("aria-label", `Ver ${shot.caption}`);
+      return tile;
+    }),
+  );
+  otras.setAttribute("data-obra-otras", "");
+
+  // Las marcas del stack: una por tecnologia con slug conocido en
+  // `simple-icons` (Task 5). Sin marca, la tecnologia no pinta tile — su
+  // nombre ya esta en la linea de stack de arriba, asi que no se pierde nada.
+  const marcas = el(
+    "div",
+    "obra-marcas",
+    project.stack.flatMap((nombre) => {
+      const slug = slugDeStack(nombre);
+      if (!slug) return [];
+      const tile = el("span", "obra-marca", [elFromMarkup("obra-marca-svg", getIconMarkup(slug))]);
+      tile.title = nombre;
+      return [tile];
+    }),
+  );
+  marcas.setAttribute("data-obra-marcas", "");
+  marcas.setAttribute("aria-hidden", "true");
+
+  // El disparador va FUERA del <h2>. Dentro no sobrevive: `reveal.ts` (que es
+  // lo que usa Caelestia) y `vice.choreography.ts` parten el titular con
+  // `target.textContent = ""` y se llevarian el boton por delante. En Hyprland
+  // este boton cubre la fila entera; en los otros dos temas no existe.
+  const abrir = el("button", "obra-abrir", []);
+  abrir.setAttribute("data-obra-abrir", "");
+  abrir.type = "button";
+  // El nombre accesible lo pone el modulo del cartel (Task 3), que es quien
+  // conoce el titulo ya partido en letras.
+
+  const children: HTMLElement[] = [tag, title, lead, meta, columns, mini, otras, marcas, abrir];
 
   // Las capturas reales de la galeria (Task 11) ya existen y devuelven 200;
   // la galeria se construye siempre que el caso de estudio declare piezas,
@@ -122,7 +189,13 @@ export function createProjectScene(project: CaseStudy, index: number): HTMLEleme
   }
 
   if (footerChildren.length > 0) {
-    children.push(el("div", "mt-10", footerChildren));
+    // `data-obra-pie`: gancho explicito para el cartel de Hyprland
+    // (`obraCartel.ts`, Task 7). Antes solo se podia seleccionar por
+    // `.mt-10:not(.grid)`, que es fragil (depende de que ningun otro bloque
+    // de la escena reuse esa combinacion de clases) y ya causo un fallo.
+    const pie = el("div", "mt-10", footerChildren);
+    pie.setAttribute("data-obra-pie", "");
+    children.push(pie);
   }
 
   // `scene-surface` es el gancho compartido que Caelestia viste como tarjeta

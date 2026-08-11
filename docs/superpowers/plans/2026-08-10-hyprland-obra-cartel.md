@@ -6,6 +6,15 @@
 > casillas (`- [ ]`) para el seguimiento. **Marca cada casilla en el momento**, no al
 > final: `.claude/rules/speckit-progress-tracking.md`.
 
+> **Tracking: historico para las Tasks 1-8.** Sus casillas nunca se marcaron durante
+> la ejecución, y no se marcan ahora en bloque: ticar ~55 pasos que nadie siguió uno a
+> uno sería falsificar el registro, no completarlo (mismo precedente que
+> `2026-07-24-vice-city.md` y `2026-07-28-vice-secciones.md`). El trabajo está hecho y
+> vive en los commits de `design/hyprland-obra-cartel` — la prueba es el código y el
+> arnés (`python3 scripts/measure-cartel.py`, 0 fallos salvo el contraste de la Task 9),
+> no este fichero. **La Task 9 sí se marca en vivo**: es la que se está ejecutando en
+> esta sesión.
+
 **Objetivo:** sustituir la tira de exposición de la obra en Hyprland por un cartel de cinco
 titulares, con la captura a la altura de su titular que crece con GSAP Flip al pulsarla.
 
@@ -44,6 +53,12 @@ Se aplican a **todas** las tareas.
   opacidad sólo se admite en el canto de brasa, que es una fuente de luz.
 - **Dos curvas y ninguna más:** `--hard` `cubic-bezier(0.7,0,0.2,1)` y `--slow`
   `cubic-bezier(0.16,0.84,0.28,1)`. Se registran con `CustomEase` como `"hard"` y `"slow"`.
+  **Única excepción, decidida por Aoshi el 2026-08-10:** la barra del barrido de entrada va con
+  `ease: "none"`. El movimiento uniforme no es una curva de carácter — es el requisito de un
+  barrido del que se derivan otros tiempos. El retardo de cada letra sale de `(x / ancho) × 1,05 s`,
+  que es un mapeo lineal: si la barra acelerase, dejaría de estar donde la letra cree que está y
+  el gesto se partiría en dos. La alternativa (curvar la barra y derivar los retardos con esa misma
+  curva) es más código, más frágil y visualmente equivalente.
 - **`--l1` significa una sola cosa:** esta pieza está activa.
 - **Nada de `console.log`.** Sólo `console.error` justificado.
 - **Sin pin de ScrollTrigger nuevo.** El cartel no es scrubbed.
@@ -57,7 +72,7 @@ Se aplican a **todas** las tareas.
 
 | Fichero | Qué hace | Tarea |
 |---|---|---|
-| `src/sections/obra/projectScene.ts` | **Modificar.** Añade los nodos del cartel: `[data-obra-mini]`, `[data-obra-marcas]` y el `<button data-obra-abrir>` que envuelve el título. | 1, 5 |
+| `src/sections/obra/projectScene.ts` | **Modificar.** Añade los nodos del cartel: `[data-obra-mini]`, `[data-obra-marcas]` y el `<button data-obra-abrir>` hermano del título. | 1, 5 |
 | `src/utils/stackIcons.ts` | **Crear.** Mapa nombre de `stack` → slug de `simple-icons`. Aislado para que se pueda probar y ampliar sin tocar la escena. | 5 |
 | `src/style.css` | **Modificar (sólo añadir).** Reglas base que dejan los nodos nuevos ocultos y neutralizan el `<button>` en Vice/Caelestia. | 1 |
 | `src/themes/themes.css` | **Modificar.** Retira el bloque `LA TIRA DE EXPOSICION` y añade el bloque `EL CARTEL`. | 2, 4, 6, 7 |
@@ -81,7 +96,8 @@ Se aplican a **todas** las tareas.
 - Consume: `CaseStudy` de `src/data/content.ts`, `el()` de `src/utils/dom.ts`.
 - Produce: los ganchos `[data-obra-mini]` (un `<figure>` con `<img>` y `<figcaption>`),
   `[data-obra-marcas]` (un `<div>` vacío que rellena la Task 5) y
-  `[data-obra-abrir]` (un `<button>` dentro del `<h2>` con el texto del título).
+  `[data-obra-abrir]` (un `<button>` vacío, **hermano** del `<h2>`; su nombre accesible lo pone
+  la Task 3).
 
 **Por qué esta tarea existe sola:** el patrón aditivo del proyecto se ha roto cuatro veces por
 olvidar el `display: none` de base (nota en `scripts/measure-placa.py`). Los nodos entran y se
@@ -98,10 +114,10 @@ Las aserciones nacen de fallos reales, como en `measure-placa.py`:
   1. Los nodos del cartel existen en el DOM y estan OCULTOS en Vice y en
      Caelestia. El patron aditivo se ha roto cuatro veces por olvidar el
      `display: none` de base.
-  2. El boton de apertura no altera la maquetacion de Vice ni de Caelestia.
-     Chrome computa `display: inline` como `inline-block` en un <button>
-     salvo que se ponga `appearance: none`; ese fallo exacto ya se pago en
-     el marcador de identidad de los creditos.
+  2. Hay CINCO disparadores y los cinco titulares conservan su texto. Un
+     `querySelectorAll` vacio hace que el bucle de comprobacion no itere y
+     el arnes salga verde sin comprobar nada: eso paso en la primera
+     version de este mismo fichero.
 """
 import argparse
 import sys
@@ -132,15 +148,25 @@ def nodos_ocultos(pg) -> list[str]:
     )
 
 
-def boton_neutral(pg) -> list[str]:
+def titulo_intacto(pg) -> list[str]:
+    """El titular sigue diciendo lo que dice `content.ts` despues de que el
+    tema lo parta en caracteres, y hay CINCO disparadores.
+
+    El conteo no es decorativo: sin el, un `querySelectorAll` que devuelve 0
+    hace que el bucle no itere, no se empuje ningun fallo y el arnes salga
+    verde sin haber comprobado nada. Es el modo de fallo que destapo la
+    revision de la Task 1.
+    """
     return pg.evaluate(
         """() => {
           const fallos = [];
-          for (const b of document.querySelectorAll('[data-obra-abrir]')) {
-            const cs = getComputedStyle(b);
-            if (cs.display !== 'inline') fallos.push(`display ${cs.display}, esperaba inline`);
-            if (cs.appearance !== 'none') fallos.push(`appearance ${cs.appearance}`);
-            if (parseFloat(cs.paddingLeft) !== 0) fallos.push('padding heredado del UA');
+          const botones = document.querySelectorAll('[data-obra-abrir]');
+          if (botones.length !== 5) fallos.push(`${botones.length} disparadores, esperaba 5`);
+          const titulos = Array.from(document.querySelectorAll('[data-scene="obra"] h2.display-lg'));
+          if (titulos.length !== 5) fallos.push(`${titulos.length} titulares, esperaba 5`);
+          for (const t of titulos) {
+            const texto = (t.textContent || '').trim();
+            if (!texto) fallos.push('titular sin texto tras el split de caracteres');
           }
           return fallos;
         }"""
@@ -158,7 +184,7 @@ def main() -> int:
         for tema in TEMAS_AJENOS:
             abre(pg, args.base, tema)
             fallos += [f"[{tema}] {f}" for f in nodos_ocultos(pg)]
-            fallos += [f"[{tema}] {f}" for f in boton_neutral(pg)]
+            fallos += [f"[{tema}] {f}" for f in titulo_intacto(pg)]
         b.close()
     for f in fallos:
         print(f"FALLO {f}")
@@ -206,21 +232,30 @@ Dentro de `createProjectScene`, antes de construir `children`:
   marcas.setAttribute("aria-hidden", "true");
 ```
 
-Y el título deja de ser texto suelto para llevar dentro el disparador accesible. **Un `<h2>` no
-puede ir dentro de un `<button>`** (el modelo de contenido del botón es *phrasing*), así que va al
-revés: el botón dentro del encabezado.
+Y el disparador accesible, que va **como hermano del `<h2>`, nunca dentro**. El `<h2>` conserva
+su texto y sus atributos tal y como están hoy: no se toca.
+
+**Por qué fuera y no dentro** (medido, no deducido): `src/utils/reveal.ts:19` y
+`src/themes/vice.choreography.ts:32` parten el titular en caracteres haciendo
+`target.textContent = ""` sobre `[data-title]`. Caelestia no declara `choreography` propia, así que
+cae en las recetas genéricas de `reveal.ts`; Vice usa su propio `splitChars`. Un `<button>` anidado
+en ese `<h2>` **se borra del DOM en los dos temas** a los pocos ms de cargar. Hyprland se salva
+porque tiene coreografía propia, pero el gancho no puede depender de eso. Blindar el split queda
+descartado: obligaría a editar `vice.choreography.ts`, y **Vice está cerrado**.
 
 ```ts
-  const abrir = el("button", "obra-abrir", [project.title]);
+  // El disparador va FUERA del <h2>. Dentro no sobrevive: `reveal.ts` (que es
+  // lo que usa Caelestia) y `vice.choreography.ts` parten el titular con
+  // `target.textContent = ""` y se llevarian el boton por delante. En Hyprland
+  // este boton cubre la fila entera; en los otros dos temas no existe.
+  const abrir = el("button", "obra-abrir", []);
   abrir.setAttribute("data-obra-abrir", "");
   abrir.type = "button";
-
-  const title = el("h2", "display-lg mt-5 max-w-3xl text-[clamp(2rem,6vw,4.6rem)]", [abrir]);
-  title.setAttribute("data-reveal", "chars");
-  title.setAttribute("data-title", "");
+  // El nombre accesible lo pone el modulo del cartel (Task 3), que es quien
+  // conoce el titulo ya partido en letras.
 ```
 
-Añade `mini` y `marcas` a `children`, detrás de `columns`.
+Añade `mini`, `marcas` y `abrir` a `children`, detrás de `columns`.
 
 - [ ] **Paso 4: Neutralizar los nodos nuevos en `src/style.css`**
 
@@ -231,31 +266,16 @@ Al final del fichero:
  * Nodos del cartel de obra (`projectScene.ts`). Nacen apagados para los TRES
  * temas: solo el bloque Hyprland de `themes.css` los enciende. El patron
  * aditivo se ha roto cuatro veces por olvidar justo esto.
+ *
+ * `.obra-abrir` es HERMANO del <h2>, no hijo: dentro lo borraria el split de
+ * caracteres de `reveal.ts` (Caelestia) y de `vice.choreography.ts`, que hacen
+ * `target.textContent = ""`. Estando fuera basta con ocultarlo, y ademas no
+ * hay que pelear con el `appearance` del agente de usuario.
  */
 .obra-mini,
-.obra-marcas {
-  display: none;
-}
-
-/*
- * El titulo pasa a llevar un <button> dentro para que el cartel de Hyprland
- * tenga un disparador accesible. En Vice y en Caelestia ese boton no debe
- * existir visualmente: sin `appearance: none`, Chrome computa `display:
- * inline` como `inline-block` en un boton, y ese fallo exacto ya se pago en
- * el marcador de identidad de los creditos.
- */
+.obra-marcas,
 .obra-abrir {
-  appearance: none;
-  display: inline;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-  text-align: inherit;
-  cursor: default;
+  display: none;
 }
 ```
 
@@ -459,6 +479,17 @@ En su lugar:
   color: var(--haze);
 }
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-abrir {
+  /* El disparador cubre la fila entera: el objetivo tactil es la fila, no una
+     palabra. Va por debajo del contenido en z para no taparlo, y sin fondo. */
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   cursor: pointer;
 }
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-abrir:focus-visible {
@@ -480,8 +511,13 @@ En su lugar:
 :root[data-theme="hyprland"] [data-scene="obra"] .obra-mini {
   display: block;
   order: 3;
-  flex: 0 0 144px;
-  height: 90px;              /* = caja del titulo a --t-8 con interlinea 1,12 */
+  /* La miniatura mide EXACTAMENTE la caja del titulo. No se escribe el numero
+     a mano: `--t-8` son 89,85px y 89,85 x 1,12 = 100,63 — el "90px" que decia
+     antes este plan era un error de aritmetica, arrastrado del prototipo, que
+     usaba interlinea 1. Derivarlo del token lo mantiene cuadrado solo.
+     El ancho conserva la proporcion apaisada 16:10 de la captura. */
+  flex: 0 0 calc(var(--t-8) * 1.12 * 1.6);
+  height: calc(var(--t-8) * 1.12);
   margin: 0;
   position: relative;
   overflow: hidden;
@@ -665,17 +701,20 @@ export async function mountObraCartel(root: HTMLElement): Promise<ObraCartelHand
 /** Convierte el texto del boton en una letra por mirilla, con su gemela. */
 function partirTitulo(seccion: HTMLElement): Fila {
   const boton = seccion.querySelector<HTMLButtonElement>("[data-obra-abrir]");
+  const titulo = seccion.querySelector<HTMLElement>("h2.display-lg");
   const mini = seccion.querySelector<HTMLElement>("[data-obra-mini]");
-  if (!boton || !mini) throw new Error("Fila de obra sin boton o sin miniatura");
+  if (!boton || !titulo || !mini) throw new Error("Fila de obra sin boton, titulo o miniatura");
 
-  const texto = boton.textContent ?? "";
-  boton.textContent = "";
+  // Se parte el TITULAR, no el boton: el boton es un hermano vacio que solo
+  // hace de disparador accesible (ver Task 1).
+  const texto = titulo.textContent ?? "";
+  titulo.textContent = "";
   for (const caracter of texto) {
     const mirilla = document.createElement("span");
     mirilla.className = "obra-ch";
     if (caracter === " ") {
       mirilla.classList.add("obra-ch-hueco");
-      boton.appendChild(mirilla);
+      titulo.appendChild(mirilla);
       continue;
     }
     const capaEntrada = document.createElement("span");
@@ -689,7 +728,7 @@ function partirTitulo(seccion: HTMLElement): Fila {
     }
     capaEntrada.appendChild(tira);
     mirilla.appendChild(capaEntrada);
-    boton.appendChild(mirilla);
+    titulo.appendChild(mirilla);
   }
   // El texto partido deja de ser legible para un lector de pantalla: se le
   // devuelve entero por `aria-label`.
@@ -698,8 +737,8 @@ function partirTitulo(seccion: HTMLElement): Fila {
   return {
     seccion,
     boton,
-    tiras: Array.from(boton.querySelectorAll<HTMLElement>(".obra-rl")),
-    entradas: Array.from(boton.querySelectorAll<HTMLElement>(".obra-en")),
+    tiras: Array.from(titulo.querySelectorAll<HTMLElement>(".obra-rl")),
+    entradas: Array.from(titulo.querySelectorAll<HTMLElement>(".obra-en")),
     mini,
   };
 }
@@ -960,7 +999,10 @@ el objetivo táctil sea la fila entera):
     });
 
     ficha.replaceChildren(...bloquesDeFicha(fila.seccion));
-    gsap.set(ficha, { opacity: 1, pointerEvents: "auto" });
+    // La ficha entra por recorte, nunca por opacidad (ley de la seccion).
+    gsap.set(ficha, { pointerEvents: "auto" });
+    gsap.fromTo(ficha, { clipPath: "inset(0 100% 0 0)" },
+      { clipPath: "inset(0 0 0 0)", duration: motionReducido ? 0 : 0.42, ease: "hard" });
     if (!motionReducido) {
       const partido = new SplitText(ficha.querySelectorAll("p, .obra-stack"), {
         type: "lines",
@@ -988,9 +1030,18 @@ el objetivo táctil sea la fila entera):
     gsap.to(filas.map((f) => f.seccion), {
       y: 0, duration: motionReducido ? 0 : 0.52, ease: "hard", stagger: 0.03,
     });
+    // Sale tambien por recorte, y el contenido se devuelve DESPUES: si se
+    // vacia antes, lo que se retira durante la animacion es una caja vacia y
+    // el gesto de cierre no existe. La guarda evita que una reapertura a
+    // media salida se lleve por delante el contenido recien puesto.
+    const turno = ++cierreEnCurso;
     gsap.to(ficha, {
-      opacity: 0, duration: motionReducido ? 0 : 0.24,
-      onComplete: () => gsap.set(ficha, { pointerEvents: "none" }),
+      clipPath: "inset(0 100% 0 0)", duration: motionReducido ? 0 : 0.42, ease: "hard",
+      onComplete: () => {
+        if (turno !== cierreEnCurso) return;
+        devuelveBloques();
+        gsap.set(ficha, { pointerEvents: "none" });
+      },
     });
     anuncio.textContent = "Ficha cerrada.";
   }
@@ -1002,7 +1053,11 @@ el objetivo táctil sea la fila entera):
     const mascaras = Array.from(seccion.querySelectorAll<HTMLElement>("[data-mask]"));
     const meta = seccion.querySelector<HTMLElement>(".obra-meta");
     const marcas = seccion.querySelector<HTMLElement>("[data-obra-marcas]");
-    for (const pieza of [lead, mascaras[1], marcas, mascaras[0], meta]) {
+    // `mascaras[0]` es `problem` y NO entra: se cambio por el enlace al
+    // repositorio (decision de Aoshi, 2026-08-10). El enlace es el unico gesto
+    // accionable de la seccion y no aparecia en ningun sitio.
+    const pie = seccion.querySelector<HTMLElement>("[data-obra-pie]");
+    for (const pieza of [lead, mascaras[1], marcas, pie, meta]) {
       if (pieza) piezas.push(pieza);
     }
     return piezas;
@@ -1066,7 +1121,11 @@ vez: sin ella la region de anuncio se pinta como un parrafo visible bajo el cart
   left: 800px;
   top: 132px;
   width: 520px;
-  opacity: 0;
+  /* La ficha entra y sale por RECORTE, no por opacidad. La ley de la seccion
+     es que aqui nada se desvanece, y una ficha que aparece con un fundido la
+     rompe en el sitio mas visible. Decidido por Aoshi el 2026-08-10, corrigiendo
+     una version anterior de este plan que usaba opacity. */
+  clip-path: inset(0 100% 0 0);
   /* Sin esto la ficha cerrada tapa las filas y no se puede pulsar ninguna.
      Medido en el prototipo: el arnes se quedo 30s intentando el clic. */
   pointer-events: none;
@@ -1076,7 +1135,25 @@ vez: sin ella la region de anuncio se pinta como un parrafo visible bajo el cart
 :root[data-theme="hyprland"] .obra-ficha [data-mask] {
   display: block;
 }
-:root[data-theme="hyprland"] [data-scene="obra"].is-abierto .obra-mini {
+/*
+  La miniatura, YA DENTRO de la lupa. Es imprescindible: todas sus reglas de
+  tamano y caja cuelgan de `[data-scene="obra"] .obra-mini`, y al viajar a la
+  lupa el nodo deja de casar ese selector — se queda sin alto, sin `overflow` y
+  con `position: static`, con lo que el pie absoluto se posiciona contra la
+  lupa en vez de contra la foto y se despega.
+
+  Y por eso NO vale `.is-abierto .obra-mini`, que es lo que decia una version
+  anterior de este plan: cuando la fila abre, el nodo ya no cuelga de la
+  seccion, asi que ese selector no puede casar nunca.
+*/
+:root[data-theme="hyprland"] .obra-lupa .obra-mini {
+  display: block;
+  position: relative;
+  flex: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
   clip-path: inset(0 0 0 0);
 }
 :root[data-theme="hyprland"] .obra-lupa .obra-mini-pie {
@@ -1129,12 +1206,37 @@ git commit -m "feat(obra): la captura viaja de la fila a la lupa con Flip"
   slug desconocido, a propósito.
 - Produce: `slugDeStack(nombre: string): string | null` en `src/utils/stackIcons.ts`.
 
-**Corrección del spec:** el spec dice que las marcas serían monogramas dibujados a mano porque los
-logos «traen su propio color». Es **falso** en este repo: `src/utils/icons.ts` ya inlinea
-`simple-icons`, que son de un solo trazo y heredan `currentColor`. Se usan los iconos reales,
-monocromos. La conclusión (monocromía) no cambia; el medio sí. **Zustand no existe en
-`simple-icons`**: un nombre sin marca no pinta tile — el nombre ya está escrito en la línea de
-stack, así que no se pierde información y no se inventa un logotipo.
+**Corrección del spec, dos cosas.**
+
+**Primera:** el spec dice que las marcas serían monogramas dibujados a mano porque los logos «traen
+su propio color». Es **falso** en este repo: `src/utils/icons.ts` ya inlinea `simple-icons`, que son
+de un solo trazo y heredan `currentColor`. Se usan los iconos reales, monocromos. La conclusión
+(monocromía) no cambia; el medio sí. **Zustand no existe en `simple-icons`**: un nombre sin marca no
+pinta nada — el nombre ya está escrito en la línea de stack, así que no se pierde información y no
+se inventa un logotipo.
+
+**Segunda: el spec describe tiles cuadrados de 34 px con filete de brasa, y eso se retira.** Aoshi
+decidió el 2026-08-10 que las marcas **comparten gramática con el catastro**, la sección «Con qué
+construyo» que se está rediseñando en paralelo
+(`docs/superpowers/specs/2026-08-10-hyprland-stack-catastro-design.md`, rama
+`worktree-hyprland-stack-catastro`). Su elemento firma es **un friso de estas mismas marcas de
+`simple-icons`**, a 14 px, en `--haze`, sin caja. Un tile con filete aquí haría que la misma marca
+se leyera de dos formas distintas dentro del mismo tema.
+
+Manda la firma: allí el friso **es** el dispositivo, aquí las marcas son un detalle de apoyo. Esta
+ficha adopta el tratamiento y sólo cambia el tamaño, que es lo único que puede depender del
+contexto. La regla común: **monocromas, sin caja, y nunca un logotipo con su color de marca.** Sobre la
+brasa, la regla es una **prohibición, no un mandato**: `--l1` no se usa para nada que no esté
+activo. **Aquí las marcas no tienen estado activo y no deben tenerlo**: son decorativas
+(`aria-hidden`), no son enlaces, no son alcanzables por teclado y viven dentro de una ficha ya
+abierta — encender una al apuntarla prometería una acción que no existe. En el catastro sí lo
+tienen porque allí cada marca es un objetivo real.
+
+Lo que **no** se comparte, y es correcto: el catastro apaga las marcas vecinas con `opacity: 0.42`
+al apuntar una. Aquí eso lo prohíbe la ley de la sección. La gramática común es de **tratamiento**,
+no de movimiento.
+
+El paso 7 de esta tarea corrige el spec con las dos cosas.
 
 - [ ] **Paso 1: Añadir la aserción que falla**
 
@@ -1230,18 +1332,16 @@ creación vacía de la Task 1:
 ```css
 :root[data-theme="hyprland"] .obra-ficha .obra-marcas {
   display: flex;
-  gap: 8px;
+  gap: 14px;
   margin-top: 12px;
   flex-wrap: wrap;
+  color: var(--haze);
 }
 :root[data-theme="hyprland"] .obra-marca {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--l1) 42%, var(--rule));
-  color: var(--catch);
+  /* Sin caja, sin filete, sin radio: misma gramatica que el friso del catastro,
+     que es donde ese friso es la firma. Aqui solo cambia el tamano, que es lo
+     unico que puede depender del contexto. */
+  display: block;
   clip-path: inset(0 100% 0 0);   /* entran por corte, con escalonado */
 }
 :root[data-theme="hyprland"] .obra-marca-svg svg {
@@ -1303,7 +1403,7 @@ git commit -m "feat(obra): marcas del stack con simple-icons en la ficha del car
 - [ ] **Paso 1: Añadir las aserciones que fallan**
 
 ```python
-ANCHOS = [("movil", 390, 844), ("tableta", 820, 1024), ("escritorio", 1440, 900)]
+ANCHOS = [("movil", 390, 844), ("tableta", 820, 1024), ("portatil", 1280, 800), ("escritorio", 1440, 900)]
 
 
 def movil(pg) -> list[str]:
@@ -1327,6 +1427,41 @@ def movil(pg) -> list[str]:
 ```
 
 Llama a `cartel_en_reposo`, `escala_tipografica` y `apertura` **en los tres anchos** de `ANCHOS`.
+
+**Una aserción hay que acotarla por ancho, y es importante.** `cartel_en_reposo` exige que la
+miniatura mida lo mismo que la caja del título. Eso **sólo se sostiene a partir de 1200 px**, que es
+donde el título vale `--t-8`. Por debajo, el título encoge a `--t-6` (caja de 56,6 px) y a `--t-4`
+(31,8 px), y una miniatura de ese tamaño no enseñaría nada: por eso el diseño le da medidas propias
+(152×95 en tableta, 96×60 en móvil). Añade el ancho como parámetro y comprueba la igualdad sólo en
+escritorio:
+
+```python
+def cartel_en_reposo(pg, ancho: int) -> list[str]:
+    ...
+            # La miniatura iguala la caja del titulo SOLO a partir de 1200px.
+            # Por debajo el titulo encoge a --t-6 y --t-4 y la miniatura
+            # tendria 90 y 51px de ancho: ilegible. Ahi lleva medida propia.
+            if ancho >= 1200 and abs(mr.height - tr.height) > 2:
+                fallos.push(...)
+```
+
+Lo que **sí** se comprueba en los tres anchos: que la miniatura está alineada verticalmente con el
+título, que el título no se corta, y que las cinco filas caben en el viewport.
+
+### Y un hueco que hay que cerrar: el tramo 1200-1439 px
+
+La geometría del estado abierto está escrita en píxeles fijos: lupa de 760 a la izquierda, ficha de
+520 a 800 px del borde. Suman **1320 px**, y los dos `@media` de esta tarea sólo cubren hasta 1199.
+Entre 1200 y 1439 no hay ninguna regla, así que un portátil de 1280 abre la ficha fuera de la
+pista. Lo destapó la revisión de la Task 4 y nadie lo ha medido todavía.
+
+**No lo arregles con otro breakpoint.** Deriva la geometría del ancho real del contenedor: la lupa
+ocupa una fracción de `.obra-track` y la ficha el resto, con el hueco entre medias. A 1440 tiene que
+seguir dando los mismos números que hoy —760 / 800 / 520, que son los medidos y aprobados— y por
+debajo encoger sola. Un `calc()` sobre porcentajes basta; no hace falta JS.
+
+Añade al arnés **1280×800** a la lista de anchos, y comprueba en él que la ficha abierta no desborda
+la pista. Es la anchura de portátil más común y hoy no está cubierta por nada.
 
 - [ ] **Paso 2: Ejecutarlo y ver que falla**
 
@@ -1420,6 +1555,31 @@ git commit -m "feat(obra): el cartel en movil y tableta, mismo dispositivo sin h
 ---
 
 ## Task 7: Accesibilidad y movimiento reducido
+
+> **Encargo adicional, en commit propio y separado: el enlace al repositorio entra en la ficha.**
+>
+> `bloquesDeFicha` nunca recogía el pie del proyecto, así que **el enlace al repositorio no aparece
+> en ninguna parte del cartel**. Tres de los cinco proyectos tienen repo público y es el único
+> gesto accionable de la sección; los otros dos pierden su nota de "Proyecto privado". Es un hueco
+> del spec, no de la implementación: la ficha se describió con seis bloques y ninguno era el enlace.
+> Lo destapó la Task 6 al arreglar un bug colateral.
+>
+> Decisión de Aoshi (2026-08-10): **el enlace entra y sale `problem`**, que es el bloque más largo
+> y la causa de los dos apretones de espaciado que se arrastran desde la Task 4. Se cambia contexto
+> por acción.
+>
+> Tres cambios:
+> 1. `projectScene.ts` — el `<div class="mt-10">` que envuelve el enlace (o la nota de proyecto
+>    privado) gana el gancho `data-obra-pie`. Hoy sólo se puede seleccionar por `.mt-10:not(.grid)`,
+>    que es frágil y ya causó un fallo en la Task 6.
+> 2. `obraCartel.ts` — `bloquesDeFicha` cambia `mascaras[0]` (que es `problem`) por ese pie.
+> 3. `measure-cartel.py` — la aserción de la ficha comprueba que **los tres proyectos con `link`
+>    muestran un `<a href>` visible dentro de la ficha abierta**, y que los dos privados muestran su
+>    nota. El conteo de bloques sigue siendo el mismo, así que un conteo por sí solo no lo detecta:
+>    hay que mirar el contenido.
+>
+> Ojo con el orden: el pie va **antes** del `meta` de Rol y Periodo, según el spec.
+
 
 **Ficheros:**
 - Modificar: `src/components/obraCartel.ts`
@@ -1578,7 +1738,7 @@ git commit -m "feat(obra): las capturas restantes del proyecto, bajo la lupa"
 - Modificar: `docs/superpowers/specs/2026-08-10-hyprland-obra-cartel-design.md`
 - Modificar: `.claude/CLAUDE.md` y `CLAUDE.md` si el estado del tema cambia
 
-- [ ] **Paso 1: Dejar escrito cómo se corre el arnés**
+- [x] **Paso 1: Dejar escrito cómo se corre el arnés**
 
 **Comprobado:** `scripts/verify.py` **no invoca** los `measure-*.py` — no hay ni un `subprocess` en
 él. Son arneses independientes que se lanzan a mano, igual que `measure-placa.py`. Así que **no
@@ -1590,14 +1750,14 @@ npm run build && npx vite preview --port 4173 &
 python3 scripts/measure-cartel.py --base http://localhost:4173
 ```
 
-- [ ] **Paso 2: Medir contraste contra el fondo REAL**
+- [x] **Paso 2: Medir contraste contra el fondo REAL**
 
 Es el punto que el spec deja pendiente. **El fondo no es un plano**: la página lleva el shader más
 `--bg-fallback`, que sube hasta #3a1008. Mide bruma sobre la zona alta del cartel (donde el haz es
 más brillante) y el papel del titular encendido. Referencias: `--haze` sobre tinta 6,81:1; sobre
 #3a1008 5,54:1; `--l1` sobre tinta 6,61:1. Todo tiene que pasar AA (4,5:1).
 
-- [ ] **Paso 3: Comprobar Vice y Caelestia contra `main`**
+- [x] **Paso 3: Comprobar Vice y Caelestia contra `main`**
 
 ```bash
 git worktree add /tmp/cartel-main main
@@ -1605,7 +1765,7 @@ git worktree add /tmp/cartel-main main
 Sirve los dos builds y compara capturas de `?theme=vice` y `?theme=caelestia` a 1440×900 y 390×844.
 **Nunca `git stash`.**
 
-- [ ] **Paso 4: Arnés completo y anti-mock**
+- [x] **Paso 4: Arnés completo y anti-mock**
 
 ```bash
 npm run build && npm run lint
@@ -1614,14 +1774,14 @@ grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|l
   src/ --include="*.ts"
 ```
 
-- [ ] **Paso 5: Actualizar la línea base si procede**
+- [x] **Paso 5: Actualizar la línea base si procede** (no procede: 12 fallos conocidos, 0 nuevos)
 
 ```bash
 python3 scripts/verify.py --update-baseline   # y revisa el diff antes de commitear
 ```
 Una línea base que se queda grande vuelve a esconder cosas.
 
-- [ ] **Paso 6: Cerrar el spec**
+- [x] **Paso 6: Cerrar el spec**
 
 Cambia `Estado: pendiente de plan` por `Estado: implementado`, añade la segunda captura (Task 8) al
 apartado de composición y un `## Registro de implementación` con lo que se desvió del plan.
@@ -1632,7 +1792,7 @@ apartado de composición y un `## Registro de implementación` con lo que se des
 Lanza `lidia-naive-tester` y `vera-art-director` (umbral 7,5/10). Antes, **revisión de Aoshi en el
 sitio real haciendo scroll**, no sobre capturas.
 
-- [ ] **Paso 8: Commit de cierre**
+- [x] **Paso 8: Commit de cierre** (`3c5e4e1`)
 
 ```bash
 git add -A

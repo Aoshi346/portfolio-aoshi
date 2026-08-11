@@ -60,7 +60,7 @@ type HyprTimerWindow = Window & { __hyprSkillTimers?: number[] };
  * bajo `reduce`, igual que en Vice: es una capa de refuerzo, no el canal por
  * el que se entiende que nombre esta enfocado.
  */
-export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
+export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
   ScrollTrigger.getAll()
     .filter((t) => typeof t.vars.id === "string" && t.vars.id.startsWith(ID))
     .forEach((t) => t.kill());
@@ -178,28 +178,6 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
   };
   net();
   window.addEventListener("scroll", net, { passive: true });
-
-  // Gesto 2 — la tira de exposicion. Solo en escritorio y sin movimiento
-  // reducido: el mismo contrato de breakpoint que el CSS de la tarea 4.
-  const mm = gsap.matchMedia();
-  mm.add("(min-width: 821px) and (prefers-reduced-motion: no-preference)", () => {
-    const obras = Array.from(root.querySelectorAll<HTMLElement>('[data-scene="obra"]'));
-    if (obras.length === 0) return;
-
-    obras.forEach((obra, i) => {
-      obra.style.setProperty("--hypr-e", String(16 + i * 13));
-      const open = (): void => {
-        obras.forEach((o) => o.classList.toggle("is-open", o === obra));
-      };
-      obra.addEventListener("pointerenter", open);
-      obra.addEventListener("focusin", open);
-    });
-    obras[0].classList.add("is-open");
-
-    return () => {
-      obras.forEach((o) => o.classList.remove("is-open"));
-    };
-  });
 
   // Gesto 3 — el titular lee la posicion de la luz, para que al desplazarte
   // la luz pase POR DENTRO de las palabras en vez de viajar con ellas.

@@ -147,6 +147,15 @@ if (!prefersReducedMotion && theme.id === "hyprland") {
   });
 }
 
+// El cartel de obra en Hyprland: entrada por barrido y relevo de letras al
+// pasar el puntero. Import diferido, igual que el resto de modulos de tema.
+let cartelHandle: { destroy: () => void } | null = null;
+if (theme.id === "hyprland") {
+  void import("./components/obraCartel").then(async ({ mountObraCartel }) => {
+    cartelHandle = await mountObraCartel(app);
+  });
+}
+
 // Navegacion de escenas, comun a los tres temas: vive fuera del cromo de
 // cine (aria-hidden) para que quede en el arbol de accesibilidad.
 const sceneNavHandle = mountSceneNav(app);
@@ -209,6 +218,7 @@ window.addEventListener(
     scrollRailHandle?.destroy();
     cursorHandle?.destroy();
     ignitionHandle?.destroy();
+    cartelHandle?.destroy();
     sceneNavHandle.destroy();
   },
   { once: true },
