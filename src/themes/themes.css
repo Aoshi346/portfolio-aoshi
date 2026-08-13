@@ -5748,6 +5748,10 @@
   text-transform: uppercase;
   position: relative;
   z-index: 1;
+  /* Vuelta a `--haze` al soltar el hover de un vecino: 0,42s --hard, la
+     misma asimetria que gobierna la opacidad de grupo (ver el apagado en
+     grupo mas abajo). El apagado en si (a `--catch`) usa 0,9s --slow. */
+  transition: color 0.42s var(--hard);
 }
 :root[data-theme="hyprland"] .contacto-bar-value {
   font-family: var(--font-display);
@@ -5924,6 +5928,34 @@
     [class*="contacto-bar--"]:not(:focus-visible) {
     opacity: 0.5;
     transition: opacity 0.9s var(--slow);
+  }
+  /* El rotulo bajo el mismo apagado en grupo cae por debajo de AA: parte de
+     `--haze` (6,43:1 en reposo) y `opacity: 0.5` en el PADRE lo compone a
+     2,42-2,45:1 medido por glifo contra el fondo real a 1024/1440 (informe
+     final, hallazgo P1). La opacidad de grupo es multiplicativa sobre todo
+     el subarbol — ningun `opacity` puesto en el hijo puede subir ese techo,
+     porque el navegador compone el subarbol entero a esa alfa antes de
+     pintarlo. Lo que SI puede subir la mezcla es partir de un color base mas
+     claro: aqui se cambia `color`, no `opacity`, asi que sigue viviendo
+     dentro del mismo apagado de grupo (el fotograma compuesto se mide mas
+     abajo) pero la composicion final aclara lo suficiente.
+     Se probo `--catch` (#ffd9cc) primero: por glifo contra el fondo real
+     del shader a 1024/1440px con una via en hover salio 4,32-4,34:1,
+     insuficiente. `--color-paper` (#ffeae6, el mismo tono que ya usa
+     `.contacto-bar-value`) mide 4,75-4,78:1 enfriado en las tres vias
+     (linkedin/telefono/github) a 1440px — pasa el 4,5:1 de AA con margen.
+     El rotulo y el valor comparten color mientras dura el enfriado, pero
+     el gesto sigue siendo visible: el PIXEL compuesto (no el `color` fuente)
+     pasa de luminancia 0,298 en reposo a 0,196 enfriado — mas oscuro, no un
+     no-op — porque `--color-paper` a opacity 0.5 sobre el scrim oscuro
+     sigue siendo mas tenue que `--haze` a opacity 1. El valor no se toca:
+     ya pasaba (4,68-4,84:1) con el mismo mecanismo de opacidad de grupo. */
+  :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:hover)
+    [class*="contacto-bar--"]:not(:hover) .contacto-bar-label,
+  :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:focus-visible)
+    [class*="contacto-bar--"]:not(:focus-visible) .contacto-bar-label {
+    color: var(--color-paper);
+    transition: color 0.9s var(--slow);
   }
 }
 

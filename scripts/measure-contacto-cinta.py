@@ -89,6 +89,57 @@ def sweep_anchos(pw, base):
     b.close()
     return fallos
 
+# Contraste en el estado enfriado (informe final, hallazgo P1, 2026-08-13):
+# el arnes solo media reposo, y el apagado en grupo por hover (opacity 0.5
+# en el padre `[class*="contacto-bar--"]`) es un estado interactivo que solo
+# existe mientras otra via tiene el foco/hover. `.contacto-bar-value` pasaba
+# de sobra en reposo pero el rotulo (`--haze`, 6,43:1 en reposo) se componia
+# a 2,42-2,45:1 enfriado -- un defecto que solo aparece en ese estado, y que
+# por tanto un arnes que solo mide reposo nunca ve, igual que el barrido de
+# ancho de F-01 arriba.
+HOVER_ANCHOS = [1024, 1440]
+
+def hover_cooling_contrast(pw, base):
+    fallos = []
+    b = pw.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+    from PIL import Image
+    import io
+    for w in HOVER_ANCHOS:
+        pg = b.new_page(viewport={"width": w, "height": 900})
+        pg.goto(f"{base}/?theme=hyprland", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(9000)
+        pg.evaluate("document.querySelector('[data-scene=\"contacto\"]').scrollIntoView()")
+        pg.wait_for_timeout(2500)
+        box = pg.eval_on_selector(".contacto-bar--correo", "n => { const r = n.getBoundingClientRect(); return {x: r.x, y: r.y, width: r.width, height: r.height}; }")
+        pg.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        pg.wait_for_timeout(1200)  # los 0,9s --slow del apagado en grupo, con margen
+        datos = pg.evaluate("""() => {
+          const enfriadas = ['linkedin', 'telefono', 'github'];
+          return enfriadas.flatMap(id => {
+            const bar = document.querySelector('.contacto-bar--' + id);
+            return ['.contacto-bar-label', '.contacto-bar-value'].map(s => {
+              const n = bar.querySelector(s);
+              const r = document.createRange(); r.selectNodeContents(n);
+              const c = r.getBoundingClientRect();
+              return {sel: id + ' ' + s, caja: {x: c.x, y: c.y, w: c.width, h: c.height}};
+            });
+          });
+        }""")
+        for d in datos:
+            c = d["caja"]
+            if c["w"] < 1 or c["h"] < 1:
+                fallos.append(f"hover {w}px: {d['sel']}: caja vacia"); continue
+            png = pg.screenshot(clip={"x": c["x"], "y": c["y"],
+                                      "width": c["w"], "height": c["h"]})
+            pix = list(Image.open(io.BytesIO(png)).convert("RGB").getdata())
+            r = ratio(max(pix, key=luminancia), min(pix, key=luminancia))
+            print(f"  {'OK ' if r >= MIN_AA else 'FALLA'} hover {w}px {d['sel']:24} {r:.2f}:1")
+            if r < MIN_AA:
+                fallos.append(f"hover {w}px: {d['sel']} enfriado a {r:.2f}:1 (minimo {MIN_AA})")
+        pg.close()
+    b.close()
+    return fallos
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--base", default="http://localhost:4173")
@@ -96,6 +147,7 @@ def main():
     fallos = []
     with sync_playwright() as pw:
         fallos += sweep_anchos(pw, args.base)
+        fallos += hover_cooling_contrast(pw, args.base)
         b = pw.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
         pg = b.new_page(viewport={"width": 1440, "height": 900})
         pg.goto(f"{args.base}/?theme=hyprland", wait_until="domcontentloaded", timeout=30000)
