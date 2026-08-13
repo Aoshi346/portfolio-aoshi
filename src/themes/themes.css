@@ -1869,13 +1869,26 @@
   la fija `.is-lit .hypr-cut-v`, mas especifica por el `.is-lit` extra) pero
   SIN animar y con las cuatro entrando a la vez, porque la transicion en si
   nunca llegaba a aplicarse. Doblar la clase sube la especificidad a 0,0,4,0 y
-  gana siempre, sin tocar la regla de apagado en grupo (fuera del alcance de
-  esta tarea).
+  gana siempre. Eso SI toca la regla de apagado en grupo: al ganar el
+  shorthand `transition: clip-path 0.42s var(--hard)` completo, la propiedad
+  `opacity` de esa misma regla de apagado en grupo dejaba de estar en la
+  lista de `transition-property` del elemento, asi que la vuelta a
+  `opacity: 1` al soltar el hover pasaba de 0,42s a 0ms (hallazgo del
+  informe final). Por eso aqui van longhands en vez de shorthand: mantienen
+  las dos propiedades con su propio delay sin que una pise a la otra.
 */
 :root[data-theme="hyprland"] .hypr-cut-v.hypr-cut-v {
   clip-path: inset(0 0 100% 0);
-  transition: clip-path 0.42s var(--hard);
-  transition-delay: var(--hypr-d, 0ms);
+  transition-property: clip-path, opacity;
+  transition-duration: 0.42s;
+  transition-timing-function: var(--hard);
+  /* El delay va POR PROPIEDAD: clip-path hereda el escalonado de entrada
+     (`--hypr-d`, hasta 1250ms segun la pieza), pero la opacidad es la vuelta
+     a reposo del apagado en grupo por hover y tiene que reaccionar al
+     soltar sin esperar ese escalonado — si compartiera `--hypr-d` la vuelta
+     se retrasaria hasta 1250ms en vez de los 0,42s que exige la asimetria
+     del gesto. */
+  transition-delay: var(--hypr-d, 0ms), 0ms;
 }
 :root[data-theme="hyprland"] .is-lit .hypr-cut-v {
   /* -30% por abajo y no 0: a 0 el recorte cortaria el filete de reposo y el
@@ -5901,7 +5914,18 @@
      el estado al que se vuelve al soltar) lleva los 0,42s --hard. La
      transicion que se aplica es siempre la del estado de llegada, no la del
      de salida — no "arreglar" esto a la receta generica del resto del
-     bloque, aqui es al reves a proposito. */
+     bloque, aqui es al reves a proposito.
+
+     Esta regla base comparte elemento con `.hypr-cut-v.hypr-cut-v` (mismo
+     `[class*="contacto-bar--"]`, ver el comentario junto a esa clase mas
+     arriba en la hoja): esa regla tiene mas especificidad (0,0,4,0 contra
+     0,0,3,0 de esta) y por eso es la que de verdad rige el `transition` en
+     reposo. Que este `transition: opacity 0.42s var(--hard)` siga viendose
+     aqui es documentacion de la intencion, no lo que ejecuta el navegador
+     — si algun dia esta regla sube de especificidad hay que revisar que
+     `.hypr-cut-v.hypr-cut-v` siga listando `opacity` en su
+     `transition-property`, o la vuelta al soltar el hover se congela otra
+     vez a 0ms como en el hallazgo original. */
   :root[data-theme="hyprland"] [class*="contacto-bar--"] {
     transition: opacity 0.42s var(--hard);
   }
