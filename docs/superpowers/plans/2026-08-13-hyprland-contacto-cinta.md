@@ -58,8 +58,9 @@ tarea que se podría entregar sola.
 
 **Interfaces:**
 - Consumes: nada.
-- Produces: `--cinta-h` y `--franja-h`, las dos custom properties de altura que las tareas 2, 3 y 4
-  usan para que la franja de estado y la cinta no puedan separarse.
+- Produces: `--cinta-h`, `--franja-h` y `--mosaico-h`, declaradas sobre
+  `[data-scene="contacto"]` —el ancestro común de la cinta y del estado, que no cuelga de ella— y
+  que las tareas 2, 3 y 4 usan para que la franja de estado y la cinta no puedan separarse.
 
 - [ ] **Step 1: Levantar el arnés de contraste y verlo fallar**
 
@@ -157,12 +158,19 @@ En `src/themes/themes.css`, dentro del bloque `Hyprland: las bandas`, sustituye 
 `[class*="contacto-bar--"]` (hoy L5610-5617) y la de `.contacto-bar-label` (L5631-5643):
 
 ```css
-:root[data-theme="hyprland"] .contacto-bars {
-  /* Alturas de la cinta en UN solo sitio: la franja de estado se coloca en
-     absoluto contra la seccion y se ata a estas dos, para que no puedan
-     separarse cuando alguien cambie una y olvide la otra. */
+/* Alturas en UN solo sitio, y sobre la SECCION, no sobre `.contacto-bars`:
+   `.contacto-estado` vive dentro de `.contacto-band` y no cuelga de la cinta,
+   asi que una variable declarada en la cinta no le llegaria nunca — las custom
+   properties solo se heredan hacia abajo, y la seccion es el ancestro comun.
+   La franja de estado se coloca en absoluto y se ata a estas, para que no
+   puedan separarse cuando alguien cambie una y olvide la otra.
+   `--mosaico-h` es la altura del mosaico movil: 132 + 96*3 + 3 juntas. */
+:root[data-theme="hyprland"] [data-scene="contacto"] {
   --franja-h: 27px;
   --cinta-h: 140px;
+  --mosaico-h: 423px;
+}
+:root[data-theme="hyprland"] .contacto-bars {
   flex-direction: column;
   border-top: 1px solid var(--rule);
 }
@@ -493,9 +501,14 @@ Añade a `scripts/measure-contacto-cinta.py`:
 
 ```python
         junta = pg.evaluate("""() => {
+          const sec = document.querySelector('[data-scene="contacto"]');
+          // La franja se lee del DOM, no se escribe 27 a pelo: un umbral fijo
+          // deja de medir el diseno en cuanto alguien cambia la variable.
+          const fr = parseFloat(getComputedStyle(sec).getPropertyValue('--franja-h'));
           const e = document.querySelector('.contacto-estado').getBoundingClientRect();
           const b = document.querySelector('.contacto-bars').getBoundingClientRect();
-          return {separacion: Math.round(e.bottom - (b.top + 27)),
+          return {franja: fr,
+                  separacion: Math.round(e.bottom - (b.top + fr)),
                   derecha: Math.round(b.right - e.right)};
         }""")
         print("  junta franja/cinta:", junta)
@@ -589,11 +602,21 @@ La regla `@media (max-width: 520px)` actual (L5670-5684) se elimina entera: el b
   :root[data-theme="hyprland"] [class*="contacto-bar--"]:active {
     background: rgb(30 8 5 / 0.94);
   }
-  /* El estado es el modulo del extremo: en una pila, el extremo es arriba. */
+  /* El mosaico se ancla al pie de la seccion, que es flex column con
+     min-h-screen: `margin-top: auto` lo empuja abajo. */
+  :root[data-theme="hyprland"] .contacto-bars { margin-top: auto; }
+  /* El estado es el modulo del extremo: en una pila, el extremo es ARRIBA.
+     Va en absoluto por lo mismo que en escritorio — el nodo no se puede mover
+     del DOM sin romper Vice — atado a `--mosaico-h` para que corone el mosaico
+     en vez de quedarse a media pantalla detras del lead. */
   :root[data-theme="hyprland"] .contacto-estado {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: var(--mosaico-h, 423px);
     margin: 0;
     height: 46px;
-    padding: 0 var(--calle, 30px);
+    padding: 0 30px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -638,6 +661,16 @@ Añade a `scripts/measure-contacto-cinta.py` una segunda pasada:
             fallos.append(f"movil: el correo cae en {m['renglones']} renglones")
         if min(m["bandas"]) < 56:
             fallos.append(f"movil: banda de {min(m['bandas'])}px, minimo 56 (WCAG 2.2 SC 2.5.8)")
+        # Misma asercion de junta que en escritorio: el estado va en absoluto y
+        # tiene que coronar el mosaico, no quedarse detras del lead.
+        j390 = pg390.evaluate("""() => {
+          const e = document.querySelector('.contacto-estado').getBoundingClientRect();
+          const b = document.querySelector('.contacto-bars').getBoundingClientRect();
+          return Math.round(e.bottom - b.top);
+        }""")
+        print("  junta movil:", j390)
+        if abs(j390) > 1:
+            fallos.append(f"movil: el estado no corona el mosaico ({j390}px de separacion)")
         pg390.screenshot(path="/tmp/cinta-movil.png", full_page=False)
 ```
 
