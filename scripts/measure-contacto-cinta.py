@@ -1,10 +1,16 @@
-"""Contraste y caja de la cinta de contacto en Hyprland.
+"""Contraste, caja y barrido de ancho de la cinta de contacto en Hyprland.
 
 Nacio del defecto medido el 2026-08-13: los cuatro rotulos de la cinta salian
 a 2,19-2,94:1 porque `.contacto-bar-label` heredaba `opacity: 0.6` de
 style.css y el bloque de Hyprland nunca resetea la opacidad, cosa que Vice si
 hace. Mide POR GLIFO: el haz del shader cruza la calle central vacia, asi que
 medir el rectangulo entero sobreestima el contraste.
+
+Ampliado el mismo dia (F-01) con un barrido de ancho: el arnes solo media
+1440 y 390, y por eso dejo pasar un defecto que solo aparece entre 901 y
+1200px (la cinta pierde el `gap` real que da `.contacto-bars` y los cuatro
+`.contacto-bar-value` se apelmazan en una sola cadena ilegible, y por debajo
+de ~965px desborda el viewport). Ver `sweep_anchos()`.
 
   npm run build && npx vite preview --port 4173 &
   python3 scripts/measure-contacto-cinta.py --base http://localhost:4173
@@ -26,12 +32,70 @@ def ratio(a, b):
     hi, lo = max(la, lb), min(la, lb)
     return (hi + 0.05) / (lo + 0.05)
 
+# Barrido de ancho (F-01, 2026-08-13): `.contacto-bars` es una fila flex con
+# `gap: normal` -- SIN gap real. Toda la separacion entre las cuatro columnas
+# sale del hueco sobrante despues de sumar los cuatro `.contacto-bar-value`.
+# A --t-4 (28,43px) los cuatro suman 896px; contra el content-box
+# (viewport - 2*7vw) eso deja gap 0 entre 901 y 1024px, y desborda el
+# viewport por debajo de ~965px. El arnes solo media 1440 y 390 -- exactamente
+# el hueco por el que se colo el defecto. GAP_MIN_PX es deliberadamente bajo
+# (8px): no exige "bonito", exige que dos valores contiguos sean visualmente
+# dos cadenas, no una sola corrida sin espacio (el caso medido era 0px).
+SWEEP_WIDTHS = [901, 960, 1024, 1100, 1200, 1280, 1366, 1440]
+GAP_MIN_PX = 8
+
+def sweep_anchos(pw, base):
+    fallos = []
+    b = pw.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+    for w in SWEEP_WIDTHS:
+        pg = b.new_page(viewport={"width": w, "height": 900})
+        pg.goto(f"{base}/?theme=hyprland", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(9000)
+        pg.evaluate("document.querySelector('[data-scene=\"contacto\"]').scrollIntoView()")
+        pg.wait_for_timeout(2500)
+        datos = pg.evaluate("""() => {
+          const scrollW = document.documentElement.scrollWidth;
+          const viewportW = window.innerWidth;
+          const valores = [...document.querySelectorAll('.contacto-bar-value')]
+            .map(n => n.getBoundingClientRect())
+            .sort((a, b) => a.left - b.left);
+          const gaps = [];
+          for (let i = 1; i < valores.length; i++) {
+            gaps.push(Math.round(valores[i].left - valores[i - 1].right));
+          }
+          const correo = document.querySelector('.contacto-bar--correo .contacto-bar-value');
+          const r = document.createRange(); r.selectNodeContents(correo);
+          const renglones = [...r.getClientRects()].filter(x => x.width > 1).length;
+          return {scrollW, viewportW, gaps, renglones};
+        }""")
+        overflow = datos["scrollW"] - datos["viewportW"]
+        print(f"  {w:4}px  overflow={overflow:+d}  gaps={datos['gaps']}  renglones={datos['renglones']}")
+        # Desbordamiento horizontal: la pagina entera se desplaza en lateral
+        # (medido: +58px a 901px antes del fix).
+        if overflow > 0:
+            fallos.append(f"sweep {w}px: desborda {overflow}px horizontal")
+        # Gap minimo entre columnas contiguas: 0px medido a 901-1024 antes
+        # del fix -- las cuatro cadenas se leian como una sola.
+        if datos["gaps"] and min(datos["gaps"]) < GAP_MIN_PX:
+            fallos.append(
+                f"sweep {w}px: gap de {min(datos['gaps'])}px entre valores "
+                f"(minimo {GAP_MIN_PX})"
+            )
+        # El correo tiene que seguir en un solo renglon en todo el barrido
+        # (reutiliza el mismo chequeo que ya existe para 1440/390).
+        if datos["renglones"] != 1:
+            fallos.append(f"sweep {w}px: el correo cae en {datos['renglones']} renglones")
+        pg.close()
+    b.close()
+    return fallos
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--base", default="http://localhost:4173")
     args = p.parse_args()
     fallos = []
     with sync_playwright() as pw:
+        fallos += sweep_anchos(pw, args.base)
         b = pw.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
         pg = b.new_page(viewport={"width": 1440, "height": 900})
         pg.goto(f"{args.base}/?theme=hyprland", wait_until="domcontentloaded", timeout=30000)

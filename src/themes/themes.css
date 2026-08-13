@@ -5767,6 +5767,16 @@
     font-size: var(--t-3);
   }
 }
+/* Entre 901 y 1199px la cinta usa `gap: normal` (sin gap real) y los cuatro
+   valores a --t-4 (28,43px) suman 896px de min-content: no queda hueco para
+   separarlos y por debajo de ~965px desbordan el viewport. Medido: a 901px
+   se pintan como una sola cadena ilegible. Un escalon mas de tipografia,
+   igual que ya hace `.contacto-title` un poco mas abajo. */
+@media (min-width: 901px) and (max-width: 1199px) {
+  :root[data-theme="hyprland"] .contacto-bar-value {
+    font-size: var(--t-3);
+  }
+}
 /* `.contacto-title` comparte con `.display-xl` la regla de L1334-1337, que usa
    clamp. No se toca esa: se le da aqui la suya propia, escalonada, para no
    cambiar ni el hero ni el about. */
