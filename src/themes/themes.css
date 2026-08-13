@@ -1859,15 +1859,16 @@
   `.hypr-cut-v` selector duplicado a proposito (no es un despiste): las vias
   de contacto (`[class*="contacto-bar--"]`) tienen mas abajo, en el bloque de
   Hyprland del apagado en grupo por hover, una regla con la MISMA
-  especificidad (:root[data-theme] + un selector de atributo/clase = 0,0,2,0
-  en los dos casos) que fija `transition: opacity 0.42s var(--hard)`. Esa
+  especificidad (:root es pseudo-clase, [data-theme] es atributo, .hypr-cut-v
+  es clase: las tres cuentan en la misma columna = 0,0,3,0 en los dos casos)
+  que fija `transition: opacity 0.42s var(--hard)`. Esa
   regla va DESPUES en la hoja, asi que gana el shorthand entero — incluido
   transition-property, que deja de incluir clip-path — y `transition-delay`
   vuelve a su valor inicial (0s), pisando `var(--hypr-d)`. Medido: sin este
   extra `.hypr-cut-v`, las vias asentaban en el clip-path correcto (esa regla
   la fija `.is-lit .hypr-cut-v`, mas especifica por el `.is-lit` extra) pero
   SIN animar y con las cuatro entrando a la vez, porque la transicion en si
-  nunca llegaba a aplicarse. Doblar la clase sube la especificidad a 0,0,3,0 y
+  nunca llegaba a aplicarse. Doblar la clase sube la especificidad a 0,0,4,0 y
   gana siempre, sin tocar la regla de apagado en grupo (fuera del alcance de
   esta tarea).
 */
@@ -1897,11 +1898,12 @@
      de arriba no lo alcanza, asi que su delay bajo reduce va aparte.
      `.contacto-bars` duplicado a proposito: la regla base del filete
      (mas abajo, Task 2 + Task 6) tiene la MISMA especificidad
-     (:root[data-theme] + .contacto-bars + ::before = 0,0,2,0 en los dos
-     casos) y va DESPUES en la hoja, asi que sin este empate roto gana ella
+     (:root es pseudo-clase, [data-theme] es atributo, .contacto-bars es
+     clase: las tres cuentan en la misma columna = 0,0,3,0 en los dos casos)
+     y va DESPUES en la hoja, asi que sin este empate roto gana ella
      — incluso bajo reduce — y el filete se queda en scaleX(0) para siempre.
      Medido: sin doblar la clase, `transform` computado bajo reduce era
-     `matrix(0,0,0,1,0,0)`, no `none`. */
+     `matrix(0,0,0,1,0,0)`, no `none`. Doblar sube a 0,0,4,0. */
   :root[data-theme="hyprland"] .contacto-bars.contacto-bars::before {
     transform: none;
     transition: none;
