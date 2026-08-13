@@ -1331,6 +1331,24 @@
   color: transparent;
 }
 
+/*
+  Al transformar o recortar un <span> hijo, este sale del pintado del padre y
+  el `background-clip: text` del padre deja de alcanzarlo: la letra se pintaria
+  transparente sobre nada, es decir, desapareceria. Los glifos heredan el
+  degradado, igual que ya hace `.hero-name-word`. Como es `fixed` se ancla al
+  viewport y no a la caja, asi que los ocho trozos ensenan ocho rebanadas de
+  UNO continuo, no ocho degradados cortados.
+*/
+:root[data-theme="hyprland"] .contacto-title-glyphs,
+:root[data-theme="hyprland"] .contacto-glyph {
+  background: inherit;
+  -webkit-background-clip: inherit;
+  background-clip: inherit;
+}
+:root[data-theme="hyprland"] .contacto-glyph {
+  display: inline-block;
+}
+
 :root[data-theme="hyprland"] .display-xl,
 :root[data-theme="hyprland"] .contacto-title {
   font-size: clamp(var(--t-6), 8.2vw, var(--t-9));
@@ -1821,12 +1839,75 @@
   transform: scaleY(1);
 }
 
+/*
+  Dos ejes con dos sentidos. `.hypr-cut` abre en horizontal porque se usa en
+  palabras, que se leen de izquierda a derecha. `.hypr-cut-v` sube desde el
+  borde inferior porque se usa en la cinta, que es de donde viene una barra de
+  estado. `.hypr-rule` es vertical (scaleY).
+*/
+/*
+  `.hypr-cut-v` selector duplicado a proposito (no es un despiste): las vias
+  de contacto (`[class*="contacto-bar--"]`) tienen mas abajo, en el bloque de
+  Hyprland del apagado en grupo por hover, una regla con la MISMA
+  especificidad (:root es pseudo-clase, [data-theme] es atributo, .hypr-cut-v
+  es clase: las tres cuentan en la misma columna = 0,0,3,0 en los dos casos)
+  que fija `transition: opacity 0.42s var(--hard)`. Esa
+  regla va DESPUES en la hoja, asi que gana el shorthand entero — incluido
+  transition-property, que deja de incluir clip-path — y `transition-delay`
+  vuelve a su valor inicial (0s), pisando `var(--hypr-d)`. Medido: sin este
+  extra `.hypr-cut-v`, las vias asentaban en el clip-path correcto (esa regla
+  la fija `.is-lit .hypr-cut-v`, mas especifica por el `.is-lit` extra) pero
+  SIN animar y con las cuatro entrando a la vez, porque la transicion en si
+  nunca llegaba a aplicarse. Doblar la clase sube la especificidad a 0,0,4,0 y
+  gana siempre. Eso SI toca la regla de apagado en grupo: al ganar el
+  shorthand `transition: clip-path 0.42s var(--hard)` completo, la propiedad
+  `opacity` de esa misma regla de apagado en grupo dejaba de estar en la
+  lista de `transition-property` del elemento, asi que la vuelta a
+  `opacity: 1` al soltar el hover pasaba de 0,42s a 0ms (hallazgo del
+  informe final). Por eso aqui van longhands en vez de shorthand: mantienen
+  las dos propiedades con su propio delay sin que una pise a la otra.
+*/
+:root[data-theme="hyprland"] .hypr-cut-v.hypr-cut-v {
+  clip-path: inset(0 0 100% 0);
+  transition-property: clip-path, opacity;
+  transition-duration: 0.42s;
+  transition-timing-function: var(--hard);
+  /* El delay va POR PROPIEDAD: clip-path hereda el escalonado de entrada
+     (`--hypr-d`, hasta 1250ms segun la pieza), pero la opacidad es la vuelta
+     a reposo del apagado en grupo por hover y tiene que reaccionar al
+     soltar sin esperar ese escalonado — si compartiera `--hypr-d` la vuelta
+     se retrasaria hasta 1250ms en vez de los 0,42s que exige la asimetria
+     del gesto. */
+  transition-delay: var(--hypr-d, 0ms), 0ms;
+}
+:root[data-theme="hyprland"] .is-lit .hypr-cut-v {
+  /* -30% por abajo y no 0: a 0 el recorte cortaria el filete de reposo y el
+     anillo de foco, que viven en el borde inferior de la banda. */
+  clip-path: inset(0 0 -30% 0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="hyprland"] .hypr-cut,
   :root[data-theme="hyprland"] .hypr-up,
-  :root[data-theme="hyprland"] .hypr-rule {
+  :root[data-theme="hyprland"] .hypr-rule,
+  :root[data-theme="hyprland"] .hypr-cut-v {
     clip-path: none;
     opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  /* El filete de .contacto-bars es un pseudo-elemento: el selector de clases
+     de arriba no lo alcanza, asi que su delay bajo reduce va aparte.
+     `.contacto-bars` duplicado a proposito: la regla base del filete
+     (mas abajo, Task 2 + Task 6) tiene la MISMA especificidad
+     (:root es pseudo-clase, [data-theme] es atributo y .contacto-bars es
+     clase: las tres cuentan en la tercera columna; ::before es un
+     PSEUDO-ELEMENTO y cuenta en la cuarta = 0,0,3,1 en los dos casos)
+     y va DESPUES en la hoja, asi que sin este empate roto gana ella
+     — incluso bajo reduce — y el filete se queda en scaleX(0) para siempre.
+     Medido: sin doblar la clase, `transform` computado bajo reduce era
+     `matrix(0,0,0,1,0,0)`, no `none`. Doblar sube a 0,0,4,1. */
+  :root[data-theme="hyprland"] .contacto-bars.contacto-bars::before {
     transform: none;
     transition: none;
   }
@@ -5600,6 +5681,23 @@
   valor grande a la derecha. Al apuntar, la luz inunda la banda de izquierda a
   derecha con un corte duro.
 */
+/* Alturas en UN solo sitio, y sobre la SECCION, no sobre `.contacto-bars`:
+   `.contacto-estado` vive dentro de `.contacto-band` y no cuelga de la cinta,
+   asi que una variable declarada en la cinta no le llegaria nunca — las custom
+   properties solo se heredan hacia abajo, y la seccion es el ancestro comun.
+   La franja de estado se coloca en absoluto y se ata a estas, para que no
+   puedan separarse cuando alguien cambie una y olvide la otra.
+   `--mosaico-h` es la altura del mosaico movil: 132 + 96*3 + 3 juntas.
+   `--calle` es la calle horizontal del mosaico movil (Task 4): un valor fijo,
+   no un porcentaje, porque un `vw` calibrado contra 1440 da otro numero en
+   390 — 7vw son 101px alla y 27 aqui, el mismo ahogo que una opacidad que no
+   viaja entre dos superficies. */
+:root[data-theme="hyprland"] [data-scene="contacto"] {
+  --franja-h: 27px;
+  --cinta-h: 140px;
+  --mosaico-h: 423px;
+  --calle: 30px;
+}
 :root[data-theme="hyprland"] .contacto-bars {
   flex-direction: column;
   border-top: 1px solid var(--rule);
@@ -5610,7 +5708,10 @@
   align-items: center;
   gap: 1.5rem;
   flex: 0 0 auto;
-  padding: 1.4rem 7vw;
+  /* 1.4rem 0, no 1.4rem 7vw: la calle de 7vw ya la pone la escena y sumarlas
+     arrancaba el texto en x=201,6 en vez de los x=100,8 de la placa y el
+     catastro. Es la misma calle doble que el catastro ya corrigio. */
+  padding: 1.4rem 0;
   border-bottom: 1px solid var(--rule);
   background: none;
   overflow: hidden;
@@ -5622,11 +5723,20 @@
   background: linear-gradient(90deg, color-mix(in oklab, var(--l1) 20%, transparent), transparent 70%);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.45s var(--hard);
+  transition: transform 0.42s var(--hard);
 }
 :root[data-theme="hyprland"] [class*="contacto-bar--"]:hover::before,
 :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible::before {
   transform: scaleX(1);
+}
+:root[data-theme="hyprland"] .contacto-bar-label,
+:root[data-theme="hyprland"] .contacto-estado-label {
+  /* style.css deja estos rotulos a `opacity: 0.6` y el bloque de Hyprland les
+     daba color pero nunca reseteaba la opacidad. Medido por glifo contra el
+     shader vivo: 2,19-2,94:1, cuando AA pide 4,5. Vice ya tiene este mismo
+     reset explicito en su propia regla; Hyprland nunca lo copio. */
+  opacity: 1;
+  color: var(--haze);
 }
 :root[data-theme="hyprland"] .contacto-bar-label {
   writing-mode: horizontal-tb;
@@ -5636,14 +5746,17 @@
   font-size: var(--t-1);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--haze);
   position: relative;
   z-index: 1;
+  /* Vuelta a `--haze` al soltar el hover de un vecino: 0,42s --hard, la
+     misma asimetria que gobierna la opacidad de grupo (ver el apagado en
+     grupo mas abajo). El apagado en si (a `--catch`) usa 0,9s --slow. */
+  transition: color 0.42s var(--hard);
 }
 :root[data-theme="hyprland"] .contacto-bar-value {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(var(--t-3), 2.4vw, var(--t-4));
+  font-size: var(--t-4);
   letter-spacing: -0.02em;
   position: relative;
   z-index: 1;
@@ -5655,6 +5768,32 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+@media (max-width: 900px) {
+  :root[data-theme="hyprland"] .contacto-bar-value {
+    font-size: var(--t-3);
+  }
+}
+/* Entre 901 y 1199px la cinta usa `gap: normal` (sin gap real) y los cuatro
+   valores a --t-4 (28,43px) suman 896px de min-content: no queda hueco para
+   separarlos y por debajo de ~965px desbordan el viewport. Medido: a 901px
+   se pintan como una sola cadena ilegible. Un escalon mas de tipografia,
+   igual que ya hace `.contacto-title` un poco mas abajo. */
+@media (min-width: 901px) and (max-width: 1199px) {
+  :root[data-theme="hyprland"] .contacto-bar-value {
+    font-size: var(--t-3);
+  }
+}
+/* `.contacto-title` comparte con `.display-xl` la regla de L1334-1337, que usa
+   clamp. No se toca esa: se le da aqui la suya propia, escalonada, para no
+   cambiar ni el hero ni el about. */
+:root[data-theme="hyprland"] .contacto-title {
+  font-size: var(--t-9);
+}
+@media (max-width: 900px) {
+  :root[data-theme="hyprland"] .contacto-title {
+    font-size: var(--t-6);
+  }
+}
 :root[data-theme="hyprland"] .contacto-bar-mark {
   margin-left: auto;
   position: relative;
@@ -5662,24 +5801,316 @@
   background: var(--l1);
 }
 
-/* Rotulo encima del valor en movil: en fila, "a.blanco1501@gmail.com" solo
-   tenia sitio para partirse en 4 lineas estrechas contra el rotulo fijo de
-   9rem (medido). Apilado le da el ancho completo de la banda. */
-@media (max-width: 520px) {
-  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    row-gap: 0.4rem;
+/* LA CINTA. No hay celdas: los cuatro valores repartidos sobre un filete a
+   sangre pegado al pie de la escena. Es la unica composicion donde el correo
+   puede ir a 28,43px, porque ninguna columna lo encierra: medido, los cuatro
+   ocupan 1265 de 1440 y sobran 175 para repartir. */
+@media (min-width: 901px) {
+  :root[data-theme="hyprland"] .contacto-bars {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--cinta-h) + var(--franja-h));
+    padding: var(--franja-h) 7vw 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    /* Scrim calibrado CONTRA ESTA FRANJA con el fondo generativo en su punto
+       mas brillante. No se reutiliza de ningun otro tema: un porcentaje se
+       calibra contra una superficie, no contra un token. */
+    background: rgb(11 4 4 / 0.88);
+    border-top: 1px solid var(--rule);
   }
+  /* EL FILETE de ventana activa del gestor. En el prototipo era un <span>;
+     aqui no hay nodo para el y no se va a anadir uno a `contacto.ts`, que es
+     DOM compartido — asi que es un pseudo-elemento. Llega hasta el borde
+     derecho: muriendo antes se leia como una linea sin terminar. */
+  :root[data-theme="hyprland"] .contacto-bars::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--l1), var(--l2) 46%, rgb(224 29 60 / 0.35));
+    /* El origen no lo usa nada de esta tarea: lo consume el barrido de
+       entrada de la Task 6 (coreografia), que le anade scaleX(0) + transicion
+       + `.is-lit` sobre este mismo pseudo-elemento. No borrar por "muerto". */
+    transform-origin: left;
+    /* Task 6: el filete crece hacia la derecha a los 900ms del horario de la
+       escena, junto con la franja de estado. Pseudo-elemento, no lleva clase:
+       no puede consumir `--hypr-d`, asi que el retardo va fijo aqui. */
+    transform: scaleX(0);
+    transition: transform 0.5s var(--hard);
+    transition-delay: 900ms;
+  }
+  :root[data-theme="hyprland"] .is-lit .contacto-bars::before {
+    transform: scaleX(1);
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 0;
+    border-bottom: 0;
+    overflow: visible;
+  }
+  /* El rotulo va ENCIMA del valor: cuesta alto y no ancho, asi que no le quita
+     nada a los 28,43px del dato. Sin el, "Aoshi346" no dice nada. */
   :root[data-theme="hyprland"] .contacto-bar-label {
     width: auto;
+    margin-bottom: 12px;
+    transition: color 0.9s var(--slow);
   }
-  :root[data-theme="hyprland"] .contacto-bar-value {
-    flex: 1 1 100%;
-    font-size: var(--t-3);
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:hover .contacto-bar-label,
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible .contacto-bar-label {
+    color: var(--l3);
+    transition: color 0.42s var(--hard);
   }
+  /* El <span> vacio que hoy es una rayita decorativa pasa a ser el filete de
+     reposo: la senal de que esto es un enlace. En tactil no hay hover, asi que
+     un enlace que solo lo parece al apuntarlo no lo parece nunca. */
   :root[data-theme="hyprland"] .contacto-bar-mark {
-    margin-left: 0;
+    order: 2;
+    width: 100%;
+    height: 1px;
+    margin: 10px 0 0;
+    opacity: 1;
+    background: rgb(255 160 60 / 0.42);
+    position: relative;
+  }
+  :root[data-theme="hyprland"] .contacto-bar-mark::after {
+    content: "";
+    position: absolute;
+    inset: -1px 0 0;
+    height: 2px;
+    background: var(--l1);
+    transform: scaleX(0);
+    transform-origin: left;
+    /* Apagar es enfriarse: 0,9s --slow. Encender es un corte: 0,5s --hard.
+       Asimetrico, que es la ley del tema. */
+    transition: transform 0.9s var(--slow);
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:hover .contacto-bar-mark::after,
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible .contacto-bar-mark::after {
+    transform: scaleX(1);
+    transition: transform 0.5s var(--hard);
+  }
+  /* Los tres vecinos se enfrian. Un gesto de GRUPO, no cuatro independientes:
+     bajan a la vez y sin escalon. Con :has(), sin JavaScript ni listeners.
+     Polaridad invertida respecto al filo y al rotulo: alli apuntar enciende
+     (0,42s --hard) y soltar apaga (0,9s --slow); aqui apuntar UN vecino apaga
+     a los otros tres, asi que el apagado (la regla :has(), el estado al que
+     se entra) lleva los 0,9s --slow, y la vuelta a opacity:1 (la regla base,
+     el estado al que se vuelve al soltar) lleva los 0,42s --hard. La
+     transicion que se aplica es siempre la del estado de llegada, no la del
+     de salida — no "arreglar" esto a la receta generica del resto del
+     bloque, aqui es al reves a proposito.
+
+     Esta regla base comparte elemento con `.hypr-cut-v.hypr-cut-v` (mismo
+     `[class*="contacto-bar--"]`, ver el comentario junto a esa clase mas
+     arriba en la hoja): esa regla tiene mas especificidad (0,0,4,0 contra
+     0,0,3,0 de esta) y por eso es la que de verdad rige el `transition` en
+     reposo. Que este `transition: opacity 0.42s var(--hard)` siga viendose
+     aqui es documentacion de la intencion, no lo que ejecuta el navegador
+     — si algun dia esta regla sube de especificidad hay que revisar que
+     `.hypr-cut-v.hypr-cut-v` siga listando `opacity` en su
+     `transition-property`, o la vuelta al soltar el hover se congela otra
+     vez a 0ms como en el hallazgo original. */
+  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
+    transition: opacity 0.42s var(--hard);
+  }
+  :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:hover)
+    [class*="contacto-bar--"]:not(:hover),
+  :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:focus-visible)
+    [class*="contacto-bar--"]:not(:focus-visible) {
+    opacity: 0.5;
+    transition: opacity 0.9s var(--slow);
+  }
+  /* El rotulo bajo el mismo apagado en grupo cae por debajo de AA: parte de
+     `--haze` (6,43:1 en reposo) y `opacity: 0.5` en el PADRE lo compone a
+     2,42-2,45:1 medido por glifo contra el fondo real a 1024/1440 (informe
+     final, hallazgo P1). La opacidad de grupo es multiplicativa sobre todo
+     el subarbol — ningun `opacity` puesto en el hijo puede subir ese techo,
+     porque el navegador compone el subarbol entero a esa alfa antes de
+     pintarlo. Lo que SI puede subir la mezcla es partir de un color base mas
+     claro: aqui se cambia `color`, no `opacity`, asi que sigue viviendo
+     dentro del mismo apagado de grupo (el fotograma compuesto se mide mas
+     abajo) pero la composicion final aclara lo suficiente.
+     Se probo `--catch` (#ffd9cc) primero: por glifo contra el fondo real
+     del shader a 1024/1440px con una via en hover salio 4,32-4,34:1,
+     insuficiente. `--color-paper` (#ffeae6, el mismo tono que ya usa
+     `.contacto-bar-value`) mide 4,75-4,78:1 enfriado en las tres vias
+     (linkedin/telefono/github) a 1440px — pasa el 4,5:1 de AA con margen.
+     El rotulo y el valor comparten color mientras dura el enfriado, pero
+     el gesto sigue siendo visible: el PIXEL compuesto (no el `color` fuente)
+     pasa de luminancia 0,298 en reposo a 0,196 enfriado — mas oscuro, no un
+     no-op — porque `--color-paper` a opacity 0.5 sobre el scrim oscuro
+     sigue siendo mas tenue que `--haze` a opacity 1. El valor no se toca:
+     ya pasaba (4,68-4,84:1) con el mismo mecanismo de opacidad de grupo. */
+  :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:hover)
+    [class*="contacto-bar--"]:not(:hover) .contacto-bar-label,
+  :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:focus-visible)
+    [class*="contacto-bar--"]:not(:focus-visible) .contacto-bar-label {
+    color: var(--color-paper);
+    transition: color 0.9s var(--slow);
+  }
+}
+
+/* EL ESTADO, modulo del extremo. Es la convencion real de una barra de estado
+   de gestor de ventanas: a la izquierda lo que haces, a la derecha el estado
+   del sistema. Y es lo unico de la cinta sin filete de reposo, porque es lo
+   unico que no es un enlace.
+
+   Va en absoluto porque NO SE PUEDE MOVER en el DOM: vive dentro de
+   `.contacto-band` y Vice depende de esa posicion para sus marcas de esquina.
+   Se ata a las mismas dos variables que la cinta para que no se separen; el
+   arnes comprueba que los dos bordes coinciden. */
+/* Fuera de la media query: el estado y la cinta son hermanos posicionados y
+   sin esto gana el orden del DOM, que sepulta el estado bajo el scrim casi
+   opaco de `.contacto-bars`. La Task 4 coloca el estado tambien en absoluto
+   sobre el mosaico movil y necesita el mismo z-index. */
+:root[data-theme="hyprland"] .contacto-estado {
+  z-index: 1;
+}
+@media (min-width: 901px) {
+  :root[data-theme="hyprland"] .contacto-estado {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: var(--cinta-h, 140px);
+    height: var(--franja-h, 27px);
+    margin: 0;
+    padding: 0 7vw;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    font-size: var(--t-1);
+    border-bottom: 1px solid var(--rule);
+    background: rgb(255 90 52 / 0.06);
+  }
+  :root[data-theme="hyprland"] .contacto-estado-label {
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+  /* El separador "·" sobra cuando los dos trozos ya estan separados por el
+     hueco del flex. */
+  :root[data-theme="hyprland"] .contacto-estado-sep { display: none; }
+  :root[data-theme="hyprland"] .contacto-estado-value {
+    letter-spacing: 0.06em;
+    color: var(--color-paper);
+  }
+  /* La banda de titulo deja sitio a la cinta entera mas aire. */
+  :root[data-theme="hyprland"] .contacto-band {
+    padding-bottom: calc(var(--cinta-h, 140px) + var(--franja-h, 27px) + 2rem);
+  }
+}
+
+/* Foco de teclado. Offset negativo porque la banda lleva overflow hidden en
+   movil y un offset positivo se recortaria contra el. */
+:root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible {
+  outline: 3px solid var(--l1);
+  outline-offset: -3px;
+}
+
+/* EL MOSAICO. Apilar la cinta da un pie de pagina generico. La idea no era una
+   lista: eran bandas a sangre pegadas al borde, y en una pantalla alta eso se
+   dice TESELANDO el borde inferior — lo que hace un gestor en mosaico con un
+   monitor vertical. Medido a 390x844: 703 de 844 de alto, sin desbordar. */
+@media (max-width: 900px) {
+  :root[data-theme="hyprland"] .contacto-bars {
+    display: grid;
+    grid-template-rows: 132px 96px 96px 96px;
+    gap: 1px;
+    background: none;   /* la junta no se pinta: deja ver el ascua de detras */
+    border-top: 0;
+    /* Cancela la calle de la escena (7vw a cada lado) para que las bandas
+       sangren de 0 a 390: sin esto se quedan flotando de 27 a 363 y el fondo
+       asoma por los dos costados, que es justo lo contrario de "a sangre". */
+    margin-inline: -7vw;
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 0 var(--calle);
+    min-height: 0;      /* la altura la manda la fila de la rejilla */
+    border-bottom: 0;
+    background: rgb(11 4 4 / 0.90);
+    overflow: hidden;
+    /* Sin esto, Android pinta su flash gris de serie sobre una banda
+       deliberadamente oscura al tocar -- visible y fuera de la paleta del
+       tema. El plan ya lo llevaba; se quedo fuera de esta regla al implementar. */
+    -webkit-tap-highlight-color: transparent;
+  }
+  :root[data-theme="hyprland"] .contacto-bar-label { margin-bottom: 0; }
+  :root[data-theme="hyprland"] .contacto-bar-mark { display: none; }
+  /* Pulsar enciende el canto: 3px de --l1 a la izquierda, la marca de ventana
+     con foco del gestor. En tactil no hay hover, asi que el unico estado que
+     importa es el de pulsacion. */
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--l1);
+    transform: scaleY(0);
+    transition: transform 0.9s var(--slow);
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:active::after,
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible::after {
+    transform: scaleY(1);
+    transition: transform 0.42s var(--hard);
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:active {
+    background: rgb(30 8 5 / 0.94);
+  }
+  /* El mosaico se ancla al pie de la seccion, que es flex column con
+     min-h-screen: `margin-top: auto` lo empuja abajo. Pero la regla base
+     `[data-scene] { padding-bottom: 17vh }` (compartida por las cinco
+     escenas, no se toca ahi) reserva 143px que el margin-auto no puede
+     invadir: sin cancelarla AQUI, solo para contacto, el mosaico se queda
+     143px corto del borde real y `.contacto-estado` (atado a `--mosaico-h`
+     desde el borde de la caja de padding) cae encima de la primera fila en
+     vez de coronarla. Medido: separacion de 143px, calzaba con el 17vh. */
+  :root[data-theme="hyprland"] [data-scene="contacto"] { padding-bottom: 0; }
+  :root[data-theme="hyprland"] .contacto-bars { margin-top: auto; }
+  /* El estado es el modulo del extremo: en una pila, el extremo es ARRIBA.
+     Va en absoluto por lo mismo que en escritorio — el nodo no se puede mover
+     del DOM sin romper Vice — atado a `--mosaico-h` para que corone el mosaico
+     en vez de quedarse a media pantalla detras del lead. */
+  :root[data-theme="hyprland"] .contacto-estado {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: var(--mosaico-h, 423px);
+    margin: 0;
+    height: 46px;
+    padding: 0 var(--calle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    font-size: var(--t-1);
+    border-top: 2px solid var(--l1);
+    background: linear-gradient(180deg, rgb(255 90 52 / 0.13), rgb(11 4 4 / 0.92));
+  }
+  :root[data-theme="hyprland"] .contacto-estado-sep { display: none; }
+  /* Mismo margen negativo que `.contacto-bars`: sin el, el titular hereda la
+     calle de la escena (27,3px) MAS su propio padding, y arranca en 57px en
+     vez de 30 — la calle doble que la Task 1 ya arreglo en escritorio,
+     reaparecida aqui. `--calle` es la unica fuente del margen interior:
+     titular, rotulos, valores y estado quedan los cuatro en la misma x. */
+  :root[data-theme="hyprland"] .contacto-band {
+    margin-inline: -7vw;
+    padding-inline: var(--calle);
   }
 }
 

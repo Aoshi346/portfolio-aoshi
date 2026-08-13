@@ -88,11 +88,17 @@ export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
   // dejando todas las entradas simultaneas.
   const RECETA: ReadonlyArray<readonly [string, string]> = [
     [".hero-kick", "hypr-cut"],
-    [".display-xl, .display-lg, .contacto-title, .about-name", "hypr-up"],
+    // `.contacto-title` sale de aqui: recibe su propio gesto letra a letra. Si
+    // se queda, `hypr-up` le pone opacity 0 y translateY(14px) a la vez que
+    // sus glifos hacen su clip-path — dos gestos peleando por el mismo nodo.
+    [".display-xl, .display-lg, .about-name", "hypr-up"],
     [".lead, .contacto-lead", "hypr-up"],
     [".about-pair", "hypr-up"],
-    [".contacto-estado", "hypr-up"],
-    ['[class*="contacto-bar--"]', "hypr-up"],
+    // El estado y las vias cambian de familia: dejan de "asentarse" (900ms
+    // slow) y pasan a "encenderse" (420ms hard), que es lo que hace una barra
+    // de estado. Y de eje: suben desde el borde en vez de deslizar en Y.
+    [".contacto-estado", "hypr-cut-v"],
+    ['[class*="contacto-bar--"]', "hypr-cut-v"],
   ];
 
   scenes.forEach((scene) => {
@@ -114,6 +120,59 @@ export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
       });
     });
   });
+
+  // Gesto 0c — el titular de cierre, letra a letra.
+  // El corte horizontal por glifo NO es un gesto nuevo: es el mismo que
+  // `.hero-name-word` usa para encender el nombre al abrir el sitio. La escena
+  // que cierra cita a la que abre en vez de estrenar un verbo.
+  const titulo = root.querySelector<HTMLElement>('[data-scene="contacto"] .contacto-title');
+
+  if (titulo && !titulo.querySelector(".contacto-title-glyphs")) {
+    const texto = titulo.textContent ?? "";
+    // Ocho <span> de una letra hacen que un lector de pantalla DELETREE
+    // "H-a-b-l-e-m-o-s". El arbol troceado se oculta y el texto real va en el
+    // aria-label del h2. Esto es distinto de `.hero-name-word`, que trocea por
+    // PALABRA: a nivel de palabra el lector concatena sin problema.
+    titulo.setAttribute("aria-label", texto);
+    const caja = document.createElement("span");
+    caja.className = "contacto-title-glyphs";
+    caja.setAttribute("aria-hidden", "true");
+    // Array.from y no split(""): parte por punto de codigo, no por unidad
+    // UTF-16, asi que un caracter fuera del plano basico no se rompe en dos.
+    Array.from(texto).forEach((ch, i) => {
+      const glifo = document.createElement("span");
+      glifo.className = "contacto-glyph hypr-cut";
+      glifo.textContent = ch;
+      // 140ms de cabeza (el kick ya ha entrado) y 70 de escalon por letra.
+      glifo.style.setProperty("--hypr-d", `${140 + i * 70}ms`);
+      caja.appendChild(glifo);
+    });
+    titulo.replaceChildren(caja);
+  }
+
+  // Gesto 0d — el horario de la escena de cierre.
+  // Un solo sentido, de izquierda a derecha, y dos ejes con dos sentidos: el
+  // titular abre en horizontal porque es una palabra que se lee; la cinta sube
+  // desde el borde inferior porque es de donde viene una barra de estado.
+  // El dato de contacto entra ANTES que el estado a proposito: lo que importa
+  // es el correo. El estado remata donde la luz del filete acabo su viaje.
+  const cierre = root.querySelector<HTMLElement>('[data-scene="contacto"]');
+  if (cierre) {
+    const HORARIO: ReadonlyArray<readonly [string, number]> = [
+      [".hero-kick", 0],
+      [".contacto-lead", 760],
+      [".contacto-estado", 1700],
+    ];
+    for (const [selector, ms] of HORARIO) {
+      const nodo = cierre.querySelector<HTMLElement>(selector);
+      nodo?.style.setProperty("--hypr-d", `${ms}ms`);
+    }
+    Array.from(cierre.querySelectorAll<HTMLElement>('[class*="contacto-bar--"]')).forEach(
+      (via, i) => {
+        via.style.setProperty("--hypr-d", `${1040 + i * 70}ms`);
+      },
+    );
+  }
 
   // Gesto 0b — el montaje de la placa.
   // El retardo sale de la POSICION en la rejilla, no del orden del DOM: fila
