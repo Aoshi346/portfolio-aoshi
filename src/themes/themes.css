@@ -5606,11 +5606,16 @@
    properties solo se heredan hacia abajo, y la seccion es el ancestro comun.
    La franja de estado se coloca en absoluto y se ata a estas, para que no
    puedan separarse cuando alguien cambie una y olvide la otra.
-   `--mosaico-h` es la altura del mosaico movil: 132 + 96*3 + 3 juntas. */
+   `--mosaico-h` es la altura del mosaico movil: 132 + 96*3 + 3 juntas.
+   `--calle` es la calle horizontal del mosaico movil (Task 4): un valor fijo,
+   no un porcentaje, porque un `vw` calibrado contra 1440 da otro numero en
+   390 — 7vw son 101px alla y 27 aqui, el mismo ahogo que una opacidad que no
+   viaja entre dos superficies. */
 :root[data-theme="hyprland"] [data-scene="contacto"] {
   --franja-h: 27px;
   --cinta-h: 140px;
   --mosaico-h: 423px;
+  --calle: 30px;
 }
 :root[data-theme="hyprland"] .contacto-bars {
   flex-direction: column;
@@ -5699,27 +5704,6 @@
   position: relative;
   z-index: 1;
   background: var(--l1);
-}
-
-/* Rotulo encima del valor en movil: en fila, "a.blanco1501@gmail.com" solo
-   tenia sitio para partirse en 4 lineas estrechas contra el rotulo fijo de
-   9rem (medido). Apilado le da el ancho completo de la banda. */
-@media (max-width: 520px) {
-  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    row-gap: 0.4rem;
-  }
-  :root[data-theme="hyprland"] .contacto-bar-label {
-    width: auto;
-  }
-  :root[data-theme="hyprland"] .contacto-bar-value {
-    flex: 1 1 100%;
-    font-size: var(--t-3);
-  }
-  :root[data-theme="hyprland"] .contacto-bar-mark {
-    margin-left: 0;
-  }
 }
 
 /* LA CINTA. No hay celdas: los cuatro valores repartidos sobre un filete a
@@ -5887,6 +5871,88 @@
 :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible {
   outline: 3px solid var(--l1);
   outline-offset: -3px;
+}
+
+/* EL MOSAICO. Apilar la cinta da un pie de pagina generico. La idea no era una
+   lista: eran bandas a sangre pegadas al borde, y en una pantalla alta eso se
+   dice TESELANDO el borde inferior — lo que hace un gestor en mosaico con un
+   monitor vertical. Medido a 390x844: 703 de 844 de alto, sin desbordar. */
+@media (max-width: 900px) {
+  :root[data-theme="hyprland"] .contacto-bars {
+    display: grid;
+    grid-template-rows: 132px 96px 96px 96px;
+    gap: 1px;
+    background: none;   /* la junta no se pinta: deja ver el ascua de detras */
+    border-top: 0;
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 0 var(--calle);
+    min-height: 0;      /* la altura la manda la fila de la rejilla */
+    border-bottom: 0;
+    background: rgb(11 4 4 / 0.90);
+    overflow: hidden;
+  }
+  :root[data-theme="hyprland"] .contacto-bar-label { margin-bottom: 0; }
+  :root[data-theme="hyprland"] .contacto-bar-mark { display: none; }
+  /* Pulsar enciende el canto: 3px de --l1 a la izquierda, la marca de ventana
+     con foco del gestor. En tactil no hay hover, asi que el unico estado que
+     importa es el de pulsacion. */
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--l1);
+    transform: scaleY(0);
+    transition: transform 0.9s var(--slow);
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:active::after,
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible::after {
+    transform: scaleY(1);
+    transition: transform 0.42s var(--hard);
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:active {
+    background: rgb(30 8 5 / 0.94);
+  }
+  /* El mosaico se ancla al pie de la seccion, que es flex column con
+     min-h-screen: `margin-top: auto` lo empuja abajo. Pero la regla base
+     `[data-scene] { padding-bottom: 17vh }` (compartida por las cinco
+     escenas, no se toca ahi) reserva 143px que el margin-auto no puede
+     invadir: sin cancelarla AQUI, solo para contacto, el mosaico se queda
+     143px corto del borde real y `.contacto-estado` (atado a `--mosaico-h`
+     desde el borde de la caja de padding) cae encima de la primera fila en
+     vez de coronarla. Medido: separacion de 143px, calzaba con el 17vh. */
+  :root[data-theme="hyprland"] [data-scene="contacto"] { padding-bottom: 0; }
+  :root[data-theme="hyprland"] .contacto-bars { margin-top: auto; }
+  /* El estado es el modulo del extremo: en una pila, el extremo es ARRIBA.
+     Va en absoluto por lo mismo que en escritorio — el nodo no se puede mover
+     del DOM sin romper Vice — atado a `--mosaico-h` para que corone el mosaico
+     en vez de quedarse a media pantalla detras del lead. */
+  :root[data-theme="hyprland"] .contacto-estado {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: var(--mosaico-h, 423px);
+    margin: 0;
+    height: 46px;
+    padding: 0 var(--calle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    font-size: var(--t-1);
+    border-top: 2px solid var(--l1);
+    background: linear-gradient(180deg, rgb(255 90 52 / 0.13), rgb(11 4 4 / 0.92));
+  }
+  :root[data-theme="hyprland"] .contacto-estado-sep { display: none; }
+  :root[data-theme="hyprland"] .contacto-band { padding-inline: var(--calle, 30px); }
 }
 
 /* =====================================================================

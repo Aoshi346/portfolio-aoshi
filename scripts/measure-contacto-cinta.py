@@ -96,6 +96,44 @@ def main():
         print("  junta franja/cinta:", junta)
         if abs(junta["separacion"]) > 1:
             fallos.append(f"la franja de estado se separo de la cinta ({junta['separacion']}px)")
+
+        # Segunda pasada: el mosaico movil (Task 4). Nunca con un div de
+        # 390px dentro de una ventana ancha -- vw/vh se resuelven contra la
+        # ventana real, no contra el div, y las medidas salen falsas.
+        pg390 = b.new_page(viewport={"width": 390, "height": 844})
+        pg390.goto(f"{args.base}/?theme=hyprland", wait_until="domcontentloaded", timeout=30000)
+        pg390.wait_for_timeout(9000)
+        pg390.evaluate("document.querySelector('[data-scene=\"contacto\"]').scrollIntoView()")
+        pg390.wait_for_timeout(2500)
+        m = pg390.evaluate("""() => {
+          const v = document.querySelector('.contacto-bar--correo .contacto-bar-value');
+          const r = document.createRange(); r.selectNodeContents(v);
+          const ren = [...r.getClientRects()].filter(x => x.width > 1);
+          const calle = parseFloat(getComputedStyle(
+            document.querySelector('.contacto-bar--correo')).paddingLeft);
+          return {calle, util: 390 - 2 * calle,
+                  renglones: ren.length,
+                  correo: Math.round(Math.max(...ren.map(x => x.width))),
+                  bandas: [...document.querySelectorAll('[class*="contacto-bar--"]')]
+                            .map(n => Math.round(n.getBoundingClientRect().height))};
+        }""")
+        print("  movil 390:", m)
+        if m["renglones"] != 1:
+            fallos.append(f"movil: el correo cae en {m['renglones']} renglones")
+        if min(m["bandas"]) < 56:
+            fallos.append(f"movil: banda de {min(m['bandas'])}px, minimo 56 (WCAG 2.2 SC 2.5.8)")
+        # Misma asercion de junta que en escritorio: el estado va en absoluto y
+        # tiene que coronar el mosaico, no quedarse detras del lead.
+        j390 = pg390.evaluate("""() => {
+          const e = document.querySelector('.contacto-estado').getBoundingClientRect();
+          const b = document.querySelector('.contacto-bars').getBoundingClientRect();
+          return Math.round(e.bottom - b.top);
+        }""")
+        print("  junta movil:", j390)
+        if abs(j390) > 1:
+            fallos.append(f"movil: el estado no corona el mosaico ({j390}px de separacion)")
+        pg390.screenshot(path="/tmp/cinta-movil.png", full_page=False)
+
         print("fallos:", fallos or "ninguno")
         b.close()
     return 1 if fallos else 0
