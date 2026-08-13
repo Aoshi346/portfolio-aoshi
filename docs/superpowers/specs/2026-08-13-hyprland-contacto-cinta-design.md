@@ -1,8 +1,10 @@
 # La cinta — el cierre de Hyprland deja de ser una lista de barras
 
-Estado: en ejecucion <!-- Task 7 steps 1-6 (build/lint/arneses/verify.py/vice+caelestia) en verde;
-falta el Step 7 del plan (gates lidia-naive-tester / vera-art-director), reservado
-al controlador. Pasar a "implementado" cuando ese paso se marque en el plan. -->
+Estado: implementado <!-- Gate cerrado: lidia-naive-tester en verde (cero bloqueantes) y
+vera-art-director con BLOCK aceptado por Aoshi, igual que en Vice. Los dos hallazgos de la
+primera pasada (la cinta apelmazada entre 901 y 1200px, y el estado entrando a 900ms donde el
+spec manda 1700) y el contraste del rotulo enfriado se arreglaron y se midieron; la puntuacion
+no se recalculo con una tercera auditoria completa, por decision explicita de Aoshi. -->
 Plan: `docs/superpowers/plans/2026-08-13-hyprland-contacto-cinta.md`
 Fecha: 2026-08-13
 Alcance: **solo el tema Hyprland**. `[data-scene="contacto"]` — bloque

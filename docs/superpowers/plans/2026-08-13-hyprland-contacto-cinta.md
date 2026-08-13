@@ -1072,7 +1072,7 @@ Arneses actualizados a la composicion nueva, contraste medido por glifo,
 Vice y Caelestia comprobadas sin cambios."
 ```
 
-- [ ] **Step 7: Los dos gates críticos**
+- [x] **Step 7: Los dos gates críticos**
 
 Lanza `lidia-naive-tester` (flujo y primera impresión) y `vera-art-director` (ejecución visual)
 contra el build servido, con `?theme=hyprland`, escritorio y móvil. **En el brief de los dos, di
