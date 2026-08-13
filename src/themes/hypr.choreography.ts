@@ -161,7 +161,7 @@ export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
     const HORARIO: ReadonlyArray<readonly [string, number]> = [
       [".hero-kick", 0],
       [".contacto-lead", 760],
-      [".contacto-estado", 900],
+      [".contacto-estado", 1700],
     ];
     for (const [selector, ms] of HORARIO) {
       const nodo = cierre.querySelector<HTMLElement>(selector);
