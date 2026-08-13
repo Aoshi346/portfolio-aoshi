@@ -105,13 +105,22 @@ def main():
         pg390.wait_for_timeout(9000)
         pg390.evaluate("document.querySelector('[data-scene=\"contacto\"]').scrollIntoView()")
         pg390.wait_for_timeout(2500)
+        # Geometria real, no propiedades declaradas: `getComputedStyle(...).
+        # paddingLeft` + `390 - 2*calle` daba un util de 330 cuando la caja
+        # real de la banda media 335 (27..363, sin sangrar) -- el correo
+        # cabia por 27px, no por los 82 que reportaba esa cuenta. Todo sale
+        # de `getBoundingClientRect()` de la banda y de su rango de texto.
         m = pg390.evaluate("""() => {
-          const v = document.querySelector('.contacto-bar--correo .contacto-bar-value');
+          const banda = document.querySelector('.contacto-bar--correo');
+          const bandaBox = banda.getBoundingClientRect();
+          const csBanda = getComputedStyle(banda);
+          const padL = parseFloat(csBanda.paddingLeft);
+          const padR = parseFloat(csBanda.paddingRight);
+          const v = banda.querySelector('.contacto-bar-value');
           const r = document.createRange(); r.selectNodeContents(v);
           const ren = [...r.getClientRects()].filter(x => x.width > 1);
-          const calle = parseFloat(getComputedStyle(
-            document.querySelector('.contacto-bar--correo')).paddingLeft);
-          return {calle, util: 390 - 2 * calle,
+          return {calle: padL, util: Math.round(bandaBox.width - padL - padR),
+                  bandaBox: {left: Math.round(bandaBox.left), right: Math.round(bandaBox.right)},
                   renglones: ren.length,
                   correo: Math.round(Math.max(...ren.map(x => x.width))),
                   bandas: [...document.querySelectorAll('[class*="contacto-bar--"]')]
@@ -122,6 +131,31 @@ def main():
             fallos.append(f"movil: el correo cae en {m['renglones']} renglones")
         if min(m["bandas"]) < 56:
             fallos.append(f"movil: banda de {min(m['bandas'])}px, minimo 56 (WCAG 2.2 SC 2.5.8)")
+
+        # Sangrado: las bandas tienen que llegar de borde a borde del
+        # viewport. Si se quedan flotando dentro de la calle de la escena,
+        # el fondo asoma por los dos costados -- justo lo que paso aqui.
+        sangrado = pg390.evaluate("""() => {
+          const b = document.querySelector('.contacto-bars').getBoundingClientRect();
+          return {left: Math.round(b.left), right: Math.round(b.right)};
+        }""")
+        print("  sangrado:", sangrado)
+        if sangrado["left"] != 0 or abs(sangrado["right"] - 390) > 1:
+            fallos.append(f"movil: las bandas no sangran ({sangrado})")
+
+        # Alineacion: el titular y el rotulo del correo tienen que arrancar
+        # en la misma vertical. Es el invariante que rompio la calle doble
+        # (titular en 57px, rotulo en 57px por la misma via, pero cuando solo
+        # uno de los dos hereda el margen negativo se separan).
+        alineacion = pg390.evaluate("""() => {
+          const titulo = document.querySelector('.contacto-title').getBoundingClientRect();
+          const rotulo = document.querySelector(
+            '.contacto-bar--correo .contacto-bar-label').getBoundingClientRect();
+          return {titulo: Math.round(titulo.left), rotulo: Math.round(rotulo.left)};
+        }""")
+        print("  alineacion:", alineacion)
+        if abs(alineacion["titulo"] - alineacion["rotulo"]) > 1:
+            fallos.append(f"movil: titular y rotulo desalineados ({alineacion})")
         # Misma asercion de junta que en escritorio: el estado va en absoluto y
         # tiene que coronar el mosaico, no quedarse detras del lead.
         j390 = pg390.evaluate("""() => {

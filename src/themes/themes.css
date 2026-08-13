@@ -5884,6 +5884,10 @@
     gap: 1px;
     background: none;   /* la junta no se pinta: deja ver el ascua de detras */
     border-top: 0;
+    /* Cancela la calle de la escena (7vw a cada lado) para que las bandas
+       sangren de 0 a 390: sin esto se quedan flotando de 27 a 363 y el fondo
+       asoma por los dos costados, que es justo lo contrario de "a sangre". */
+    margin-inline: -7vw;
   }
   :root[data-theme="hyprland"] [class*="contacto-bar--"] {
     display: flex;
@@ -5952,7 +5956,15 @@
     background: linear-gradient(180deg, rgb(255 90 52 / 0.13), rgb(11 4 4 / 0.92));
   }
   :root[data-theme="hyprland"] .contacto-estado-sep { display: none; }
-  :root[data-theme="hyprland"] .contacto-band { padding-inline: var(--calle, 30px); }
+  /* Mismo margen negativo que `.contacto-bars`: sin el, el titular hereda la
+     calle de la escena (27,3px) MAS su propio padding, y arranca en 57px en
+     vez de 30 — la calle doble que la Task 1 ya arreglo en escritorio,
+     reaparecida aqui. `--calle` es la unica fuente del margen interior:
+     titular, rotulos, valores y estado quedan los cuatro en la misma x. */
+  :root[data-theme="hyprland"] .contacto-band {
+    margin-inline: -7vw;
+    padding-inline: var(--calle);
+  }
 }
 
 /* =====================================================================
