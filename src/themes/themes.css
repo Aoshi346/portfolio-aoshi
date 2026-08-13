@@ -5831,6 +5831,50 @@
     transition: opacity 0.9s var(--slow);
   }
 }
+
+/* EL ESTADO, modulo del extremo. Es la convencion real de una barra de estado
+   de gestor de ventanas: a la izquierda lo que haces, a la derecha el estado
+   del sistema. Y es lo unico de la cinta sin filete de reposo, porque es lo
+   unico que no es un enlace.
+
+   Va en absoluto porque NO SE PUEDE MOVER en el DOM: vive dentro de
+   `.contacto-band` y Vice depende de esa posicion para sus marcas de esquina.
+   Se ata a las mismas dos variables que la cinta para que no se separen; el
+   arnes comprueba que los dos bordes coinciden. */
+@media (min-width: 901px) {
+  :root[data-theme="hyprland"] .contacto-estado {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: var(--cinta-h, 140px);
+    height: var(--franja-h, 27px);
+    margin: 0;
+    padding: 0 7vw;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    font-size: var(--t-1);
+    border-bottom: 1px solid var(--rule);
+    background: rgb(255 90 52 / 0.06);
+  }
+  :root[data-theme="hyprland"] .contacto-estado-label {
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+  /* El separador "·" sobra cuando los dos trozos ya estan separados por el
+     hueco del flex. */
+  :root[data-theme="hyprland"] .contacto-estado-sep { display: none; }
+  :root[data-theme="hyprland"] .contacto-estado-value {
+    letter-spacing: 0.06em;
+    color: var(--color-paper);
+  }
+  /* La banda de titulo deja sitio a la cinta entera mas aire. */
+  :root[data-theme="hyprland"] .contacto-band {
+    padding-bottom: calc(var(--cinta-h, 140px) + var(--franja-h, 27px) + 2rem);
+  }
+}
+
 /* Foco de teclado. Offset negativo porque la banda lleva overflow hidden en
    movil y un offset positivo se recortaria contra el. */
 :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible {

@@ -82,6 +82,20 @@ def main():
             fallos.append(f"la cinta no esta al pie de la seccion ({caja['pie']}px)")
         if caja["alto"] != 167:
             fallos.append(f"alto de cinta {caja['alto']}, esperado 167")
+        junta = pg.evaluate("""() => {
+          const sec = document.querySelector('[data-scene="contacto"]');
+          // La franja se lee del DOM, no se escribe 27 a pelo: un umbral fijo
+          // deja de medir el diseno en cuanto alguien cambia la variable.
+          const fr = parseFloat(getComputedStyle(sec).getPropertyValue('--franja-h'));
+          const e = document.querySelector('.contacto-estado').getBoundingClientRect();
+          const b = document.querySelector('.contacto-bars').getBoundingClientRect();
+          return {franja: fr,
+                  separacion: Math.round(e.bottom - (b.top + fr)),
+                  derecha: Math.round(b.right - e.right)};
+        }""")
+        print("  junta franja/cinta:", junta)
+        if abs(junta["separacion"]) > 1:
+            fallos.append(f"la franja de estado se separo de la cinta ({junta['separacion']}px)")
         print("fallos:", fallos or "ninguno")
         b.close()
     return 1 if fallos else 0
