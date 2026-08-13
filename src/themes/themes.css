@@ -1331,6 +1331,24 @@
   color: transparent;
 }
 
+/*
+  Al transformar o recortar un <span> hijo, este sale del pintado del padre y
+  el `background-clip: text` del padre deja de alcanzarlo: la letra se pintaria
+  transparente sobre nada, es decir, desapareceria. Los glifos heredan el
+  degradado, igual que ya hace `.hero-name-word`. Como es `fixed` se ancla al
+  viewport y no a la caja, asi que los ocho trozos ensenan ocho rebanadas de
+  UNO continuo, no ocho degradados cortados.
+*/
+:root[data-theme="hyprland"] .contacto-title-glyphs,
+:root[data-theme="hyprland"] .contacto-glyph {
+  background: inherit;
+  -webkit-background-clip: inherit;
+  background-clip: inherit;
+}
+:root[data-theme="hyprland"] .contacto-glyph {
+  display: inline-block;
+}
+
 :root[data-theme="hyprland"] .display-xl,
 :root[data-theme="hyprland"] .contacto-title {
   font-size: clamp(var(--t-6), 8.2vw, var(--t-9));

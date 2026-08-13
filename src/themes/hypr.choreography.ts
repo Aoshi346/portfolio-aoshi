@@ -88,7 +88,10 @@ export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
   // dejando todas las entradas simultaneas.
   const RECETA: ReadonlyArray<readonly [string, string]> = [
     [".hero-kick", "hypr-cut"],
-    [".display-xl, .display-lg, .contacto-title, .about-name", "hypr-up"],
+    // `.contacto-title` sale de aqui: recibe su propio gesto letra a letra. Si
+    // se queda, `hypr-up` le pone opacity 0 y translateY(14px) a la vez que
+    // sus glifos hacen su clip-path — dos gestos peleando por el mismo nodo.
+    [".display-xl, .display-lg, .about-name", "hypr-up"],
     [".lead, .contacto-lead", "hypr-up"],
     [".about-pair", "hypr-up"],
     [".contacto-estado", "hypr-up"],
@@ -114,6 +117,35 @@ export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
       });
     });
   });
+
+  // Gesto 0c — el titular de cierre, letra a letra.
+  // El corte horizontal por glifo NO es un gesto nuevo: es el mismo que
+  // `.hero-name-word` usa para encender el nombre al abrir el sitio. La escena
+  // que cierra cita a la que abre en vez de estrenar un verbo.
+  const titulo = root.querySelector<HTMLElement>('[data-scene="contacto"] .contacto-title');
+
+  if (titulo && !titulo.querySelector(".contacto-title-glyphs")) {
+    const texto = titulo.textContent ?? "";
+    // Ocho <span> de una letra hacen que un lector de pantalla DELETREE
+    // "H-a-b-l-e-m-o-s". El arbol troceado se oculta y el texto real va en el
+    // aria-label del h2. Esto es distinto de `.hero-name-word`, que trocea por
+    // PALABRA: a nivel de palabra el lector concatena sin problema.
+    titulo.setAttribute("aria-label", texto);
+    const caja = document.createElement("span");
+    caja.className = "contacto-title-glyphs";
+    caja.setAttribute("aria-hidden", "true");
+    // Array.from y no split(""): parte por punto de codigo, no por unidad
+    // UTF-16, asi que un caracter fuera del plano basico no se rompe en dos.
+    Array.from(texto).forEach((ch, i) => {
+      const glifo = document.createElement("span");
+      glifo.className = "contacto-glyph hypr-cut";
+      glifo.textContent = ch;
+      // 140ms de cabeza (el kick ya ha entrado) y 70 de escalon por letra.
+      glifo.style.setProperty("--hypr-d", `${140 + i * 70}ms`);
+      caja.appendChild(glifo);
+    });
+    titulo.replaceChildren(caja);
+  }
 
   // Gesto 0b — el montaje de la placa.
   // El retardo sale de la POSICION en la rejilla, no del orden del DOM: fila
