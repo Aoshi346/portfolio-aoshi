@@ -1843,18 +1843,8 @@
   Dos ejes con dos sentidos. `.hypr-cut` abre en horizontal porque se usa en
   palabras, que se leen de izquierda a derecha. `.hypr-cut-v` sube desde el
   borde inferior porque se usa en la cinta, que es de donde viene una barra de
-  estado. `.hypr-rule` es vertical (scaleY); `.hypr-cut-h` es su gemela
-  horizontal, para filetes que cruzan la pantalla.
+  estado. `.hypr-rule` es vertical (scaleY).
 */
-:root[data-theme="hyprland"] .hypr-cut-h {
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.5s var(--hard);
-  transition-delay: var(--hypr-d, 0ms);
-}
-:root[data-theme="hyprland"] .is-lit .hypr-cut-h {
-  transform: scaleX(1);
-}
 /*
   `.hypr-cut-v` selector duplicado a proposito (no es un despiste): las vias
   de contacto (`[class*="contacto-bar--"]`) tienen mas abajo, en el bloque de
@@ -1900,7 +1890,6 @@
   :root[data-theme="hyprland"] .hypr-cut,
   :root[data-theme="hyprland"] .hypr-up,
   :root[data-theme="hyprland"] .hypr-rule,
-  :root[data-theme="hyprland"] .hypr-cut-h,
   :root[data-theme="hyprland"] .hypr-cut-v {
     clip-path: none;
     opacity: 1;
