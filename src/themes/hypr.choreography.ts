@@ -94,8 +94,11 @@ export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
     [".display-xl, .display-lg, .about-name", "hypr-up"],
     [".lead, .contacto-lead", "hypr-up"],
     [".about-pair", "hypr-up"],
-    [".contacto-estado", "hypr-up"],
-    ['[class*="contacto-bar--"]', "hypr-up"],
+    // El estado y las vias cambian de familia: dejan de "asentarse" (900ms
+    // slow) y pasan a "encenderse" (420ms hard), que es lo que hace una barra
+    // de estado. Y de eje: suben desde el borde en vez de deslizar en Y.
+    [".contacto-estado", "hypr-cut-v"],
+    ['[class*="contacto-bar--"]', "hypr-cut-v"],
   ];
 
   scenes.forEach((scene) => {
@@ -145,6 +148,30 @@ export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
       caja.appendChild(glifo);
     });
     titulo.replaceChildren(caja);
+  }
+
+  // Gesto 0d — el horario de la escena de cierre.
+  // Un solo sentido, de izquierda a derecha, y dos ejes con dos sentidos: el
+  // titular abre en horizontal porque es una palabra que se lee; la cinta sube
+  // desde el borde inferior porque es de donde viene una barra de estado.
+  // El dato de contacto entra ANTES que el estado a proposito: lo que importa
+  // es el correo. El estado remata donde la luz del filete acabo su viaje.
+  const cierre = root.querySelector<HTMLElement>('[data-scene="contacto"]');
+  if (cierre) {
+    const HORARIO: ReadonlyArray<readonly [string, number]> = [
+      [".hero-kick", 0],
+      [".contacto-lead", 760],
+      [".contacto-estado", 900],
+    ];
+    for (const [selector, ms] of HORARIO) {
+      const nodo = cierre.querySelector<HTMLElement>(selector);
+      nodo?.style.setProperty("--hypr-d", `${ms}ms`);
+    }
+    Array.from(cierre.querySelectorAll<HTMLElement>('[class*="contacto-bar--"]')).forEach(
+      (via, i) => {
+        via.style.setProperty("--hypr-d", `${1040 + i * 70}ms`);
+      },
+    );
   }
 
   // Gesto 0b — el montaje de la placa.

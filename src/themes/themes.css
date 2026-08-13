@@ -1839,12 +1839,47 @@
   transform: scaleY(1);
 }
 
+/*
+  Dos ejes con dos sentidos. `.hypr-cut` abre en horizontal porque se usa en
+  palabras, que se leen de izquierda a derecha. `.hypr-cut-v` sube desde el
+  borde inferior porque se usa en la cinta, que es de donde viene una barra de
+  estado. `.hypr-rule` es vertical (scaleY); `.hypr-cut-h` es su gemela
+  horizontal, para filetes que cruzan la pantalla.
+*/
+:root[data-theme="hyprland"] .hypr-cut-h {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s var(--hard);
+  transition-delay: var(--hypr-d, 0ms);
+}
+:root[data-theme="hyprland"] .is-lit .hypr-cut-h {
+  transform: scaleX(1);
+}
+:root[data-theme="hyprland"] .hypr-cut-v {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.42s var(--hard);
+  transition-delay: var(--hypr-d, 0ms);
+}
+:root[data-theme="hyprland"] .is-lit .hypr-cut-v {
+  /* -30% por abajo y no 0: a 0 el recorte cortaria el filete de reposo y el
+     anillo de foco, que viven en el borde inferior de la banda. */
+  clip-path: inset(0 0 -30% 0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="hyprland"] .hypr-cut,
   :root[data-theme="hyprland"] .hypr-up,
-  :root[data-theme="hyprland"] .hypr-rule {
+  :root[data-theme="hyprland"] .hypr-rule,
+  :root[data-theme="hyprland"] .hypr-cut-h,
+  :root[data-theme="hyprland"] .hypr-cut-v {
     clip-path: none;
     opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  /* El filete de .contacto-bars es un pseudo-elemento: el selector de clases
+     de arriba no lo alcanza, asi que su delay bajo reduce va aparte. */
+  :root[data-theme="hyprland"] .contacto-bars::before {
     transform: none;
     transition: none;
   }
@@ -5761,6 +5796,15 @@
        entrada de la Task 6 (coreografia), que le anade scaleX(0) + transicion
        + `.is-lit` sobre este mismo pseudo-elemento. No borrar por "muerto". */
     transform-origin: left;
+    /* Task 6: el filete crece hacia la derecha a los 900ms del horario de la
+       escena, junto con la franja de estado. Pseudo-elemento, no lleva clase:
+       no puede consumir `--hypr-d`, asi que el retardo va fijo aqui. */
+    transform: scaleX(0);
+    transition: transform 0.5s var(--hard);
+    transition-delay: 900ms;
+  }
+  :root[data-theme="hyprland"] .is-lit .contacto-bars::before {
+    transform: scaleX(1);
   }
   :root[data-theme="hyprland"] [class*="contacto-bar--"] {
     display: flex;
