@@ -1,6 +1,8 @@
 # La cinta — el cierre de Hyprland deja de ser una lista de barras
 
-Estado: pendiente de plan
+Estado: en ejecucion <!-- Task 7 steps 1-6 (build/lint/arneses/verify.py/vice+caelestia) en verde;
+falta el Step 7 del plan (gates lidia-naive-tester / vera-art-director), reservado
+al controlador. Pasar a "implementado" cuando ese paso se marque en el plan. -->
 Plan: `docs/superpowers/plans/2026-08-13-hyprland-contacto-cinta.md`
 Fecha: 2026-08-13
 Alcance: **solo el tema Hyprland**. `[data-scene="contacto"]` — bloque
@@ -240,15 +242,32 @@ con el borde superior de la cinta.
 
 ## Criterios de aceptación
 
-- [ ] `npm run build` y `npm run lint` en verde (Node 22 — con Node 18 el build cae en `rolldown`).
-- [ ] Capturas 1440×900 y 390×844 con `?theme=hyprland`, cero errores de consola.
-- [ ] Contraste **medido por glifo** contra el shader vivo: los cuatro rótulos, los cuatro valores
-      y la línea de estado por encima de 4,5:1.
-- [ ] El correo en **un solo renglón** a 1440 y a 390. Nunca con puntos suspensivos.
-- [ ] Todas las zonas pulsables ≥ 56px de alto.
-- [ ] Orden de tabulación correo → linkedin → teléfono → github, con foco visible en las cuatro.
-- [ ] Con `prefers-reduced-motion: reduce` la escena queda asentada y legible, y el titular **no**
-      está troceado.
-- [ ] Vice y Caelestia idénticas a `main` en la escena de contacto (comparación por captura).
-- [ ] `python3 scripts/verify.py` sale 0 contra `scripts/verify-baseline.json`.
-- [ ] `scripts/measure-contacto.py` verde, incluida la aserción franja/cinta.
+- [x] `npm run build` y `npm run lint` en verde (Node 22 — con Node 18 el build cae en `rolldown`).
+- [x] Capturas 1440×900 y 390×844 con `?theme=hyprland`, cero errores de consola.<sup>1</sup>
+- [x] Contraste **medido por glifo** contra el shader vivo: los cuatro rótulos, los cuatro valores
+      y la línea de estado por encima de 4,5:1. Medido: rótulos 6,43–6,75:1, valores 17,55–17,79:1,
+      estado 6,43/16,88:1 (`measure-contacto-cinta.py`).
+- [x] El correo en **un solo renglón** a 1440 y a 390. Nunca con puntos suspensivos. Medido: 315px
+      a 1440, 237px a 390, un renglón en los dos.
+- [x] Todas las zonas pulsables ≥ 56px de alto. Medido: 88px a 1440 (las cuatro), 132/96/96/96px en
+      el mosaico de 390.
+- [x] Orden de tabulación correo → linkedin → teléfono → github, con foco visible en las cuatro.
+      Verificado con `Tab` real: el orden coincide y el foco pinta `outline: 3px solid` en `--l1`.
+- [x] Con `prefers-reduced-motion: reduce` la escena queda asentada y legible, y el titular **no**
+      está troceado. Verificado: `.contacto-title` sin `span`, `is-lit` sin aplicar, opacidad 1,
+      cero `pageerror`.
+- [x] Vice y Caelestia idénticas a `main` en la escena de contacto (comparación por captura).
+      Verificado por captura (1440×900 y 390×844) y por geometría/estilo computado — sin diferencia
+      alguna entre el puerto de esta rama y el de `main`.
+- [x] `python3 scripts/verify.py` sale 0 contra `scripts/verify-baseline.json`.
+- [x] `scripts/measure-contacto.py` verde, incluida la aserción franja/cinta.<sup>2</sup>
+
+<sup>1</sup> `measure-contacto.py`/`measure-contacto-matriz.py`/`measure-type-scale.py` (tema Vice) y
+`measure-contacto-cinta.py` (tema Hyprland) reportan cero errores de consola propios de este plan.
+En modo de movimiento normal (no `reduced-motion`) persiste el `pageerror: gsap is not defined` de
+`hypr.choreography.ts:63`, preexistente en `main` y fuera del alcance de este plan (ver nota del
+Task 7 del plan) — no aparece bajo `prefers-reduced-motion: reduce`, que es donde este criterio se
+verificó sin excepción.<br>
+<sup>2</sup> El criterio nombra `measure-contacto.py`, pero la aserción franja/cinta vive en el
+arnés que este plan creó para Hyprland, `measure-contacto-cinta.py` (Task 1 del plan) — verde:
+`fallos: ninguno`.

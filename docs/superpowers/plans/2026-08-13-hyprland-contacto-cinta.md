@@ -62,7 +62,7 @@ tarea que se podría entregar sola.
   `[data-scene="contacto"]` —el ancestro común de la cinta y del estado, que no cuelga de ella— y
   que las tareas 2, 3 y 4 usan para que la franja de estado y la cinta no puedan separarse.
 
-- [ ] **Step 1: Levantar el arnés de contraste y verlo fallar**
+- [x] **Step 1: Levantar el arnés de contraste y verlo fallar**
 
 Crea `scripts/measure-contacto-cinta.py`. Mide **por glifo**, no por rectángulo: el haz del shader
 cruza la calle central vacía y una medida a lo ancho sobreestima el contraste.
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Correrlo y verlo FALLAR**
+- [x] **Step 2: Correrlo y verlo FALLAR**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -152,7 +152,7 @@ Esperado: **salida 1**, con los cuatro `.contacto-bar-label` y el `.contacto-est
 `FALLA` entre 2,19 y 2,94:1. Si sale 0 a la primera, el arnés no está midiendo lo que crees:
 comprueba que la escena está en pantalla y que las cajas no son vacías antes de seguir.
 
-- [ ] **Step 3: Resetear la opacidad heredada y quitar la calle doble**
+- [x] **Step 3: Resetear la opacidad heredada y quitar la calle doble**
 
 En `src/themes/themes.css`, dentro del bloque `Hyprland: las bandas`, sustituye la regla de
 `[class*="contacto-bar--"]` (hoy L5610-5617) y la de `.contacto-bar-label` (L5631-5643):
@@ -199,7 +199,7 @@ En `src/themes/themes.css`, dentro del bloque `Hyprland: las bandas`, sustituye 
 }
 ```
 
-- [ ] **Step 4: Quitar el número fuera de vocabulario y las dos funciones continuas**
+- [x] **Step 4: Quitar el número fuera de vocabulario y las dos funciones continuas**
 
 Misma hoja. La inundación pasa de `0.45s` a `0.42s` (L5629), y las dos `clamp()` se escalonan:
 
@@ -229,14 +229,14 @@ Misma hoja. La inundación pasa de `0.45s` a `0.42s` (L5629), y las dos `clamp()
 }
 ```
 
-- [ ] **Step 5: Volver a correr el arnés y verlo pasar**
+- [x] **Step 5: Volver a correr el arnés y verlo pasar**
 
 Run: `npm run build && python3 scripts/measure-contacto-cinta.py --base http://localhost:4173`
 Esperado: los ocho nodos por encima de 4,5:1 y **salida 0**. Si un rótulo sigue fallando, el reset
 de opacidad no está llegando: comprueba `getComputedStyle(node).opacity` antes de tocar el scrim —
 subir el scrim para tapar un problema de especificidad oscurece el fondo generativo sin motivo.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-contacto-cinta.py
@@ -259,7 +259,7 @@ escalones discretos. Arnes nuevo que mide el contraste por glifo."
 - Produces: `.contacto-bars` anclada al pie de la sección con `position: absolute`; el
   `.contacto-bar-mark` reconvertido en filete de reposo.
 
-- [ ] **Step 1: Comprobar qué relleno pone la escena**
+- [x] **Step 1: Comprobar qué relleno pone la escena**
 
 Antes de anclar nada hay que saber si `[data-scene]` mete relleno propio en Hyprland.
 
@@ -269,7 +269,7 @@ grep -n 'data-theme="hyprland"\] \[data-scene\]' src/themes/themes.css
 Anota el valor. Si existe, la banda de título necesitará `padding-bottom` suficiente para no
 chocar con la cinta; si no, basta con el que ya trae de `style.css`.
 
-- [ ] **Step 2: Escribir la cinta**
+- [x] **Step 2: Escribir la cinta**
 
 ```css
 /* LA CINTA. No hay celdas: los cuatro valores repartidos sobre un filete a
@@ -377,7 +377,7 @@ chocar con la cinta; si no, basta con el que ya trae de `style.css`.
 }
 ```
 
-- [ ] **Step 3: Medir que el correo cabe en un renglón y que la cinta está al pie**
+- [x] **Step 3: Medir que el correo cabe en un renglón y que la cinta está al pie**
 
 Añade a `scripts/measure-contacto-cinta.py`:
 
@@ -406,7 +406,7 @@ Añade a `scripts/measure-contacto-cinta.py`:
 Run: `npm run build && python3 scripts/measure-contacto-cinta.py --base http://localhost:4173`
 Esperado: `renglones: 1`, `pie: 0`, `alto: 167`, salida 0.
 
-- [ ] **Step 4: Captura de escritorio y revisión a ojo**
+- [x] **Step 4: Captura de escritorio y revisión a ojo**
 
 ```bash
 python3 -c "
@@ -426,7 +426,7 @@ with sync_playwright() as p:
 valores están repartidos de margen a margen, que el rótulo cae encima del dato y que el filete de
 reposo se ve bajo los cuatro.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-contacto-cinta.py
@@ -448,7 +448,7 @@ con filo de 2px, rotulo caliente y los tres vecinos enfriandose con :has()."
 - Consumes: `--cinta-h` y `--franja-h` de la Task 1.
 - Produces: `.contacto-estado` colocada en absoluto coronando la cinta.
 
-- [ ] **Step 1: Colocar el estado como módulo del extremo**
+- [x] **Step 1: Colocar el estado como módulo del extremo**
 
 ```css
 /* EL ESTADO, modulo del extremo. Es la convencion real de una barra de estado
@@ -495,7 +495,7 @@ con filo de 2px, rotulo caliente y los tres vecinos enfriandose con :has()."
 }
 ```
 
-- [ ] **Step 2: Asertar que la franja y la cinta no se han separado**
+- [x] **Step 2: Asertar que la franja y la cinta no se han separado**
 
 Añade a `scripts/measure-contacto-cinta.py`:
 
@@ -519,7 +519,7 @@ Añade a `scripts/measure-contacto-cinta.py`:
 Run: `npm run build && python3 scripts/measure-contacto-cinta.py --base http://localhost:4173`
 Esperado: `separacion: 0`, salida 0.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-contacto-cinta.py
@@ -542,7 +542,7 @@ del DOM sin romper Vice; el arnes asierta que los dos bordes coinciden."
 - Consumes: la cinta de la Task 2 y la franja de la Task 3, ambas ya bajo `min-width: 901px`.
 - Produces: nada que consuman tareas posteriores.
 
-- [ ] **Step 1: Borrar la media query de 520px y escribir el mosaico**
+- [x] **Step 1: Borrar la media query de 520px y escribir el mosaico**
 
 La regla `@media (max-width: 520px)` actual (L5670-5684) se elimina entera: el breakpoint pasa a
 900px, que es el que ya usa el resto del tema, y la composición es otra.
@@ -630,7 +630,7 @@ La regla `@media (max-width: 520px)` actual (L5670-5684) se elimina entera: el b
 }
 ```
 
-- [ ] **Step 2: Medir a 390 de verdad**
+- [x] **Step 2: Medir a 390 de verdad**
 
 **Nunca midas el móvil con un `div` de 390px dentro de una ventana ancha:** `vw` y `vh` se resuelven
 contra la ventana del navegador, no contra el `div`, y las medidas salen falsas. Playwright con
@@ -677,12 +677,12 @@ Añade a `scripts/measure-contacto-cinta.py` una segunda pasada:
 Run: `npm run build && python3 scripts/measure-contacto-cinta.py --base http://localhost:4173`
 Esperado: `calle: 30`, `renglones: 1`, `correo: 248`, `bandas: [132, 96, 96, 96]`, salida 0.
 
-- [ ] **Step 3: Mirar `/tmp/cinta-movil.png`**
+- [x] **Step 3: Mirar `/tmp/cinta-movil.png`**
 
 Comprueba que nada toca el marco, que las juntas de 1px dejan ver el ascua y que el mosaico no
 desborda los 844px.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-contacto-cinta.py
@@ -714,7 +714,7 @@ mecanismo que todo lo demás, que además es lo que el propio fichero se impone 
 gesto 1: *"el CSS sigue siendo la fuente de los tiempos"*. Se ahorra una timeline, un ScrollTrigger
 y su limpieza.
 
-- [ ] **Step 1: Sacar `.contacto-title` de la receta**
+- [x] **Step 1: Sacar `.contacto-title` de la receta**
 
 En `src/themes/hypr.choreography.ts`, la fila de la `RECETA`:
 
@@ -729,7 +729,7 @@ pasa a:
     [".display-xl, .display-lg, .about-name", "hypr-up"],
 ```
 
-- [ ] **Step 2: Trocear el titular**
+- [x] **Step 2: Trocear el titular**
 
 Justo después del bucle de la `RECETA` en `hyprChoreography` (para que el troceo no reciba las
 clases genéricas):
@@ -768,7 +768,7 @@ clases genéricas):
 El guard `!titulo.querySelector(...)` es lo que impide que un remonte (el HMR de Vite recargando
 este módulo) trocee un titular ya troceado y deje 64 glifos.
 
-- [ ] **Step 3: Hacer que el degradado sobreviva al troceo**
+- [x] **Step 3: Hacer que el degradado sobreviva al troceo**
 
 En `src/themes/themes.css`, junto al bloque del titular (L1314-1332):
 
@@ -792,7 +792,7 @@ En `src/themes/themes.css`, junto al bloque del titular (L1314-1332):
 }
 ```
 
-- [ ] **Step 4: Verificar que ninguna letra desapareció**
+- [x] **Step 4: Verificar que ninguna letra desapareció**
 
 ```bash
 npm run build
@@ -823,7 +823,7 @@ Esperado: `n: 8`, ocho anchos mayores que 0, retardos de `140ms` a `630ms` de 70
 ocho rebanadas cortadas, el `background: inherit` no está funcionando y hay que repetir el
 degradado literal en `.contacto-glyph` antes de seguir.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/hypr.choreography.ts src/themes/themes.css
@@ -848,14 +848,14 @@ una letra hacen que un lector de pantalla deletree la palabra."
 - Consumes: la `RECETA` y el mecanismo `.is-lit` existentes.
 - Produces: clases `.hypr-cut-h` y `.hypr-cut-v`.
 
-- [ ] **Step 1: Leer cómo se aplica `.is-lit`**
+- [x] **Step 1: Leer cómo se aplica `.is-lit`**
 
 ```bash
 grep -n 'is-lit' src/themes/hypr.choreography.ts | head -20
 ```
 Sigue ese mismo mecanismo. No inventes uno nuevo.
 
-- [ ] **Step 2: Añadir los dos ejes que faltan**
+- [x] **Step 2: Añadir los dos ejes que faltan**
 
 En `src/themes/themes.css`, junto a `.hypr-cut` / `.hypr-up` / `.hypr-rule`:
 
@@ -896,7 +896,7 @@ Y súmalas al bloque de `prefers-reduced-motion` que ya existe (L1824-1832), jun
   :root[data-theme="hyprland"] .hypr-cut-v,
 ```
 
-- [ ] **Step 3: Cambiar las dos filas de la receta**
+- [x] **Step 3: Cambiar las dos filas de la receta**
 
 En `hypr.choreography.ts`:
 
@@ -908,7 +908,7 @@ En `hypr.choreography.ts`:
     ['[class*="contacto-bar--"]', "hypr-cut-v"],
 ```
 
-- [ ] **Step 4: Escribir el horario explícito de la escena de cierre**
+- [x] **Step 4: Escribir el horario explícito de la escena de cierre**
 
 El contador genérico de la `RECETA` reparte `n * 70ms` por orden de aparición, lo que dejaría el
 lead en 70ms y las vías pegadas al titular. La escena de cierre tiene un horario propio, así que se
@@ -956,7 +956,7 @@ retardo va en la hoja, en el bloque de la Task 2:
 Y en el bloque de `prefers-reduced-motion`, con `transform: none; transition: none;`, porque un
 pseudo-elemento no lo cubre el selector de clases de la gramática.
 
-- [ ] **Step 5: Comprobar que en reposo todo queda asentado sin `is-lit`**
+- [x] **Step 5: Comprobar que en reposo todo queda asentado sin `is-lit`**
 
 ```bash
 npm run build
@@ -984,7 +984,7 @@ Esperado: `glifos: 0` (bajo `reduce` la coreografía no corre y el titular ni se
 `clips` en `none` y todos los `visibles` en `true`. **Mira la captura:** la escena tiene que verse
 completa y legible, sin ninguna pieza a medio revelar.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/themes/themes.css src/themes/hypr.choreography.ts
@@ -1004,7 +1004,7 @@ prefers-reduced-motion."
 - Modify: `scripts/measure-contacto.py` (si sus aserciones dan por buena la composición vieja)
 - Modify: `scripts/verify-baseline.json` (solo si esta tarea arregla un fallo que estaba en la base)
 
-- [ ] **Step 1: Build y lint**
+- [x] **Step 1: Build y lint**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -1012,7 +1012,7 @@ npm run build && npm run lint
 ```
 Esperado: cero errores de TypeScript, cero de ESLint. Un `tsc` roto no es DONE.
 
-- [ ] **Step 2: Los arneses que ya existen**
+- [x] **Step 2: Los arneses que ya existen**
 
 ```bash
 python3 scripts/measure-contacto.py --base http://localhost:4173
@@ -1023,7 +1023,7 @@ python3 scripts/measure-type-scale.py --base http://localhost:4173
 si fallan por eso, **actualiza sus aserciones**, no las borres. `measure-type-scale.py` tiene que
 pasar sin excepciones nuevas: los dos `clamp()` ya no existen.
 
-- [ ] **Step 3: Comprobar que Vice y Caelestia no se han movido**
+- [x] **Step 3: Comprobar que Vice y Caelestia no se han movido**
 
 ```bash
 python3 -c "
@@ -1044,7 +1044,7 @@ with sync_playwright() as p:
 Compara las dos capturas contra las mismas tomadas desde `main` en otro worktree. **Nunca uses
 `git stash` para esto:** un `stash --include-untracked` ya se llevó por delante una sesión entera.
 
-- [ ] **Step 4: El arnés general**
+- [x] **Step 4: El arnés general**
 
 ```bash
 python3 scripts/verify.py
@@ -1055,14 +1055,14 @@ estaba en la base, la base tiene que encogerse o el arnés sale 1 a propósito:
 python3 scripts/verify.py --update-baseline    # y revisa el diff antes de commitear
 ```
 
-- [ ] **Step 5: Cerrar el estado del spec**
+- [x] **Step 5: Cerrar el estado del spec**
 
 En `docs/superpowers/specs/2026-08-13-hyprland-contacto-cinta-design.md`, `Estado:` pasa de
 `pendiente de plan` a `implementado`, y se marcan las casillas de `## Criterios de aceptación`.
 `check_spec_plan_consistency()` de `verify.py` falla si el spec dice `implementado` con pasos de
 este plan sin marcar.
 
-- [ ] **Step 6: Actualizar PROGRESS.json y commitear**
+- [x] **Step 6: Actualizar PROGRESS.json y commitear**
 
 ```bash
 git add scripts/ docs/superpowers/specs/2026-08-13-hyprland-contacto-cinta-design.md PROGRESS.json
