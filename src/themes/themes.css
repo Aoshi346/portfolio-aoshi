@@ -5600,6 +5600,18 @@
   valor grande a la derecha. Al apuntar, la luz inunda la banda de izquierda a
   derecha con un corte duro.
 */
+/* Alturas en UN solo sitio, y sobre la SECCION, no sobre `.contacto-bars`:
+   `.contacto-estado` vive dentro de `.contacto-band` y no cuelga de la cinta,
+   asi que una variable declarada en la cinta no le llegaria nunca — las custom
+   properties solo se heredan hacia abajo, y la seccion es el ancestro comun.
+   La franja de estado se coloca en absoluto y se ata a estas, para que no
+   puedan separarse cuando alguien cambie una y olvide la otra.
+   `--mosaico-h` es la altura del mosaico movil: 132 + 96*3 + 3 juntas. */
+:root[data-theme="hyprland"] [data-scene="contacto"] {
+  --franja-h: 27px;
+  --cinta-h: 140px;
+  --mosaico-h: 423px;
+}
 :root[data-theme="hyprland"] .contacto-bars {
   flex-direction: column;
   border-top: 1px solid var(--rule);
@@ -5610,7 +5622,10 @@
   align-items: center;
   gap: 1.5rem;
   flex: 0 0 auto;
-  padding: 1.4rem 7vw;
+  /* 1.4rem 0, no 1.4rem 7vw: la calle de 7vw ya la pone la escena y sumarlas
+     arrancaba el texto en x=201,6 en vez de los x=100,8 de la placa y el
+     catastro. Es la misma calle doble que el catastro ya corrigio. */
+  padding: 1.4rem 0;
   border-bottom: 1px solid var(--rule);
   background: none;
   overflow: hidden;
@@ -5622,11 +5637,20 @@
   background: linear-gradient(90deg, color-mix(in oklab, var(--l1) 20%, transparent), transparent 70%);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.45s var(--hard);
+  transition: transform 0.42s var(--hard);
 }
 :root[data-theme="hyprland"] [class*="contacto-bar--"]:hover::before,
 :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible::before {
   transform: scaleX(1);
+}
+:root[data-theme="hyprland"] .contacto-bar-label,
+:root[data-theme="hyprland"] .contacto-estado-label {
+  /* style.css deja estos rotulos a `opacity: 0.6` y el bloque de Hyprland les
+     daba color pero nunca reseteaba la opacidad. Medido por glifo contra el
+     shader vivo: 2,19-2,94:1, cuando AA pide 4,5. Vice ya tiene este mismo
+     reset explicito en su propia regla; Hyprland nunca lo copio. */
+  opacity: 1;
+  color: var(--haze);
 }
 :root[data-theme="hyprland"] .contacto-bar-label {
   writing-mode: horizontal-tb;
@@ -5636,14 +5660,13 @@
   font-size: var(--t-1);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--haze);
   position: relative;
   z-index: 1;
 }
 :root[data-theme="hyprland"] .contacto-bar-value {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(var(--t-3), 2.4vw, var(--t-4));
+  font-size: var(--t-4);
   letter-spacing: -0.02em;
   position: relative;
   z-index: 1;
@@ -5654,6 +5677,22 @@
      donde haga falta cuando de verdad no cabe. */
   min-width: 0;
   overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  :root[data-theme="hyprland"] .contacto-bar-value {
+    font-size: var(--t-3);
+  }
+}
+/* `.contacto-title` comparte con `.display-xl` la regla de L1334-1337, que usa
+   clamp. No se toca esa: se le da aqui la suya propia, escalonada, para no
+   cambiar ni el hero ni el about. */
+:root[data-theme="hyprland"] .contacto-title {
+  font-size: var(--t-9);
+}
+@media (max-width: 900px) {
+  :root[data-theme="hyprland"] .contacto-title {
+    font-size: var(--t-6);
+  }
 }
 :root[data-theme="hyprland"] .contacto-bar-mark {
   margin-left: auto;
