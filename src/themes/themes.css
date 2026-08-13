@@ -5841,6 +5841,13 @@
    `.contacto-band` y Vice depende de esa posicion para sus marcas de esquina.
    Se ata a las mismas dos variables que la cinta para que no se separen; el
    arnes comprueba que los dos bordes coinciden. */
+/* Fuera de la media query: el estado y la cinta son hermanos posicionados y
+   sin esto gana el orden del DOM, que sepulta el estado bajo el scrim casi
+   opaco de `.contacto-bars`. La Task 4 coloca el estado tambien en absoluto
+   sobre el mosaico movil y necesita el mismo z-index. */
+:root[data-theme="hyprland"] .contacto-estado {
+  z-index: 1;
+}
 @media (min-width: 901px) {
   :root[data-theme="hyprland"] .contacto-estado {
     position: absolute;
