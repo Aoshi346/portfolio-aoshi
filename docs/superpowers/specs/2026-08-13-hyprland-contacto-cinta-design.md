@@ -118,9 +118,9 @@ porque es de donde viene una barra de estado.
 | 0 | `.hero-kick` | corte horizontal (`.hypr-cut`, ya existe) | 420 |
 | 140 | los 8 glifos de "Hablemos" | corte horizontal, escalón 70ms | 420 |
 | 760 | `.contacto-lead` | corte horizontal | 500 |
-| 900 | filete + franja de estado | el cromo de la cinta, barrido a la derecha | 500 |
+| 900 | filete de la cinta | barrido a la derecha | 500 |
 | 1040 | las 4 vías | corte **vertical**, suben del suelo, escalón 70ms | 420 |
-| 1700 | el texto del estado | corte horizontal | 420 |
+| 1700 | `.contacto-estado` (cromo + texto, un solo nodo) | corte **vertical** | 420 |
 
 Todo con `--hard`. **El dato de contacto entra antes que el estado a propósito**: lo que importa
 es el correo. El estado remata en el punto donde la luz del filete terminó su viaje.
