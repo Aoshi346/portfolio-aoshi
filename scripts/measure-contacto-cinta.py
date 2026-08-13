@@ -63,6 +63,25 @@ def main():
             print(f"  {'OK ' if r >= MIN_AA else 'FALLA'} {d['sel']:26} {r:.2f}:1")
             if r < MIN_AA:
                 fallos.append(f"{d['sel']} a {r:.2f}:1 (minimo {MIN_AA})")
+        caja = pg.evaluate("""() => {
+          const bars = document.querySelector('.contacto-bars');
+          const sec = document.querySelector('[data-scene="contacto"]');
+          const v = document.querySelector('.contacto-bar--correo .contacto-bar-value');
+          const r = document.createRange(); r.selectNodeContents(v);
+          const ren = [...r.getClientRects()].filter(x => x.width > 1);
+          return {pie: Math.round(sec.getBoundingClientRect().bottom
+                                  - bars.getBoundingClientRect().bottom),
+                  renglones: ren.length,
+                  correo: Math.round(Math.max(...ren.map(x => x.width))),
+                  alto: Math.round(bars.getBoundingClientRect().height)};
+        }""")
+        print("  cinta:", caja)
+        if caja["renglones"] != 1:
+            fallos.append(f"el correo cae en {caja['renglones']} renglones")
+        if abs(caja["pie"]) > 1:
+            fallos.append(f"la cinta no esta al pie de la seccion ({caja['pie']}px)")
+        if caja["alto"] != 167:
+            fallos.append(f"alto de cinta {caja['alto']}, esperado 167")
         print("fallos:", fallos or "ninguno")
         b.close()
     return 1 if fallos else 0

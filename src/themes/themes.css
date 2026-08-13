@@ -5722,6 +5722,110 @@
   }
 }
 
+/* LA CINTA. No hay celdas: los cuatro valores repartidos sobre un filete a
+   sangre pegado al pie de la escena. Es la unica composicion donde el correo
+   puede ir a 28,43px, porque ninguna columna lo encierra: medido, los cuatro
+   ocupan 1265 de 1440 y sobran 175 para repartir. */
+@media (min-width: 901px) {
+  :root[data-theme="hyprland"] .contacto-bars {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--cinta-h) + var(--franja-h));
+    padding: var(--franja-h) 7vw 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    /* Scrim calibrado CONTRA ESTA FRANJA con el fondo generativo en su punto
+       mas brillante. No se reutiliza de ningun otro tema: un porcentaje se
+       calibra contra una superficie, no contra un token. */
+    background: rgb(11 4 4 / 0.88);
+    border-top: 1px solid var(--rule);
+  }
+  /* EL FILETE de ventana activa del gestor. En el prototipo era un <span>;
+     aqui no hay nodo para el y no se va a anadir uno a `contacto.ts`, que es
+     DOM compartido — asi que es un pseudo-elemento. Llega hasta el borde
+     derecho: muriendo antes se leia como una linea sin terminar. */
+  :root[data-theme="hyprland"] .contacto-bars::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--l1), var(--l2) 46%, rgb(224 29 60 / 0.35));
+    transform-origin: left;
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 0;
+    border-bottom: 0;
+    overflow: visible;
+  }
+  /* El rotulo va ENCIMA del valor: cuesta alto y no ancho, asi que no le quita
+     nada a los 28,43px del dato. Sin el, "Aoshi346" no dice nada. */
+  :root[data-theme="hyprland"] .contacto-bar-label {
+    width: auto;
+    margin-bottom: 12px;
+    transition: color 0.9s var(--slow);
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:hover .contacto-bar-label,
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible .contacto-bar-label {
+    color: var(--l3);
+    transition: color 0.42s var(--hard);
+  }
+  /* El <span> vacio que hoy es una rayita decorativa pasa a ser el filete de
+     reposo: la senal de que esto es un enlace. En tactil no hay hover, asi que
+     un enlace que solo lo parece al apuntarlo no lo parece nunca. */
+  :root[data-theme="hyprland"] .contacto-bar-mark {
+    order: 2;
+    width: 100%;
+    height: 1px;
+    margin: 10px 0 0;
+    opacity: 1;
+    background: rgb(255 160 60 / 0.42);
+    position: relative;
+  }
+  :root[data-theme="hyprland"] .contacto-bar-mark::after {
+    content: "";
+    position: absolute;
+    inset: -1px 0 0;
+    height: 2px;
+    background: var(--l1);
+    transform: scaleX(0);
+    transform-origin: left;
+    /* Apagar es enfriarse: 0,9s --slow. Encender es un corte: 0,5s --hard.
+       Asimetrico, que es la ley del tema. */
+    transition: transform 0.9s var(--slow);
+  }
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:hover .contacto-bar-mark::after,
+  :root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible .contacto-bar-mark::after {
+    transform: scaleX(1);
+    transition: transform 0.5s var(--hard);
+  }
+  /* Los tres vecinos se enfrian. Un gesto de GRUPO, no cuatro independientes:
+     bajan a la vez y sin escalon. Con :has(), sin JavaScript ni listeners. */
+  :root[data-theme="hyprland"] [class*="contacto-bar--"] {
+    transition: opacity 0.9s var(--slow);
+  }
+  :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:hover)
+    [class*="contacto-bar--"]:not(:hover),
+  :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:focus-visible)
+    [class*="contacto-bar--"]:not(:focus-visible) {
+    opacity: 0.5;
+  }
+}
+/* Foco de teclado. Offset negativo porque la banda lleva overflow hidden en
+   movil y un offset positivo se recortaria contra el. */
+:root[data-theme="hyprland"] [class*="contacto-bar--"]:focus-visible {
+  outline: 3px solid var(--l1);
+  outline-offset: -3px;
+}
+
 /* =====================================================================
  * Cursor propio de Vice — marca de sincronismo
  *
