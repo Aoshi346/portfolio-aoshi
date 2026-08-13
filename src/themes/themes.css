@@ -6043,6 +6043,10 @@
     border-bottom: 0;
     background: rgb(11 4 4 / 0.90);
     overflow: hidden;
+    /* Sin esto, Android pinta su flash gris de serie sobre una banda
+       deliberadamente oscura al tocar -- visible y fuera de la paleta del
+       tema. El plan ya lo llevaba; se quedo fuera de esta regla al implementar. */
+    -webkit-tap-highlight-color: transparent;
   }
   :root[data-theme="hyprland"] .contacto-bar-label { margin-bottom: 0; }
   :root[data-theme="hyprland"] .contacto-bar-mark { display: none; }
