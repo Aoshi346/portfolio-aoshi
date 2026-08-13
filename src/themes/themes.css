@@ -1898,12 +1898,13 @@
      de arriba no lo alcanza, asi que su delay bajo reduce va aparte.
      `.contacto-bars` duplicado a proposito: la regla base del filete
      (mas abajo, Task 2 + Task 6) tiene la MISMA especificidad
-     (:root es pseudo-clase, [data-theme] es atributo, .contacto-bars es
-     clase: las tres cuentan en la misma columna = 0,0,3,0 en los dos casos)
+     (:root es pseudo-clase, [data-theme] es atributo y .contacto-bars es
+     clase: las tres cuentan en la tercera columna; ::before es un
+     PSEUDO-ELEMENTO y cuenta en la cuarta = 0,0,3,1 en los dos casos)
      y va DESPUES en la hoja, asi que sin este empate roto gana ella
      — incluso bajo reduce — y el filete se queda en scaleX(0) para siempre.
      Medido: sin doblar la clase, `transform` computado bajo reduce era
-     `matrix(0,0,0,1,0,0)`, no `none`. Doblar sube a 0,0,4,0. */
+     `matrix(0,0,0,1,0,0)`, no `none`. Doblar sube a 0,0,4,1. */
   :root[data-theme="hyprland"] .contacto-bars.contacto-bars::before {
     transform: none;
     transition: none;
