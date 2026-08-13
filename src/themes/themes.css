@@ -5755,6 +5755,9 @@
     right: 0;
     height: 2px;
     background: linear-gradient(90deg, var(--l1), var(--l2) 46%, rgb(224 29 60 / 0.35));
+    /* El origen no lo usa nada de esta tarea: lo consume el barrido de
+       entrada de la Task 6 (coreografia), que le anade scaleX(0) + transicion
+       + `.is-lit` sobre este mismo pseudo-elemento. No borrar por "muerto". */
     transform-origin: left;
   }
   :root[data-theme="hyprland"] [class*="contacto-bar--"] {
@@ -5808,15 +5811,24 @@
     transition: transform 0.5s var(--hard);
   }
   /* Los tres vecinos se enfrian. Un gesto de GRUPO, no cuatro independientes:
-     bajan a la vez y sin escalon. Con :has(), sin JavaScript ni listeners. */
+     bajan a la vez y sin escalon. Con :has(), sin JavaScript ni listeners.
+     Polaridad invertida respecto al filo y al rotulo: alli apuntar enciende
+     (0,42s --hard) y soltar apaga (0,9s --slow); aqui apuntar UN vecino apaga
+     a los otros tres, asi que el apagado (la regla :has(), el estado al que
+     se entra) lleva los 0,9s --slow, y la vuelta a opacity:1 (la regla base,
+     el estado al que se vuelve al soltar) lleva los 0,42s --hard. La
+     transicion que se aplica es siempre la del estado de llegada, no la del
+     de salida — no "arreglar" esto a la receta generica del resto del
+     bloque, aqui es al reves a proposito. */
   :root[data-theme="hyprland"] [class*="contacto-bar--"] {
-    transition: opacity 0.9s var(--slow);
+    transition: opacity 0.42s var(--hard);
   }
   :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:hover)
     [class*="contacto-bar--"]:not(:hover),
   :root[data-theme="hyprland"] .contacto-bars:has([class*="contacto-bar--"]:focus-visible)
     [class*="contacto-bar--"]:not(:focus-visible) {
     opacity: 0.5;
+    transition: opacity 0.9s var(--slow);
   }
 }
 /* Foco de teclado. Offset negativo porque la banda lleva overflow hidden en
