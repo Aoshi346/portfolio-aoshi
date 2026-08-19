@@ -1,6 +1,6 @@
 # El haz al mando — el fondo de Hyprland deja de ser un degradado y pasa a ser una luz acotada
 
-Estado: pendiente de plan
+Estado: implementado
 Fecha: 2026-08-19
 Alcance: sólo `src/backgrounds/hyprEmber.ts` y el cableado de sus uniforms dinámicos en
 `src/themes/hyprland.ts`. **Vice no se toca** (cerrado el 2026-08-05). **Caelestia no se toca.**
@@ -196,3 +196,84 @@ producción servido (nunca `npm run dev`: el HMR corrompe sus medidas). Comprueb
 ningún fondo posible. Subirlo dos escalones daría al haz rango real sin tocar la legibilidad, pero
 es un cambio de paleta que toca cuerpo de texto, rótulos y los cuatro dispositivos ya cerrados de
 Hyprland. **No se toca aquí.** Queda anotado para decidir aparte.
+
+## Registro de implementación
+
+Fecha: 2026-08-19. Rama `design/hyprland-fondo-haz`. Plan:
+`docs/superpowers/plans/2026-08-19-hyprland-fondo-haz.md`.
+
+**El prototipo se portó literal**, sin cambios de diseño: las seis correcciones (canto asimétrico,
+sale a sangre, caída por eje, corte en frontera, derrame, materia) y los cuatro parámetros
+responsive (`vertical`) son los del companion, con los seis uniforms de apagado de la maqueta
+colapsados a su lado "nuevo" tal como pedía la cabecera del `.glsl`.
+
+**Una desviación numérica, medida y documentada en el propio shader**: el techo de luminancia no
+quedó en 46 sino en **44.3**. El recorte por luminancia garantiza matemáticamente que ningún
+píxel del fotograma que genera el shader supere el límite, pero `measure-fondo-haz.py` contra
+capturas reales del build de producción (pipeline canvas → PNG de Playwright) medía un p99.5 de
+banda de 47.2–47.5 con el 46 tal cual — un desvío sistemático de esa conversión, no un fallo del
+recorte. Es exactamente el mismo efecto que `viceInk.ts` ya documenta para su `LUMA_MAX` (0.235 en
+vez del 0.243 naive de 62/255) y se resolvió igual: se bajó el valor interno hasta que el p99.5
+medido en producción aterrizó por debajo del techo real, con margen. Con 44.3 el p99.5 medido
+queda en 44.9–45.8 en los tres viewports.
+
+**El arnés `measure-fondo-haz.py` se reescribió una vez en vivo.** Su primera versión de la
+aserción 2 (el corte del segundo haz) detectaba el "salto de luminancia" por el crecimiento del
+p99.5 de banda — y no era fiable: la banda ya está saturada cerca del techo casi todo el
+recorrido (el haz principal la satura por sí solo), así que el segundo haz no la movía lo
+bastante por encima del ruido de captura headless para distinguirse. Se sustituyó por tres capas
+independientes: estática (el shader fuente referencia `uCreditsEntry` y no contiene el literal
+`0.735`/`0.765` de la maqueta), dinámica (`entrada_esperada`, calculada del `offsetTop` real de
+`#creditos`, se aparta del 75% fijo — evidencia de que usa contenido real) y visual (el canal R
+medio del fotograma completo sube tras el corte). Con esta versión, las 5 aserciones del spec
+pasan contra el build de producción: peor banda p99.5 45.70–45.75 en los tres viewports × 12
+posiciones de scroll; `entrada_esperada`=0.7231; deriva temporal con recorrido de mediana 0.05
+(máximo aceptado 2.0) en ≥160s de muestreo; canto duro con saltos de 20.1–34.1 (mínimo 12) en los
+tres viewports; `reduced-motion` estático confirmado.
+
+**Trampa de entorno, no de diseño**: la primera pasada de `measure-fondo-haz.py` midió, sin que se
+notara al principio, el build de OTRA sesión que corría en paralelo en la misma máquina
+(`worktrees/hypr-cursor`, rama distinta, con `vite preview --strictPort` en el mismo puerto
+4173) — los números coincidían byte a byte con el fondo VIEJO del spec, que fue la pista. Se
+resolvió sirviendo el propio build en el puerto 4174. Queda anotado por si se repite: en máquinas
+compartidas, fijar puerto explícito y verificar el hash del bundle servido (`curl | grep
+index-*.js` contra `ls dist/assets/`) antes de confiar en una medida.
+
+**`npm run build` y `npm run lint` en verde** (con Node 22 — el Node 18 del PATH por defecto de
+esta máquina no soporta `node:util.styleText` que usan `tsc`/`eslint` en las versiones de este
+repo). `npm run lint` sobre el repo completo falla por ficheros dentro de `worktrees/hypr-cursor`
+(ambigüedad de `tsconfigRootDir`, un worktree ajeno a esta tarea); los dos ficheros tocados
+(`hyprEmber.ts`, `hyprland.ts`) lintan limpios de forma aislada.
+
+**`scripts/verify.py --theme hyprland`**: 4 fallos fuera de línea base. Uno es propio de esta
+sesión (checkboxes del plan sin marcar en vivo — corregido). Los otros tres
+(`ReferenceError: gsap is not defined` en consola, una galería móvil no desplazable,
+`measure-catastro.py` con 3 fallos de la lámpara de créditos) se reproducen **idénticos** en un
+`git worktree` del commit inmediatamente anterior a esta tarea (`80547b7`, antes de tocar
+`hyprEmber.ts`) — confirmado con build y `verify.py` aparte contra ese worktree. Son fallos
+preexistentes del tema Hyprland nunca antes cubiertos por la línea base (que solo tenía entradas
+de `--theme vice`), no una regresión de este cambio, y quedan fuera de alcance de este spec.
+
+**Gates de QA:**
+- `lidia-naive-tester`: **7.5/10 — contactaría.** El fondo nuevo (el haz diagonal) ayuda más de lo
+  que estorba: el texto nunca cae sobre el punto más brillante en ningún barrido de scroll
+  probado, en mobile ni desktop. Cero errores de consola detectados por ella en su recorrido.
+  Reporte: `.docs/feedback/lidia/2026-08-19_22-57-20/REPORT.md`.
+- `vera-art-director`: **7.17/10 — BLOCK** (0.33 bajo el gate de 7.5). Certifica el fondo en sí
+  como "el mejor trabajo generativo medido en este proyecto, superando incluso a `viceInk.ts`" —
+  techo calibrado y verificado, deriva eliminada, frontera atada al DOM real, fidelidad exacta de
+  las constantes GLSL a los tokens CSS, canto duro y responsive confirmados. **El BLOCK no es por
+  el fondo**: es por el mismo `ReferenceError: gsap is not defined` que `verify.py` ya señaló como
+  preexistente — Vera confirma independientemente, por `git log`, que ningún commit de esta rama
+  toca `hypr.choreography.ts` ni `reveal.ts` (los ficheros responsables), y sitúa la regresión
+  entre su propia auditoría anterior (2026-08-10, limpia) y hoy, con `381bd78` (rediseño del hero)
+  como candidato más probable. Cita textual: "El fondo puede mergearse sobre su propio mérito
+  técnico independientemente de ese fix." Reporte: `.docs/feedback/vera/2026-08-19_haz/REPORT.md`.
+
+**Decisión pendiente para Aoshi** (mismo patrón que el cierre de Vice, donde un BLOCK con causa
+identificada y ajena al spec se aceptó explícitamente): el fondo cumple los cinco números de
+aceptación de este spec y el gate de Lidia. El BLOCK de Vera es una regresión real pero
+**preexistente y fuera del alcance de este spec** (toca `hypr.choreography.ts`/`reveal.ts`, no
+`hyprEmber.ts`/`hyprland.ts`), documentada aquí para que quien retome la coreografía del hero
+tenga la pista (`381bd78` en adelante). No se corrigió en esta rama para no exceder el alcance
+autorizado.
