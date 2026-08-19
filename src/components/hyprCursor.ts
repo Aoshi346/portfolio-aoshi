@@ -174,8 +174,8 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
       ctx.rect(rect.left, rect.top, rect.width, rect.height);
       ctx.clip();
       const luz = ctx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
-      luz.addColorStop(0, `rgb(255 160 60 / ${(0.3 * pot).toFixed(3)})`);
-      luz.addColorStop(0.45, `rgb(255 90 52 / ${(0.13 * pot).toFixed(3)})`);
+      luz.addColorStop(0, `rgb(255 160 60 / ${(0.04 * pot).toFixed(3)})`);
+      luz.addColorStop(0.45, `rgb(255 90 52 / ${(0.017 * pot).toFixed(3)})`);
       luz.addColorStop(1, "rgb(224 29 60 / 0)");
       ctx.fillStyle = luz;
       ctx.fillRect(rect.left, rect.top, rect.width, rect.height);
