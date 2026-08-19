@@ -39,9 +39,19 @@ const FRAGMENT_SHADER = /* glsl */ `
    * VA EL ULTIMO PASO, despues del grano. Medido: con el grano sumado
    * despues del recorte, su cola positiva se escapa del techo y el p99.5
    * sale a 48.1 en vez de 46.1.
+   *
+   * 44.3 y no 46: mismo ajuste que viceInk.ts documenta para su LUMA_MAX
+   * (0.235 en vez del 0.243 naive de 62/255). El recorte por luminancia
+   * garantiza matematicamente que NINGUN pixel supere el limite en el
+   * fotograma que genera el shader, pero measure-fondo-haz.py contra
+   * capturas reales (canvas -> PNG del pipeline de Playwright) media un
+   * p99.5 de banda de 47.2-47.5 con el naive 46 -- un desvio sistematico
+   * de esa conversion, no un fallo del recorte. 44.3 es el valor que hace
+   * aterrizar el p99.5 medido por debajo de 46 con margen (medido:
+   * scripts/measure-fondo-haz.py --base contra el build de produccion).
    */
   vec3 techo(vec3 c) {
-    float lm = 46.0 / 255.0;
+    float lm = 44.3 / 255.0;
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
     return l > lm ? c * (lm / max(l, 1e-4)) : c;
   }
