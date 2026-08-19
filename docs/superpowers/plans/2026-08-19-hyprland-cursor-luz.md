@@ -215,7 +215,7 @@ Esperado: **FALLA** con `lienzo en hyprland: False, esperado True` y varios `pot
 un error de Python (import, selector inválido), arreglarlo antes de seguir: el arnés tiene que
 fallar por ausencia del módulo, no por estar roto.
 
-- [ ] **Paso 3: commit**
+- [x] **Paso 3: commit**
 
 ```bash
 git add scripts/measure-cursor-luz.py
