@@ -56,17 +56,21 @@ pagina real, verificados con `getComputedStyle` (no adivinados):
      `.hero-mail` en reposo pinta con `--haze` (`#b18c86`) y en `:hover` --
      que es el estado en el que el charco esta encendido, porque el charco
      solo se enciende con el mouse encima -- pasa a `--l1` (`#ff5a34`), un
-     naranja saturado nada blanco. Y el titular tras `.obra-abrir` pinta
-     `--haze` siempre (no cambia con el hover del boton que lo cubre; es la
-     misma atenuacion de "titular en reposo" ya documentada para el cartel
-     de obra en `2026-08-10-hyprland-obra-cartel`). Comparar el pixel mas
-     claro del fondo contra un `#ffeae6` fijo mide un color que casi nunca
-     esta en pantalla durante el propio riesgo que se quiere medir --
-     mide otra cosa, con un numero que ademas sale mas favorable de lo real
-     porque el blanco nominal es mas dificil de tragarse que el naranja o el
-     `--haze` real. La correccion: leer `getComputedStyle(...).color` del
-     nodo que de verdad lleva el glifo, EN EL MOMENTO del hover, y usarlo
-     como color de texto de esa medida en concreto.
+     naranja saturado nada blanco. Y el titular tras `.obra-abrir` NO tiene
+     color propio: son los DOS `<i>` apilados del relevo por letra de
+     `obraCartel.ts` los que lo tienen (`.obra-rl i:first-child` en
+     `--haze`, `i:last-child` en `--color-paper`), y con el hover puesto
+     (`pointerenter` en `fila.seccion` dispara `relevo()`) el que queda a
+     la vista es `i:last-child`, NO `--haze` -- una version anterior de este
+     comentario decia lo contrario ("pinta `--haze` siempre"), y el propio
+     arnes 350 lineas mas abajo lo desmiente: es exactamente el fallo que
+     corrige la Ronda de arreglo 1 (Critico 2). Comparar el pixel mas claro
+     del fondo contra un `#ffeae6` fijo mide un color que casi nunca esta en
+     pantalla durante el propio riesgo que se quiere medir -- mide otra
+     cosa, con un numero que ademas sale mas favorable de lo real porque el
+     blanco nominal es mas dificil de tragarse que el naranja o el `--haze`
+     real. La correccion: leer `getComputedStyle(...).color` del nodo que
+     de verdad lleva el glifo VISIBLE en cada estado, no un hex fijo.
   2. Comparaba pixel a pixel por igualdad exacta contra el color nominal del
      texto para decidir que es "fondo". Falso incluso arreglado el punto 1:
      el antialias del renderer de fuentes produce una rampa continua entre
@@ -123,6 +127,31 @@ pagina real, verificados con `getComputedStyle` (no adivinados):
      MINIMO de esas lecturas a lo largo de la ventana es el peor caso, sin
      necesitar un percentil que además diluiria el minimo real) para que el
      numero no dependa de cuando se lanza el arnes.
+  6. (Ronda de arreglo 2, Critico 2 -- este SI seguia abierto tras la Ronda
+     1) Medir "encendido" con el raton puesto y "apagado" apartando el
+     raton a otra esquina compara DOS ESCENAS DISTINTAS en ".obra-abrir":
+     apartar el raton deshace `relevo()` y el texto vuelve a `--haze`,
+     mientras que "encendido" mide con el texto ya en `--color-paper`. La
+     diferencia de contraste que salia (~1,4:1 a ~4,0:1) era casi entera el
+     cambio de color del relevo, no el charco -- y el gate de esa diana
+     quedaba con ~2,9 de holgura fabricada, capaz de pasar aunque el charco
+     hundiera el contraste de verdad. La correccion (metodo pareado,
+     `contraste_pareado()`): el raton se queda quieto EN LA MISMA POSICION
+     durante toda la medida -- ni se mueve ni se aparta -- asi que el texto
+     esta en el MISMO color (`--color-paper` en ".obra-abrir", `--l1` en
+     ".hero-mail") en las dos condiciones. La UNICA diferencia entre
+     condiciones es la visibilidad del `<canvas>` del cursor
+     (`style.visibility = 'hidden'` / restaurado): el trazo interno de
+     `hyprCursor.ts` (posicion, `pot`, todo su estado) sigue corriendo
+     igual, solo cambia si el navegador PINTA esos pixeles en pantalla. Las
+     dos capturas de cada par se toman una detras de otra sin esperar entre
+     ellas, asi que ven practicamente el mismo fotograma del shader
+     (`uTime` apenas avanza entre dos `screenshot()` seguidos) -- y varios
+     pares se intercalan a lo largo de la ventana de 16,8s para cubrir el
+     ciclo completo del shader. El numero que importa ya no es "encendido"
+     contra "apagado" (dos DOM distintos) sino el DELTA por par (apagado -
+     encendido, con el MISMO DOM): eso aisla el efecto del charco solo,
+     nada mas.
 """
 import argparse
 import io
@@ -230,85 +259,38 @@ def _color_computado(handle) -> tuple[int, int, int]:
     return tuple(round(float(v)) for v in m.groups())  # type: ignore[return-value]
 
 
-def contraste_por_glifo(
-    pg, selector_glifo: str, punto: tuple[float, float], selector_color: "str | None" = None
-) -> tuple[float, tuple[int, int, int]]:
-    """Ratio WCAG del texto de una diana contra su propio fondo iluminado.
+def _caja_contenido(nodo, handle) -> dict:
+    """Caja de CONTENIDO (bounding box de borde menos el padding computado).
 
-    `selector_glifo` apunta al nodo que de verdad pinta el glifo visible
-    (puede no ser el pulsable: en ".obra-abrir" el boton no tiene texto
-    propio, lo que se ve es el <h2> que tapa) y se usa para la caja
-    (bounding box + recorte de padding) y para APAGAR toda la tinta bajo el.
-    Se llama con el charco YA encendido (el llamador tiene que haber
-    apuntado antes al pulsable con `apuntar()`, y pasar aqui el punto
-    (viewport) que esa llamada devolvio).
-
-    `selector_color` (por defecto `selector_glifo`) es el nodo del que se
-    lee el color REALMENTE visible en este estado -- pueden no coincidir:
-    en ".obra-abrir" el `<h2>` no tiene color propio, son los DOS `<i>`
-    apilados de `obraCartel.ts` los que lo tienen, y cual de los dos se ve
-    depende del relevo (`i:first-child` en reposo, `i:last-child` con el
-    hover puesto). Se lee `getComputedStyle(...).color` DEL NODO DE COLOR en
-    el momento de la medida, no un hex fijo del spec -- `.hero-mail` cambia
-    de `--haze` a `--l1` justo al entrar en `:hover`, que es cuando el
-    charco esta encendido, asi que un color nominal fijo mediria un estado
-    que no coincide con el riesgo real (ver cabecera del modulo).
-
-    Fondo "peor caso": en vez de separar glifo de fondo por color de pixel
-    (fragil por el antialias, ver cabecera), se APAGA el glifo por CSS
-    (`color: transparent`, sin tocar layout ni bounding box) y se fotografia
-    la caja desnuda -- cualquier pixel de la captura es fondo real (shader +
-    charco), nunca tinta de letra. El shader es generativo y el charco tiene
-    su propia rampa de opacidad (`POT_SMOOTHING` en `hyprCursor.ts`), asi que
-    un solo fotograma no es el peor caso: se toman `MUESTRAS_POR_DIANA`
-    capturas espaciadas `INTERVALO_MUESTRA_MS` (~16,8s por diana, ver punto 5
-    de la cabecera del modulo) y de cada una se guarda el pixel de MENOR
-    CONTRASTE contra el texto -- NO el de mayor luminancia. Con un texto
-    claro (blanco/naranja) ambos criterios coinciden porque el contraste
-    solo puede caer si el fondo sube hacia el; pero con `--haze` (luminancia
-    ~0,30, ni claro ni oscuro) un fondo que se ACERCA a esa luminancia desde
-    abajo empeora el contraste tanto o mas que uno que se aleja por arriba
-    -- el shader de Hyprland baja hasta ~0,20 de luminancia en frames
-    oscuros, mas cerca de 0,30 que muchos fondos "claros". Tomar el pixel
-    mas claro se perdia ese caso. El numero que se devuelve es el MINIMO de
-    esas `MUESTRAS_POR_DIANA` lecturas de contraste -- el peor de los
-    peores, no el fotograma medio ni el primero.
+    `bounding_box()` da la caja de BORDE. El canto del charco
+    (`ctx.strokeRect` en `hyprCursor.ts`) se dibuja justo en ese borde --
+    fuera del area de contenido, donde nunca hay tinta de ningun glifo.
+    Medir con el padding puesto encuentra ese trazo y lo cuenta como "el
+    peor fondo detras del texto" cuando en realidad nunca esta detras de
+    ninguna letra (medido en ".hero-mail", padding 2px/1px).
     """
-    nodo = pg.locator(selector_glifo).first
-    handle = nodo.element_handle()
-    color_handle = pg.locator(selector_color or selector_glifo).first.element_handle()
-    texto_rgb = _color_computado(color_handle)
     caja_borde = nodo.bounding_box()
-    # `bounding_box()` devuelve la caja de BORDE (incluye padding). El canto
-    # del charco (`ctx.strokeRect`) se dibuja justo en ese borde -- fuera del
-    # area de contenido, asi que ningun glifo pinta ahi. Medir con el
-    # padding puesto encuentra ese trazo (mismo color base que el texto en
-    # `:hover`, `--l1`) y lo cuenta como "el peor fondo detras del texto"
-    # cuando en realidad nunca esta detras de ninguna letra. Se recorta al
-    # area de CONTENIDO (donde si puede haber tinta) restando el padding
-    # computado.
     pad = handle.evaluate(
         "(el) => { const cs = getComputedStyle(el);"
         " return [parseFloat(cs.paddingTop), parseFloat(cs.paddingRight),"
         " parseFloat(cs.paddingBottom), parseFloat(cs.paddingLeft)]; }"
     )
     pad_top, pad_right, pad_bottom, pad_left = pad
-    caja = {
+    return {
         "x": caja_borde["x"] + pad_left,
         "y": caja_borde["y"] + pad_top,
         "width": max(caja_borde["width"] - pad_left - pad_right, 1),
         "height": max(caja_borde["height"] - pad_top - pad_bottom, 1),
     }
-    # Punto del raton en coordenadas LOCALES de esta caja de contenido (la
-    # caja del glifo puede no ser la caja donde se apunto -- en
-    # ".obra-abrir" son dos elementos distintos, ver cabecera).
-    punto_local = (punto[0] - caja["x"], punto[1] - caja["y"])
-    # El titular de obra en Hyprland es el relevo por letra del cartel
-    # (`obraCartel.ts`): cada caracter son DOS <i> apilados con su PROPIO
-    # color explicito (`.obra-rl i:first-child` en --haze, `i:last-child` en
-    # --color-paper -- ver themes.css). Apagar solo el color heredado del
-    # <h2> no les llega: tienen su propia regla, mas especifica que la
-    # herencia. Se apaga el nodo Y todos sus descendientes.
+
+
+def _apagar_tinta(handle) -> str:
+    """Pone `color: transparent !important` en `handle` Y en todos sus
+    descendientes (el titular de obra es el relevo por letra de
+    `obraCartel.ts`: cada caracter son DOS `<i>` apilados con su PROPIO
+    color explicito, mas especifico que la herencia -- apagar solo el nodo
+    de arriba no les llega). Devuelve el `color` inline previo del nodo
+    raiz, para restaurar con `_restaurar_tinta()`."""
     color_previo = handle.evaluate("(el) => el.style.color")
     handle.evaluate(
         "(el) => {"
@@ -316,47 +298,111 @@ def contraste_por_glifo(
         " el.querySelectorAll('*').forEach((d) => d.style.setProperty('color', 'transparent', 'important'));"
         " }"
     )
+    return color_previo
+
+
+def _restaurar_tinta(handle, color_previo: str) -> None:
+    handle.evaluate(
+        "(el, prev) => {"
+        " if (prev) { el.style.color = prev; } else { el.style.removeProperty('color'); }"
+        " el.querySelectorAll('*').forEach((d) => d.style.removeProperty('color'));"
+        " }",
+        color_previo,
+    )
+
+
+def _peor_contraste_en_captura(pg, caja: dict, punto_local: tuple[float, float], texto_rgb: tuple[int, int, int]):
+    """Contraste minimo (peor caso) en UNA captura de `caja`, excluyendo el
+    circulo de `MANO_RADIO_EXCLUSION` alrededor de `punto_local`. Devuelve
+    `None` si la mano tapa la caja entera (caja diminuta) -- no hay fondo
+    que leer en ese fotograma."""
+    tiro = pg.screenshot(clip=caja)
+    img = Image.open(io.BytesIO(tiro)).convert("RGB")
+    w = img.size[0]
+    candidatos = [
+        px
+        for i, px in enumerate(img.getdata())
+        if _distancia((i % w, i // w), punto_local) > MANO_RADIO_EXCLUSION
+    ]
+    if not candidatos:
+        return None
+    # El peor fondo es el de MENOR contraste contra el texto, no el de
+    # mayor luminancia: con `--haze` (luminancia ~0,30, ni claro ni
+    # oscuro) un fondo que se ACERCA a esa luminancia desde abajo empeora
+    # el contraste tanto o mas que uno que se aleja por arriba -- el
+    # shader de Hyprland baja hasta ~0,20 de luminancia en frames oscuros.
+    return min(_contraste(texto_rgb, px) for px in candidatos)
+
+
+def contraste_pareado(
+    pg,
+    selector_glifo: str,
+    selector_color: str,
+    punto: tuple[float, float],
+    n_pares: int = MUESTRAS_POR_DIANA,
+    intervalo_ms: int = INTERVALO_MUESTRA_MS,
+) -> tuple[list[tuple[float, float]], tuple[int, int, int]]:
+    """Aisla el efecto del charco solo, con el RESTO del estado (hover,
+    color del glifo) fijo e identico en las dos condiciones que compara.
+
+    El raton NO se mueve durante toda la llamada: ya tiene que estar en
+    `punto` (el llamador hace `apuntar()` antes) y se queda ahi. Eso
+    significa que `.hero-mail` sigue en `:hover` (texto en `--l1`) y el
+    relevo de ".obra-abrir" sigue asentado (texto en `--color-paper`) en
+    las DOS condiciones -- la unica diferencia entre ellas es si el
+    `<canvas>` del cursor esta pintado en pantalla o no
+    (`style.visibility`), no si el raton esta encima o no. Ver punto 6 de
+    la cabecera del modulo para el porque: medir "encendido" con el raton
+    puesto contra "apagado" apartandolo comparaba dos escenas de DOM
+    distintas (dos colores de texto distintos en ".obra-abrir"), y la
+    diferencia que salia era casi entera ese cambio de color, no el charco.
+
+    Cada "par" toma dos capturas seguidas, SIN esperar entre ellas (canvas
+    oculto, foto; canvas visible, foto) -- el shader apenas avanza entre
+    dos `screenshot()` consecutivos, asi que las dos ven practicamente el
+    mismo fotograma y el DELTA entre ellas aisla el efecto del charco. Se
+    toman `n_pares` pares espaciados `intervalo_ms` (mismo criterio que el
+    resto del arnes, ~16,8s por defecto) para cubrir el ciclo de brillo del
+    shader -- ningun par aislado es "el resultado", es la DISPERSION de
+    los `n_pares` deltas lo que hay que reportar.
+
+    Devuelve la lista de pares `(peor_contraste_canvas_oculto,
+    peor_contraste_canvas_visible)` y el `texto_rgb` usado (constante
+    durante toda la llamada, leido una vez de `selector_color`).
+    """
+    nodo = pg.locator(selector_glifo).first
+    handle = nodo.element_handle()
+    color_handle = pg.locator(selector_color).first.element_handle()
+    texto_rgb = _color_computado(color_handle)
+    caja = _caja_contenido(nodo, handle)
+    punto_local = (punto[0] - caja["x"], punto[1] - caja["y"])
+
+    color_previo = _apagar_tinta(handle)
+    ocultar = f"() => {{ const c = document.querySelector('{LIENZO}'); if (c) c.style.setProperty('visibility', 'hidden', 'important'); }}"
+    mostrar = f"() => {{ const c = document.querySelector('{LIENZO}'); if (c) c.style.removeProperty('visibility'); }}"
     try:
-        peores = []
-        for _ in range(MUESTRAS_POR_DIANA):
-            pg.wait_for_timeout(INTERVALO_MUESTRA_MS)
-            tiro = pg.screenshot(clip=caja)
-            img = Image.open(io.BytesIO(tiro)).convert("RGB")
-            w = img.size[0]
-            candidatos = [
-                px
-                for i, px in enumerate(img.getdata())
-                if _distancia((i % w, i // w), punto_local) > MANO_RADIO_EXCLUSION
-            ]
-            # defensive: si la mano tapa la caja entera (caja diminuta) no
-            # hay fondo que leer en este fotograma -- se salta en vez de
-            # fallar sobre una lista vacia.
-            if not candidatos:
+        pares: list[tuple[float, float]] = []
+        for _ in range(n_pares):
+            pg.wait_for_timeout(intervalo_ms)
+            pg.evaluate(ocultar)
+            peor_oculto = _peor_contraste_en_captura(pg, caja, punto_local, texto_rgb)
+            pg.evaluate(mostrar)
+            peor_visible = _peor_contraste_en_captura(pg, caja, punto_local, texto_rgb)
+            if peor_oculto is None or peor_visible is None:
                 continue
-            # El peor fondo es el de MENOR contraste contra el texto, no el
-            # de mayor luminancia (ver docstring): con `--haze` de por medio
-            # el shader puede empeorar el contraste ACERCANDOSE por abajo,
-            # no solo alejandose por arriba.
-            peor_contraste = min(_contraste(texto_rgb, px) for px in candidatos)
-            peores.append(peor_contraste)
-        # defensive: esto es un fallo de INSTRUMENTACION (caja mal calculada,
-        # radio de exclusion mayor que la propia caja), no un resultado de
-        # producto -- se sigue abortando (a diferencia del `assert` de
-        # `main()` para el baseline, que SI acumula en `fallos`: ese es un
-        # estado transitorio esperable del shader/Lenis, esto no lo es).
-        assert peores, f"ningun pixel de fondo fuera del radio de la mano en {MUESTRAS_POR_DIANA} capturas de {selector_glifo}"
+            pares.append((peor_oculto, peor_visible))
+        # defensive: fallo de INSTRUMENTACION (caja mal calculada, radio de
+        # exclusion mayor que la propia caja) -- no un resultado de
+        # producto, se sigue abortando.
+        assert pares, f"ningun par valido en {n_pares} intentos para {selector_glifo}"
     finally:
-        # el color se restaura siempre, incluso si una captura revienta --
-        # si no, la diana se queda con el glifo apagado para el resto del
-        # arnes (asercion 3 usa PULSABLE_SCROLL despues de esta).
-        handle.evaluate(
-            "(el, prev) => {"
-            " if (prev) { el.style.color = prev; } else { el.style.removeProperty('color'); }"
-            " el.querySelectorAll('*').forEach((d) => d.style.removeProperty('color'));"
-            " }",
-            color_previo,
-        )
-    return min(peores), texto_rgb
+        # El canvas y la tinta se restauran SIEMPRE, incluso si una captura
+        # revienta -- si no, la diana se queda con el glifo apagado y/o el
+        # cursor oculto para el resto del arnes (asercion 3 usa
+        # PULSABLE_SCROLL despues de esta).
+        pg.evaluate(mostrar)
+        _restaurar_tinta(handle, color_previo)
+    return pares, texto_rgb
 
 
 def main() -> int:
@@ -383,130 +429,125 @@ def main() -> int:
         if potencia(pg) > 0.05:
             fallos.append(f"charco encendido sobre texto: pot={potencia(pg)}")
 
-        # 7. contraste por glifo contra el peor fotograma del shader, con el
-        # charco encendido. Solo sobre las dianas donde el charco enciende.
-        # `.obra-abrir` no tiene texto propio (boton transparente que cubre
-        # la fila entera, 1440px de ancho): el glifo visible es el
-        # <h2 data-title> de esa misma tarjeta, verificado por
-        # closest('section').
+        # 7. contraste por glifo contra el peor fotograma del shader. Solo
+        # sobre las dianas donde el charco enciende. ".obra-abrir" no tiene
+        # texto propio (boton transparente que cubre la fila entera,
+        # 1440px de ancho): el glifo visible es el <h2 data-title> de esa
+        # misma tarjeta, verificado por closest('section').
         #
-        # Ronda de arreglo 1 (revision externa, reproducida con sonda
-        # instrumentada) tumbo dos supuestos de la primera version:
+        # Ronda de arreglo 1 (revision externa, sonda instrumentada) corrigio
+        # el punto donde se apuntaba ".obra-abrir" (caia fuera del radio del
+        # charco) y el gate no determinista (escalon en AA_MINIMO). El
+        # Critico 2 -- el color de texto que se leia -- quedo CERRADO A
+        # MEDIAS: se corrigio COMO se lee el color, pero no que las dos
+        # condiciones ("encendido" con el raton puesto, "apagado"
+        # apartandolo) seguian siendo dos escenas de DOM distintas en
+        # ".obra-abrir" (apartar el raton deshace `relevo()`, el texto
+        # vuelve a `--haze`). La diferencia que salia (~1,4:1 a ~4,0:1) era
+        # casi entera el cambio de color del relevo, no el charco -- gate
+        # con ~2,9 de holgura fabricada.
         #
-        #   - El punto donde se apuntaba ".obra-abrir" (40% de su ancho,
-        #     x=576 en una caja de 1440px) caia FUERA del radio del charco
-        #     (260px) alrededor del titular real (x=114-447): el charco
-        #     quedaba practicamente apagado encima del texto, asi que
-        #     "encendido" y "apagado" daban el mismo numero POR
-        #     CONSTRUCCION, no porque el charco no importe. Corregido:
-        #     `apuntar()` acepta ahora un punto explicito, y aqui se pasa el
-        #     CENTRO del `<h2 data-title>` -- sigue dentro de ".obra-abrir"
-        #     (la cubre entera) asi que el hover se dispara igual.
-        #   - El color de texto se leia de `getComputedStyle(h2)`, que
-        #     siempre da `--haze` -- el titular NO tiene color propio, son
-        #     los DOS `<i>` apilados de `obraCartel.ts` los que lo tienen
-        #     (`.obra-rl i:first-child` en --haze, `i:last-child` en
-        #     --color-paper) y el hover real (`pointerenter` en
-        #     `fila.seccion`, `obraCartel.ts:175-177`) dispara `relevo()`,
-        #     que corre `.obra-rl` -50% y deja el `i:last-child` (papel) a
-        #     la vista. Medir siempre contra `--haze` comparaba el mismo
-        #     glifo en los dos estados. Corregido: se lee el color del `i`
-        #     que de verdad queda visible en cada estado (`i:first-child` en
-        #     reposo, `i:last-child` con el hover puesto), y se espera a que
-        #     el tween de `relevo()` termine (`RELEVO_ESPERA_MS`, cubre
-        #     duracion 0.42s + stagger de hasta 13 letras a 0.024s/letra,
-        #     con margen) antes de fotografiar -- en los dos estados, para
-        #     que el baseline compare la MISMA escena en reposo real y no
-        #     una transicion a medio camino.
-        #
-        # El gate tambien cambio: era un escalon en AA_MINIMO (si el
-        # baseline sin charco ya cumplia 4,5 exigia AA absoluto, si no
-        # exigia baseline-0,3) y el baseline de ".hero-mail" oscila justo
-        # alrededor de 4,5 segun el fotograma del shader -- la revision lo
-        # reprodujo: en una corrida el baseline daba 4,48 (objetivo 4,18,
-        # pasaba) y en otra 4,50 (objetivo salta a 4,50, no pasaba) con el
-        # MISMO codigo. Un umbral mas fino que el ruido del propio
-        # instrumento (regla ya escrita en CLAUDE.md). Corregido: el margen
-        # se aplica SIEMPRE, sin escalon ni caso especial por AA_MINIMO.
+        # Ronda de arreglo 2 lo cierra con el metodo pareado
+        # (`contraste_pareado()`, ver punto 6 de la cabecera): el raton se
+        # queda FIJO en `punto` durante toda la medida (nunca se aparta), asi
+        # que el texto esta en el MISMO color en las dos condiciones que se
+        # comparan -- la unica diferencia es si el `<canvas>` del cursor
+        # esta pintado o no. El numero que importa es el DELTA por par
+        # (canvas oculto - canvas visible), no un "encendido" y un "apagado"
+        # de DOMs distintos.
         MARGEN_CHARCO = 0.3
-        PUNTO_LEJOS = (-500.0, -500.0)
         # 0,42s de duracion + hasta 13 letras (titulo mas largo del
         # catalogo, "Editor de texto" sin contar espacios) x 0,024s de
-        # stagger = 0,732s. Con margen.
+        # stagger = 0,732s. Con margen. Se espera UNA vez, al apuntar, antes
+        # de arrancar el muestreo pareado -- durante el muestreo el raton no
+        # se mueve, asi que el relevo no vuelve a dispararse.
         RELEVO_ESPERA_MS = 900
 
         DIANAS_CONTRASTE = (
-            # (diana, glifo (bbox+ocultar), color_apagado, color_encendido, punto explicito)
-            (PULSABLE, PULSABLE, PULSABLE, PULSABLE, None),
+            # (diana, glifo (bbox+ocultar tinta), color a leer, punto explicito)
+            (PULSABLE, PULSABLE, PULSABLE, None),
             (
                 PULSABLE_SCROLL,
                 "section:has(.obra-abrir) [data-title]",
-                "section:has(.obra-abrir) .obra-rl i:first-child",
                 "section:has(.obra-abrir) .obra-rl i:last-child",
                 "section:has(.obra-abrir) [data-title]",
             ),
         )
 
-        for diana, glifo, color_apagado_sel, color_encendido_sel, punto_sel in DIANAS_CONTRASTE:
-            # Baseline con el charco apagado: se deja la diana en pantalla
-            # (mismo encuadre de scroll que la medida "encendida" de abajo)
-            # pero el raton se aparta a una esquina fuera de cualquier
-            # pulsable -- `potencia(pg)` cae a 0 y el relevo del cartel (si
-            # lo hay) vuelve a su reposo.
-            pg.locator(diana).first.scroll_into_view_if_needed()
-            pg.wait_for_timeout(600)
-            pg.mouse.move(2, 2, steps=1)
-            # Lenis sigue desplazando tras `scroll_into_view_if_needed` (trampa
-            # ya pagada en este repo, ver rules/verification.md), `pot` decae
-            # con la misma rampa que sube (`POT_SMOOTHING`), y el relevo del
-            # cartel (si lo hay) tiene que volver a su reposo -- las tres
-            # cosas caben en RELEVO_ESPERA_MS + margen.
-            pg.wait_for_timeout(1200 + RELEVO_ESPERA_MS)
-            pot_baseline = potencia(pg)
-            if pot_baseline >= 0.05:
-                # Se acumula en `fallos` en vez de abortar el resto del
-                # arnes (antes era un `assert` que tumbaba la ejecucion
-                # entera por un estado transitorio del shader/Lenis).
-                fallos.append(f"charco no apagado para el baseline de {diana}: pot={pot_baseline}")
-            ratio_apagado, _ = contraste_por_glifo(pg, glifo, PUNTO_LEJOS, color_apagado_sel)
-
+        for diana, glifo, color_sel, punto_sel in DIANAS_CONTRASTE:
             if punto_sel is not None:
-                punto_diana = pg.locator(punto_sel).first.bounding_box()
+                # Scroll PRIMERO, leer la caja del punto DESPUES: leerla
+                # antes de `scroll_into_view_if_needed()` (como hacia una
+                # version anterior) deja coordenadas potencialmente rancias
+                # si el scroll (Lenis) todavia no habia asentado -- no
+                # mordio en la practica, pero era un riesgo de instrumento
+                # sin motivo, ya que `apuntar()` hace su propio scroll de
+                # todas formas.
+                pg.locator(diana).first.scroll_into_view_if_needed()
+                pg.wait_for_timeout(600)
+                caja_punto = pg.locator(punto_sel).first.bounding_box()
                 punto_explicito = (
-                    punto_diana["x"] + punto_diana["width"] / 2,
-                    punto_diana["y"] + punto_diana["height"] / 2,
+                    caja_punto["x"] + caja_punto["width"] / 2,
+                    caja_punto["y"] + caja_punto["height"] / 2,
                 )
             else:
                 punto_explicito = None
-            punto = apuntar(pg, diana, punto_explicito)
-            pg.wait_for_timeout(RELEVO_ESPERA_MS)
-            ratio, texto_rgb = contraste_por_glifo(pg, glifo, punto, color_encendido_sel)
 
-            objetivo = max(ratio_apagado - MARGEN_CHARCO, 0)
+            punto = apuntar(pg, diana, punto_explicito)
+            # Deja que el relevo del cartel (si lo hay) termine su tween
+            # ANTES de arrancar el muestreo pareado -- durante el muestreo
+            # el raton ya no se mueve, asi que esta es la UNICA espera al
+            # relevo que hace falta.
+            pg.wait_for_timeout(RELEVO_ESPERA_MS)
+            pot_lit = potencia(pg)
+            if pot_lit < 0.8:
+                fallos.append(f"charco no encendido al apuntar {diana} para medir contraste: pot={pot_lit}")
+
+            pares, texto_rgb = contraste_pareado(pg, glifo, color_sel, punto)
+            deltas = [oculto - visible for oculto, visible in pares]
+            delta_min, delta_max = min(deltas), max(deltas)
+            peor_con_charco = min(visible for _, visible in pares)
+            peor_sin_charco = min(oculto for oculto, _ in pares)
             print(
-                f"contraste {diana} (glifo {glifo}, color rgb{texto_rgb}): "
-                f"{ratio:.2f}:1 con el charco encendido, {ratio_apagado:.2f}:1 con el charco "
-                f"apagado, objetivo {objetivo:.2f}:1 (peor de {MUESTRAS_POR_DIANA} muestras "
-                "en cada caso)"
+                f"contraste {diana} (color rgb{texto_rgb}): delta del charco "
+                f"(canvas oculto - canvas visible) en [{delta_min:.2f}, {delta_max:.2f}] "
+                f"({len(pares)} pares intercalados), peor con charco {peor_con_charco:.2f}:1, "
+                f"peor sin charco (mismo DOM) {peor_sin_charco:.2f}:1, referencia AA {AA_MINIMO}:1"
             )
-            if ratio < objetivo:
+            if delta_max > MARGEN_CHARCO:
                 fallos.append(
-                    f"contraste en {diana}: {ratio:.2f}:1 encendido < objetivo {objetivo:.2f}:1 "
-                    f"(apagado {ratio_apagado:.2f}:1)"
+                    f"el charco empeora el contraste en {diana}: delta max {delta_max:.2f} "
+                    f"> margen {MARGEN_CHARCO} (rango observado [{delta_min:.2f}, {delta_max:.2f}])"
                 )
 
         # 3. estado rancio tras desplazar sin mover el raton
+        #
+        # Umbral y espera, justificados (Ronda de arreglo 2, "Nuevo
+        # importante" del re-revisor): con umbral 0.05 y 400ms de espera, el
+        # arnes fallo 1 de cada 6 corridas con pot=0.0507 -- 1,4% de margen
+        # real, es decir ninguno; la misma clase de umbral-mas-fino-que-el-
+        # ruido que ya se corrigio en el gate de contraste (regla en
+        # CLAUDE.md). `pot` decae geometricamente hacia 0 con razon
+        # `1 - POT_SMOOTHING` = 0.78 por fotograma de `requestAnimationFrame`
+        # -- bajo `swiftshader` headless el framerate real varia con la
+        # carga de la maquina (documentado en `rules/verification.md`), asi
+        # que el numero de fotogramas que caben en una espera fija no es
+        # constante. Se sube la espera de 400ms a 900ms (mismo numero que
+        # `RELEVO_ESPERA_MS`, sin relacion causal, solo consistencia) y el
+        # umbral de 0.05 a 0.15 -- 3x el unico fallo medido (0.0507), margen
+        # real en vez de una coincidencia de precision.
+        POT_RANCIO_MAXIMO = 0.15
         apuntar(pg, PULSABLE_SCROLL)
         pg.evaluate("window.scrollBy(0, 900)")
         pg.wait_for_timeout(900)
         pg.mouse.move(720, 450, steps=2)
-        pg.wait_for_timeout(400)
+        pg.wait_for_timeout(900)
         bajo = pg.evaluate(
             "() => { const e = document.elementFromPoint(720, 450);"
             " return e ? (e.closest('button, a[href]:not([target=\"_blank\"])') ? 'pulsable' : 'otro') : 'nada'; }"
         )
         pot = potencia(pg)
-        if bajo != "pulsable" and pot > 0.05:
+        if bajo != "pulsable" and pot > POT_RANCIO_MAXIMO:
             fallos.append(f"charco rancio tras desplazar: bajo={bajo} pot={pot}")
         nav.close()
 
