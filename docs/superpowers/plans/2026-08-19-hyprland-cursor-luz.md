@@ -237,7 +237,7 @@ sin ella el módulo pintaría el charco con el cursor nativo encima.
 - Produce: la clase CSS `.hypr-cursor-canvas` que usa el módulo, y el contrato de qué elementos
   pierden el cursor nativo.
 
-- [ ] **Paso 1: añadir el bloque al final de `src/themes/themes.css`**
+- [x] **Paso 1: añadir el bloque al final de `src/themes/themes.css`**
 
 ```css
 /* =====================================================================
@@ -302,7 +302,7 @@ sin ella el módulo pintaría el charco con el cursor nativo encima.
 }
 ```
 
-- [ ] **Paso 2: comprobar que Vice no se ha movido**
+- [x] **Paso 2: comprobar que Vice no se ha movido**
 
 ```bash
 npm run build
@@ -312,7 +312,7 @@ grep -c "vice-cursor-ready" src/themes/themes.css
 Esperado: build en verde y el `grep` sigue devolviendo **6** (las seis apariciones del bloque de
 Vice, intactas). Medido el 2026-08-19: son 6.
 
-- [ ] **Paso 3: commit**
+- [x] **Paso 3: commit**
 
 ```bash
 git add src/themes/themes.css
