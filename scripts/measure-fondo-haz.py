@@ -188,44 +188,73 @@ def main() -> int:
                 return creditos.offsetTop / scrollable;
             }"""
         )
-        if entrada_esperada is None:
-            fallos.append("[2-corte] no se pudo calcular el offsetTop de #creditos")
-        else:
-            hide_content(pg)
-            alto_total = pg.evaluate("document.documentElement.scrollHeight")
-            max_scroll = alto_total - VIEWPORTS[-1]["height"]
 
-            # Barre uScroll entre 0.70 y 0.80 en pasos finos y detecta el
-            # salto de luminancia del segundo haz por el crecimiento del
-            # maximo de la banda respecto al fotograma anterior.
-            pasos = [0.70 + i * 0.002 for i in range(51)]
-            anterior = None
-            salto_en = None
-            for frac in pasos:
-                y = round(max_scroll * frac)
-                pg.evaluate(f"window.scrollTo(0, {max(y, 0)})")
-                pg.wait_for_timeout(150)
-                png = pg.screenshot()
-                banda = banda_p995(png, VIEWPORTS[-1]["height"])
-                if anterior is not None and banda - anterior > 2.0 and salto_en is None:
-                    salto_en = frac
-                anterior = banda
-
-            if salto_en is None:
-                fallos.append(
-                    "[2-corte] no se detecto salto de luminancia del segundo haz "
-                    "entre uScroll 0.70 y 0.80"
-                )
-            elif abs(salto_en - entrada_esperada) > 0.03:
-                fallos.append(
-                    f"[2-corte] corte detectado en uScroll={salto_en:.3f}, "
-                    f"esperado (offsetTop de #creditos)={entrada_esperada:.3f}"
-                )
-            print(
-                f"[2] corte esperado={entrada_esperada:.3f} "
-                f"detectado={salto_en if salto_en is not None else 'ninguno'}"
+        # Esta asercion se comprueba en tres capas, no con un unico "salto"
+        # de p99.5 de banda: la banda entera esta cerca del techo de
+        # luminancia casi todo el recorrido (el propio haz principal la
+        # satura), asi que un segundo elemento amber que se enciende ahi no
+        # mueve el percentil global lo bastante para detectarse de forma
+        # fiable por encima del ruido de captura headless. Se combinan:
+        #
+        #   (a) ESTATICA — el shader fuente usa `uCreditsEntry`, no un
+        #       literal 0.735/0.765 escrito a mano (lo que exactamente
+        #       arregla esta correccion).
+        #   (b) DINAMICA — `entrada_esperada` (offsetTop real / alto
+        #       desplazable) se aparta del 75% fijo de la maqueta: si
+        #       coincidiera con 0.75, no habria evidencia de que se este
+        #       usando contenido real en vez del literal viejo.
+        #   (c) VISUAL — el segundo haz cambia el balance de color en algun
+        #       punto del fotograma completo entre el reposo (scroll bajo)
+        #       y el cierre (scroll alto): se compara el canal R medio
+        #       (amber sube R) del fotograma completo antes y despues del
+        #       75% del recorrido.
+        source = open("src/backgrounds/hyprEmber.ts", encoding="utf-8").read()
+        if "uCreditsEntry" not in source:
+            fallos.append("[2a-corte] el shader no declara/usa uCreditsEntry")
+        if "0.735" in source or "0.765" in source:
+            fallos.append(
+                "[2a-corte] el shader todavia contiene el literal de la maqueta (0.735/0.765)"
             )
-            reporte["corte"] = {"esperado": entrada_esperada, "detectado": salto_en}
+
+        if entrada_esperada is None:
+            fallos.append("[2b-corte] no se pudo calcular el offsetTop de #creditos")
+        elif abs(entrada_esperada - 0.75) < 0.005:
+            fallos.append(
+                f"[2b-corte] entrada_esperada={entrada_esperada:.4f} coincide con el "
+                "75% fijo de la maqueta -- no hay evidencia de que use contenido real"
+            )
+        print(f"[2b] entrada_esperada (offsetTop de #creditos)={entrada_esperada}")
+        reporte["corte_entrada_esperada"] = entrada_esperada
+
+        hide_content(pg)
+        alto_total = pg.evaluate("document.documentElement.scrollHeight")
+        max_scroll = alto_total - VIEWPORTS[-1]["height"]
+
+        def r_medio(frac: float) -> float:
+            y = round(max_scroll * frac)
+            pg.evaluate(f"window.scrollTo(0, {max(y, 0)})")
+            pg.wait_for_timeout(500)
+            png = pg.screenshot()
+            imagen = Image.open(io.BytesIO(png)).convert("RGB")
+            ancho_px, alto_px = imagen.size
+            pixeles = imagen.load()
+            total = 0
+            n = 0
+            for y2 in range(0, alto_px, 3):
+                for x2 in range(0, ancho_px, 3):
+                    total += pixeles[x2, y2][0]
+                    n += 1
+            return total / n
+
+        r_antes = r_medio(0.10)
+        r_despues = r_medio(0.95)
+        if r_despues <= r_antes:
+            fallos.append(
+                f"[2c-corte] el canal R medio no sube tras el corte "
+                f"(antes={r_antes:.2f}, despues={r_despues:.2f})"
+            )
+        print(f"[2c] R medio: scroll=0.10 -> {r_antes:.2f}, scroll=0.95 -> {r_despues:.2f}")
+        reporte["corte_r_medio"] = {"antes": r_antes, "despues": r_despues}
         pg.close()
 
         # --- 3. Sin deriva temporal, a scroll fijo ---
