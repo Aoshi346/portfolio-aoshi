@@ -334,7 +334,7 @@ git commit -m "feat(hyprland): lista blanca de cursor para la luz de mano"
   - Sonda de verificación `window.__hyprCursor__` con `{ pot: () => number; destroy: () => void }`,
     que consume el arnés de la tarea 1.
 
-- [ ] **Paso 1: escribir `src/components/hyprCursor.ts`**
+- [x] **Paso 1: escribir `src/components/hyprCursor.ts`**
 
 ```ts
 export interface HyprCursorHandle {
@@ -565,7 +565,7 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
 }
 ```
 
-- [ ] **Paso 2: comprobar que compila**
+- [x] **Paso 2: comprobar que compila**
 
 ```bash
 npm run build && npm run lint
@@ -573,7 +573,7 @@ npm run build && npm run lint
 
 Esperado: ambos en verde, cero errores de TypeScript.
 
-- [ ] **Paso 3: commit**
+- [x] **Paso 3: commit**
 
 ```bash
 git add src/components/hyprCursor.ts
