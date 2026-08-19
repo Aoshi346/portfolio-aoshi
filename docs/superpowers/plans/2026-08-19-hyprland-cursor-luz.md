@@ -592,7 +592,7 @@ git commit -m "feat(hyprland): modulo del cursor luz de mano"
 - Consume: `mountHyprCursor` de la tarea 3.
 - Produce: nada que consuman otras tareas.
 
-- [ ] **Paso 1: añadir la puerta justo debajo del bloque del cursor de Vice**
+- [x] **Paso 1: añadir la puerta justo debajo del bloque del cursor de Vice**
 
 ```ts
 /*
@@ -620,7 +620,7 @@ if (
 }
 ```
 
-- [ ] **Paso 2: añadir el `destroy()` al `pagehide` existente**
+- [x] **Paso 2: añadir el `destroy()` al `pagehide` existente**
 
 En el manejador de `pagehide` (donde ya están `backgroundHandle?.destroy()` y compañía), añadir una
 línea:
@@ -629,7 +629,7 @@ línea:
     hyprCursorHandle?.destroy();
 ```
 
-- [ ] **Paso 3: build y arnés**
+- [x] **Paso 3: build y arnés**
 
 ```bash
 npm run build && npm run lint
@@ -642,7 +642,7 @@ Esperado: **0 fallos**. Si falla `el modulo del cursor se descarga en movil`, la
 `(hover: hover) and (pointer: fine)` no está mordiendo — revisar que el contexto del arnés use
 `is_mobile=True` y `has_touch=True`.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add src/main.ts
