@@ -163,7 +163,14 @@ from playwright.sync_api import sync_playwright
 
 VIEWPORT_ESCRITORIO = {"width": 1440, "height": 900}
 VIEWPORT_MOVIL = {"width": 390, "height": 844}
+# Dos lienzos desde la inversion de Task 7 (`hyprCursor.ts`): el de arriba
+# (senal, mano+canto) y el de abajo (`hueco`, z-index -4, donde vive ahora el
+# efecto que oscurece el fondo). El par oculto/visible tiene que conmutar los
+# DOS a la vez -- si solo tapa uno, mide la mitad del dispositivo y miente
+# sobre el efecto real, que ahora vive sobre todo en el lienzo de abajo.
 LIENZO = "canvas.hypr-cursor-canvas"
+LIENZO_HUECO = "canvas.hypr-cursor-hueco"
+LIENZOS = (LIENZO, LIENZO_HUECO)
 PULSABLE = ".hero-mail"
 PARRAFO = ".hero-kick"
 PULSABLE_SCROLL = ".obra-abrir"
@@ -199,7 +206,12 @@ def abrir(p, base, tema="hyprland", viewport=None, reduced=False):
 
 
 def hay_lienzo(pg) -> bool:
-    return pg.evaluate(f"() => document.querySelector('{LIENZO}') !== null")
+    """True solo si los DOS lienzos existen. Uno sin el otro es un montaje a
+    medias (la guarda de contexto 2D nulo de `hyprCursor.ts` deberia impedir
+    justo eso: o se montan los dos o no se monta ninguno)."""
+    return pg.evaluate(
+        "() => " + " && ".join(f"document.querySelector('{sel}') !== null" for sel in LIENZOS)
+    )
 
 
 def potencia(pg) -> float:
@@ -423,8 +435,15 @@ def contraste_pareado(
     punto_local = (punto[0] - caja["x"], punto[1] - caja["y"])
 
     color_previo = _apagar_tinta(handle)
-    ocultar = f"() => {{ const c = document.querySelector('{LIENZO}'); if (c) c.style.setProperty('visibility', 'hidden', 'important'); }}"
-    mostrar = f"() => {{ const c = document.querySelector('{LIENZO}'); if (c) c.style.removeProperty('visibility'); }}"
+    _selectores_js = ", ".join(f"'{sel}'" for sel in LIENZOS)
+    ocultar = (
+        f"() => {{ [{_selectores_js}].forEach((sel) => {{ const c = document.querySelector(sel);"
+        " if (c) c.style.setProperty('visibility', 'hidden', 'important'); }); }"
+    )
+    mostrar = (
+        f"() => {{ [{_selectores_js}].forEach((sel) => {{ const c = document.querySelector(sel);"
+        " if (c) c.style.removeProperty('visibility'); }); }"
+    )
     try:
         pares: list[tuple[float, float]] = []
         for _ in range(n_pares):

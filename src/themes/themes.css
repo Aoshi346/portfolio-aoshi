@@ -6829,11 +6829,24 @@
   pointer-events: none;
 }
 
+/* El hueco: lienzo de abajo, debajo del contenido y por encima del fondo y
+ * el ruido. Oscurece lo que hay detras de las letras en vez de aclararlo —
+ * la inversion que resuelve el conflicto con AA de raiz (ver cabecera de
+ * `hyprCursor.ts`). Mismo hueco de z-index que `.backdrop-dim` (Vice,
+ * `src/style.css`), probado en este repo para el mismo patron. */
+.hypr-cursor-hueco {
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  pointer-events: none;
+}
+
 /* Cinturon y tirantes: si el modulo llegara a montar bajo movimiento
- * reducido, el lienzo no se pinta igualmente. La puerta real esta en
+ * reducido, los lienzos no se pintan igualmente. La puerta real esta en
  * `main.ts`; esto es la red por debajo. */
 @media (prefers-reduced-motion: reduce) {
-  .hypr-cursor-canvas {
+  .hypr-cursor-canvas,
+  .hypr-cursor-hueco {
     display: none;
   }
 }

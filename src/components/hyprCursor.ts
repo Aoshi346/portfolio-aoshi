@@ -53,16 +53,28 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   const controller = new AbortController();
   const { signal } = controller;
 
+  // Dos lienzos, no uno: el de abajo (`hueco`, z-index -4, debajo del
+  // contenido) oscurece el fondo detras de las letras sin tocarlas. El de
+  // arriba (`canvas`, z-index 70, el de siempre) se queda solo con el punto
+  // de la mano y el filete del canto. Invertir el signo del efecto (oscurecer
+  // en vez de aclarar) es lo que resuelve el conflicto con AA de raiz: ver
+  // cabecera del modulo.
+  const hueco = document.createElement("canvas");
+  hueco.className = "hypr-cursor-hueco";
+  hueco.setAttribute("aria-hidden", "true");
+  const huecoCtx = hueco.getContext("2d");
+
   const canvas = document.createElement("canvas");
   canvas.className = "hypr-cursor-canvas";
   canvas.setAttribute("aria-hidden", "true");
   const ctx = canvas.getContext("2d");
-  // defensive: sin contexto 2D no hay dispositivo posible. Se sale sin montar
-  // y sin poner la clase, asi que el cursor del sistema queda intacto.
-  if (!ctx) {
+  // defensive: sin los DOS contextos 2D no hay dispositivo posible. Se sale
+  // sin montar ninguno de los dos lienzos y sin poner la clase, asi que el
+  // cursor del sistema queda intacto.
+  if (!ctx || !huecoCtx) {
     return { destroy: (): void => undefined };
   }
-  host.append(canvas);
+  host.append(hueco, canvas);
 
   let pointerX = 0;
   let pointerY = 0;
@@ -78,11 +90,18 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
 
   const resize = (): void => {
     dpr = Math.min(window.devicePixelRatio || 1, DPR_MAXIMO);
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
+    const w = Math.floor(window.innerWidth * dpr);
+    const h = Math.floor(window.innerHeight * dpr);
+    canvas.width = w;
+    canvas.height = h;
     canvas.style.width = `${window.innerWidth}px`;
     canvas.style.height = `${window.innerHeight}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    hueco.width = w;
+    hueco.height = h;
+    hueco.style.width = `${window.innerWidth}px`;
+    hueco.style.height = `${window.innerHeight}px`;
+    huecoCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
   resize();
 
@@ -154,6 +173,7 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   const tick = (): void => {
     frame = window.requestAnimationFrame(tick);
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    huecoCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
     const on = visible && !onNative;
     const meta = on && pressable !== null ? 1 : 0;
@@ -168,21 +188,25 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
     if (rect && pot > 0.01) {
       const radio =
         Math.max(rect.height * RADIO_FACTOR, RADIO_MINIMO) * (pressed ? RADIO_PULSADO : 1);
-      // El recorte ES el canto: la luz termina en el filo exacto del elemento.
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(rect.left, rect.top, rect.width, rect.height);
-      ctx.clip();
-      const luz = ctx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
-      luz.addColorStop(0, `rgb(255 160 60 / ${(0.04 * pot).toFixed(3)})`);
-      luz.addColorStop(0.45, `rgb(255 90 52 / ${(0.017 * pot).toFixed(3)})`);
-      luz.addColorStop(1, "rgb(224 29 60 / 0)");
-      ctx.fillStyle = luz;
-      ctx.fillRect(rect.left, rect.top, rect.width, rect.height);
-      ctx.restore();
+      // El recorte ES el canto: el hueco termina en el filo exacto del
+      // elemento. Se pinta en el lienzo de ABAJO (-4), debajo del contenido:
+      // oscurece el fondo detras de las letras sin tocar el texto, asi que
+      // el contraste sube en vez de bajar.
+      huecoCtx.save();
+      huecoCtx.beginPath();
+      huecoCtx.rect(rect.left, rect.top, rect.width, rect.height);
+      huecoCtx.clip();
+      const luz = huecoCtx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
+      luz.addColorStop(0, `rgb(11 4 4 / ${(0.88 * pot).toFixed(3)})`);
+      luz.addColorStop(0.5, `rgb(11 4 4 / ${(0.5 * pot).toFixed(3)})`);
+      luz.addColorStop(1, "rgb(11 4 4 / 0)");
+      huecoCtx.fillStyle = luz;
+      huecoCtx.fillRect(rect.left, rect.top, rect.width, rect.height);
+      huecoCtx.restore();
 
       // El canto del elemento, encendido a la potencia del charco. Es lo que
-      // delimita la zona pulsable.
+      // delimita la zona pulsable. Se queda en el lienzo de ARRIBA: es
+      // senal, no relleno, y necesita quedar por encima del contenido.
       ctx.strokeStyle = `rgb(255 90 52 / ${(0.85 * pot).toFixed(3)})`;
       ctx.lineWidth = 1;
       ctx.strokeRect(rect.left + 0.5, rect.top + 0.5, rect.width - 1, rect.height - 1);
@@ -214,6 +238,7 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
     controller.abort();
     document.documentElement.classList.remove("hypr-cursor-ready");
     canvas.remove();
+    hueco.remove();
     delete (window as unknown as { __hyprCursor__?: unknown }).__hyprCursor__;
   };
 

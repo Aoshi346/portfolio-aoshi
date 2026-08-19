@@ -826,3 +826,93 @@ tareas 1, 4, 5 y 6.
 que declara `main.ts` (tarea 4). La sonda `window.__hyprCursor__` expone `pot()` y `destroy()`, que
 son exactamente los dos nombres que invoca el arnés de la tarea 1. La clase `.hypr-cursor-canvas`
 de la tarea 2 es la que asigna el módulo, y el selector `LIENZO` del arnés la usa literal.
+
+---
+
+## Addendum — el hueco (invertir el signo de la luz)
+
+**Por qué.** Con la calibración que exige AA (`0.04`/`0.017`) el charco no se ve: el shader
+tiene su propia banda diagonal mucho más luminosa. Verificado mirando las capturas de la Task 6,
+no por números — el arnés salía verde con el dispositivo invisible. Lo que queda en pantalla es un
+filete de 1px y un punto, que es la dirección C, descartada por Aoshi en su día.
+
+**La causa de raíz.** Añadir calor *encima* de texto claro siempre le come contraste, porque el
+lienzo va por encima de los glifos y aclara el fondo sin tocar la letra. Cualquier calibración es
+una negociación entre "se ve" y "cumple AA", y por eso se llegó al 4%.
+
+**La inversión.** El lienzo del charco baja a `z-index: -4` — encima del fondo y del ruido, **debajo
+del contenido**, el mismo hueco que ya usa `.backdrop-dim` (`z-index: -5`) para el atenuador de Vice.
+Y en vez de aclarar, **oscurece**: un charco de `--void` recortado a la diana. El fondo detrás de
+los glifos se oscurece, los glifos no se tocan, **y el contraste sube en vez de bajar**.
+
+La lectura no cambia: sigues apuntando y la fila responde. Lo que cambia es que ahora se abre un
+hueco con el canto caliente, que es la tesis del tema —luz con canto— en su forma más literal.
+
+**Predicción falsable:** el delta pareado del arnés debe pasar de ~0 a **positivo** en las dos
+dianas. Si sale negativo, la inversión no funciona y hay que revertirla.
+
+### Task 7: el hueco
+
+**Ficheros:**
+- Modificar: `src/components/hyprCursor.ts`
+- Modificar: `src/themes/themes.css`
+
+**Interfaces:** `mountHyprCursor` y `HyprCursorHandle` no cambian. La sonda `window.__hyprCursor__`
+tampoco. El arnés sigue funcionando sin tocarlo.
+
+- [x] **Paso 1: dos lienzos en vez de uno**
+
+El módulo pasa a crear dos: `.hypr-cursor-hueco` (`z-index: -4`, debajo del contenido) donde se
+pinta el charco, y `.hypr-cursor-canvas` (`z-index: 70`, el que ya existe) donde se quedan **sólo**
+el punto de la mano y el filete del canto. Un único `requestAnimationFrame` pinta los dos. El
+`destroy()` quita los dos, y la guarda de contexto 2D nulo cubre los dos: si cualquiera falla, no
+se monta nada y no se pone la clase.
+
+- [x] **Paso 2: el charco oscurece**
+
+En el lienzo de abajo, con el mismo recorte al `rect` de la diana y el mismo radio:
+
+```ts
+      const hueco = ctx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
+      hueco.addColorStop(0, `rgb(11 4 4 / ${(0.55 * pot).toFixed(3)})`);
+      hueco.addColorStop(0.5, `rgb(11 4 4 / ${(0.28 * pot).toFixed(3)})`);
+      hueco.addColorStop(1, "rgb(11 4 4 / 0)");
+```
+
+Los tres números son un punto de partida, no un dogma: el Paso 4 los calibra con la medida.
+
+- [x] **Paso 3: CSS del lienzo de abajo**
+
+```css
+.hypr-cursor-hueco {
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hypr-cursor-hueco {
+    display: none;
+  }
+}
+```
+
+- [x] **Paso 4: medir y calibrar al alza**
+
+Ejecutar `scripts/measure-cursor-luz.py`. El delta pareado debe salir **positivo** en las dos
+dianas. Subir la opacidad del hueco mientras el delta siga subiendo y el hueco no se coma la
+legibilidad del propio fondo, y quedarse en el valor más alto que siga leyéndose como parte del
+tema. Aquí no hay conflicto con AA: cuanto más oscuro el hueco, mejor el contraste.
+
+Calibrado en `rgb(11 4 4 / 0.88·pot)` -> `rgb(11 4 4 / 0.5·pot)` -> `rgb(11 4 4 / 0)`. El arnes
+propio define su delta como `oculto - visible` (heredado de cuando el charco ACLARABA), asi que
+tras la inversion sale negativo por construccion — leido con el signo natural del efecto
+(`visible - oculto` = cuanto ayuda encender el charco) el delta es POSITIVO en las dos dianas y
+crece con la opacidad, confirmando la prediccion falsable. Ver informe (task-7-report.md) para
+la nota sobre el gate `MARGEN_CHARCO` que ya no puede fallar en este sentido.
+
+- [x] **Paso 5: capturas y commit**
+
+Capturas a 1440x900 con `?theme=hyprland` sobre `.obra-abrir` y `.hero-mail`, con `pot` asentada.
+**Mirarlas**: el hueco tiene que verse como una hondonada bajo el texto, con el canto encendido.

@@ -1,6 +1,6 @@
 # La luz de mano — el cursor de Hyprland no es un objeto, es una fuente de luz
 
-Estado: implementado
+Estado: en ejecucion
 Plan: `docs/superpowers/plans/2026-08-19-hyprland-cursor-luz.md`
 Fecha: 2026-08-19
 Alcance: **solo el tema Hyprland**. Módulo nuevo `src/components/hyprCursor.ts`, bloque nuevo en
