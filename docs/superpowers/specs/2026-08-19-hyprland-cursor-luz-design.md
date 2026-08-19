@@ -1,6 +1,6 @@
 # La luz de mano — el cursor de Hyprland no es un objeto, es una fuente de luz
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-19-hyprland-cursor-luz.md`
 Fecha: 2026-08-19
 Alcance: **solo el tema Hyprland**. Módulo nuevo `src/components/hyprCursor.ts`, bloque nuevo en
@@ -442,3 +442,61 @@ calibración final (`0.04`/`0.017`, sin cambios): `0 fallos` en las seis. `npm r
 `npm run lint` en verde. `git status` limpio en `src/components/hyprCursor.ts` -- la calibración
 que queda commiteada es la misma que ya estaba desde la Ronda 1, no hace falta un commit de código
 para este fichero en esta ronda.
+
+**Task 6 (2026-08-19) — verificacion visual y no-regresion de Vice.** Build de produccion servido
+en un puerto aislado (`npx vite preview --port 4599`, node v22.22.3 via `nvm use 22.22.3`; el node
+del PATH es v18 y no compila `tsc`).
+
+Capturas reales, con la sonda `window.__hyprCursor__.pot()` comprobada por encima de 0.95 antes de
+cada disparo (helper `esperar_pot_asentada()` copiado de la cabecera del arnes) para no fotografiar
+el charco a medio encender:
+
+- `t6-hypr-obra.png` (1440x900, `?theme=hyprland`, raton sobre `.obra-abrir`, `pot=0.969`): el
+  charco se ve como una franja de luz mas calida recortada dentro de la fila `EchoPlan` (01/05),
+  con corte neto en el borde superior e inferior de la fila -- las filas 02-05 debajo quedan a
+  oscuras, sin contaminacion. El punto de la mano (circulo blanco de 3.2px con anillo oscuro) es
+  visible sobre el titulo, en el punto exacto donde se coloco el raton. El canto del elemento en
+  `--l1` se aprecia como el borde rojizo fino que enmarca la fila completa.
+  ruta: `/tmp/claude-0/-home-aoshi-proyectos-portfolio-aoshi/7b237084-3ab1-432b-b565-af338b2b6e1b/scratchpad/t6-hypr-obra.png`
+- `t6-hypr-correo.png` (1440x900, `?theme=hyprland`, raton sobre `.hero-mail`, `pot=0.976`): el
+  charco es mas discreto que en la fila de obra (la caja de `.hero-mail` es mas pequena, radio
+  minimo 120px), visible como un aclarado suave alrededor del texto del correo con el mismo
+  recuadro `--l1` ciñendose al ancho del enlace, no a la fila entera. El punto de la mano se ve
+  con nitidez sobre el signo `@`.
+  ruta: `/tmp/claude-0/-home-aoshi-proyectos-portfolio-aoshi/7b237084-3ab1-432b-b565-af338b2b6e1b/scratchpad/t6-hypr-correo.png`
+- `t6-hypr-reposo.png` (1440x900, `?theme=hyprland`, raton sobre `.hero-kick`, texto corrido,
+  `pot=0.0016`): no hay ningun encendido visible -- la caja del kicker no tiene ni glow ni
+  recuadro, indistinguible de la misma captura sin el raton encima. Confirma en imagen lo que ya
+  medía la asercion 2 del arnes.
+  ruta: `/tmp/claude-0/-home-aoshi-proyectos-portfolio-aoshi/7b237084-3ab1-432b-b565-af338b2b6e1b/scratchpad/t6-hypr-reposo.png`
+- `t6-hypr-movil.png` (390x844, `?theme=hyprland`): pagina identica a como se veria sin el modulo
+  cargado -- no hay lienzo ni artefacto de cursor, coherente con la asercion 5 del arnes (el modulo
+  no se descarga en movil, `matchMedia("(hover: hover) and (pointer: fine)")` no matchea).
+  ruta: `/tmp/claude-0/-home-aoshi-proyectos-portfolio-aoshi/7b237084-3ab1-432b-b565-af338b2b6e1b/scratchpad/t6-hypr-movil.png`
+- `t6-vice.png` (1440x900, `?theme=vice`, raton sobre el enlace de correo): el cursor de Vice sigue
+  siendo su propia marca de sincronismo (reticula circular con cruz, en el color de acento de
+  Vice), sin ningun rastro del charco de Hyprland. Comprobado tambien por DOM:
+  `document.querySelector('.hypr-cursor-canvas') !== null` da `false` con `?theme=vice`.
+  ruta: `/tmp/claude-0/-home-aoshi-proyectos-portfolio-aoshi/7b237084-3ab1-432b-b565-af338b2b6e1b/scratchpad/t6-vice.png`
+
+**No-regresion de Vice:**
+
+- `python3 scripts/verify.py` -> `TODO OK -- 12 fallos conocidos, 0 nuevos (verify-baseline.json)`,
+  codigo de salida 0.
+- `python3 scripts/measure-obra-rail.py --url "http://localhost:4599/?theme=vice"` (nota: el flag
+  correcto de este arnes es `--url`, no `--base` como decia el paso 2 del plan; corregido al
+  ejecutar) -> geometria medida `distance: 5760`, `pin_budget: 5040`, exactamente los valores
+  documentados en `CLAUDE.md` (la trampa de que el pin reserva menos scroll que el recorrido
+  lateral). El carril no se ha movido.
+- `python3 scripts/measure-cursor-luz.py --base http://localhost:4599` (septima ejecucion,
+  contando las seis de la Ronda de arreglo 3): `0 fallos`. Deltas de contraste
+  `.hero-mail [-0.05, 0.08]`, `.obra-abrir [-0.05, 0.03]`, dentro de las bandas ya documentadas.
+
+Divergencias respecto a lo planeado: ninguna en codigo. El unico ajuste fue de comando
+(`measure-obra-rail.py` usa `--url`, el plan traia `--base` de otro arnes por error de copiado).
+
+Arnés completo y verify.py verdes, capturas miradas una por una. `npm run build` y `npm run lint`
+en verde (Task 3-4). Criterio de aceptación del spec cerrado en los siete puntos: 1 (build/lint) y
+2/3/4 (capturas, red movil, reduced motion, arnes tarea 1) y 6 (Vice intacto, verify.py + rail +
+cursor propio) verificados aqui; 5 (contraste) y 7 (destroy/consola) verificados en las tareas
+anteriores y confirmados de nuevo por el arnes en esta pasada.

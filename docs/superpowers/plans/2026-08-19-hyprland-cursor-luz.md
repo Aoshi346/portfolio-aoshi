@@ -755,7 +755,7 @@ git commit -m "test(hyprland): contraste por glifo del charco de luz"
 - Consume: todo lo anterior.
 - Produce: el registro que exige el criterio de aceptación del spec.
 
-- [ ] **Paso 1: capturas reales de los tres estados**
+- [x] **Paso 1: capturas reales de los tres estados**
 
 ```bash
 python3 - <<'PY'
@@ -780,7 +780,7 @@ PY
 los arneses salieran verdes con el resultado roto. Lo que hay que ver: el charco recortado **dentro**
 de la fila, nada encendido fuera de ella, el punto de la mano donde está el ratón.
 
-- [ ] **Paso 2: Vice intacto**
+- [x] **Paso 2: Vice intacto**
 
 ```bash
 python3 scripts/verify.py
@@ -790,13 +790,13 @@ python3 scripts/measure-obra-rail.py --base http://localhost:4173
 Esperado: `verify.py` sale **0** contra su línea base, y el carril de obra de Vice no se mueve.
 Además, comprobar a ojo con `?theme=vice` que su cursor sigue siendo la marca de sincronismo.
 
-- [ ] **Paso 3: rellenar el registro del spec y cerrar el estado**
+- [x] **Paso 3: rellenar el registro del spec y cerrar el estado**
 
 En el spec: `Estado: implementado`, y en `## Registro de implementación` anotar el ratio de
 contraste medido, la calibración final del charco si la hubo, y cualquier divergencia respecto a lo
 planeado. Cambiar también la línea `Plan:` para quitar el `(pendiente)`.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md
