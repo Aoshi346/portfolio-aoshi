@@ -144,14 +144,31 @@ Medido así, en siete ejecuciones consecutivas (rango real observado, no el mejo
   medido ahora con la variable correcta aislada.
 
 El gate del arnés compara solo el delta pareado contra un margen fijo de 0,3, igual para las dos
-dianas, sin escalón ni caso especial por AA — la calibración de `hyprCursor.ts` (centro del charco
-`0.04·pot`, mitad de radio `0.017·pot`, bajados desde `0.30`/`0.13` del prototipo; radio sin tocar)
-mantiene los dos deltas muy por debajo de ese margen. **Esa calibración no se ha vuelto a tocar
-desde que se fijó**: la evidencia que la justificó originalmente (una comparación hover-vs-sin-hover
-que exageraba el efecto del charco) resultó estar inflada por el mismo problema de método que
-`.obra-abrir`, pero bajar la intensidad del charco no tiene coste — el dispositivo sigue cumpliendo
-su tesis (cubre el elemento, se recorta al canto) con esos números — así que se conserva sin
-necesidad de revertirla.
+dianas, sin escalón ni caso especial por AA.
+
+**La calibración se remidió con el método pareado (Ronda de arreglo 3) y queda confirmada, no
+adivinada.** La única justificación de haber bajado la intensidad del prototipo (`0.30`/`0.13`) a
+`0.04`/`0.017` era aquella caída de ~1,5 en `.hero-mail` medida en la Ronda 1 — con el mismo método
+hover-vs-sin-hover que infló el número de `.obra-abrir` en 2,6 puntos (ver nota en el registro de
+implementación de la Task 5). Si ese 1,5 también hubiera sido un artefacto de método, la intensidad
+del charco se habría recortado al 13% de lo que aprobó Aoshi a cambio de nada. Se remidió el
+prototipo, un punto intermedio y la calibración actual, los tres con el método pareado (ratón fijo,
+única diferencia la visibilidad del `<canvas>`), y el prototipo SÍ falla — la caída es real, no un
+artefacto de método:
+
+| Punto | centro / mitad de radio | delta `.hero-mail` (rango observado) | delta `.obra-abrir` (rango observado) | ¿Cabe en el margen de 0,3 con holgura real? |
+|---|---|---|---|---|
+| Prototipo | `0.30·pot` / `0.13·pot` | **[1,229, 1,525]** (2 corridas) | [0,002, 0,128] | **NO** — `.hero-mail` lo excede 4-5 veces |
+| Intermedio | `0.16·pot` / `0.07·pot` | **[0,203, 0,426]** (2 corridas) | [−0,021, 0,119] | **NO** — el peor caso de `.hero-mail` (0,40–0,43) ya SUPERA 0,3, no "roza" |
+| **Actual (final)** | `0.04·pot` / `0.017·pot` | **[−0,09, 0,11]** (15 corridas: 9 de la Ronda 2 + 6 de la Ronda 3) | [−0,09, 0,07] | **SÍ**, con holgura real (el peor caso, 0,11, deja casi 3x de margen hasta 0,3) |
+
+Por la regla de la coordinación (el valor final es el más alto de los tres cuyo delta quepa dentro
+del margen con holgura real): el prototipo no cabe, el intermedio no cabe, así que **la
+calibración final se queda en `0.04·pot` / `0.017·pot` — sin cambios respecto a la Ronda 1**. No es
+que la evidencia original estuviera mal (aunque el MÉTODO con el que se obtuvo sí lo estaba): la
+conclusión resultó ser la misma con el método correcto, y ahora está confirmada con tres puntos
+medidos, no con una comparación de dos escenas de DOM distintas. El radio no se tocó en ningún
+punto de esta curva.
 
 **Correcciones de método acumuladas** (ver cabecera de `scripts/measure-cursor-luz.py` para el
 detalle completo, seis puntos): el texto de las dianas no es un hex fijo, se lee el color
@@ -244,13 +261,15 @@ documentado y aceptado para el cartel de obra, no un riesgo de este dispositivo.
 Arnés completo: `python3 scripts/measure-cursor-luz.py --base http://localhost:4173` → `0 fallos`
 (dos ejecuciones consecutivas). `npm run build` y `npm run lint` en verde.
 
-> **Nota (Ronda de arreglo 2):** el "~1,5 de caída en `.hero-mail`" de este párrafo se midió
-> apartando el ratón para el baseline "apagado" -- el mismo método que la Ronda 2 encontró inflado
-> para `.obra-abrir` (mezcla el cambio de color de `:hover` con el efecto del charco). No se ha
-> vuelto a medir el prototipo con el método pareado porque la calibración ya fijada no se ha
-> tocado, así que este número queda como estaba, sin re-litigar -- pero léase junto con la sección
-> `## Color y contraste`, que es la que tiene el dato correcto y vigente (delta pareado del charco
-> sobre `.hero-mail` en la calibración ACTUAL: `[-0,08, 0,08]`, prácticamente nulo).
+> **Nota (actualizada en la Ronda de arreglo 3):** el "~1,5 de caída en `.hero-mail`" de este
+> párrafo se midió apartando el ratón para el baseline "apagado" -- el mismo método que la Ronda 2
+> encontró inflado para `.obra-abrir`. La Ronda 2 dejó abierta la sospecha de que este número
+> también estuviera inflado; la Ronda 3 remidió el PROTOTIPO (`0.30`/`0.13`) con el método pareado
+> y confirmó que la caída es real: delta `[1,23, 1,53]`, cuatro a cinco veces el margen de 0,3.
+> La calibración final NO cambia por esto (sigue en `0.04`/`0.017`, con delta pareado
+> `[-0,09, 0,11]` en 15 corridas) -- pero ahora está confirmada con el método correcto, no
+> heredada de una medida con el método malo. Detalle completo, con los tres puntos de la curva, en
+> `## Color y contraste` y en la entrada de la Ronda de arreglo 3 más abajo.
 
 Corrección de alcance menor, arrastrada de una revisión anterior: la referencia a
 `sceneNav.ts:327-328` (en este spec y en el comentario del bloque CSS nuevo de
@@ -351,3 +370,63 @@ Arnés completo, **siete ejecuciones consecutivas reales** (no una selección de
 `python3 scripts/measure-cursor-luz.py --base http://localhost:4173` → `0 fallos` en las siete.
 `npm run build` y `npm run lint` en verde. La calibración de `hyprCursor.ts` (`0.04`/`0.017`, radio
 sin tocar) NO se tocó en esta ronda.
+
+**Ronda de arreglo 3 (2026-08-19) — remedir el prototipo, cerrar la sospecha de la Ronda 2.** La
+Ronda 2 dejó una nota sin resolver: si la caída de ~1,5 en `.hero-mail` que justificó bajar la
+intensidad del charco (`0.30`/`0.13` → `0.04`/`0.017`) se había medido con el mismo método
+hover-vs-sin-hover que infló el número de `.obra-abrir` en 2,6 puntos, esa caída también podía
+estar inflada — y la calibración final habría recortado la luz al 13% de lo aprobado por Aoshi sin
+motivo real.
+
+Ruling de la coordinación: remedir el prototipo (`0.30`/`0.13`) y un punto intermedio
+(`0.16`/`0.07`) con el método pareado ya construido en la Ronda 2, y quedarse con el valor más alto
+de los tres cuyo delta quepa dentro del margen de 0,3 con holgura real. El radio no se toca en
+ningún punto.
+
+Resultado (tabla completa también en `## Color y contraste`): el prototipo falla de forma
+contundente (`.hero-mail` delta 1,23–1,53, cuatro a cinco veces el margen) y el punto intermedio
+también falla (`.hero-mail` delta hasta 0,40–0,43, por encima de 0,3 sin ambigüedad — no roza el
+límite, lo supera). Solo la calibración actual (`0.04`/`0.017`) cabe con holgura real. **La
+calibración final no cambia respecto a la Ronda 1.** Es un resultado bueno, no un error: confirma
+que la decisión de bajar la intensidad fue correcta incluso con el método malo que la originó, y
+ahora queda respaldada por tres puntos medidos con el método bueno en vez de por una comparación de
+dos escenas de DOM distintas.
+
+Comandos y salida literal (mismo host, dos puertos: 4173 se vio interferido de forma intermitente
+por otro proceso ajeno a este worktree sirviendo en el mismo puerto -- las medidas finales se
+repitieron en el puerto 4599, dedicado, verificando antes y después de cada medida que el bundle
+sirviendo coincidía con el fichero fuente):
+
+```
+$ sed -i "s/(0.04 \* pot)/(0.30 * pot)/" src/components/hyprCursor.ts   # y 0.017 -> 0.13
+$ npm run build && npx vite preview --port 4599 &
+$ python3 delta_only.py http://localhost:4599
+.hero-mail: delta [1.229, 1.525] pot=0.993 texto=rgb(255, 90, 52)
+.obra-abrir: delta [0.002, 0.128] pot=1.000 texto=rgb(255, 234, 230)
+# repetido:
+.hero-mail: delta [1.237, 1.508] pot=0.997 texto=rgb(255, 90, 52)
+.obra-abrir: delta [0.005, 0.128] pot=1.000 texto=rgb(255, 234, 230)
+
+$ sed -i "s/(0.30 \* pot)/(0.16 * pot)/" src/components/hyprCursor.ts   # y 0.13 -> 0.07
+$ npm run build
+$ python3 delta_only.py http://localhost:4599
+.hero-mail: delta [0.210, 0.426] pot=0.997 texto=rgb(255, 90, 52)
+.obra-abrir: delta [-0.020, 0.099] pot=1.000 texto=rgb(255, 234, 230)
+# (primera corrida de este punto, con el arnes en 4173 antes de aislar en 4599: [0.203, 0.399] /
+# [-0.021, 0.119] -- misma conclusion, delta max de .hero-mail por encima de 0.3 en las dos)
+
+$ git checkout -- src/components/hyprCursor.ts   # vuelve a 0.04/0.017, la calibracion final
+$ npm run build && npx vite preview --port 4599 &
+$ python3 scripts/measure-cursor-luz.py --base http://localhost:4599    # x6, todas 0 fallos
+```
+
+`delta_only.py` es un script auxiliar de esta ronda (fuera del repo, en el scratchpad de la sesión)
+que llama directamente a `contraste_pareado()` para las dos dianas sin correr las otras seis
+aserciones del arnés -- más rápido para explorar la curva. Las seis corridas finales de
+verificación SÍ son el arnés completo (`scripts/measure-cursor-luz.py`), no el script auxiliar.
+
+Arnés completo, **seis ejecuciones consecutivas reales** en el puerto aislado (4599), con la
+calibración final (`0.04`/`0.017`, sin cambios): `0 fallos` en las seis. `npm run build` y
+`npm run lint` en verde. `git status` limpio en `src/components/hyprCursor.ts` -- la calibración
+que queda commiteada es la misma que ya estaba desde la Ronda 1, no hace falta un commit de código
+para este fichero en esta ronda.
