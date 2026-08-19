@@ -665,7 +665,7 @@ Es el único riesgo real que declara el spec y no se puede cerrar a ojo.
 - Consume: la sonda `window.__hyprCursor__` de la tarea 3.
 - Produce: el número de contraste que el spec exige documentar.
 
-- [ ] **Paso 1: añadir la medida al arnés**
+- [x] **Paso 1: añadir la medida al arnés**
 
 La medida es **por glifo y contra el fondo real**, no del viewport entero: en el cartel de obra la
 medida ancha sobrestimaba el contraste. Se toma una captura con el charco encendido, se recortan
@@ -713,13 +713,13 @@ Y en `main()`, tras las aserciones de reparto de señal:
                 fallos.append(f"contraste bajo AA en {sel}: {ratio:.2f}:1")
 ```
 
-- [ ] **Paso 2: ejecutar y leer el número**
+- [x] **Paso 2: ejecutar y leer el número**
 
 ```bash
 python3 scripts/measure-cursor-luz.py --base http://localhost:4173
 ```
 
-- [ ] **Paso 3: calibrar solo si hace falta**
+- [x] **Paso 3: calibrar solo si hace falta**
 
 Si alguna diana cae por debajo de 4,5:1, bajar el centro del charco en `hyprCursor.ts` en pasos de
 0,04 hasta que cumpla:
@@ -731,12 +731,12 @@ Si alguna diana cae por debajo de 4,5:1, bajar el centro del charco en `hyprCurs
 Reconstruir y volver a medir tras cada paso. **No se toca el radio**: la dirección depende de que
 el charco cubra el elemento, no de su intensidad.
 
-- [ ] **Paso 4: apuntar el número en el spec**
+- [x] **Paso 4: apuntar el número en el spec**
 
 En la sección `## Color y contraste` del spec, sustituir "No está medido todavía" por el ratio
 obtenido para cada tipo de diana, y decir contra qué se midió.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add scripts/measure-cursor-luz.py src/components/hyprCursor.ts docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md

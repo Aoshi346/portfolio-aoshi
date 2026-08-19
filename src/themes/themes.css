@@ -6790,7 +6790,7 @@
  * `cursor: none` del lienzo NO les llega — hay que apuntarlos uno a uno.
  *
  * `.scene-nav-trigger` y `.scene-index-row` van escritos A MANO porque
- * `sceneNav` monta fuera de `[data-scene]` (`sceneNav.ts:327-328` cuelga
+ * `sceneNav` monta fuera de `[data-scene]` (`sceneNav.ts:328-329` cuelga
  * disparador y panel de la raiz). Sin estas dos lineas el cursor "se
  * rompe" en cuanto el puntero sale del contenido.
  * ===================================================================== */
