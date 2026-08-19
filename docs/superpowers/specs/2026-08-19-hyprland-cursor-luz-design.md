@@ -245,18 +245,27 @@ módulo de Hyprland, que está en curso, así que es admisible.
 **Task 5 (2026-08-19) — contraste por glifo y calibración.** `scripts/measure-cursor-luz.py` gana
 una asercion 7 que mide, por glifo y contra el peor fotograma real del shader (ventana de 16,8s,
 42 muestras — ver cabecera del arnés), el contraste de las dos dianas donde el charco enciende.
-Metodología corregida frente al borrador del brief en cuatro puntos (color de texto no es un hex
+Metodología corregida frente al borrador del brief en seis puntos (color de texto no es un hex
 fijo, separación glifo/fondo por color falla por antialias, la mano del cursor y el canto del
-charco contaminan la caja de borde, y una ventana corta no cubre el ciclo del shader) — detalle
-completo en la cabecera de `scripts/measure-cursor-luz.py`.
+charco contaminan la caja de borde, una ventana corta no cubre el ciclo del shader, el peor píxel
+se elige por menor contraste y no por mayor luminancia, y el efecto del charco se mide por PAR con
+el resto del estado fijo) — detalle completo en la cabecera de `scripts/measure-cursor-luz.py`.
 
 Calibración final de `src/components/hyprCursor.ts`: centro del charco `0.30·pot → 0.04·pot`,
 mitad de radio `0.13·pot → 0.017·pot` (radio sin tocar). A los números de partida del prototipo el
 charco causaba una caída de contraste de ~1,5 en `.hero-mail` (3,0:1 encendido); calibrado, la
 caída queda en ~0,2–0,3 (encendido ~4,2–4,3:1 contra ~4,45–4,5:1 apagado, dos ejecuciones
-consecutivas de la ventana completa). `.obra-abrir` no depende del charco (su bajo contraste,
-~1,3–1,6:1, es el mismo con el charco apagado del todo): es el mismo techo de brillo del shader ya
-documentado y aceptado para el cartel de obra, no un riesgo de este dispositivo.
+consecutivas de la ventana completa). `.obra-abrir` no depende del charco: es el mismo techo de
+brillo del shader ya documentado y aceptado para el cartel de obra, no un riesgo de este
+dispositivo.
+
+> **SUPERADO por la Ronda de arreglo 2 (ver `## Color y contraste` y el registro más abajo).** El
+> párrafo original de esta entrada daba aquí el bajo contraste de `.obra-abrir` como "~1,3–1,6:1" —
+> ese número salía del método hover-vs-sin-hover, luego desacreditado por comparar dos escenas de
+> DOM distintas. Medido con el método pareado, el contraste real de `.obra-abrir` en hover es
+> **3,47–3,63:1** (peor caso con el charco pintado), prácticamente idéntico al 3,47–3,62:1 con el
+> canvas oculto — la conclusión de fondo (no depende del charco, es el techo de brillo del shader)
+> se mantiene, pero el número concreto era el equivocado.
 
 Arnés completo: `python3 scripts/measure-cursor-luz.py --base http://localhost:4173` → `0 fallos`
 (dos ejecuciones consecutivas). `npm run build` y `npm run lint` en verde.
@@ -358,13 +367,16 @@ el mejor tramo — el rango completo, incluyendo la corrida con el delta más an
 | `.obra-abrir` | **[−0,09, 0,07]** | 3,47–3,63:1 | 3,47–3,62:1 |
 
 Las dos bandas de delta son estrechas, centradas en 0 y muy por debajo del margen de 0,3: el efecto
-real del charco sobre las dos dianas es prácticamente nulo, no solo sobre `.obra-abrir`. Esto
-también revisa (sin re-litigar la calibración, que la coordinación pidió no tocar) la lectura de
-`.hero-mail` de las rondas anteriores: la caída de ~1,5 que se le atribuía al charco contra el
-prototipo (0,30/0,13) estaba medida con el mismo método hover-vs-sin-hover que infló el número de
-`.obra-abrir`, así que probablemente también estaba inflada — no se ha medido el prototipo con el
-método pareado porque la coordinación pidió no tocar la calibración ya fijada, y ese dato queda
-para quien decida si vale la pena revisar la calibración en el futuro, no para esta ronda.
+real del charco sobre las dos dianas es prácticamente nulo, no solo sobre `.obra-abrir`.
+
+> **SUPERADO por la Ronda de arreglo 3 (ver más abajo).** El párrafo original de esta entrada
+> especulaba aquí que la caída de ~1,5 atribuida al charco contra el prototipo (0,30/0,13) "estaba
+> medida con el mismo método hover-vs-sin-hover que infló el número de `.obra-abrir`, así que
+> probablemente también estaba inflada — no se ha medido el prototipo con el método pareado". Esa
+> sospecha quedó cerrada en la Ronda de arreglo 3: se remidió el PROTOTIPO con el método pareado y
+> la caída resultó ser real, no un artefacto de método — delta `[1,23, 1,53]`, cuatro a cinco veces
+> el margen de 0,3. La calibración final no cambia (sigue en `0.04`/`0.017`), pero la lectura
+> correcta es que el número original del prototipo era fiable, no que estuviera inflado.
 
 Arnés completo, **siete ejecuciones consecutivas reales** (no una selección del mejor tramo):
 `python3 scripts/measure-cursor-luz.py --base http://localhost:4173` → `0 fallos` en las siete.

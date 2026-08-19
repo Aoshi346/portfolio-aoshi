@@ -207,6 +207,51 @@ def potencia(pg) -> float:
     return pg.evaluate("() => window.__hyprCursor__ ? window.__hyprCursor__.pot() : -1")
 
 
+# Umbral de espera para "pot asentado" (Ronda de arreglo, asercion 2). `pot`
+# no salta a 1.0: decae/crece geometricamente hacia su objetivo con razon
+# `1 - POT_SMOOTHING` = 0.78 por fotograma de rAF (ver POT_RANCIO_MAXIMO mas
+# abajo para la misma constante en la otra asercion), asi que tras n
+# fotogramas vale `1 - 0.78**n`. Con una espera FIJA de 500ms el numero de
+# fotogramas que caben depende del framerate real de swiftshader, que varia
+# con la carga de la maquina (documentado en rules/verification.md): n=6 da
+# 0,7748 (por debajo de un umbral de 0,8), n=7 da 0,8243 (por encima) -- el
+# viejo umbral de 0,8 caia justo entre dos escalones adyacentes del propio
+# instrumento, asi que un solo fotograma de diferencia decidia si la
+# asercion pasaba o fallaba, y bajo carga de CPU fallaba de verdad
+# (reproducido). No es ruido difuso, es el ESCALON del propio instrumento:
+# la regla de CLAUDE.md es no poner un umbral mas fino que el ruido de su
+# instrumento, y aqui el instrumento mismo tiene una resolucion de "un
+# fotograma de rAF", que a framerates bajos es gruesa.
+#
+# La correccion no es subir el umbral (eso solo mueve el escalon a otro
+# fotograma), es esperar a que `pot` ASIENTE antes de leerlo. Se sondea
+# hasta que deje de subir entre dos lecturas sucesivas o supere 0,95, con un
+# tope de tiempo. Como referencia, el muestreo de contraste ya espera 1400ms
+# (`RELEVO_ESPERA_MS` mas abajo es 900ms para el relevo del cartel, pero el
+# propio comentario de la asercion 3 documenta que con 900ms `pot` llega
+# establemente por encima de 0,95 incluso bajo carga) -- se usa el mismo
+# orden de magnitud aqui como tope maximo de espera.
+POT_ASENTADO_MINIMO = 0.95
+POT_ASENTADO_TIMEOUT_MS = 1400
+POT_ASENTADO_INTERVALO_MS = 100
+
+
+def esperar_pot_asentada(pg, minimo: float = POT_ASENTADO_MINIMO, timeout_ms: int = POT_ASENTADO_TIMEOUT_MS) -> float:
+    """Sondea `potencia(pg)` hasta que asiente (deja de subir entre dos
+    lecturas sucesivas) o supere `minimo`, con un tope de `timeout_ms`.
+    Devuelve la ultima lectura. Ver comentario de POT_ASENTADO_MINIMO."""
+    transcurrido = 0
+    anterior = potencia(pg)
+    while transcurrido < timeout_ms:
+        pg.wait_for_timeout(POT_ASENTADO_INTERVALO_MS)
+        transcurrido += POT_ASENTADO_INTERVALO_MS
+        actual = potencia(pg)
+        if actual >= minimo or actual <= anterior:
+            return actual
+        anterior = actual
+    return anterior
+
+
 def apuntar(pg, selector, punto: "tuple[float, float] | None" = None) -> tuple[float, float]:
     """Devuelve el punto (viewport) donde queda el puntero, para que quien
     mida contraste pueda excluirlo como "mano" en vez de fondo real.
@@ -422,9 +467,18 @@ def main() -> int:
         nav, pg = abrir(p, args.base, "hyprland")
 
         # 2. reparto de senal
+        #
+        # El umbral fijo de pot<0.8 tras los 500ms de `apuntar()` caia justo
+        # entre dos escalones adyacentes del propio instrumento (n=6
+        # fotogramas de rAF da 0,7748, n=7 da 0,8243 -- ver comentario de
+        # `esperar_pot_asentada()`), asi que bajo carga de CPU fallaba de
+        # verdad con un solo fotograma de diferencia. La correccion no es
+        # subir el umbral -- eso solo mueve el escalon -- es esperar a que
+        # `pot` ASIENTE antes de leerlo.
         apuntar(pg, PULSABLE)
-        if potencia(pg) < 0.8:
-            fallos.append(f"charco apagado sobre pulsable: pot={potencia(pg)}")
+        pot_pulsable = esperar_pot_asentada(pg)
+        if pot_pulsable < 0.8:
+            fallos.append(f"charco apagado sobre pulsable: pot={pot_pulsable}")
         apuntar(pg, PARRAFO)
         if potencia(pg) > 0.05:
             fallos.append(f"charco encendido sobre texto: pot={potencia(pg)}")
