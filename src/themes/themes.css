@@ -6776,3 +6776,64 @@
     pointer-events: auto;
   }
 }
+
+/* =====================================================================
+ * Cursor propio de Hyprland — la luz de mano
+ *
+ * `.hypr-cursor-ready` la pone el JS SOLO tras montar con exito. Si el
+ * modulo no carga, no existe ninguna de estas reglas y el cursor del
+ * sistema queda intacto: ni una senal depende del JavaScript.
+ *
+ * La lista blanca se apoya en que `cursor` solo se hereda cuando el
+ * elemento no declara el suyo. `.gallery-track` declara `grab` y los
+ * `<a>` reciben `pointer` de la hoja del navegador, asi que el
+ * `cursor: none` del lienzo NO les llega — hay que apuntarlos uno a uno.
+ *
+ * `.scene-nav-trigger` y `.scene-index-row` van escritos A MANO porque
+ * `sceneNav` monta fuera de `[data-scene]` (`sceneNav.ts:327-328` cuelga
+ * disparador y panel de la raiz). Sin estas dos lineas el cursor "se
+ * rompe" en cuanto el puntero sale del contenido.
+ * ===================================================================== */
+
+.hypr-cursor-ready:root[data-theme="hyprland"] [data-scene] {
+  cursor: none;
+}
+
+/* Texto: recupera el I-beam que la herencia del lienzo le habia quitado.
+ * Ocultarlo borraria la senal de que esto se selecciona y se copia. */
+.hypr-cursor-ready:root[data-theme="hyprland"]
+  [data-scene]
+  :is(p, li, dd, dt, figcaption, blockquote) {
+  cursor: auto;
+}
+
+/* Opt-in explicito de los pulsables que la luz sustituye. El enlace
+ * externo queda fuera aposta: abre pestana nueva y la certeza de "esto es
+ * un enlace real" no se toca. `.gallery-track` tampoco entra: su `grab` es
+ * la unica pista de que la galeria se arrastra. */
+.hypr-cursor-ready:root[data-theme="hyprland"]
+  [data-scene]
+  :is(button, a[href]:not([target="_blank"])) {
+  cursor: none;
+}
+
+/* Fuera de las escenas: la navegacion, que monta en la raiz. */
+.hypr-cursor-ready:root[data-theme="hyprland"] :is(.scene-nav-trigger, .scene-index-row) {
+  cursor: none;
+}
+
+.hypr-cursor-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+
+/* Cinturon y tirantes: si el modulo llegara a montar bajo movimiento
+ * reducido, el lienzo no se pinta igualmente. La puerta real esta en
+ * `main.ts`; esto es la red por debajo. */
+@media (prefers-reduced-motion: reduce) {
+  .hypr-cursor-canvas {
+    display: none;
+  }
+}
