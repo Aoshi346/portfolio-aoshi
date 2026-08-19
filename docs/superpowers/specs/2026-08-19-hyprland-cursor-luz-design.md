@@ -107,47 +107,67 @@ selectores de escena, el cursor "se rompe" en cuanto el puntero sale del conteni
 
 La luz mete calor detrás de texto claro, así que **baja el contraste de la fila iluminada**.
 Medido (`scripts/measure-cursor-luz.py`, asercion 7) por glifo y contra el peor fotograma real del
-shader, sobre las dos dianas donde el charco enciende:
+shader, sobre las dos dianas donde el charco enciende. **Ronda de arreglo 1** (revisión externa,
+reproducida con sonda instrumentada) corrigió dos fallos de medida en `.obra-abrir` — detalle
+completo en la cabecera del arnés y en el registro de implementación:
 
 - **`.hero-mail`** (enlace con texto propio; en `:hover` — que es cuando el charco enciende —
   pasa de `--haze` a `--l1`, `#ff5a34`): **a los números de partida del prototipo** (centro `rgb(255
   160 60 / 0.30·pot)`, mitad de radio `rgb(255 90 52 / 0.13·pot)`) el charco SÍ es la causa
   dominante del riesgo — medido: **~3,0:1** encendido contra **~4,53:1** apagado (`pot=0`, mismo
-  encuadre), una caída de **~1,5** — muy por encima de cualquier margen razonable. Bajando el centro
-  y la mitad de radio en pasos de `0.04` (manteniendo su proporción original ~2:1) hasta **centro
-  `0.04·pot`, mitad de radio `0.017·pot`** (calibración final, ~87% por debajo del prototipo), la
-  caída se reduce a **~0,2–0,3** (encendido ~4,2–4,3:1 contra apagado ~4,45–4,5:1, dos ejecuciones
-  consecutivas de la ventana completa de 16,8s). En reposo, sin ningún charco, el mismo punto ya
-  mide **~4,45–4,53:1** — el propio `:hover` a `--l1` viaja pegado a AA contra el techo de brillo
-  del shader, una decisión de `themes.css` anterior a esta tarea, así que por debajo de esta
-  calibración la reducción se aplana (probado hasta `0.02`/`0.008`, con el mismo resultado ~4,2–
-  4,3:1): el resto de la brecha hasta 4,5 no lo cierra esta calibración, es el propio `--l1` de
-  `:hover` contra el shader.
-- **`.obra-abrir`** (botón transparente que cubre la fila del titular; el glifo visible es el
-  `<h2 data-title>` que tapa, en `--haze` siempre — no cambia con el hover del botón): **~1,3–1,6:1**
-  con el charco encendido, **prácticamente el mismo, ~1,3–1,4:1, con el charco apagado del todo**
-  (`pot=0`, verificado). El techo real es el brillo del propio shader `hyprEmber.ts` en ese punto
-  de pantalla — el **mismo hallazgo ya documentado y aceptado para el cartel de obra**
-  (`2026-08-10-hyprland-obra-cartel`, ver `CLAUDE.md` "Color y contraste" de Hyprland). Apagar el
-  charco no lo arregla: no es un riesgo que esta dirección introduzca ni que su calibración pueda
-  resolver.
+  encuadre), una caída de **~1,5**. Bajando el centro y la mitad de radio en pasos de `0.04`
+  (manteniendo su proporción original ~2:1) hasta **centro `0.04·pot`, mitad de radio `0.017·pot`**
+  (calibración final, ~87% por debajo del prototipo), la caída se reduce a **~0,22–0,28**, estable en
+  cinco ejecuciones consecutivas de la ventana completa de 16,8s (encendido 4,22–4,24:1, apagado
+  4,45–4,50:1). El baseline sin charco viaja pegado a AA (una decisión de `:hover` a `--l1` en
+  `themes.css`, anterior a esta tarea, contra el techo de brillo del shader) — probado hasta
+  `0.02`/`0.008` (charco casi apagado), el número no mejora más allá de ~4,2–4,3:1: el resto de la
+  brecha hasta AA absoluto no lo cierra esta calibración.
+- **`.obra-abrir`** (botón transparente que cubre la fila entera del titular, 1440px de ancho; el
+  glifo visible es el `<h2 data-title>` que tapa). La primera versión de esta medida apuntaba al 40%
+  del ancho del BOTÓN (x≈576) en vez de al centro del titular real (x=114–447): el radio del charco
+  (260px para esa fila) no llegaba hasta ahí, así que el charco quedaba prácticamente apagado
+  encima del texto y "encendido"/"apagado" daban el mismo número **por construcción** — no porque
+  el charco no importara. Además el color leído (`getComputedStyle` del `<h2>`) siempre daba
+  `--haze`: el titular no tiene color propio, son los DOS `<i>` apilados del relevo del cartel
+  (`obraCartel.ts`) los que lo tienen, y con el hover puesto (`pointerenter` en `fila.seccion`
+  dispara `relevo()`, que corre `.obra-rl` -50%) el que queda a la vista es `--color-paper`
+  (`#ffeae6`), no `--haze`. **Corregido y remedido** apuntando al centro real del `<h2>` y leyendo
+  el color del `<i>` que de verdad está visible en cada estado (esperando a que el tween de
+  `relevo()` termine antes de fotografiar): **~4,0:1** con el charco encendido — el titular pasa a
+  `--color-paper`, mucho más claro que `--haze`, así que el contraste MEJORA pese al calor del
+  charco — contra **~1,4:1** en reposo (`--haze` sin encender nada), estable en cinco ejecuciones
+  consecutivas. El bajo número EN REPOSO es el mismo techo de brillo del shader ya documentado y
+  aceptado para el cartel de obra (`2026-08-10-hyprland-obra-cartel`, ver `CLAUDE.md` "Color y
+  contraste" de Hyprland) — pero, medido correctamente, el charco de esta tarea no lo empeora: lo
+  mejora, porque el propio hover del cartel cambia el texto a un color más claro al mismo tiempo
+  que el charco enciende.
 
-El gate del arnés es por tanto, para cada diana: si su baseline **sin** charco ya cumple AA, el
-charco no puede tirarlo por debajo (protege contra que el dispositivo rompa algo que ya iba bien);
-si el baseline **ya** está por debajo de AA sin que el charco exista, sólo se exige que el charco
-no lo empeore más de 0,3 frente a su propio baseline — exigirle AA absoluto ahí sería perseguir un
-número que ni el `:hover` de `themes.css` ni el techo de brillo del shader ponen bajo el control de
-este módulo. Con la calibración final, las dos dianas cumplen ese gate.
+El gate del arnés aplica el MISMO margen a las dos dianas, siempre, sin escalón: el charco encendido
+no puede caer más de 0,3 por debajo de su propio baseline apagado (mismo encuadre, mismo estado de
+relevo). La primera versión tenía un escalón en `AA_MINIMO` (si el baseline sin charco ya cumplía
+4,5 exigía AA absoluto; si no, exigía baseline−0,3) que resultó no determinista: el baseline de
+`.hero-mail` oscila justo alrededor de 4,5 según el fotograma del shader, y en una corrida daba 4,48
+(pasaba) y en otra 4,50 (el objetivo saltaba a 4,50 y el encendido, 4,22–4,24, no llegaba) — mismo
+código, resultado distinto. Un umbral más fino que el ruido del propio instrumento, que es
+justamente la regla que ya recoge `CLAUDE.md`. Quitado el escalón, cinco ejecuciones consecutivas
+salen en verde con números estables (delta observado 0,22–0,28 en `.hero-mail`, muy por debajo del
+margen de 0,3; `.obra-abrir` en verde por margen amplio, el charco la mejora).
 
 **Corrección de método frente al borrador inicial del brief** (ver cabecera de
 `scripts/measure-cursor-luz.py` para el detalle completo): no todo el texto de las dianas es
-`--text` `#ffeae6` — se lee el color computado real de cada una en el momento del hover, no un hex
-fijo; separar glifo de fondo por igualdad/distancia de color falla por el antialias de fuentes
-(cuenta borde de letra como fondo) — se apaga el glifo por CSS y se fotografía el fondo desnudo; la
-propia mano del cursor y el trazo del canto en el borde de la caja (fuera del área de contenido)
-son artefactos de la medida, no fondo real, y se excluyen por geometría/recorte de padding; y una
-ventana de muestreo corta (~3,4s) no cubre el ciclo de brillo del shader — se amplió a ~16,8s (42
-muestras), el mismo criterio que ya usa `measure-cartel.py` para el mismo shader.
+`--text` `#ffeae6` — se lee el color computado real del nodo que de verdad pinta el glifo visible en
+cada estado, no un hex fijo; separar glifo de fondo por igualdad/distancia de color falla por el
+antialias de fuentes (cuenta borde de letra como fondo) — se apaga el glifo por CSS y se fotografía
+el fondo desnudo; la propia mano del cursor y el trazo del canto en el borde de la caja (fuera del
+área de contenido) son artefactos de la medida, no fondo real, y se excluyen por geometría/recorte
+de padding; una ventana de muestreo corta (~3,4s) no cubre el ciclo de brillo del shader — se amplió
+a ~16,8s (42 muestras), el mismo criterio que ya usa `measure-cartel.py` para el mismo shader; el
+peor píxel de cada fotograma se elige por MENOR CONTRASTE contra el texto, no por mayor luminancia
+— con `--haze` (luminancia ~0,30) un fondo que se acerca a esa luminancia desde abajo empeora el
+contraste tanto o más que uno que se aleja por arriba, y el shader baja hasta ~0,20; y el punto
+donde se enciende el charco para medir ".obra-abrir" es explícito (el centro del `<h2>` real), no
+un porcentaje del ancho de un botón diez veces más ancho que el texto.
 
 Efecto a favor, medido también: el canto del elemento a `--l1` sube el contraste del **borde**, que
 es lo que delimita la zona pulsable — no se mide con número aparte porque el gate de arriba ya lo
@@ -234,3 +254,41 @@ Corrección de alcance menor, arrastrada de una revisión anterior: la referenci
 `sceneNav.ts:327-328` (en este spec y en el comentario del bloque CSS nuevo de
 `src/themes/themes.css`) estaba desalineada en una línea frente al código real
 (`sceneNav.ts:328-329`, verificado con grep) — corregida en los dos sitios.
+
+**Ronda de arreglo 1 (2026-08-19) — revisión externa con sonda instrumentada.** Dos críticos y un
+importante, los tres reproducidos:
+
+1. La medida "encendida" de `.obra-abrir` apuntaba al 40% del ancho del BOTÓN (x≈576 de una caja de
+   1440px), fuera del radio del charco (260px) alrededor del titular real (x=114–447) — el charco
+   quedaba prácticamente apagado encima del texto, así que "encendido" y "apagado" daban el mismo
+   número por construcción. Corregido: `apuntar()` acepta ahora un punto explícito; para
+   `.obra-abrir` se pasa el centro del `<h2 data-title>` real.
+2. El color de texto leído (`getComputedStyle` del `<h2>`) siempre daba `--haze`: el titular no
+   tiene color propio, son los dos `<i>` apilados del relevo del cartel (`obraCartel.ts`) los que lo
+   tienen, y con el hover puesto el visible es `--color-paper`, no `--haze`. Corregido:
+   `contraste_por_glifo()` gana un parámetro `selector_color` separado del nodo de caja/ocultado, y
+   se espera a que el tween de `relevo()` termine (`RELEVO_ESPERA_MS`) antes de fotografiar, en los
+   dos estados.
+3. El gate tenía un escalón en `AA_MINIMO` (baseline≥4,5 exige AA absoluto, si no exige
+   baseline−0,3) que resultó no determinista: el baseline de `.hero-mail` oscila justo alrededor de
+   4,5 según el fotograma del shader. Corregido: el margen de 0,3 se aplica siempre, sin escalón.
+
+Menores del mismo revisor, corregidos de paso: el `assert` de `main()` sobre el baseline apagado
+ahora acumula en `fallos` en vez de abortar el arnés entero; el "peor píxel" de cada muestra se
+elige por menor contraste contra el texto, no por mayor luminancia (con `--haze`, luminancia ~0,30,
+un fondo que se acerca a esa luminancia desde abajo empeora el contraste igual o más que uno que se
+aleja por arriba, y el shader baja hasta ~0,20).
+
+Remedido con las correcciones: `.hero-mail` sin cambios sustanciales (~4,22–4,24:1 encendido, sigue
+por encima del objetivo). `.obra-abrir` cambia por completo: **~4,0:1 con el charco encendido**
+contra **~1,4:1 en reposo** — el charco MEJORA el contraste (el hover del cartel cambia el texto a
+`--color-paper`, mucho más claro, al mismo tiempo que enciende), no lo empeora. El bajo número en
+reposo sigue siendo el techo de brillo del shader ya documentado para el cartel de obra, pero ya no
+hace falta invocarlo como excusa: con la medida correcta, `.obra-abrir` pasa el mismo gate de margen
+que `.hero-mail`, sin necesitar ningún trato especial.
+
+Arnés completo, cinco ejecuciones consecutivas: `python3 scripts/measure-cursor-luz.py --base
+http://localhost:4173` → `0 fallos` en las cinco, con números estables (no una coincidencia de una
+sola corrida). `npm run build` y `npm run lint` en verde. La calibración de `hyprCursor.ts`
+(`0.04`/`0.017`) NO se tocó en esta ronda -- la evidencia de `.hero-mail` ya la justificaba y seguía
+justificándola tras el arreglo.

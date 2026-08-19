@@ -178,13 +178,27 @@ def potencia(pg) -> float:
     return pg.evaluate("() => window.__hyprCursor__ ? window.__hyprCursor__.pot() : -1")
 
 
-def apuntar(pg, selector) -> tuple[float, float]:
+def apuntar(pg, selector, punto: "tuple[float, float] | None" = None) -> tuple[float, float]:
     """Devuelve el punto (viewport) donde queda el puntero, para que quien
-    mida contraste pueda excluirlo como "mano" en vez de fondo real."""
+    mida contraste pueda excluirlo como "mano" en vez de fondo real.
+
+    Sin `punto` explicito, usa el 40% del ancho de `selector` -- valido para
+    dianas pequenas (".hero-mail") pero FALSO para ".obra-abrir": ese boton
+    es `position: absolute; inset: 0` sobre la fila entera (1440px de ancho),
+    asi que su 40% (x=576) cae fuera del radio del charco (260px) alrededor
+    del titular real (x=114-447) -- medido: el charco quedaba practicamente
+    apagado encima del titular, garantizando por construccion que "encendido"
+    y "apagado" dieran el mismo numero. Por eso el llamador que mide
+    ".obra-abrir" pasa el CENTRO del `<h2 data-title>` como `punto`: sigue
+    dentro de la caja de ".obra-abrir" (la cubre entera) asi que el
+    pointerenter/hover se dispara igual, pero el gradiente queda centrado en
+    el titular real, no en un punto arbitrario de una caja diez veces mas
+    ancha que el texto."""
     pg.locator(selector).first.scroll_into_view_if_needed()
     pg.wait_for_timeout(600)
-    caja = pg.locator(selector).first.bounding_box()
-    punto = (caja["x"] + caja["width"] * 0.4, caja["y"] + caja["height"] / 2)
+    if punto is None:
+        caja = pg.locator(selector).first.bounding_box()
+        punto = (caja["x"] + caja["width"] * 0.4, caja["y"] + caja["height"] / 2)
     pg.mouse.move(*punto, steps=8)
     pg.wait_for_timeout(500)
     return punto
@@ -217,17 +231,24 @@ def _color_computado(handle) -> tuple[int, int, int]:
 
 
 def contraste_por_glifo(
-    pg, selector_glifo: str, punto: tuple[float, float]
+    pg, selector_glifo: str, punto: tuple[float, float], selector_color: "str | None" = None
 ) -> tuple[float, tuple[int, int, int]]:
     """Ratio WCAG del texto de una diana contra su propio fondo iluminado.
 
     `selector_glifo` apunta al nodo que de verdad pinta el glifo visible
     (puede no ser el pulsable: en ".obra-abrir" el boton no tiene texto
-    propio, lo que se ve es el <h2> que tapa). Se llama con el charco YA
-    encendido (el llamador tiene que haber apuntado antes al pulsable con
-    `apuntar()`, y pasar aqui el punto (viewport) que esa llamada devolvio).
+    propio, lo que se ve es el <h2> que tapa) y se usa para la caja
+    (bounding box + recorte de padding) y para APAGAR toda la tinta bajo el.
+    Se llama con el charco YA encendido (el llamador tiene que haber
+    apuntado antes al pulsable con `apuntar()`, y pasar aqui el punto
+    (viewport) que esa llamada devolvio).
 
-    Color de texto: se lee `getComputedStyle(...).color` DEL PROPIO NODO en
+    `selector_color` (por defecto `selector_glifo`) es el nodo del que se
+    lee el color REALMENTE visible en este estado -- pueden no coincidir:
+    en ".obra-abrir" el `<h2>` no tiene color propio, son los DOS `<i>`
+    apilados de `obraCartel.ts` los que lo tienen, y cual de los dos se ve
+    depende del relevo (`i:first-child` en reposo, `i:last-child` con el
+    hover puesto). Se lee `getComputedStyle(...).color` DEL NODO DE COLOR en
     el momento de la medida, no un hex fijo del spec -- `.hero-mail` cambia
     de `--haze` a `--l1` justo al entrar en `:hover`, que es cuando el
     charco esta encendido, asi que un color nominal fijo mediria un estado
@@ -241,15 +262,22 @@ def contraste_por_glifo(
     su propia rampa de opacidad (`POT_SMOOTHING` en `hyprCursor.ts`), asi que
     un solo fotograma no es el peor caso: se toman `MUESTRAS_POR_DIANA`
     capturas espaciadas `INTERVALO_MUESTRA_MS` (~16,8s por diana, ver punto 5
-    de la cabecera del modulo) y de cada una se guarda el pixel de mayor
-    luminancia (el que mas empeora el contraste contra un texto claro). El
-    numero que se devuelve es el MINIMO de esas `MUESTRAS_POR_DIANA` lecturas
-    de contraste -- el peor de los peores, no el fotograma medio ni el
-    primero.
+    de la cabecera del modulo) y de cada una se guarda el pixel de MENOR
+    CONTRASTE contra el texto -- NO el de mayor luminancia. Con un texto
+    claro (blanco/naranja) ambos criterios coinciden porque el contraste
+    solo puede caer si el fondo sube hacia el; pero con `--haze` (luminancia
+    ~0,30, ni claro ni oscuro) un fondo que se ACERCA a esa luminancia desde
+    abajo empeora el contraste tanto o mas que uno que se aleja por arriba
+    -- el shader de Hyprland baja hasta ~0,20 de luminancia en frames
+    oscuros, mas cerca de 0,30 que muchos fondos "claros". Tomar el pixel
+    mas claro se perdia ese caso. El numero que se devuelve es el MINIMO de
+    esas `MUESTRAS_POR_DIANA` lecturas de contraste -- el peor de los
+    peores, no el fotograma medio ni el primero.
     """
     nodo = pg.locator(selector_glifo).first
     handle = nodo.element_handle()
-    texto_rgb = _color_computado(handle)
+    color_handle = pg.locator(selector_color or selector_glifo).first.element_handle()
+    texto_rgb = _color_computado(color_handle)
     caja_borde = nodo.bounding_box()
     # `bounding_box()` devuelve la caja de BORDE (incluye padding). El canto
     # del charco (`ctx.strokeRect`) se dibuja justo en ese borde -- fuera del
@@ -305,8 +333,17 @@ def contraste_por_glifo(
             # fallar sobre una lista vacia.
             if not candidatos:
                 continue
-            peor_pixel = max(candidatos, key=_lum)
-            peores.append(_contraste(texto_rgb, peor_pixel))
+            # El peor fondo es el de MENOR contraste contra el texto, no el
+            # de mayor luminancia (ver docstring): con `--haze` de por medio
+            # el shader puede empeorar el contraste ACERCANDOSE por abajo,
+            # no solo alejandose por arriba.
+            peor_contraste = min(_contraste(texto_rgb, px) for px in candidatos)
+            peores.append(peor_contraste)
+        # defensive: esto es un fallo de INSTRUMENTACION (caja mal calculada,
+        # radio de exclusion mayor que la propia caja), no un resultado de
+        # producto -- se sigue abortando (a diferencia del `assert` de
+        # `main()` para el baseline, que SI acumula en `fallos`: ese es un
+        # estado transitorio esperable del shader/Lenis, esto no lo es).
         assert peores, f"ningun pixel de fondo fuera del radio de la mano en {MUESTRAS_POR_DIANA} capturas de {selector_glifo}"
     finally:
         # el color se restaura siempre, incluso si una captura revienta --
@@ -349,66 +386,103 @@ def main() -> int:
         # 7. contraste por glifo contra el peor fotograma del shader, con el
         # charco encendido. Solo sobre las dianas donde el charco enciende.
         # `.obra-abrir` no tiene texto propio (boton transparente que cubre
-        # la fila): el glifo visible es el <h2 data-title> de esa misma
-        # tarjeta, verificado por closest('section').
+        # la fila entera, 1440px de ancho): el glifo visible es el
+        # <h2 data-title> de esa misma tarjeta, verificado por
+        # closest('section').
         #
-        # El gate es el MISMO para las dos dianas, pero el numero contra el
-        # que compara depende del baseline de cada una. Medido con el raton
-        # lejos (charco apagado, `pot=0`, mismo encuadre de scroll) contra el
-        # mismo punto con el charco encendido:
-        #   - ".hero-mail" en reposo (sin charco) ya anda MUY cerca de AA por
-        #     si solo (4,45-4,72:1 segun la ventana del shader, con el texto
-        #     ya en `--l1` por el propio `:hover` de `themes.css` -- una
-        #     decision anterior a esta tarea) y el charco lo empuja un poco
-        #     mas abajo. Calibrar la opacidad del charco a la baja SI mejora
-        #     el numero -- medido: de 1,9:1 a 4,3-4,6:1 bajando el centro de
-        #     0,30 a 0,14 -- pero por debajo de ese punto la reduccion se
-        #     aplana (a 0,02, practicamente apagado, seguia en 4,2-4,3, casi
-        #     IGUAL que el baseline de esa misma ventana): el resto de la
-        #     brecha hasta 4,5 no es el charco, es el propio `--l1` de
-        #     `:hover` contra el techo de brillo del shader, que esta fuera
-        #     del alcance de este modulo.
-        #   - ".obra-abrir" mide CASI LO MISMO con el charco apagado
-        #     (1,31-1,40:1) que encendido (1,35-1,6:1): el mismo techo de
-        #     brillo del shader, el MISMO hallazgo ya documentado y aceptado
-        #     para el cartel de obra (`2026-08-10-hyprland-obra-cartel`, ver
-        #     CLAUDE.md). Apagar el charco del todo no lo arregla -- medido.
+        # Ronda de arreglo 1 (revision externa, reproducida con sonda
+        # instrumentada) tumbo dos supuestos de la primera version:
         #
-        # Por eso el gate real de esta tarea es: si el baseline SIN charco ya
-        # cumple AA, el charco no puede tirarlo por debajo (protege contra
-        # que el propio dispositivo rompa algo que ya iba bien). Si el
-        # baseline YA esta por debajo de AA sin que el charco exista, exigir
-        # AA absoluto seria perseguir un numero que esta tarea no controla
-        # (una decision de `:hover` mas el techo del shader, ninguno de los
-        # dos de este modulo) -- ahi solo se exige que el charco no lo
-        # empeore mas de MARGEN_CHARCO frente a su propio baseline.
+        #   - El punto donde se apuntaba ".obra-abrir" (40% de su ancho,
+        #     x=576 en una caja de 1440px) caia FUERA del radio del charco
+        #     (260px) alrededor del titular real (x=114-447): el charco
+        #     quedaba practicamente apagado encima del texto, asi que
+        #     "encendido" y "apagado" daban el mismo numero POR
+        #     CONSTRUCCION, no porque el charco no importe. Corregido:
+        #     `apuntar()` acepta ahora un punto explicito, y aqui se pasa el
+        #     CENTRO del `<h2 data-title>` -- sigue dentro de ".obra-abrir"
+        #     (la cubre entera) asi que el hover se dispara igual.
+        #   - El color de texto se leia de `getComputedStyle(h2)`, que
+        #     siempre da `--haze` -- el titular NO tiene color propio, son
+        #     los DOS `<i>` apilados de `obraCartel.ts` los que lo tienen
+        #     (`.obra-rl i:first-child` en --haze, `i:last-child` en
+        #     --color-paper) y el hover real (`pointerenter` en
+        #     `fila.seccion`, `obraCartel.ts:175-177`) dispara `relevo()`,
+        #     que corre `.obra-rl` -50% y deja el `i:last-child` (papel) a
+        #     la vista. Medir siempre contra `--haze` comparaba el mismo
+        #     glifo en los dos estados. Corregido: se lee el color del `i`
+        #     que de verdad queda visible en cada estado (`i:first-child` en
+        #     reposo, `i:last-child` con el hover puesto), y se espera a que
+        #     el tween de `relevo()` termine (`RELEVO_ESPERA_MS`, cubre
+        #     duracion 0.42s + stagger de hasta 13 letras a 0.024s/letra,
+        #     con margen) antes de fotografiar -- en los dos estados, para
+        #     que el baseline compare la MISMA escena en reposo real y no
+        #     una transicion a medio camino.
+        #
+        # El gate tambien cambio: era un escalon en AA_MINIMO (si el
+        # baseline sin charco ya cumplia 4,5 exigia AA absoluto, si no
+        # exigia baseline-0,3) y el baseline de ".hero-mail" oscila justo
+        # alrededor de 4,5 segun el fotograma del shader -- la revision lo
+        # reprodujo: en una corrida el baseline daba 4,48 (objetivo 4,18,
+        # pasaba) y en otra 4,50 (objetivo salta a 4,50, no pasaba) con el
+        # MISMO codigo. Un umbral mas fino que el ruido del propio
+        # instrumento (regla ya escrita en CLAUDE.md). Corregido: el margen
+        # se aplica SIEMPRE, sin escalon ni caso especial por AA_MINIMO.
         MARGEN_CHARCO = 0.3
         PUNTO_LEJOS = (-500.0, -500.0)
+        # 0,42s de duracion + hasta 13 letras (titulo mas largo del
+        # catalogo, "Editor de texto" sin contar espacios) x 0,024s de
+        # stagger = 0,732s. Con margen.
+        RELEVO_ESPERA_MS = 900
 
-        for diana, glifo in (
-            (PULSABLE, PULSABLE),
-            (PULSABLE_SCROLL, "section:has(.obra-abrir) [data-title]"),
-        ):
+        DIANAS_CONTRASTE = (
+            # (diana, glifo (bbox+ocultar), color_apagado, color_encendido, punto explicito)
+            (PULSABLE, PULSABLE, PULSABLE, PULSABLE, None),
+            (
+                PULSABLE_SCROLL,
+                "section:has(.obra-abrir) [data-title]",
+                "section:has(.obra-abrir) .obra-rl i:first-child",
+                "section:has(.obra-abrir) .obra-rl i:last-child",
+                "section:has(.obra-abrir) [data-title]",
+            ),
+        )
+
+        for diana, glifo, color_apagado_sel, color_encendido_sel, punto_sel in DIANAS_CONTRASTE:
             # Baseline con el charco apagado: se deja la diana en pantalla
             # (mismo encuadre de scroll que la medida "encendida" de abajo)
             # pero el raton se aparta a una esquina fuera de cualquier
-            # pulsable -- `potencia(pg)` cae a 0 y el fondo que queda es el
-            # del shader solo.
+            # pulsable -- `potencia(pg)` cae a 0 y el relevo del cartel (si
+            # lo hay) vuelve a su reposo.
             pg.locator(diana).first.scroll_into_view_if_needed()
             pg.wait_for_timeout(600)
             pg.mouse.move(2, 2, steps=1)
             # Lenis sigue desplazando tras `scroll_into_view_if_needed` (trampa
-            # ya pagada en este repo, ver rules/verification.md) y `pot` decae
-            # con la misma rampa que sube (`POT_SMOOTHING`) -- 400ms se quedaba
-            # corto, medido: pot=0.137 en vez de 0. 1200ms le sobra margen.
-            pg.wait_for_timeout(1200)
-            assert potencia(pg) < 0.05, f"charco no apagado para el baseline de {diana}: pot={potencia(pg)}"
-            ratio_apagado, _ = contraste_por_glifo(pg, glifo, PUNTO_LEJOS)
+            # ya pagada en este repo, ver rules/verification.md), `pot` decae
+            # con la misma rampa que sube (`POT_SMOOTHING`), y el relevo del
+            # cartel (si lo hay) tiene que volver a su reposo -- las tres
+            # cosas caben en RELEVO_ESPERA_MS + margen.
+            pg.wait_for_timeout(1200 + RELEVO_ESPERA_MS)
+            pot_baseline = potencia(pg)
+            if pot_baseline >= 0.05:
+                # Se acumula en `fallos` en vez de abortar el resto del
+                # arnes (antes era un `assert` que tumbaba la ejecucion
+                # entera por un estado transitorio del shader/Lenis).
+                fallos.append(f"charco no apagado para el baseline de {diana}: pot={pot_baseline}")
+            ratio_apagado, _ = contraste_por_glifo(pg, glifo, PUNTO_LEJOS, color_apagado_sel)
 
-            punto = apuntar(pg, diana)
-            ratio, texto_rgb = contraste_por_glifo(pg, glifo, punto)
+            if punto_sel is not None:
+                punto_diana = pg.locator(punto_sel).first.bounding_box()
+                punto_explicito = (
+                    punto_diana["x"] + punto_diana["width"] / 2,
+                    punto_diana["y"] + punto_diana["height"] / 2,
+                )
+            else:
+                punto_explicito = None
+            punto = apuntar(pg, diana, punto_explicito)
+            pg.wait_for_timeout(RELEVO_ESPERA_MS)
+            ratio, texto_rgb = contraste_por_glifo(pg, glifo, punto, color_encendido_sel)
 
-            objetivo = AA_MINIMO if ratio_apagado >= AA_MINIMO else max(ratio_apagado - MARGEN_CHARCO, 0)
+            objetivo = max(ratio_apagado - MARGEN_CHARCO, 0)
             print(
                 f"contraste {diana} (glifo {glifo}, color rgb{texto_rgb}): "
                 f"{ratio:.2f}:1 con el charco encendido, {ratio_apagado:.2f}:1 con el charco "
