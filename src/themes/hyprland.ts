@@ -1,6 +1,6 @@
 import type { Theme } from "./types";
 
-/** Ascua: luz emisiva de canto duro sobre negro con sesgo rojo. */
+/** Ascua: el haz al mando — luz de canto duro sobre negro, gobernada por el scroll. */
 export const hyprlandTheme: Theme = {
   id: "hyprland",
   label: "Hyprland",
