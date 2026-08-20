@@ -1,6 +1,6 @@
 # La luz de mano — el cursor de Hyprland no es un objeto, es una fuente de luz
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-08-19-hyprland-cursor-luz.md`
 Fecha: 2026-08-19
 Alcance: **solo el tema Hyprland**. Módulo nuevo `src/components/hyprCursor.ts`, bloque nuevo en
@@ -44,6 +44,17 @@ que se entienden antes que las palabras, y no en aparato añadido. Y el criterio
 
 ## Tesis
 
+> **SUPERADO por la Task 7 (ver `## Registro de implementación`).** Los tres párrafos originales
+> de esta sección describían el dispositivo en su primera versión, la que "encendía" un charco de
+> luz cálido, radial y aclarante sobre la diana. Ese dispositivo entraba en conflicto con AA: la
+> luz metía calor detrás de texto claro y bajaba el contraste (ver `## Color y contraste`). La
+> Task 7 lo invirtió — hoy el dispositivo **oscurece** un hueco `rgb(11 4 4)` bajo el contenido en
+> vez de aclarar uno encima. La tesis de fondo ("no dibuja, ilumina/atenúa la zona pulsable, corte
+> duro en el borde") se mantiene; lo que cambió es el signo del efecto sobre el color. Se dejan los
+> párrafos originales debajo, sin editar, porque documentan el porqué de la forma (charco recortado
+> al `rect`, sin vocabulario, presumiendo del fondo) — solo el verbo "ilumina"/"charco de luz
+   cálido" ya no describe lo que hay en pantalla.
+
 **El cursor de Hyprland no dibuja nada: ilumina.**
 
 Se lleva una luz en la mano. El charco de luz existe **solo dentro de lo que se puede pulsar**,
@@ -59,7 +70,18 @@ Tres razones por las que esta y no otra:
 3. **Presume del fondo en vez de taparlo.** El shader de Ascua es lo mejor que tiene el tema. Un
    objeto flotando encima lo tapa; una luz que se enciende dentro de una fila lo aprovecha.
 
+**Lo que hay hoy en pantalla (Task 7):** el mismo recorte al `rect` de la diana, la misma mano, el
+mismo corte duro en el borde — pero en vez de un degradado radial que ACLARA, un degradado radial
+que OSCURECE (`rgb(11 4 4)`, el mismo tono del `--void` de Vice) pintado en un segundo `<canvas>`
+por DEBAJO del contenido (`z-index: -4`). El texto de la diana queda sobre un fondo más oscuro en
+vez de sobre uno más cálido, y eso es lo que sube el contraste en vez de bajarlo.
+
 ## Anatomía
+
+> **SUPERADO por la Task 7.** La tabla original describía "el charco" como un degradado que
+> ACLARA, pintado en el mismo lienzo que la mano. Desde la Task 7 son dos piezas en DOS lienzos
+> distintos — ver la tabla actualizada justo debajo — y el charco pasó a llamarse "el hueco"
+> porque oscurece en vez de iluminar. La fila de la mano no cambió.
 
 Dos piezas, nada más:
 
@@ -70,6 +92,18 @@ Dos piezas, nada más:
 
 El anillo oscuro de la mano no es decoración: garantiza contraste del punto contra cualquier
 fotograma del shader sin depender del fondo. Es el mismo recurso que usa `viceCursor.ts`.
+
+**Anatomía actual (Task 7, dos `<canvas>`):**
+
+| Pieza | Lienzo | Qué es | Cuándo existe |
+|---|---|---|---|
+| **La mano** | `.hypr-cursor-canvas` (`z-index: 70`) | Punto de 3,2px en `#ffd9cc` con anillo exterior de 1px en `rgb(11 4 4 / 0.9)` | Siempre que el puntero esté en zona propia |
+| **El canto** | `.hypr-cursor-canvas` (`z-index: 70`) | Filete de 1px en `rgb(255 90 52 / …)` (`--l1`) por el borde exacto de la diana | Solo con diana bajo el puntero |
+| **El hueco** | `.hypr-cursor-hueco` (`z-index: -4`, debajo del contenido) | Degradado radial que OSCURECE, centrado en el puntero, recortado al `rect` de la diana, en `rgb(11 4 4 / …)` | Solo con diana bajo el puntero |
+
+El anillo oscuro de la mano y el canto siguen en el lienzo de arriba porque son señal, no relleno:
+necesitan quedar por encima del contenido. El hueco se movió al lienzo de abajo porque su trabajo
+es cambiar lo que hay DETRÁS de las letras, no encima de ellas.
 
 ## Estados
 
@@ -104,6 +138,24 @@ selectores de escena, el cursor "se rompe" en cuanto el puntero sale del conteni
 `.scene-nav-trigger` y `.scene-index-row` van escritos a mano.
 
 ## Color y contraste
+
+> **SUPERADO por la Task 7 (ver `## Registro de implementación`).** Toda esta sección — el
+> diagnóstico, el método, la tabla de calibración y las nueve menciones de `0.04`/`0.017` — razona
+> sobre el dispositivo ANTES de la inversión: un charco que ACLARA y que por tanto podía BAJAR el
+> contraste, con un gate que fallaba si `delta_max` (mejora) superaba un margen de empeoramiento.
+> Desde la Task 7 el dispositivo OSCURECE (hueco `rgb(11 4 4)` bajo el contenido) y el riesgo se
+> invierte de raíz: oscurecer el fondo detrás de texto claro no puede bajar su contraste, solo
+> subirlo, así que el gate de "no empeorar por encima de un margen" quedó sin poder fallar nunca
+> (razonado en detalle en el registro de la Task 8/I3). Con la calibración final del hueco
+> (`0.88`/`0.5`), medido con el mismo método pareado que esta sección describe: `.hero-mail` sube
+> de 4,29:1 a 5,10:1 (delta natural +0,67 a +0,86) y `.obra-abrir` sube de 3,53:1 a 6,55:1 (delta
+> natural +2,97 a +3,36) — las dos por encima de AA con margen amplio, y las dos mejorando, no
+> empeorando. El método (medida pareada, ratón fijo, `contraste_pareado()`) y las correcciones de
+> instrumento que se listan abajo SIGUEN aplicando tal cual al arnés actual — lo único que cambió
+> es el signo del efecto y, por tanto, la forma del gate. Se deja el resto de la sección sin editar
+> porque documenta por qué el método pareado es el correcto y cómo se llegó a él; los números de
+> calibración concretos (`0.04`/`0.017`, delta `[−0,09, 0,11]`) son historia de la versión que
+> aclaraba y ya no describen `hyprCursor.ts`.
 
 La luz mete calor detrás de texto claro, así que **podría bajar el contraste de la fila
 iluminada** — ese es el riesgo que declaraba el prototipo. Medido con el método correcto (ver
@@ -187,6 +239,15 @@ propio número del glifo).
 
 ## Rendimiento y limpieza
 
+> **SUPERADO por la Task 7 en el punto del lienzo unico y en el verbo de `destroy()` (ver
+> `## Registro de implementación`).** La Task 7 metio un SEGUNDO `<canvas>` (`.hypr-cursor-hueco`,
+> `z-index: -4`, debajo del contenido) para el hueco que oscurece, dejando el de arriba
+> (`.hypr-cursor-canvas`, `z-index: 70`) solo con la mano y el canto. El resto de esta lista —
+> un solo rAF que pinta los DOS lienzos en el mismo `tick()`, el `rect` releido solo mientras hay
+> diana, `pointerover` en vez de `pointermove`, la bandera `stale` tras desplazar y la puerta de
+> `hypr-cursor-ready` solo tras montar con exito — sigue exactamente igual, aplicado a los dos
+> lienzos a la vez.
+
 - **Un solo `<canvas>`** a pantalla completa, `pointer-events: none`, DPR limitado a 2.
 - **Un solo `requestAnimationFrame`**. Nada de un rAF por pieza.
 - El `rect` de la diana se relee cada fotograma **solo mientras hay diana**. Con el puntero en
@@ -201,6 +262,13 @@ propio número del glifo).
 - La clase `hypr-cursor-ready` (la que activa `cursor: none`) se pone **solo si el montaje llegó
   hasta el final**. Si el módulo falla a medio camino, el visitante se queda con el cursor del
   sistema, no sin cursor.
+
+**Estado actual (Task 7):** dos `<canvas>` a pantalla completa, `pointer-events: none`, DPR
+limitado a 2 en los dos. Un solo `requestAnimationFrame` sigue pintando los dos en el mismo
+`tick()` — nada de un rAF por lienzo. `destroy()` cancela el rAF, quita LOS DOS lienzos (plural) y
+aborta los escuchas con `AbortController`; el resto de la lista (relectura de `rect` solo con
+diana, `pointerover` en vez de `pointermove`, bandera `stale`, puerta de `hypr-cursor-ready`) no
+cambió.
 
 ## Montaje
 
@@ -500,3 +568,108 @@ en verde (Task 3-4). Criterio de aceptación del spec cerrado en los siete punto
 2/3/4 (capturas, red movil, reduced motion, arnes tarea 1) y 6 (Vice intacto, verify.py + rail +
 cursor propio) verificados aqui; 5 (contraste) y 7 (destroy/consola) verificados en las tareas
 anteriores y confirmados de nuevo por el arnes en esta pasada.
+
+**Task 7 (2026-08-19) — el hueco: inversion de aclarar a oscurecer.** La revision final abrio un
+Critico: el charco aclarante mete calor detras de texto claro y eso **baja** el contraste, con dos
+dianas (`.hero-mail`, `.obra-abrir`) por debajo de AA en el peor fotograma del shader -- un riesgo
+de producto real, no un artefacto de medida (ver `## Color y contraste`, ahora superado). La
+resolucion no fue calibrar mas fino: fue invertir el signo del efecto. `hyprCursor.ts` gana un
+SEGUNDO `<canvas>` (`.hypr-cursor-hueco`, `z-index: -4`, debajo del contenido) que pinta un
+degradado radial que OSCURECE (`rgb(11 4 4)`, el mismo tono del `--void` de Vice) en vez de
+aclarar; el lienzo de arriba (`.hypr-cursor-canvas`, `z-index: 70`, sin cambios de posicion) se
+queda solo con la mano y el canto del elemento. Oscurecer el fondo detras de texto claro no puede
+bajar su contraste por construccion geometrica -- solo puede subirlo o dejarlo igual -- asi que la
+inversion resuelve el conflicto con AA de raiz en vez de intentar acotarlo con calibracion.
+
+Calibracion final del hueco (subida en dos pasos desde el punto de partida del brief 0.55/0.28,
+pasando por 0.72/0.4, hasta 0.88/0.5 -- parada porque el delta seguia subiendo en los tres
+escalones sin aplanarse y porque en la comparacion A/B el hueco ya se lee con claridad como una
+hondonada de borde suave, no como un bloque solido; ver el detalle completo y la justificacion de
+por que no se subio mas en `.superpowers/sdd/2026-08-19-hyprland-cursor-luz/task-7-report.md`):
+
+```ts
+const hueco = ctx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
+hueco.addColorStop(0, `rgb(11 4 4 / ${(0.88 * pot).toFixed(3)})`);
+hueco.addColorStop(0.5, `rgb(11 4 4 / ${(0.5 * pot).toFixed(3)})`);
+hueco.addColorStop(1, "rgb(11 4 4 / 0)");
+```
+
+Delta pareado por diana (mismo metodo `contraste_pareado()` de la Ronda de arreglo 2, ratón fijo,
+unica diferencia la visibilidad de los DOS lienzos), leido en el sentido natural del efecto
+(`visible - oculto`, "cuanto ayuda encender el hueco", positivo = mejora):
+
+| Diana | Calibracion | delta natural (visible-oculto) | contraste sin hueco | contraste con hueco |
+|---|---|---|---|---|
+| `.hero-mail` | final (0.88/0.5) | **[+0,67, +0,86]** | 4,29:1 | 5,10:1 |
+| `.obra-abrir` | final (0.88/0.5) | **[+2,97, +3,36]** | 3,53:1 | 6,55:1 |
+
+En las dos dianas el delta natural es POSITIVO y grande: la inversion funciona como predecia el
+brief, y las dos quedan por encima de AA (4,5:1) con margen amplio -- sin techo, porque oscurecer
+nunca puede violar el minimo de contraste, solo mejorarlo.
+
+`scripts/measure-cursor-luz.py` se adapto para tapar/mostrar los DOS lienzos a la vez en
+`hay_lienzo()` y en el toggle oculto/visible de `contraste_pareado()` -- antes solo tapaba el de
+arriba, que ya no lleva el efecto, asi que el arnes viejo habria medido "sin efecto" siempre por
+construccion.
+
+Arnés completo: `0 fallos` (con el gate de MAGNITUD `MARGEN_CHARCO = 0.3` heredado de antes de la
+inversion -- ver la nota critica en el registro de la Task 8/I3 sobre por que ese gate concreto ya
+no podia fallar en este escenario). `npm run build` y `npm run lint` en verde.
+
+Ficheros tocados: `src/components/hyprCursor.ts` (segundo lienzo, gradiente del hueco,
+resize/destroy/guarda de contexto para los dos), `src/themes/themes.css` (bloque
+`.hypr-cursor-hueco`, `prefers-reduced-motion` cubre los dos lienzos), `scripts/measure-cursor-luz.py`
+(`hay_lienzo()` y `contraste_pareado()` cubren los dos lienzos).
+
+**Task 8 (2026-08-19) — revision final: un Critico y dos Importantes.**
+
+1. **C1 (bloqueante):** este spec describia el dispositivo ANTERIOR a la Task 7 (charco que
+   aclara) y su `Estado:` decia `en ejecucion` con el plan marcado al completo -- `verify.py`
+   salia EXIT 1 por `check_spec_plan_consistency()`. Reescrito: Tesis, Anatomia, Color y
+   contraste, y Rendimiento y limpieza llevan ahora un bloque `> **SUPERADO por la Task 7**` que
+   señala que describian el dispositivo viejo, sin borrar el texto original (mismo formato ya
+   usado en este documento para las rondas de arreglo). `Estado:` pasa a `implementado`.
+   `python3 scripts/verify.py` -> vuelve a EXIT 0.
+2. **I2 (importante):** `.credit-group-toggle` es un `<button>` dentro de un `<p>`
+   (`.credit-group-label`, `src/components/credits.ts:365,373`). `resolveZone()` resolvia
+   `onNative` con `target.closest(NATIVE_ZONE)` (que incluye `p`) SIN mirar si habia un pulsable
+   mas cerca del puntero -- el `<p>` ancestro ganaba siempre, asi que el boton (que SI recibe
+   `cursor: none` por CSS, selector directo) se quedaba sin luz Y sin cursor del sistema: las dos
+   señales apagadas a la vez sobre una diana real (5 territorios de creditos, reproducible con
+   puntero fino a <=820px). Arreglado en `hyprCursor.ts`: `resolveZone()` ahora hace UN solo
+   `closest()` con los selectores de pulsable y de zona nativa juntos -- `closest()` devuelve el
+   ancestro-o-el-propio-nodo MAS CERCANO que matchee cualquiera de los dos, asi que si el pulsable
+   esta mas cerca del puntero que la zona nativa (el boton esta dentro del parrafo, no al reves),
+   gana el pulsable. Se eligio el lado JS porque el boton es un control real (abre/cierra un
+   territorio en movil), no texto corrido -- la señal de "esto se selecciona" (`p`) es correcta
+   para el parrafo en general, pero no para el control interactivo que vive dentro. Verificado en
+   navegador a 800x900 (la ventana donde se reproduce): el boton enciende el hueco y pierde
+   `cursor: none` del sistema exactamente igual que cualquier otro pulsable.
+3. **I3 (importante):** el gate de contraste (`MARGEN_CHARCO = 0.3`, `delta_max > MARGEN_CHARCO`)
+   comparaba el delta de MAGNITUD del charco ACLARANTE contra un margen de empeoramiento. Tras la
+   Task 7 (hueco que oscurece) `delta_max` es `<= 0` por construccion geometrica -- el gate ya no
+   podia fallar nunca, "0 fallos" no verificaba nada. Sustituido por una asercion de SIGNO:
+   `delta_max >= -MARGEN_CHARCO` falla (el peor caso de la serie, el mas cercano a cero, tiene que
+   quedar por debajo de `-MARGEN_CHARCO` o el hueco no esta ayudando de forma fiable). Margen
+   bajado a `0.15` -- 3x el techo de ruido del instrumento (+-0,03..0,05, documentado en el test
+   nulo de las Rondas de arreglo 2 y 3 de `## Color y contraste`), mismo criterio ya usado en este
+   arnes para `POT_RANCIO_MAXIMO`. Extendida la comprobacion a una TERCERA diana con fondo propio,
+   `.credit` (una fila de creditos): resultado medido, `delta [-0,42, -0,31]` -- **PASA** el gate
+   de signo con margen real, contra la expectativa de que fallara (hallazgo I1, ver mas abajo).
+   Investigado el porque: `.credits-grid` tiene `background: color-mix(in srgb, var(--void) 78%,
+   transparent)`, NO un fondo 100% opaco -- el 22% de transparencia deja pasar lo bastante del
+   hueco como para que el peor pixel lo capture (delta pequeño pero real), aunque a simple vista
+   el efecto sea imperceptible (consistente con la lectura visual de I1). No se maquillo el margen
+   ni se cambio de diana para forzar un fallo: el numero medido es el que hay.
+   `python3 scripts/measure-cursor-luz.py --base <preview>` -> `0 fallos` en las corridas de esta
+   tarea, incluida `.credit`.
+4. **I1 (no arreglado, pendiente de decision de Aoshi):** el hueco es invisible en dianas con
+   fondo propio opaco por encima del lienzo -4 (`.scene-index-row`, `.obra-otra`,
+   `.contacto-bar`, las 23 filas de creditos) -- ahi el dispositivo degrada a filete de 1px mas
+   punto. Capturas en
+   `/tmp/claude-0/-home-aoshi-proyectos-portfolio-aoshi/7b237084-3ab1-432b-b565-af338b2b6e1b/scratchpad/i1-creditos.png`
+   y `i1-indice.png`. No tocado: es una decision de producto pendiente, no un defecto de esta
+   pasada.
+
+`npm run build` y `npm run lint` en verde. `python3 scripts/verify.py` -> EXIT 0. Informe completo
+en `.superpowers/sdd/2026-08-19-hyprland-cursor-luz/task-8-report.md`.

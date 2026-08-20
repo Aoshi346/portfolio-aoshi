@@ -105,9 +105,26 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   };
   resize();
 
+  /*
+   * `closest()` con los dos selectores a la vez devuelve el ancestro-o-el-
+   * propio-nodo MAS CERCANO que matchee cualquiera de los dos, no el primero
+   * de la lista: el mas cercano gana con independencia del orden en que se
+   * escriban. Antes se resolvia NATIVE_ZONE primero y PRESSABLE solo si no
+   * habia zona nativa, así que un boton pulsable ANIDADO dentro de un `p`
+   * (`.credit-group-toggle` dentro de `.credit-group-label`, un `<p>`) caia
+   * siempre del lado nativo: el `<p>` es zona nativa y `closest('p')` lo
+   * encuentra sin mirar si hay un pulsable mas cerca del puntero. El CSS, en
+   * cambio, ya le daba `cursor: none` a ese mismo boton por selector directo
+   * — resultado: ni luz ni cursor del sistema sobre la diana. La zona la
+   * decide quien esta MAS CERCA del puntero en el arbol, no una prioridad
+   * fija por tipo de selector: si el pulsable es mas cercano (el puntero
+   * esta sobre el boton, no sobre texto corrido suelto), gana el pulsable.
+   */
   const resolveZone = (target: Element): void => {
-    onNative = target.closest(NATIVE_ZONE) !== null;
-    pressable = onNative ? null : target.closest<HTMLElement>(PRESSABLE);
+    const zone = target.closest<HTMLElement>(`${PRESSABLE}, ${NATIVE_ZONE}`);
+    const esPulsable = zone !== null && zone.matches(PRESSABLE);
+    onNative = zone !== null && !esPulsable;
+    pressable = esPulsable ? zone : null;
     rect = pressable ? pressable.getBoundingClientRect() : null;
   };
 

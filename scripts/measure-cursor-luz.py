@@ -40,14 +40,25 @@ import sera `./components/hyprCursor`, asi que Vite generara
 `hyprCursor-<hash>.js` y la subcadena "hyprCursor" es correcta para cazarlo
 por red en cuanto exista.
 
-Asercion 7, contraste por glifo del charco (Task 5 del plan): mide, con el
-charco encendido, el ratio WCAG del texto de la diana contra el peor fondo
-real capturado detras de ella. Se hace sobre los dos tipos de diana que el
-charco SI enciende (verificados arriba): ".hero-mail" (enlace con texto
-propio) y ".obra-abrir" (boton transparente que cubre la fila del titular de
-obra; su propio texto es vacio, el glifo visible es el <h2 data-title> que
-tapa). ".hero-kick" queda fuera: es texto corrido, el charco nunca se
-enciende ahi (asercion 2), asi que no hay riesgo de contraste que medir.
+Asercion 7, contraste por glifo del hueco (Task 5 del plan, gate reescrito en
+Task 8 tras la inversion de Task 7): mide, por PAR (canvas oculto/visible),
+el ratio WCAG del texto de la diana contra el peor fondo real capturado
+detras de ella. Desde Task 7 el efecto oscurece en vez de aclarar, asi que
+el gate ya no compara el delta contra un margen de magnitud (ese gate no
+podia fallar nunca: oscurecer un fondo detras de texto claro no puede bajar
+el contraste, `delta_max <= 0` por construccion geometrica) -- compara el
+SIGNO: el peor caso de la serie tiene que quedar por debajo de
+`-MARGEN_CHARCO` o el gate falla. Se hace sobre tres dianas: las dos que el
+hueco enciende y donde SI se ve el efecto (verificadas arriba) -- ".hero-mail"
+(enlace con texto propio) y ".obra-abrir" (boton transparente que cubre la
+fila del titular de obra; su propio texto es vacio, el glifo visible es el
+<h2 data-title> que tapa) -- mas una TERCERA, ".credit" (una fila de
+creditos, diana con FONDO PROPIO opaco por encima del lienzo del hueco), que
+se espera que FALLE: ahi el fondo de la fila tapa el hueco (hallazgo I1,
+pendiente de decision de producto, no arreglado en esta tarea) y el gate de
+signo lo caza correctamente. ".hero-kick" queda fuera: es texto corrido, el
+hueco nunca se enciende ahi (asercion 2), asi que no hay riesgo de contraste
+que medir.
 
 El borrador del brief traia dos supuestos que no se sostienen contra la
 pagina real, verificados con `getComputedStyle` (no adivinados):
@@ -174,6 +185,13 @@ LIENZOS = (LIENZO, LIENZO_HUECO)
 PULSABLE = ".hero-mail"
 PARRAFO = ".hero-kick"
 PULSABLE_SCROLL = ".obra-abrir"
+# Diana con FONDO PROPIO opaco por encima del lienzo del hueco (z-index -4):
+# una fila de creditos. A diferencia de ".hero-mail" y ".obra-abrir" (que
+# pintan directamente sobre el shader), aqui el hueco queda tapado por el
+# fondo de la fila -- se espera que la asercion de signo (I3) FALLE en esta
+# diana, y eso es correcto: es la Task 7 (hallazgo I1) documentada, no un
+# bug de esta diana.
+PULSABLE_FONDO = ".credit"
 
 AA_MINIMO = 4.5
 # Ventana de ~16,8s (igual que `measure-cartel.py`, ver punto 5 de la
@@ -528,7 +546,40 @@ def main() -> int:
         # esta pintado o no. El numero que importa es el DELTA por par
         # (canvas oculto - canvas visible), no un "encendido" y un "apagado"
         # de DOMs distintos.
-        MARGEN_CHARCO = 0.3
+        #
+        # Task 8 (I3): tras la Task 7 el hueco OSCURECE en vez de aclarar, y
+        # eso invierte el signo del riesgo. El gate viejo fallaba si
+        # `delta_max > MARGEN_CHARCO` (el charco EMPEORANDO el contraste por
+        # encima de un margen) -- con el fondo mas oscuro detras de texto
+        # claro, `delta_max` (canvas oculto - canvas visible) es <= 0 POR
+        # CONSTRUCCION GEOMETRICA: oscurecer nunca puede bajar el contraste
+        # de texto claro sobre fondo oscuro. Ese gate no podia fallar ya
+        # nunca -- "0 fallos" no verificaba nada, solo confirmaba que nadie
+        # habia invertido el color de vuelta.
+        #
+        # La asercion que sustituye es de SIGNO, no de magnitud: encender el
+        # hueco tiene que AYUDAR, y ayudar de verdad, no por una fraccion que
+        # se pueda confundir con ruido de instrumento. En la convencion del
+        # arnes (oculto - visible), ayudar es NEGATIVO, y el PEOR caso de la
+        # serie es el mas cercano a cero -- `delta_max`. Si ese peor caso no
+        # queda por debajo de `-MARGEN_CHARCO`, el hueco no esta ayudando de
+        # forma fiable (podria estar apagado, tapado por un fondo opaco, o
+        # con el color vuelto a invertir) y el gate tiene que fallar.
+        #
+        # Margen elegido con holgura real frente al ruido del instrumento: el
+        # spec documenta un test nulo (sin cambiar nada, solo repitiendo la
+        # medida pareada) con deltas en banda de ruido +-0,03..0,05 ("Ronda de
+        # arreglo 2" / "Ronda de arreglo 3" del spec). 0,15 es 3x ese techo de
+        # ruido medido -- mismo criterio ya usado en este arnes para
+        # `POT_RANCIO_MAXIMO` (tambien 3x el unico fallo medido). Con la
+        # calibracion final (0.88/0.5, Task 7) el peor delta medido en
+        # `.hero-mail`/`.obra-abrir` ronda -0,67 a -3,36 -- muy por debajo de
+        # -0,15, asi que el margen no roza el gate en las dianas que SI
+        # funcionan; en `.credit` (diana con fondo propio opaco, I1) se
+        # espera que el gate FALLE con este margen, porque el hueco esta
+        # tapado y no ayuda nada -- eso es correcto y es justo lo que este
+        # gate tiene que cazar.
+        MARGEN_CHARCO = 0.15
         # 0,42s de duracion + hasta 13 letras (titulo mas largo del
         # catalogo, "Editor de texto" sin contar espacios) x 0,024s de
         # stagger = 0,732s. Con margen. Se espera UNA vez, al apuntar, antes
@@ -545,6 +596,11 @@ def main() -> int:
                 "section:has(.obra-abrir) .obra-rl i:last-child",
                 "section:has(.obra-abrir) [data-title]",
             ),
+            # Diana con fondo propio (I1/I3): se espera que ESTA falle el
+            # gate de signo -- el hueco queda tapado por el fondo opaco de la
+            # fila y no ayuda. No se maquilla ni se le baja el margen para
+            # que pase.
+            (PULSABLE_FONDO, PULSABLE_FONDO, PULSABLE_FONDO, None),
         )
 
         for diana, glifo, color_sel, punto_sel in DIANAS_CONTRASTE:
@@ -582,15 +638,23 @@ def main() -> int:
             peor_con_charco = min(visible for _, visible in pares)
             peor_sin_charco = min(oculto for oculto, _ in pares)
             print(
-                f"contraste {diana} (color rgb{texto_rgb}): delta del charco "
+                f"contraste {diana} (color rgb{texto_rgb}): delta del hueco "
                 f"(canvas oculto - canvas visible) en [{delta_min:.2f}, {delta_max:.2f}] "
-                f"({len(pares)} pares intercalados), peor con charco {peor_con_charco:.2f}:1, "
-                f"peor sin charco (mismo DOM) {peor_sin_charco:.2f}:1, referencia AA {AA_MINIMO}:1"
+                f"({len(pares)} pares intercalados), peor con hueco {peor_con_charco:.2f}:1, "
+                f"peor sin hueco (mismo DOM) {peor_sin_charco:.2f}:1, referencia AA {AA_MINIMO}:1"
             )
-            if delta_max > MARGEN_CHARCO:
+            # Asercion de SIGNO (I3): el peor caso de la serie (delta_max, el
+            # mas cercano a cero) tiene que quedar por debajo de
+            # -MARGEN_CHARCO -- encender el hueco tiene que ayudar, y ayudar
+            # con margen real, no rozar el cero. Si delta_max no es
+            # suficientemente negativo, el hueco no esta ayudando de forma
+            # fiable (apagado, tapado por un fondo opaco, o el color vuelto a
+            # invertir de aclarar en vez de oscurecer).
+            if delta_max >= -MARGEN_CHARCO:
                 fallos.append(
-                    f"el charco empeora el contraste en {diana}: delta max {delta_max:.2f} "
-                    f"> margen {MARGEN_CHARCO} (rango observado [{delta_min:.2f}, {delta_max:.2f}])"
+                    f"el hueco no ayuda con margen suficiente en {diana}: peor caso (delta max) "
+                    f"{delta_max:.2f} no es mas negativo que -{MARGEN_CHARCO} "
+                    f"(rango observado [{delta_min:.2f}, {delta_max:.2f}])"
                 )
 
         # 3. estado rancio tras desplazar sin mover el raton

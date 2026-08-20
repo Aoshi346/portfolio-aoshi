@@ -916,3 +916,57 @@ la nota sobre el gate `MARGEN_CHARCO` que ya no puede fallar en este sentido.
 
 Capturas a 1440x900 con `?theme=hyprland` sobre `.obra-abrir` y `.hero-mail`, con `pot` asentada.
 **Mirarlas**: el hueco tiene que verse como una hondonada bajo el texto, con el canto encendido.
+
+---
+
+## Addendum — revision final: Task 8 (un Critico y dos Importantes)
+
+**Por que.** La revision final de la rama devolvio un Critico (C1, spec desactualizado y gate de
+consistencia en rojo) y dos Importantes (I2, un pulsable sin luz ni cursor del sistema; I3, un
+gate de contraste que ya no podia fallar). Un cuarto hallazgo (I1, el hueco invisible sobre fondos
+opacos) queda documentado con capturas, pendiente de decision de Aoshi, sin arreglar en esta tarea.
+
+### Task 8: cerrar la revision final
+
+**Ficheros:**
+- Modificar: `docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md`
+- Modificar: `src/components/hyprCursor.ts`
+- Modificar: `scripts/measure-cursor-luz.py`
+
+- [x] **Paso 1 (C1): reescribir el spec para que describa el dispositivo actual**
+
+Tesis, Anatomia, Color y contraste y Rendimiento y limpieza llevan un bloque
+`> **SUPERADO por la Task 7**` que señala los parrafos viejos sin borrarlos. `Estado:` pasa de
+`en ejecucion` a `implementado`. Registro de implementacion gana las entradas de la Task 7 (con
+los numeros del informe: delta `.hero-mail` 4,29 -> 5,10:1, `.obra-abrir` 3,53 -> 6,55:1,
+calibracion `0.88`/`0.5`) y de la Task 8. `python3 scripts/verify.py` pasa de EXIT 1 a EXIT 0.
+
+- [x] **Paso 2 (I2): resolver el pulsable sin señal**
+
+`.credit-group-toggle` (boton dentro de un `<p>`) se quedaba sin luz (JS lo trataba como zona
+nativa por el `<p>` ancestro) y sin cursor del sistema (CSS le daba `cursor: none` por selector
+directo) a la vez. `resolveZone()` en `hyprCursor.ts` ahora resuelve pulsable y zona nativa con un
+solo `closest()` combinado -- gana el mas cercano al puntero, no una prioridad fija por tipo de
+selector. Verificado en navegador a 800x900.
+
+- [x] **Paso 3 (I3): sustituir el gate de magnitud por uno de signo**
+
+`MARGEN_CHARCO` baja de `0.3` a `0.15` (3x el techo de ruido del instrumento, documentado en el
+spec) y la condicion de fallo pasa de `delta_max > MARGEN_CHARCO` (magnitud, no podia fallar tras
+la inversion de Task 7) a `delta_max >= -MARGEN_CHARCO` (signo: el peor caso tiene que ayudar con
+margen real). Extendida `DIANAS_CONTRASTE` con `.credit` (diana con fondo propio) -- medido
+`delta [-0,42, -0,31]`, pasa el gate (no falla como se esperaba: `.credits-grid` es 78% opaco, no
+100%, deja pasar lo suficiente del hueco para que el peor pixel lo capture aunque sea imperceptible
+a simple vista).
+
+- [x] **Paso 4 (I1, sin arreglar): capturas y descripcion honesta**
+
+`i1-creditos.png` e `i1-indice.png` a 1440x900, `?theme=hyprland`, `pot` > 0,95. El hueco degrada a
+filete de 1px mas punto sobre fondos opacos -- consistente con lo medido en el Paso 3. No tocado:
+decision de producto pendiente.
+
+- [x] **Paso 5: verificacion y commit**
+
+`npm run build`, `npm run lint`, `python3 scripts/verify.py` (EXIT 0), y
+`scripts/measure-cursor-luz.py` ejecutado varias veces contra el build de produccion servido.
+Informe en `.superpowers/sdd/2026-08-19-hyprland-cursor-luz/task-8-report.md`.
