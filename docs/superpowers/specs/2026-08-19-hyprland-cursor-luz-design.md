@@ -778,3 +778,50 @@ Ficheros tocados: `src/components/hyprCursor.ts` (detección de oclusión, mecan
 `background-image`, interruptor de suspensión y sonda `medirImagen()` para verificación),
 `scripts/measure-cursor-luz.py` (toggle por mecanismo, aserción estructural, márgenes por diana,
 selector `.credit-name` para leer el color real de hover).
+
+---
+
+## El hueco adaptativo — cierre
+
+El dispositivo no tiene un signo fijo: **oscurece donde el fondo es brillante e ilumina donde ya
+es oscuro**, y el signo lo decide la luminancia del fondo que tapa el lienzo, leída una vez por
+diana con la misma llamada que ya calculaba la oclusión.
+
+Por qué hicieron falta los dos. Sobre el shader el fondo llega a ser brillante y aclarar le come
+contraste al texto claro: medido, a la intensidad del prototipo costaba 1,4 puntos en
+`.hero-mail`. Pero sobre un panel propio casi negro no hay nada que oscurecer — `.credit` mide
+**9,69:1 sin hueco** y la curva de contraste está saturada, así que oscurecer ahí ni se ve ni se
+mide (verificado con A/B controlado: el mecanismo de imagen daba lo mismo que la fuga del 22% de
+transparencia). En ese material la luz sí se ve, y parte de tan arriba que puede permitírsela.
+
+| Diana | Fondo | Signo | Mecanismo | Contraste |
+|---|---|---|---|---|
+| `.hero-mail` | shader | oscurece | lienzo `-4` | 4,29 → **5,07:1** |
+| `.obra-abrir` | shader | oscurece | lienzo `-4` | 3,47 → **6,50:1** |
+| `.credit` | panel casi negro | ilumina | `background-image` | 9,69 → **7,96:1** |
+
+Iluminar baja el contraste a propósito y está acotado: el piso de esa familia es **AAA (7,0)**, no
+AA, porque esas dianas parten de 9,7 y no hay razón para dejarlas caer hasta el mínimo.
+
+**El gate del arnés está partido por familia**, y esto es lo que hay que conservar si alguien lo
+toca: la familia que oscurece tiene que **mejorar** el contraste; la que ilumina tiene que
+**aguantar el piso y además notarse**. Un solo gate para las dos sólo puede exigir lo que valga
+para ambas, que es nada — y ya se coló exactamente así una vez, con `.credit` pasando por la
+rendija del 22% de transparencia mientras en pantalla no había nada que ver. La aserción de "la luz
+tiene que notarse" existe por ese fallo concreto.
+
+### Verificación final
+
+- `npm run build` y `npm run lint` en verde.
+- `scripts/measure-cursor-luz.py`: **0 fallos** en tres corridas consecutivas.
+- `scripts/verify.py`: 0 fallos nuevos sobre su línea base.
+- `scripts/measure-obra-rail.py` con `?theme=vice`: `distance: 5760`, `pin_budget: 5040`, los
+  valores documentados. Vice conserva su clase `vice-cursor-ready`.
+- Lienzos por tema (comprobados por separado, no con un `AND` que taparía un huérfano):
+  Hyprland 1 y 1, Vice 0 y 0, Caelestia 0 y 0.
+- Móvil 390x844: el módulo **no se descarga** (comprobado por red) y no hay lienzos.
+- `prefers-reduced-motion: reduce`: no hay lienzos.
+- `destroy()`: quita los dos lienzos, la clase, la sonda **y restaura el `background-image` en
+  línea** de la diana que lo tuviera.
+- Consola: el único error en Hyprland es `gsap is not defined`, y **aparece igual con el módulo del
+  cursor bloqueado por red**, así que es previo a esta rama y merece su propio arreglo.
