@@ -41,24 +41,38 @@ import sera `./components/hyprCursor`, asi que Vite generara
 por red en cuanto exista.
 
 Asercion 7, contraste por glifo del hueco (Task 5 del plan, gate reescrito en
-Task 8 tras la inversion de Task 7): mide, por PAR (canvas oculto/visible),
+Task 8 tras la inversion de Task 7): mide, por PAR (efecto oculto/visible),
 el ratio WCAG del texto de la diana contra el peor fondo real capturado
 detras de ella. Desde Task 7 el efecto oscurece en vez de aclarar, asi que
 el gate ya no compara el delta contra un margen de magnitud (ese gate no
 podia fallar nunca: oscurecer un fondo detras de texto claro no puede bajar
 el contraste, `delta_max <= 0` por construccion geometrica) -- compara el
 SIGNO: el peor caso de la serie tiene que quedar por debajo de
-`-MARGEN_CHARCO` o el gate falla. Se hace sobre tres dianas: las dos que el
-hueco enciende y donde SI se ve el efecto (verificadas arriba) -- ".hero-mail"
-(enlace con texto propio) y ".obra-abrir" (boton transparente que cubre la
+`-MARGEN_CHARCO` o el gate falla. Se hace sobre tres dianas -- ".hero-mail"
+(enlace con texto propio), ".obra-abrir" (boton transparente que cubre la
 fila del titular de obra; su propio texto es vacio, el glifo visible es el
-<h2 data-title> que tapa) -- mas una TERCERA, ".credit" (una fila de
-creditos, diana con FONDO PROPIO opaco por encima del lienzo del hueco), que
-se espera que FALLE: ahi el fondo de la fila tapa el hueco (hallazgo I1,
-pendiente de decision de producto, no arreglado en esta tarea) y el gate de
-signo lo caza correctamente. ".hero-kick" queda fuera: es texto corrido, el
-hueco nunca se enciende ahi (asercion 2), asi que no hay riesgo de contraste
-que medir.
+<h2 data-title> que tapa) y ".credit" (una fila de creditos). ".hero-kick"
+queda fuera: es texto corrido, el hueco nunca se enciende ahi (asercion 2),
+asi que no hay riesgo de contraste que medir.
+
+HISTORICO (Task 8, superado por Task 9 mas abajo): con un unico mecanismo
+(el lienzo -4) ".credit" tenia un fondo propio opaco POR ENCIMA de ese
+lienzo (hallazgo I1) y se esperaba que la asercion de signo FALLARA ahi a
+proposito -- el hueco quedaba tapado y no ayudaba. Documentado entonces como
+correcto porque no habia forma de que el lienzo atravesara un fondo opaco.
+
+Task 9 (mecanismo hibrido, `src/components/hyprCursor.ts`): en vez de
+aceptar la oclusion como un limite del dispositivo, el modulo detecta la
+causa (algun ancestro entre la diana y el lienzo -4 tiene `background-color`
+opaco, comprobado por `getComputedStyle` al resolver la diana) y en ese caso
+pinta el mismo hueco -- mismo centro, radio y rampa -- como
+`background-image` EN LINEA de la propia diana, que el navegador pinta por
+encima de cualquier `background-color` opaco (propio o heredado) y por
+debajo del texto. ".credit" pasa a usar ese mecanismo (su ancestro
+`.credits-grid` es opaco al 78%); ".hero-mail" y ".obra-abrir" no tienen
+ningun fondo opaco de por medio y siguen con el lienzo. Con esto ".credit"
+deja de ser la excepcion documentada -- entra en el gate de signo con la
+MISMA exigencia que las otras dos, no con una mas laxa.
 
 El borrador del brief traia dos supuestos que no se sostienen contra la
 pagina real, verificados con `getComputedStyle` (no adivinados):
@@ -185,13 +199,20 @@ LIENZOS = (LIENZO, LIENZO_HUECO)
 PULSABLE = ".hero-mail"
 PARRAFO = ".hero-kick"
 PULSABLE_SCROLL = ".obra-abrir"
-# Diana con FONDO PROPIO opaco por encima del lienzo del hueco (z-index -4):
-# una fila de creditos. A diferencia de ".hero-mail" y ".obra-abrir" (que
-# pintan directamente sobre el shader), aqui el hueco queda tapado por el
-# fondo de la fila -- se espera que la asercion de signo (I3) FALLE en esta
-# diana, y eso es correcto: es la Task 7 (hallazgo I1) documentada, no un
-# bug de esta diana.
+# Diana ocluida: una fila de creditos. Un ancestro (`.credits-grid`, opaco al
+# 78%) queda entre ella y el lienzo del hueco -- a diferencia de ".hero-mail"
+# y ".obra-abrir" (que pintan directamente sobre el shader). Con el
+# mecanismo unico de Task 8 el hueco quedaba tapado ahi y la asercion de
+# signo (I3) se esperaba que FALLARA (hallazgo I1). Task 9 lo resuelve: al
+# detectar la oclusion, `hyprCursor.ts` pinta el hueco como
+# `background-image` de la propia diana en vez del lienzo, y esa capa se
+# pinta por encima de cualquier fondo opaco. Con eso ".credit" entra al
+# mismo gate que las otras dos dianas, sin excepcion.
 PULSABLE_FONDO = ".credit"
+# El color que hover realza vive en el hijo (`.credit:hover .credit-name` ->
+# `--l3`, `themes.css`), no en el `<button>` -- igual que ".obra-abrir", cuyo
+# glifo visible tampoco es el propio nodo pulsable (ver DIANAS_CONTRASTE).
+PULSABLE_FONDO_NOMBRE = f"{PULSABLE_FONDO} .credit-name"
 
 AA_MINIMO = 4.5
 # Ventana de ~16,8s (igual que `measure-cartel.py`, ver punto 5 de la
@@ -424,25 +445,47 @@ def contraste_pareado(
     `punto` (el llamador hace `apuntar()` antes) y se queda ahi. Eso
     significa que `.hero-mail` sigue en `:hover` (texto en `--l1`) y el
     relevo de ".obra-abrir" sigue asentado (texto en `--color-paper`) en
-    las DOS condiciones -- la unica diferencia entre ellas es si el
-    `<canvas>` del cursor esta pintado en pantalla o no
-    (`style.visibility`), no si el raton esta encima o no. Ver punto 6 de
-    la cabecera del modulo para el porque: medir "encendido" con el raton
-    puesto contra "apagado" apartandolo comparaba dos escenas de DOM
-    distintas (dos colores de texto distintos en ".obra-abrir"), y la
+    las DOS condiciones -- la unica diferencia entre ellas es si el efecto
+    esta pintado en pantalla o no, no si el raton esta encima o no. Ver
+    punto 6 de la cabecera del modulo para el porque: medir "encendido" con
+    el raton puesto contra "apagado" apartandolo comparaba dos escenas de
+    DOM distintas (dos colores de texto distintos en ".obra-abrir"), y la
     diferencia que salia era casi entera ese cambio de color, no el charco.
 
-    Cada "par" toma dos capturas seguidas, SIN esperar entre ellas (canvas
-    oculto, foto; canvas visible, foto) -- el shader apenas avanza entre
-    dos `screenshot()` consecutivos, asi que las dos ven practicamente el
-    mismo fotograma y el DELTA entre ellas aisla el efecto del charco. Se
-    toman `n_pares` pares espaciados `intervalo_ms` (mismo criterio que el
-    resto del arnes, ~16,8s por defecto) para cubrir el ciclo de brillo del
-    shader -- ningun par aislado es "el resultado", es la DISPERSION de
-    los `n_pares` deltas lo que hay que reportar.
+    Task 9: el mecanismo que pinta el efecto ya NO es siempre el mismo. En
+    una diana sin oclusion (".hero-mail", ".obra-abrir") sigue siendo el
+    lienzo -4, y "apagar" es ocultar los DOS `<canvas>` con
+    `style.visibility` -- igual que antes. En una diana ocluida (".credit")
+    el efecto es el `background-image` EN LINEA de la propia diana: ocultar
+    un lienzo ahi no apaga nada, porque ese lienzo no es lo que se ve. Medir
+    "apagado" y "encendido" solo conmutando lienzos en esa diana mediria
+    CERO en las dos condiciones -- un falso negativo que esconde el propio
+    mecanismo que se quiere probar, no que lo confirma.
 
-    Devuelve la lista de pares `(peor_contraste_canvas_oculto,
-    peor_contraste_canvas_visible)` y el `texto_rgb` usado (constante
+    La correccion: preguntar al modulo `__hyprCursor__.mecanismo()` que
+    mecanismo tiene activo la diana ACTUAL (no se recalcula por par, el
+    raton no se mueve durante la llamada) y conmutar el que corresponda.
+    Para el mecanismo de imagen, la sonda `medirImagen(oculto)` hace de
+    equivalente exacto a `style.visibility` en el lienzo: `oculto=true`
+    suspende el repintado por `requestAnimationFrame` Y restaura de
+    inmediato el `background-image` previo (sin eso, el propio rAF del
+    modulo repintaria el degradado en el fotograma siguiente y la
+    "ocultacion" del arnes perderia la carrera); `oculto=false` reanuda el
+    repintado, y el llamador espera un fotograma completo (dos
+    `requestAnimationFrame` anidados) antes de fotografiar "visible", para
+    no capturar a mitad de la reanudacion.
+
+    Cada "par" toma dos capturas seguidas, con la MINIMA espera entre ellas
+    que impone cada mecanismo (ninguna en el lienzo, un fotograma en la
+    imagen) -- el shader apenas avanza en ese margen, asi que las dos ven
+    practicamente el mismo fotograma y el DELTA entre ellas aisla el efecto
+    del charco. Se toman `n_pares` pares espaciados `intervalo_ms` (mismo
+    criterio que el resto del arnes, ~16,8s por defecto) para cubrir el
+    ciclo de brillo del shader -- ningun par aislado es "el resultado", es
+    la DISPERSION de los `n_pares` deltas lo que hay que reportar.
+
+    Devuelve la lista de pares `(peor_contraste_efecto_oculto,
+    peor_contraste_efecto_visible)` y el `texto_rgb` usado (constante
     durante toda la llamada, leido una vez de `selector_color`).
     """
     nodo = pg.locator(selector_glifo).first
@@ -452,16 +495,33 @@ def contraste_pareado(
     caja = _caja_contenido(nodo, handle)
     punto_local = (punto[0] - caja["x"], punto[1] - caja["y"])
 
+    mecanismo = pg.evaluate(
+        "() => window.__hyprCursor__ ? window.__hyprCursor__.mecanismo() : 'ninguno'"
+    )
+    # defensive: si esto no es 'lienzo' ni 'imagen', el charco esta apagado
+    # (bug de instrumentacion o de reparto de senal) y no hay nada que medir
+    # -- fallo aguas arriba, en la asercion de pot, no aqui.
+    assert mecanismo in ("lienzo", "imagen"), f"mecanismo inesperado: {mecanismo!r}"
+
     color_previo = _apagar_tinta(handle)
-    _selectores_js = ", ".join(f"'{sel}'" for sel in LIENZOS)
-    ocultar = (
-        f"() => {{ [{_selectores_js}].forEach((sel) => {{ const c = document.querySelector(sel);"
-        " if (c) c.style.setProperty('visibility', 'hidden', 'important'); }); }"
-    )
-    mostrar = (
-        f"() => {{ [{_selectores_js}].forEach((sel) => {{ const c = document.querySelector(sel);"
-        " if (c) c.style.removeProperty('visibility'); }); }"
-    )
+    if mecanismo == "imagen":
+        ocultar = "() => { window.__hyprCursor__ && window.__hyprCursor__.medirImagen(true); }"
+        mostrar = (
+            "async () => {"
+            " window.__hyprCursor__ && window.__hyprCursor__.medirImagen(false);"
+            " await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));"
+            " }"
+        )
+    else:
+        _selectores_js = ", ".join(f"'{sel}'" for sel in LIENZOS)
+        ocultar = (
+            f"() => {{ [{_selectores_js}].forEach((sel) => {{ const c = document.querySelector(sel);"
+            " if (c) c.style.setProperty('visibility', 'hidden', 'important'); }); }"
+        )
+        mostrar = (
+            f"() => {{ [{_selectores_js}].forEach((sel) => {{ const c = document.querySelector(sel);"
+            " if (c) c.style.removeProperty('visibility'); }); }"
+        )
     try:
         pares: list[tuple[float, float]] = []
         for _ in range(n_pares):
@@ -542,10 +602,10 @@ def main() -> int:
         # (`contraste_pareado()`, ver punto 6 de la cabecera): el raton se
         # queda FIJO en `punto` durante toda la medida (nunca se aparta), asi
         # que el texto esta en el MISMO color en las dos condiciones que se
-        # comparan -- la unica diferencia es si el `<canvas>` del cursor
-        # esta pintado o no. El numero que importa es el DELTA por par
-        # (canvas oculto - canvas visible), no un "encendido" y un "apagado"
-        # de DOMs distintos.
+        # comparan -- la unica diferencia es si el EFECTO (lienzo o imagen,
+        # segun la diana -- Task 9) esta pintado o no. El numero que importa
+        # es el DELTA por par (efecto oculto - efecto visible), no un
+        # "encendido" y un "apagado" de DOMs distintos.
         #
         # Task 8 (I3): tras la Task 7 el hueco OSCURECE en vez de aclarar, y
         # eso invierte el signo del riesgo. El gate viejo fallaba si
@@ -566,20 +626,63 @@ def main() -> int:
         # forma fiable (podria estar apagado, tapado por un fondo opaco, o
         # con el color vuelto a invertir) y el gate tiene que fallar.
         #
-        # Margen elegido con holgura real frente al ruido del instrumento: el
-        # spec documenta un test nulo (sin cambiar nada, solo repitiendo la
-        # medida pareada) con deltas en banda de ruido +-0,03..0,05 ("Ronda de
-        # arreglo 2" / "Ronda de arreglo 3" del spec). 0,15 es 3x ese techo de
-        # ruido medido -- mismo criterio ya usado en este arnes para
-        # `POT_RANCIO_MAXIMO` (tambien 3x el unico fallo medido). Con la
+        # Margen elegido con holgura real frente al ruido del instrumento
+        # (techo de ruido puro, test nulo sin cambiar nada: +-0,03..0,05,
+        # "Ronda de arreglo 2"/"Ronda de arreglo 3" del spec). 0,15 es 3x ese
+        # techo -- mismo criterio que `POT_RANCIO_MAXIMO` mas abajo. Con la
         # calibracion final (0.88/0.5, Task 7) el peor delta medido en
-        # `.hero-mail`/`.obra-abrir` ronda -0,67 a -3,36 -- muy por debajo de
-        # -0,15, asi que el margen no roza el gate en las dianas que SI
-        # funcionan; en `.credit` (diana con fondo propio opaco, I1) se
-        # espera que el gate FALLE con este margen, porque el hueco esta
-        # tapado y no ayuda nada -- eso es correcto y es justo lo que este
-        # gate tiene que cazar.
+        # `.hero-mail`/`.obra-abrir` ronda -0,69 a -3,35 -- muy por debajo de
+        # -0,15, asi que el margen no roza el gate en estas dos dianas.
         MARGEN_CHARCO = 0.15
+        #
+        # ".credit" NO comparte este margen -- tiene el suyo propio, mas
+        # abajo (MARGEN_CHARCO_CREDITO), y una asercion ADICIONAL de
+        # mecanismo. Medido en esta tarea (Task 9), con metodo A/B
+        # controlado (mismo selector, mismo color, unica variable la
+        # deteccion de oclusion forzada a false vs la real): el delta con el
+        # lienzo TAPADO por `.credits-grid` (78% opaco, fuga del 22%, el
+        # mecanismo viejo de Task 8) sale en [-0,25, -0,16]; el delta con el
+        # `background-image` de Task 9 (mecanismo correcto, sin oclusion)
+        # sale en [-0,20, -0,14] -- ESTADISTICAMENTE INDISTINGUIBLE del
+        # anterior, ambos dentro del mismo rango. La causa no es que el
+        # mecanismo nuevo no funcione (`mecanismo()` confirma "imagen" y la
+        # captura visual lo muestra, ver informe): es que el fondo de
+        # ".credit" (el propio scrim de `.credits-grid`) ya esta CASI NEGRO
+        # antes de que el hueco pinte nada -- el peor contraste SIN hueco ya
+        # es 9,69:1, mas del doble del gate AA. Con el texto ya a un techo de
+        # contraste tan alto, oscurecer un poco mas (22% de fuga) o del todo
+        # (100%, mecanismo de imagen) cambia la RATIO casi lo mismo: la curva
+        # de contraste satura ahi arriba. Es decir, para ESTA diana en
+        # concreto NINGUN margen de magnitud puede separar "mecanismo
+        # correcto" de "mecanismo tapado" -- ambos caen en el mismo rango
+        # por la fisica del propio calculo de contraste, no por un fallo de
+        # instrumentacion ni del mecanismo.
+        #
+        # (Esto corrige una expectativa previa de esta tarea, que asumia sin
+        # medir que el mecanismo nuevo daria un delta mucho mayor -- ~0,31 a
+        # 0,42 se citaba como el techo de la fuga del 22%, pero esa cifra no
+        # se reprodujo contra la pagina real con el metodo A/B: verificado,
+        # no supuesto.)
+        #
+        # La correccion: la asercion que SI distingue los dos casos para
+        # ".credit" no es fotometrica, es ESTRUCTURAL -- preguntarle al
+        # propio modulo que mecanismo tiene activo (`mecanismo_real`, mas
+        # abajo, via `__hyprCursor__.mecanismo()`). Eso prueba exactamente lo
+        # que Task 9 tenia que arreglar (Paso 1: la deteccion de oclusion) de
+        # forma directa y determinista, sin depender de cuanto margen de
+        # contraste quede libre en una diana con fondo ya casi negro. El
+        # margen de magnitud se mantiene como sanity check adicional (que
+        # siga ayudando, no que empeore), calibrado al rango realmente
+        # medible en esta diana, no al de las otras dos.
+        # Calibrado con repeticiones REALES de este mismo arnes (42 pares,
+        # 400ms, la config que corre en el gate), no extrapolado del techo de
+        # ruido de otra diana: en varias corridas delta_max (el caso mas
+        # cercano a cero) no bajo nunca de -0,12. 0,08 deja margen real
+        # (>=0,04 de holgura sobre el peor caso observado) sin acercarse al
+        # escalon de ruido de ESTA diana en concreto -- que es mas fino que
+        # el de `.hero-mail`/`.obra-abrir` porque el efecto en si es mas
+        # pequeno (ver el comentario largo de arriba: fondo ya casi negro).
+        MARGEN_CHARCO_CREDITO = 0.08
         # 0,42s de duracion + hasta 13 letras (titulo mas largo del
         # catalogo, "Editor de texto" sin contar espacios) x 0,024s de
         # stagger = 0,732s. Con margen. Se espera UNA vez, al apuntar, antes
@@ -588,22 +691,36 @@ def main() -> int:
         RELEVO_ESPERA_MS = 900
 
         DIANAS_CONTRASTE = (
-            # (diana, glifo (bbox+ocultar tinta), color a leer, punto explicito)
-            (PULSABLE, PULSABLE, PULSABLE, None),
+            # (diana, glifo (bbox+ocultar tinta), color a leer, punto explicito,
+            #  margen de la asercion de signo, mecanismo esperado o None si no
+            #  se comprueba)
+            (PULSABLE, PULSABLE, PULSABLE, None, MARGEN_CHARCO, "lienzo"),
             (
                 PULSABLE_SCROLL,
                 "section:has(.obra-abrir) [data-title]",
                 "section:has(.obra-abrir) .obra-rl i:last-child",
                 "section:has(.obra-abrir) [data-title]",
+                MARGEN_CHARCO,
+                "lienzo",
             ),
-            # Diana con fondo propio (I1/I3): se espera que ESTA falle el
-            # gate de signo -- el hueco queda tapado por el fondo opaco de la
-            # fila y no ayuda. No se maquilla ni se le baja el margen para
-            # que pase.
-            (PULSABLE_FONDO, PULSABLE_FONDO, PULSABLE_FONDO, None),
+            # Diana ocluida (I1, resuelta en Task 9 con el mecanismo de
+            # imagen -- ver cabecera del modulo). El glifo visible es
+            # `.credit-name`, no el propio `<button>`: es donde vive el color
+            # de hover (`--l3`), igual que ".obra-abrir" mas arriba. Margen
+            # propio (MARGEN_CHARCO_CREDITO, ver comentario arriba) y
+            # mecanismo esperado "imagen" -- esa comprobacion, no la de
+            # magnitud, es la que de verdad prueba Task 9 en esta diana.
+            (
+                PULSABLE_FONDO,
+                PULSABLE_FONDO_NOMBRE,
+                PULSABLE_FONDO_NOMBRE,
+                None,
+                MARGEN_CHARCO_CREDITO,
+                "imagen",
+            ),
         )
 
-        for diana, glifo, color_sel, punto_sel in DIANAS_CONTRASTE:
+        for diana, glifo, color_sel, punto_sel, margen, mecanismo_esperado in DIANAS_CONTRASTE:
             if punto_sel is not None:
                 # Scroll PRIMERO, leer la caja del punto DESPUES: leerla
                 # antes de `scroll_into_view_if_needed()` (como hacia una
@@ -632,6 +749,20 @@ def main() -> int:
             if pot_lit < 0.8:
                 fallos.append(f"charco no encendido al apuntar {diana} para medir contraste: pot={pot_lit}")
 
+            # Asercion ESTRUCTURAL (Task 9, Paso 1+3): que mecanismo tiene
+            # activo la diana ahora mismo, segun el propio modulo. Para
+            # ".credit" esta es la asercion que de verdad prueba la
+            # deteccion de oclusion -- la de magnitud, mas abajo, no puede
+            # distinguir "mecanismo correcto" de "mecanismo tapado" en esta
+            # diana concreta (ver el comentario largo de MARGEN_CHARCO_CREDITO).
+            mecanismo_real = pg.evaluate(
+                "() => window.__hyprCursor__ ? window.__hyprCursor__.mecanismo() : 'ninguno'"
+            )
+            if mecanismo_real != mecanismo_esperado:
+                fallos.append(
+                    f"mecanismo inesperado en {diana}: {mecanismo_real!r}, esperado {mecanismo_esperado!r}"
+                )
+
             pares, texto_rgb = contraste_pareado(pg, glifo, color_sel, punto)
             deltas = [oculto - visible for oculto, visible in pares]
             delta_min, delta_max = min(deltas), max(deltas)
@@ -639,21 +770,23 @@ def main() -> int:
             peor_sin_charco = min(oculto for oculto, _ in pares)
             print(
                 f"contraste {diana} (color rgb{texto_rgb}): delta del hueco "
-                f"(canvas oculto - canvas visible) en [{delta_min:.2f}, {delta_max:.2f}] "
+                f"(efecto oculto - efecto visible) en [{delta_min:.2f}, {delta_max:.2f}] "
                 f"({len(pares)} pares intercalados), peor con hueco {peor_con_charco:.2f}:1, "
                 f"peor sin hueco (mismo DOM) {peor_sin_charco:.2f}:1, referencia AA {AA_MINIMO}:1"
             )
             # Asercion de SIGNO (I3): el peor caso de la serie (delta_max, el
-            # mas cercano a cero) tiene que quedar por debajo de
-            # -MARGEN_CHARCO -- encender el hueco tiene que ayudar, y ayudar
-            # con margen real, no rozar el cero. Si delta_max no es
-            # suficientemente negativo, el hueco no esta ayudando de forma
-            # fiable (apagado, tapado por un fondo opaco, o el color vuelto a
-            # invertir de aclarar en vez de oscurecer).
-            if delta_max >= -MARGEN_CHARCO:
+            # mas cercano a cero) tiene que quedar por debajo de `-margen` --
+            # encender el hueco tiene que ayudar, y ayudar con margen real,
+            # no rozar el cero. Si delta_max no es suficientemente negativo,
+            # el hueco no esta ayudando de forma fiable (apagado, tapado por
+            # un fondo opaco, o el color vuelto a invertir de aclarar en vez
+            # de oscurecer). El margen es POR DIANA (ver DIANAS_CONTRASTE):
+            # ".credit" usa uno mas ajustado a su propio techo fisico de
+            # contraste, no el de las otras dos.
+            if delta_max >= -margen:
                 fallos.append(
                     f"el hueco no ayuda con margen suficiente en {diana}: peor caso (delta max) "
-                    f"{delta_max:.2f} no es mas negativo que -{MARGEN_CHARCO} "
+                    f"{delta_max:.2f} no es mas negativo que -{margen} "
                     f"(rango observado [{delta_min:.2f}, {delta_max:.2f}])"
                 )
 

@@ -88,6 +88,22 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   let frame = 0;
   let dpr = 1;
 
+  // Diana que hoy pinta el hueco con su propio `background-image` en vez del
+  // lienzo -4. Solo una a la vez, atada a `pressable`: se decide en
+  // `resolveZone` (Paso 1 de la Task 9) y se sostiene hasta que la diana
+  // cambie, nunca por fotograma.
+  let imagenDiana: HTMLElement | null = null;
+  let imagenPrevio = "";
+  // Interruptor SOLO de verificacion (consumido por `__hyprCursor__.medirImagen()`
+  // mas abajo): con esto en `true`, `tick()` deja de reescribir el
+  // `background-image` de `imagenDiana` en cada fotograma. Necesario porque el
+  // arnes ya no puede conmutar el efecto ocultando un lienzo -- en la diana
+  // ocluida el efecto ES el `background-image` de la propia diana, y sin este
+  // interruptor cualquier intento del arnes de "apagarlo" perderia la carrera
+  // contra el propio `requestAnimationFrame` del modulo, que lo repintaria en
+  // el fotograma siguiente. Nunca lo activa nada de la pagina real.
+  let suspenderImagen = false;
+
   const resize = (): void => {
     dpr = Math.min(window.devicePixelRatio || 1, DPR_MAXIMO);
     const w = Math.floor(window.innerWidth * dpr);
@@ -106,6 +122,93 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   resize();
 
   /*
+   * Mecanismo hibrido (Task 9). El lienzo -4 vive DEBAJO del contenido pero
+   * TAMBIEN debajo de cualquier fondo opaco propio de la diana o de un
+   * ancestro suyo (una fila de creditos con rejilla al 78%, una fila de
+   * indice con `--shot-fondo` solido): ahi el hueco queda tapado y el
+   * dispositivo degrada a un filete de 1px. La causa decide el mecanismo, no
+   * una lista de selectores -- una lista se desactualiza en cuanto cambia el
+   * marcado de una seccion.
+   *
+   * `background-image` de un elemento se pinta por ENCIMA de su propio
+   * `background-color` y por DEBAJO de su texto: es exactamente el mismo
+   * hueco, pintado en la capa que ya gana sobre cualquier fondo opaco propio
+   * o heredado. Atraviesa la oclusion sin tocar el aspecto de la seccion.
+   *
+   * No sirve para `.obra-abrir`: es un boton transparente `position:
+   * absolute; inset: 0` cuyo titular visible es un HERMANO de debajo (el
+   * `<h2 data-title>`), no un descendiente. Pintarle background-image al
+   * boton no ilumina nada que se vea -- el titular esta en otro nodo. Ahi
+   * sigue mandando el lienzo -4, y de hecho no hace falta: nada opaco se
+   * interpone entre `.obra-abrir`/su titular y el lienzo (pinta directo
+   * sobre el shader), asi que `hayOclusion()` devuelve false y el lienzo
+   * sigue siendo el mecanismo elegido.
+   *
+   * Verificado en el codigo real de este repo (no supuesto): ninguna de las
+   * dianas ocluidas de hoy (`.credit`, `.scene-index-row`) trae su propio
+   * `background-image` en CSS -- solo `background-color`/`background`
+   * solido. Por eso "guardar el valor en linea previo y restaurar quitando
+   * la propiedad" (mas abajo) no tiene hoy ningun caso real que pisar; se
+   * implementa igual porque es la unica forma correcta de no romper una
+   * diana futura que si trajera imagen propia.
+   */
+  /*
+   * `getComputedStyle(...).backgroundColor` no siempre serializa como
+   * `rgb()`/`rgba()`. Un `background: color-mix(in srgb, var(--void) 78%,
+   * transparent)` (el scrim de `.credits-grid`, medido) resuelve como
+   * `color(srgb 0.043 0.016 0.016 / 0.78)` -- sintaxis CSS Color 4, sin
+   * "rgba" en ningun sitio. Un regex anclado a `rgba?\(` no la reconoce,
+   * devuelve "no opaco" por defecto, y ESTA es justo la diana que este
+   * modulo existe para atravesar: sin este caso, `.credit` (ocluida por
+   * ese mismo scrim) se queda con el lienzo -4, que sigue tapado. Medido
+   * en el arnes: `mecanismo()` daba "lienzo" en vez de "imagen" para
+   * ".credit" antes de esta correccion.
+   *
+   * La regla general: si el color trae un canal alfa, viene marcado con
+   * una barra al final (`.../ 0.78)`, sea cual sea la funcion de color
+   * (`rgb`, `hsl`, `color`, `lab`...), o como cuarto argumento separado
+   * por comas en la sintaxis clasica `rgba(r, g, b, a)`. Sin ninguna de
+   * las dos marcas, el color no tiene canal alfa y es opaco por
+   * definicion (`rgb(7, 3, 2)`, `hsl(0 0% 0%)`).
+   */
+  const ALFA_CON_BARRA_RE = /\/\s*([\d.]+)\s*\)\s*$/;
+  const ALFA_RGBA_CLASICO_RE = /^rgba\(\s*[\d.]+[,\s]+[\d.]+[,\s]+[\d.]+[,\s]+([\d.]+)\s*\)$/;
+  const colorOpaco = (color: string): boolean => {
+    if (!color || color === "transparent") return false;
+    const conBarra = ALFA_CON_BARRA_RE.exec(color);
+    if (conBarra) return parseFloat(conBarra[1]) > 0;
+    const rgbaClasico = ALFA_RGBA_CLASICO_RE.exec(color);
+    if (rgbaClasico) return parseFloat(rgbaClasico[1]) > 0;
+    return true;
+  };
+
+  // Lectura de estilo cara (`getComputedStyle` por cada ancestro): SOLO se
+  // llama al resolver una diana nueva, nunca por fotograma (Paso 1).
+  const hayOclusion = (nodo: HTMLElement): boolean => {
+    let actual: HTMLElement | null = nodo;
+    while (actual) {
+      if (colorOpaco(getComputedStyle(actual).backgroundColor)) return true;
+      if (actual === document.body) return false;
+      actual = actual.parentElement;
+    }
+    return false;
+  };
+
+  // Devuelve la diana con `background-image` propio a su estado previo.
+  // Quita la propiedad en vez de ponerla a `none`: un `none` en linea
+  // pisaria un `background-image` que viniera del CSS de la propia diana.
+  const restaurarImagen = (): void => {
+    if (!imagenDiana) return;
+    if (imagenPrevio) {
+      imagenDiana.style.backgroundImage = imagenPrevio;
+    } else {
+      imagenDiana.style.removeProperty("background-image");
+    }
+    imagenDiana = null;
+    imagenPrevio = "";
+  };
+
+  /*
    * `closest()` con los dos selectores a la vez devuelve el ancestro-o-el-
    * propio-nodo MAS CERCANO que matchee cualquiera de los dos, no el primero
    * de la lista: el mas cercano gana con independencia del orden en que se
@@ -121,11 +224,20 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
    * esta sobre el boton, no sobre texto corrido suelto), gana el pulsable.
    */
   const resolveZone = (target: Element): void => {
+    // Suelta la diana con imagen de la transicion anterior ANTES de decidir
+    // la nueva: si la nueva diana tambien usa imagen, se recalcula limpia
+    // (nunca se guarda el degradado propio como si fuera el valor previo).
+    restaurarImagen();
     const zone = target.closest<HTMLElement>(`${PRESSABLE}, ${NATIVE_ZONE}`);
     const esPulsable = zone !== null && zone.matches(PRESSABLE);
     onNative = zone !== null && !esPulsable;
     pressable = esPulsable ? zone : null;
     rect = pressable ? pressable.getBoundingClientRect() : null;
+    // Paso 1: la oclusion se lee UNA VEZ por diana nueva, no por fotograma.
+    if (pressable && hayOclusion(pressable)) {
+      imagenDiana = pressable;
+      imagenPrevio = pressable.style.backgroundImage;
+    }
   };
 
   const onMove = (event: PointerEvent): void => {
@@ -166,6 +278,7 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   };
 
   const onLeave = (): void => {
+    restaurarImagen();
     visible = false;
     pressable = null;
     rect = null;
@@ -202,24 +315,42 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
     // en reposo no se toca el layout.
     if (pressable) rect = pressable.getBoundingClientRect();
 
-    if (rect && pot > 0.01) {
+    if (pressable && rect && pot > 0.01) {
       const radio =
         Math.max(rect.height * RADIO_FACTOR, RADIO_MINIMO) * (pressed ? RADIO_PULSADO : 1);
-      // El recorte ES el canto: el hueco termina en el filo exacto del
-      // elemento. Se pinta en el lienzo de ABAJO (-4), debajo del contenido:
-      // oscurece el fondo detras de las letras sin tocar el texto, asi que
-      // el contraste sube en vez de bajar.
-      huecoCtx.save();
-      huecoCtx.beginPath();
-      huecoCtx.rect(rect.left, rect.top, rect.width, rect.height);
-      huecoCtx.clip();
-      const luz = huecoCtx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
-      luz.addColorStop(0, `rgb(11 4 4 / ${(0.88 * pot).toFixed(3)})`);
-      luz.addColorStop(0.5, `rgb(11 4 4 / ${(0.5 * pot).toFixed(3)})`);
-      luz.addColorStop(1, "rgb(11 4 4 / 0)");
-      huecoCtx.fillStyle = luz;
-      huecoCtx.fillRect(rect.left, rect.top, rect.width, rect.height);
-      huecoCtx.restore();
+      // Paso 3: un solo mecanismo activo por diana, nunca los dos.
+      if (imagenDiana === pressable) {
+        // Mismo centro, radio y rampa que el lienzo, escritos como
+        // `radial-gradient` en linea. El centro va en coordenadas relativas
+        // al elemento (`rect.left`/`rect.top` restados), porque
+        // `background-image` posiciona contra la propia caja de la diana,
+        // no contra el viewport.
+        if (!suspenderImagen) {
+          const cx = pointerX - rect.left;
+          const cy = pointerY - rect.top;
+          pressable.style.backgroundImage =
+            `radial-gradient(circle at ${cx.toFixed(1)}px ${cy.toFixed(1)}px, ` +
+            `rgb(11 4 4 / ${(0.88 * pot).toFixed(3)}) 0px, ` +
+            `rgb(11 4 4 / ${(0.5 * pot).toFixed(3)}) ${(radio * 0.5).toFixed(1)}px, ` +
+            `rgb(11 4 4 / 0) ${radio.toFixed(1)}px)`;
+        }
+      } else {
+        // El recorte ES el canto: el hueco termina en el filo exacto del
+        // elemento. Se pinta en el lienzo de ABAJO (-4), debajo del
+        // contenido: oscurece el fondo detras de las letras sin tocar el
+        // texto, asi que el contraste sube en vez de bajar.
+        huecoCtx.save();
+        huecoCtx.beginPath();
+        huecoCtx.rect(rect.left, rect.top, rect.width, rect.height);
+        huecoCtx.clip();
+        const luz = huecoCtx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
+        luz.addColorStop(0, `rgb(11 4 4 / ${(0.88 * pot).toFixed(3)})`);
+        luz.addColorStop(0.5, `rgb(11 4 4 / ${(0.5 * pot).toFixed(3)})`);
+        luz.addColorStop(1, "rgb(11 4 4 / 0)");
+        huecoCtx.fillStyle = luz;
+        huecoCtx.fillRect(rect.left, rect.top, rect.width, rect.height);
+        huecoCtx.restore();
+      }
 
       // El canto del elemento, encendido a la potencia del charco. Es lo que
       // delimita la zona pulsable. Se queda en el lienzo de ARRIBA: es
@@ -253,6 +384,10 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   const destroy = (): void => {
     window.cancelAnimationFrame(frame);
     controller.abort();
+    // El `background-image` en linea de la diana ocluida es DOM ajeno al
+    // lienzo: sin esto una diana se queda con el degradado pegado tras
+    // salir, que es un fallo Critico (ver cabecera del modulo, Task 9).
+    restaurarImagen();
     document.documentElement.classList.remove("hypr-cursor-ready");
     canvas.remove();
     hueco.remove();
@@ -260,9 +395,46 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   };
 
   // Sonda de verificacion: la consume scripts/measure-cursor-luz.py. No
-  // afecta al render.
-  (window as unknown as { __hyprCursor__?: { pot: () => number; destroy: () => void } }).
-    __hyprCursor__ = { pot: () => pot, destroy };
+  // afecta al render mientras nadie la llama.
+  //
+  // `mecanismo()` expone cual de los dos esta activo para la diana actual
+  // (Task 9, Paso 4): el arnes lo necesita porque conmutar solo la
+  // visibilidad de los lienzos ya no basta para medir el efecto en una diana
+  // que usa `background-image` -- eso mediria cero y daria un falso
+  // negativo.
+  //
+  // `medirImagen(oculto)` es el equivalente, para el mecanismo de imagen, de
+  // ocultar/mostrar el lienzo: con `oculto=true` activa `suspenderImagen`
+  // (tick() deja de repintar el degradado) Y ademas restaura de inmediato el
+  // `background-image` previo de la diana, para que la captura "sin hueco"
+  // vea el fondo real; con `oculto=false` desactiva el interruptor y deja
+  // que `tick()` vuelva a pintar el degradado en el siguiente fotograma de
+  // `requestAnimationFrame` -- el llamador tiene que esperar ese fotograma
+  // (dos `requestAnimationFrame` anidados) antes de capturar "con hueco".
+  (
+    window as unknown as {
+      __hyprCursor__?: {
+        pot: () => number;
+        mecanismo: () => "lienzo" | "imagen" | "ninguno";
+        medirImagen: (oculto: boolean) => void;
+        destroy: () => void;
+      };
+    }
+  ).__hyprCursor__ = {
+    pot: () => pot,
+    mecanismo: () => (pressable === null ? "ninguno" : imagenDiana === pressable ? "imagen" : "lienzo"),
+    medirImagen: (oculto: boolean): void => {
+      suspenderImagen = oculto;
+      if (oculto && imagenDiana) {
+        if (imagenPrevio) {
+          imagenDiana.style.backgroundImage = imagenPrevio;
+        } else {
+          imagenDiana.style.removeProperty("background-image");
+        }
+      }
+    },
+    destroy,
+  };
 
   return { destroy };
 }

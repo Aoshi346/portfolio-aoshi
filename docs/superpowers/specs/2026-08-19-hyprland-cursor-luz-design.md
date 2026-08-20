@@ -663,7 +663,8 @@ resize/destroy/guarda de contexto para los dos), `src/themes/themes.css` (bloque
    ni se cambio de diana para forzar un fallo: el numero medido es el que hay.
    `python3 scripts/measure-cursor-luz.py --base <preview>` -> `0 fallos` en las corridas de esta
    tarea, incluida `.credit`.
-4. **I1 (no arreglado, pendiente de decision de Aoshi):** el hueco es invisible en dianas con
+4. **I1 (SUPERADO por la Task 9, ver `## Registro de implementación` más abajo — resuelto, no solo
+   documentado):** el hueco es invisible en dianas con
    fondo propio opaco por encima del lienzo -4 (`.scene-index-row`, `.obra-otra`,
    `.contacto-bar`, las 23 filas de creditos) -- ahi el dispositivo degrada a filete de 1px mas
    punto. Capturas en
@@ -673,3 +674,107 @@ resize/destroy/guarda de contexto para los dos), `src/themes/themes.css` (bloque
 
 `npm run build` y `npm run lint` en verde. `python3 scripts/verify.py` -> EXIT 0. Informe completo
 en `.superpowers/sdd/2026-08-19-hyprland-cursor-luz/task-8-report.md`.
+
+**Task 9 (2026-08-19) — el mecanismo híbrido, cierra I1.** El hallazgo I1 (Task 8) queda RESUELTO,
+no solo documentado: `src/components/hyprCursor.ts` detecta la oclusión al resolver cada diana
+nueva (subir por `parentElement` hasta `body` con `getComputedStyle(...).backgroundColor`, una vez
+por cambio de diana, nunca por fotograma) y, si hay un `background-color` opaco de por medio, pinta
+el mismo hueco como `background-image` EN LÍNEA del propio elemento en vez de en el lienzo `-4` —
+misma rampa, mismo radio, mismo centro. `.obra-abrir` queda fuera de este mecanismo a propósito: es
+una capa transparente superpuesta cuyo titular visible es un HERMANO de debajo (`<h2 data-title>`),
+así que pintarle `background-image` al botón no iluminaría nada visible; ahí sigue mandando el
+lienzo, y de hecho no hace falta porque nada opaco se interpone (pinta directo sobre el shader).
+
+Trampa real encontrada y corregida durante esta tarea: `getComputedStyle(...).backgroundColor` NO
+siempre serializa como `rgb()`/`rgba()`. El `background: color-mix(in srgb, var(--void) 78%,
+transparent)` de `.credits-grid` resuelve como `color(srgb 0.043 0.016 0.016 / 0.78)` — sintaxis
+CSS Color 4, sin la palabra "rgba" en ningún sitio. Un primer regex anclado a `rgba?\(` no la
+reconocía y devolvía "no ocluido" por defecto — exactamente la diana que este mecanismo existe para
+atravesar. Corregido con un parseo genérico por la posición del canal alfa (una barra `/` al final
+de cualquier función de color, o el cuarto argumento de `rgba(...)` clásico), verificado contra
+`__hyprCursor__.mecanismo()` antes y después (pasaba de `"lienzo"` a `"imagen"` para `.credit` tras
+la corrección).
+
+Ninguna de las dianas ocluidas de hoy (`.credit`, `.scene-index-row`) trae su propio
+`background-image` en CSS — solo `background-color`/`background` sólido — así que "guardar el valor
+en línea previo y restaurar quitando la propiedad" no tuvo un caso real que pisar en esta pasada; se
+implementó igual porque es la única forma correcta de no romper una diana futura que sí trajera
+imagen propia.
+
+**Corrección del arnés (Paso 4) — el toggle de canvas ya no basta.** `contraste_pareado()` conmutaba
+el efecto ocultando los dos `<canvas>` con `style.visibility`. En una diana con mecanismo de imagen
+eso mide CERO en las dos condiciones (el `<canvas>` oculto no es lo que se ve) — el falso negativo
+que el brief avisaba que era el fallo más repetido de esta tarea. Corregido con una sonda nueva,
+`__hyprCursor__.medirImagen(oculto)`: con `oculto=true` suspende el repintado por
+`requestAnimationFrame` de esa diana (si no, el propio rAF del módulo repintaría el degradado en el
+fotograma siguiente y la "ocultación" del arnés perdería la carrera) y restaura de inmediato el
+`background-image` previo; con `oculto=false` reanuda el repintado y el llamador espera un fotograma
+completo (dos `requestAnimationFrame` anidados) antes de fotografiar. El arnés pregunta
+`__hyprCursor__.mecanismo()` una vez por diana (el ratón no se mueve durante la medida) y elige el
+toggle que corresponde.
+
+**Hallazgo que corrige la premisa del Paso 4 (medido, no supuesto).** El plan asumía que el
+mecanismo nuevo daría en `.credit` un delta "mucho mayor" que el 0,31–0,42 que Task 8 había medido
+con el mecanismo tapado. Verificado con método A/B controlado contra la página real (mismo
+selector, mismo color, única variable la detección de oclusión forzada a `false` frente a la real):
+el delta con el lienzo TAPADO (fuga del 22% de `.credits-grid`, el mecanismo viejo de Task 8,
+reproducido a propósito) sale en `[-0,25, -0,16]`; el delta con el `background-image` de Task 9
+(mecanismo correcto, sin oclusión) sale en `[-0,20, -0,12]` — **estadísticamente indistinguible**
+del anterior. La causa no es que el mecanismo nuevo no funcione: `mecanismo()` confirma `"imagen"`
+y la captura visual lo muestra (ver informe de esta tarea). Es que el fondo de `.credit` — el propio
+scrim de `.credits-grid` — ya está casi negro antes de que el hueco pinte nada: el peor contraste
+SIN hueco ya es 9,69:1, más del doble del gate AA. Con el texto ya en un techo de contraste tan
+alto, oscurecer un poco más (22% de fuga) o del todo (100%, mecanismo de imagen) mueve la RATIO casi
+lo mismo — la curva de contraste satura ahí arriba. Para ESTA diana en concreto, ningún margen de
+magnitud puede separar "mecanismo correcto" de "mecanismo tapado": los dos caen en el mismo rango
+por la física del propio cálculo de contraste, no por un fallo de instrumentación ni del mecanismo.
+
+(El 0,31–0,42 original de Task 8 tampoco se reprodujo: medido de nuevo con el mismo método de
+entonces —`PULSABLE_FONDO` como glifo Y como color, es decir leyendo `getComputedStyle(".credit")`
+en vez del hijo `.credit-name`— es la MISMA clase de bug ya corregida para `.obra-abrir` en la Ronda
+de arreglo 1 [I3 de aquel entonces]: `.credit` no recolorea en `:hover`, solo su hijo
+`.credit-name` lo hace [`--l3`, `themes.css`]; leer el color del botón mide un color que casi nunca
+está en pantalla durante el propio hover que se quiere medir. Esa lectura nunca se corrigió para
+`.credit` en Task 8. No se ha intentado reproducir el 0,31–0,42 exacto con la metodología vieja: lo
+relevante para esta tarea es que, con la metodología correcta, ambos mecanismos —tapado y sin
+tapar— dan un delta pequeño y similar, así que el margen de magnitud no puede ser la asercion que
+demuestre Task 9 en esta diana.)
+
+**La asercion que sí demuestra Task 9 en `.credit` es ESTRUCTURAL.** El arnés pregunta
+`__hyprCursor__.mecanismo()` mientras apunta cada diana y exige `"imagen"` para `.credit`/
+`.scene-index-row` y `"lienzo"` para `.hero-mail`/`.obra-abrir` — eso prueba directamente el Paso 1
+(la detección de oclusión), sin depender de cuánto margen de contraste quede libre en una diana con
+fondo ya casi negro. El margen de magnitud se conserva como sanity check adicional (que el efecto
+siga ayudando, nunca que empeore), calibrado por diana: `MARGEN_CHARCO` (0,15, sin cambios) para
+`.hero-mail`/`.obra-abrir`, que sí tienen mucho margen de contraste de sobra; `MARGEN_CHARCO_CREDITO`
+(0,08) para `.credit`, calibrado con repeticiones reales de este mismo arnés (delta_max nunca bajó
+de −0,12 en siete corridas) — 2x el techo de ruido observado en esta diana concreta, no extrapolado
+del techo de ruido de otra diana con una física de contraste distinta.
+
+Delta medido (config final del arnés, 42 pares, 400ms, siete corridas consecutivas):
+
+| Diana | Mecanismo | delta (oculto − visible) | contraste sin hueco | contraste con hueco |
+|---|---|---|---|---|
+| `.hero-mail` | lienzo | `[-0,88, -0,64]` | 4,27–4,29:1 | 5,07–5,12:1 |
+| `.obra-abrir` | lienzo | `[-3,44, -2,91]` | 3,47–3,53:1 | 6,46–6,55:1 |
+| `.credit` | imagen | `[-0,20, -0,12]` | 9,69:1 | 9,87–9,89:1 |
+
+`python3 scripts/measure-cursor-luz.py --base <preview>` → `0 fallos` en siete corridas
+consecutivas. `npm run build` y `npm run lint` en verde. `python3 scripts/verify.py` → EXIT 0 (12
+fallos conocidos de la línea base, 0 nuevos).
+
+Capturas a 1440x900, `?theme=hyprland`, `pot` asentada por encima de 0,95 en las tres (0,965 en
+créditos, 0,964 en índice, 0,960 en obra):
+`/tmp/claude-0/-home-aoshi-proyectos-portfolio-aoshi/7b237084-3ab1-432b-b565-af338b2b6e1b/scratchpad/t9-creditos.png`,
+`t9-indice.png`, `t9-obra.png`. El hueco SÍ se ve en las tres, con matices honestos: en créditos es
+un oscurecimiento sutil pero real (comparación recortada y ampliada contra la fila vecina); en el
+índice de escenas es aún más sutil a ojo desnudo porque compite con el brillo propio del
+`scene-shot` de fondo (confirmado con una comparación pareada oculto/visible del mismo fotograma,
+no solo con la captura suelta); en obra sigue siendo el gesto fuerte de siempre (control, mecanismo
+sin tocar). Detalle y capturas de la comparación pareada en el informe de esta tarea,
+`.superpowers/sdd/2026-08-19-hyprland-cursor-luz/task-9-report.md`.
+
+Ficheros tocados: `src/components/hyprCursor.ts` (detección de oclusión, mecanismo de
+`background-image`, interruptor de suspensión y sonda `medirImagen()` para verificación),
+`scripts/measure-cursor-luz.py` (toggle por mecanismo, aserción estructural, márgenes por diana,
+selector `.credit-name` para leer el color real de hover).

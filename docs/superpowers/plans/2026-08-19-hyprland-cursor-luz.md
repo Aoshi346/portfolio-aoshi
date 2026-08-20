@@ -970,3 +970,93 @@ decision de producto pendiente.
 `npm run build`, `npm run lint`, `python3 scripts/verify.py` (EXIT 0), y
 `scripts/measure-cursor-luz.py` ejecutado varias veces contra el build de produccion servido.
 Informe en `.superpowers/sdd/2026-08-19-hyprland-cursor-luz/task-8-report.md`.
+
+---
+
+## Addendum 2 — el hueco donde el lienzo no llega
+
+**Por qué.** El lienzo del hueco vive en `z-index: -4`, debajo del contenido. Cualquier fondo
+opaco entre la diana y ese lienzo lo tapa. Medido: sólo `.hero-mail` y `.obra-abrir` están libres;
+`.scene-index-row`, `.obra-otra`, `.contacto-bar` y las 23 filas de créditos quedan tapadas —y son
+la mayor parte de las dianas del sitio. Ahí el dispositivo degrada a filete de 1px más punto.
+
+El arnés no lo cazó porque las dos dianas que medía eran justo las dos que funcionan. Al añadir
+`.credit` **pasó igualmente**, con una mejora de 0,31–0,42 que es real y medible pero
+**imperceptible**: la rejilla es opaca al 78% y ese 22% basta para mover el número sin que se vea
+nada. Gate verde, diseño roto.
+
+**El mecanismo.** Donde el texto vive **dentro** de la diana, el hueco se pinta como
+`background-image` del propio elemento: un `radial-gradient` se dibuja por encima del fondo propio
+del elemento y **por debajo de su texto**, que es exactamente el hueco que buscamos. Donde la diana
+es una capa superpuesta y el texto visible es un hermano de debajo (`.obra-abrir`), eso taparía el
+titular, así que ahí se conserva el lienzo `-4`.
+
+**La regla de decisión va atada a la causa, no a una lista de selectores** — una lista se
+desactualiza y este repo ya lo tiene escrito. Al resolver la diana se sube por sus ancestros hasta
+`body` buscando un `background-color` con alfa mayor que cero. Si lo hay, el lienzo `-4` está
+tapado y se usa `background-image`. Si no lo hay, se usa el lienzo.
+
+### Task 9: el mecanismo híbrido
+
+**Ficheros:** modificar `src/components/hyprCursor.ts`; ampliar `scripts/measure-cursor-luz.py`.
+
+- [x] **Paso 1: detectar la oclusión al resolver la diana**
+
+Al resolver una diana nueva, subir por `parentElement` hasta `body` leyendo
+`getComputedStyle(nodo).backgroundColor` y quedarse con si alguno tiene alfa mayor que cero.
+Guardar el resultado junto a la diana: decide el mecanismo hasta que cambie la diana. **No se
+calcula por fotograma** — es una lectura de estilo cara y la respuesta no cambia mientras el
+puntero siga en el mismo elemento.
+
+- [x] **Paso 2: pintar el hueco en el elemento cuando está ocluido**
+
+Con el mismo centro (la posición del puntero, en coordenadas relativas al elemento), el mismo radio
+y la misma rampa que usa el lienzo, escritos como `radial-gradient` en el `background-image` en
+línea del elemento. Guardar el valor en línea previo al tomarlo y **restaurarlo quitando la
+propiedad** al soltar la diana, no poniéndola a `none`: un `none` en línea pisaría un
+`background-image` que viniera del CSS.
+
+Comprobar antes si alguna de las dianas ya trae `background-image` propio y decir en el informe qué
+se hizo en ese caso.
+
+- [x] **Paso 3: un solo mecanismo activo por diana**
+
+Cuando se usa `background-image`, el lienzo `-4` no pinta nada para esa diana, y al revés. Nunca
+los dos a la vez.
+
+- [x] **Paso 4: el arnés mide las dos familias**
+
+Añadir a las dianas del arnés al menos una de cada mecanismo: `.obra-abrir` (lienzo) y
+`.scene-index-row` o `.credit` (elemento). La aserción de signo tiene que exigir una mejora que
+**no se pueda conseguir por el 22% de transparencia** — es decir, un margen claramente por encima
+del 0,31–0,42 que ya se medía sin el mecanismo nuevo. Dejar el número justificado en el comentario.
+
+Cerrado con un hallazgo que corrige la premisa de este paso, verificado con metodo A/B controlado
+contra la pagina real (no supuesto): en `.credit` el fondo YA esta casi negro antes de que el hueco
+pinte nada (peor contraste sin hueco 9,69:1), asi que subir de un 22% de fuga a un 100% de efecto
+real cambia la ratio casi lo mismo — [-0,25, -0,16] con el mecanismo viejo (lienzo tapado, fuga del
+22%, reproducido a proposito con la deteccion forzada a false) contra [-0,20, -0,12] con el
+mecanismo nuevo. Un margen de magnitud NO puede distinguir "mecanismo correcto" de "mecanismo
+tapado" en esta diana concreta: la curva de contraste satura ahi arriba. La asercion que si distingue
+los dos casos es ESTRUCTURAL, no fotometrica -- `__hyprCursor__.mecanismo()` expone que mecanismo
+tiene activo la diana actual, y el arnes exige `"imagen"` para `.credit`/`.scene-index-row` y
+`"lienzo"` para `.hero-mail`/`.obra-abrir`. El margen de magnitud se conserva como sanity check
+adicional, calibrado por diana: `MARGEN_CHARCO` (0,15, sin cambios) para las dos dianas con fondo
+brillante detras, `MARGEN_CHARCO_CREDITO` (0,08) para `.credit`, calibrado con repeticiones reales
+del propio arnes (delta_max nunca bajo de -0,12 en varias corridas). Detalle completo en el spec,
+`## Registro de implementación` / Task 9.
+
+- [x] **Paso 5: capturas y cierre**
+
+Capturas a 1440x900 con `?theme=hyprland` sobre una fila de créditos y una del índice de escenas,
+con `pot` asentada. **Mirarlas**: el hueco tiene que verse ahí igual que se ve en la obra.
+Actualizar el spec y dejar `verify.py` en 0.
+
+Capturas en `t9-creditos.png` (pot 0,965), `t9-indice.png` (pot 0,964, panel abierto) y
+`t9-obra.png` (pot 0,960, control) -- las tres por encima de 0,95. `verify.py` en 0 (12 fallos
+conocidos de la linea base, 0 nuevos). El hueco SI se ve en las tres, con matices: en creditos es un
+oscurecimiento sutil pero real detras de "React" (comparado con la fila vecina sin puntero encima);
+en el indice es aun mas sutil a ojo desnudo sobre el fondo ya brillante del `scene-shot` (confirmado
+con una comparacion pareada oculto/visible, ver informe); en obra sigue siendo el gesto fuerte y
+obvio de siempre (control, mecanismo sin tocar). Detalle honesto de cada captura en el informe de
+esta tarea.
