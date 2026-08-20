@@ -20,6 +20,8 @@
 - Size type with a continuous function over scale tokens. `clamp(var(--t-2), 6.2cqi, var(--t-3))` has no `px` literal and still returns any real number between its stops: 46 of 65 measured combinations landed on 17.09 / 18.39 / 20.51px. It hides at 390 and 1440, which is exactly where a clamp lands on its clean stops. Step discretely — a `@container` or `@media` that swaps one token for another
 - Reuse an opacity across themes. A percentage is calibrated against a surface, not a token: 55% of `--color-paper` reads 5.74:1 over Vice's dark scrim and 3.72:1 over Caelestia's light one, which fails AA. Carry the number and you carry nothing — say in the comment which scrim it was measured against, and give each theme its own value (`--nav-dim`)
 - Set a numeric threshold that is tighter than its instrument's noise. 480ms for a 460ms animation is under two frames of slack, so it measures machine load, not the animation. Prefer the declared value (deterministic) and keep the stopwatch as a sanity check with explicit margin
+- Write a theme's choreography without destructuring `gsap` from the context it is handed. `hyprChoreography` took only `ScrollTrigger` and `root` and used a bare `gsap`: `tsc` and `eslint` both passed — the identifier exists in the type space — and the built chunk threw `gsap is not defined` the moment `reveal.ts` called it, so Hyprland's choreography ran *nothing*, background treatment included. Only the browser console catches this
+- Trust a contrast measurement without opening the console first. Every number for the Hyprland cursor was measured for weeks against a page whose choreography was crashing, so the shader read far brighter than it really is. No assertion could detect it: they all compared the page against itself. `.hero-mail` went from 4.29:1 to 6.38:1 *without touching the cursor* once the crash was fixed
 - Ship animations without a `prefers-reduced-motion` fallback
 - `console.log` in production code
 - `git push --force` / `git push origin main` without approval
@@ -43,6 +45,18 @@
   decision, not an illegibility problem (see the spec's `Registro de implementación` /
   `Color y contraste`). The "Con qué construyo" section is still being redesigned on a separate
   branch — Hyprland overall stays IN PROGRESS.
+- **Hyprland's cursor is DONE and merged** (`2026-08-19-hyprland-cursor-luz`): "the adaptive
+  hollow". Pointing at something pressable opens a pool clipped to the element — it **darkens
+  where the background is bright and lights up where it is already dark**, with the edge lit and a
+  dot marking the hand; over running text it goes out and the system cursor takes over. The sign is
+  decided by the luminance of the background occluding the `z-index: -4` canvas, read once per
+  target. Two mechanisms: the canvas for targets with nothing opaque above it, an inline
+  `background-image` for the rest (it paints above the element's own background and below its
+  text). `scripts/measure-cursor-luz.py` gates it, and its **assertions are split by family** —
+  the darkening one must improve contrast, the lighting one must hold an AAA floor *and be
+  perceptible*. One gate for both could only demand what holds for both, which is nothing, and that
+  already slipped through once. Read the spec's epilogue before re-tuning anything: the whole
+  calibration predates the `gsap` fix.
 
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**

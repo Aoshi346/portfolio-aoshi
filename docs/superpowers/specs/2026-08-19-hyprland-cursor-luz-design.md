@@ -825,3 +825,41 @@ tiene que notarse" existe por ese fallo concreto.
   línea** de la diana que lo tuviera.
 - Consola: el único error en Hyprland es `gsap is not defined`, y **aparece igual con el módulo del
   cursor bloqueado por red**, así que es previo a esta rama y merece su propio arreglo.
+
+---
+
+## Epilogo — toda la calibracion se midio contra una pagina rota
+
+Al retirar el worktree y arreglar el `gsap is not defined` de Hyprland
+(`hypr.choreography.ts` desestructuraba solo `ScrollTrigger` y `root` pero usaba `gsap` a pelo,
+asi que la coreografia **no corria nada**) el fondo del tema cambio de golpe: la coreografia
+aplica su tratamiento despues del punto donde reventaba, de modo que el shader se veia mucho mas
+brillante de lo que le toca.
+
+Medido antes y despues del arreglo, sin tocar el cursor:
+
+| Diana | Contraste SIN cursor, pagina rota | Contraste SIN cursor, pagina arreglada |
+|---|---|---|
+| `.hero-mail` | 4,29:1 | **6,38:1** |
+| `.obra-abrir` | 3,47:1 | **13,18:1** |
+
+Consecuencias, por orden de importancia:
+
+1. **El problema de contraste que justifico todo el diseno era, en buena parte, este bug.** El
+   techo de brillo del shader que se dio por aceptado —el mismo hallazgo del cartel de obra— hay
+   que volver a mirarlo con la pagina arreglada antes de darlo por bueno otra vez.
+2. **Oscurecer ya no aporta nada en `.hero-mail`**: el hueco le mueve el contraste 0,01, que es
+   ruido. Sigue siendo util donde el fondo si brilla (`.obra-abrir` gana 1,7 puntos).
+3. **Iluminar en todas partes seria seguro hoy**: ensayado, el peor caso queda en 5,23:1 y el
+   resto por encima de AAA. Es decir, la direccion P original —el charco de luz que se aprobo
+   mirandolo— era correcta, y lo que la tumbo fue el bug, no el diseno. **Aoshi decidio conservar
+   el mecanismo adaptativo tal como esta fusionado**; queda escrito por si se quiere revisar.
+
+El arnes registra el caso 2 con el signo `neutro` para `.hero-mail`: no es un gate relajado para
+que pase, es la constancia medida de que ahi el dispositivo hoy no hace nada, y sigue cazando que
+no lo empeore ni caiga por debajo de AA.
+
+**La leccion transferible:** el arnes de contraste llevaba semanas dando numeros correctos sobre
+una pagina incorrecta. Ninguna asercion podia detectarlo, porque todas comparaban la pagina
+consigo misma. Lo unico que lo destapo fue mirar la consola del navegador — que es justo lo que
+`rules/verification.md` pide y lo que nadie habia hecho en este tema.

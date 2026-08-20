@@ -698,7 +698,7 @@ def main() -> int:
             # (diana, glifo (bbox+ocultar tinta), color a leer, punto explicito,
             #  margen de la asercion de signo, mecanismo esperado o None si no
             #  se comprueba)
-            (PULSABLE, PULSABLE, PULSABLE, None, MARGEN_CHARCO, "lienzo", "oscurece"),
+            (PULSABLE, PULSABLE, PULSABLE, None, MARGEN_CHARCO, "lienzo", "neutro"),
             (
                 PULSABLE_SCROLL,
                 "section:has(.obra-abrir) [data-title]",
@@ -801,7 +801,37 @@ def main() -> int:
             # parten de 9,7 y no hay razon para dejarlas caer hasta el
             # minimo. Un solo gate para las dos familias solo puede pedir lo
             # que valga para ambas, que es nada.
-            if signo == "oscurece":
+            #
+            # `neutro`: la diana toma la rama que oscurece, pero su fondo ya
+            # es oscuro y ahi oscurecer no mueve la aguja. NO es un gate
+            # relajado para que pase: es el registro medido de que en esa
+            # diana el dispositivo hoy no hace nada.
+            #
+            # Nacio de un fallo real y vale la pena dejarlo escrito: toda la
+            # calibracion del hueco se midio contra una pagina ROTA. La
+            # coreografia de Hyprland reventaba con `gsap is not defined`
+            # antes de aplicar su tratamiento de fondo, asi que el shader se
+            # veia mucho mas brillante de lo que le toca. Con el bug
+            # arreglado, `.hero-mail` pasa de 4,29:1 a 6,38:1 SIN cursor, y
+            # el hueco que antes le ganaba 0,8 puntos ahora le gana 0,01.
+            # La rama que oscurece sigue siendo util donde el fondo si
+            # brilla (`.obra-abrir` gana 1,7), y por eso no se retira.
+            #
+            # Lo que este caso SIGUE cazando: que el hueco no EMPEORE el
+            # contraste, y que la diana no caiga por debajo de AA. Si alguien
+            # invierte el color aqui, o el fondo vuelve a brillar y el hueco
+            # deja de compensarlo, esto se pone rojo.
+            if signo == "neutro":
+                if delta_max > MARGEN_CHARCO:
+                    fallos.append(
+                        f"el hueco EMPEORA el contraste en {diana}: delta max {delta_max:.2f} "
+                        f"por encima de {MARGEN_CHARCO}"
+                    )
+                if peor_con_charco < AA_MINIMO:
+                    fallos.append(
+                        f"{diana} cae por debajo de AA con hueco: {peor_con_charco:.2f}:1"
+                    )
+            elif signo == "oscurece":
                 if delta_max >= -margen:
                     fallos.append(
                         f"el hueco no ayuda con margen suficiente en {diana}: peor caso (delta max) "
