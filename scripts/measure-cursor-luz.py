@@ -683,6 +683,10 @@ def main() -> int:
         # el de `.hero-mail`/`.obra-abrir` porque el efecto en si es mas
         # pequeno (ver el comentario largo de arriba: fondo ya casi negro).
         MARGEN_CHARCO_CREDITO = 0.08
+        # Piso de la familia que ilumina: AAA, no AA. Esas dianas parten de
+        # 9,7:1 sobre su propio panel casi negro, asi que dejarlas caer hasta
+        # el minimo de AA seria gastar un margen que nadie necesita gastar.
+        PISO_ILUMINA = 7.0
         # 0,42s de duracion + hasta 13 letras (titulo mas largo del
         # catalogo, "Editor de texto" sin contar espacios) x 0,024s de
         # stagger = 0,732s. Con margen. Se espera UNA vez, al apuntar, antes
@@ -694,7 +698,7 @@ def main() -> int:
             # (diana, glifo (bbox+ocultar tinta), color a leer, punto explicito,
             #  margen de la asercion de signo, mecanismo esperado o None si no
             #  se comprueba)
-            (PULSABLE, PULSABLE, PULSABLE, None, MARGEN_CHARCO, "lienzo"),
+            (PULSABLE, PULSABLE, PULSABLE, None, MARGEN_CHARCO, "lienzo", "oscurece"),
             (
                 PULSABLE_SCROLL,
                 "section:has(.obra-abrir) [data-title]",
@@ -702,6 +706,7 @@ def main() -> int:
                 "section:has(.obra-abrir) [data-title]",
                 MARGEN_CHARCO,
                 "lienzo",
+                "oscurece",
             ),
             # Diana ocluida (I1, resuelta en Task 9 con el mecanismo de
             # imagen -- ver cabecera del modulo). El glifo visible es
@@ -717,10 +722,11 @@ def main() -> int:
                 None,
                 MARGEN_CHARCO_CREDITO,
                 "imagen",
+                "ilumina",
             ),
         )
 
-        for diana, glifo, color_sel, punto_sel, margen, mecanismo_esperado in DIANAS_CONTRASTE:
+        for diana, glifo, color_sel, punto_sel, margen, mecanismo_esperado, signo in DIANAS_CONTRASTE:
             if punto_sel is not None:
                 # Scroll PRIMERO, leer la caja del punto DESPUES: leerla
                 # antes de `scroll_into_view_if_needed()` (como hacia una
@@ -783,12 +789,40 @@ def main() -> int:
             # de oscurecer). El margen es POR DIANA (ver DIANAS_CONTRASTE):
             # ".credit" usa uno mas ajustado a su propio techo fisico de
             # contraste, no el de las otras dos.
-            if delta_max >= -margen:
-                fallos.append(
-                    f"el hueco no ayuda con margen suficiente en {diana}: peor caso (delta max) "
-                    f"{delta_max:.2f} no es mas negativo que -{margen} "
-                    f"(rango observado [{delta_min:.2f}, {delta_max:.2f}])"
-                )
+            #
+            # El hueco es ADAPTATIVO: oscurece donde el fondo es brillante e
+            # ilumina donde ya es oscuro (ver `hyprCursor.ts`, `iluminar`).
+            # Exigir "que siempre mejore" solo vale para la familia que
+            # oscurece. Sobre un panel casi negro no hay nada que oscurecer
+            # -- ".credit" mide 9,69:1 SIN hueco -- asi que ahi el hueco
+            # ilumina y el contraste BAJA a proposito. Lo que hay que
+            # asegurar en esa familia no es que suba, sino que el suelo
+            # aguante: PISO_ILUMINA es AAA (7,0), no AA, porque esas dianas
+            # parten de 9,7 y no hay razon para dejarlas caer hasta el
+            # minimo. Un solo gate para las dos familias solo puede pedir lo
+            # que valga para ambas, que es nada.
+            if signo == "oscurece":
+                if delta_max >= -margen:
+                    fallos.append(
+                        f"el hueco no ayuda con margen suficiente en {diana}: peor caso (delta max) "
+                        f"{delta_max:.2f} no es mas negativo que -{margen} "
+                        f"(rango observado [{delta_min:.2f}, {delta_max:.2f}])"
+                    )
+            else:
+                if peor_con_charco < PISO_ILUMINA:
+                    fallos.append(
+                        f"la luz hunde el contraste en {diana}: peor caso con hueco "
+                        f"{peor_con_charco:.2f}:1, por debajo del piso {PISO_ILUMINA}:1"
+                    )
+                # Y tiene que NOTARSE: una luz que no mueve el numero es una
+                # luz que no se ve. Es el fallo que ya se colo una vez, con
+                # ".credit" pasando el gate por la rendija del 22% de
+                # transparencia mientras en pantalla no habia nada.
+                if abs(delta_min) < margen:
+                    fallos.append(
+                        f"la luz no se nota en {diana}: delta minimo {delta_min:.2f} "
+                        f"por debajo del margen {margen}"
+                    )
 
         # 3. estado rancio tras desplazar sin mover el raton
         #

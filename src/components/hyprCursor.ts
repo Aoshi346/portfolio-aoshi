@@ -49,6 +49,28 @@ const PUNTO_PULSADO = 2.4;
 // El DPR se acota: por encima de 2 el coste de pintado sube sin que se note.
 const DPR_MAXIMO = 2;
 
+/*
+ * El hueco es adaptativo: oscurece donde el fondo es brillante e ilumina
+ * donde ya es oscuro. Por debajo de esta luminancia el fondo se considera
+ * oscuro. Los paneles de este tema estan en 0,01-0,02 y las bandas del shader
+ * muy por encima, asi que el umbral no cae cerca de ningun caso real.
+ */
+const LUM_OSCURA = 0.15;
+
+// Rampa que oscurece (fondo brillante). Calibrada contra el arnes: a esta
+// intensidad el contraste SUBE, .obra-abrir pasa de 3,53 a 6,55:1.
+const HUECO_CENTRO = 0.88;
+const HUECO_MEDIO = 0.5;
+
+/*
+ * Rampa que ilumina (fondo ya oscuro). Mucho mas baja a proposito: sobre un
+ * panel casi negro el contraste de partida es ~9,7:1 y aclarar SI lo baja,
+ * asi que aqui el limite lo pone AA y no el diseno. `--l3` (255 160 60) es
+ * el ambar del tema, el mismo que ya usa el canto.
+ */
+const LUZ_CENTRO = 0.14;
+const LUZ_MEDIO = 0.07;
+
 export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   const controller = new AbortController();
   const { signal } = controller;
@@ -103,6 +125,9 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   // contra el propio `requestAnimationFrame` del modulo, que lo repintaria en
   // el fotograma siguiente. Nunca lo activa nada de la pagina real.
   let suspenderImagen = false;
+  // Signo del hueco para la diana actual. Se decide al resolverla, con la
+  // misma lectura de estilo que ya calcula la oclusion.
+  let iluminar = false;
 
   const resize = (): void => {
     dpr = Math.min(window.devicePixelRatio || 1, DPR_MAXIMO);
@@ -184,14 +209,37 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
 
   // Lectura de estilo cara (`getComputedStyle` por cada ancestro): SOLO se
   // llama al resolver una diana nueva, nunca por fotograma (Paso 1).
-  const hayOclusion = (nodo: HTMLElement): boolean => {
+  // Devuelve el color del primer fondo opaco que tapa el lienzo -4, o null si
+  // no hay ninguno (entonces lo que hay debajo es el shader).
+  const oclusionDe = (nodo: HTMLElement): string | null => {
     let actual: HTMLElement | null = nodo;
     while (actual) {
-      if (colorOpaco(getComputedStyle(actual).backgroundColor)) return true;
-      if (actual === document.body) return false;
+      const fondo = getComputedStyle(actual).backgroundColor;
+      if (colorOpaco(fondo)) return fondo;
+      if (actual === document.body) return null;
       actual = actual.parentElement;
     }
-    return false;
+    return null;
+  };
+
+  /*
+   * Luminancia aproximada de un color computado, para decidir el SIGNO del
+   * hueco. No hace falta precision colorimetrica: la decision es binaria y
+   * los fondos de este tema estan en los extremos (paneles casi negros contra
+   * las bandas brillantes del shader).
+   *
+   * Se extraen los tres primeros numeros del color. La escala depende de la
+   * funcion: `color(srgb 0.043 0.016 0.016 / 0.78)` viene en 0-1 y
+   * `rgb(7, 3, 2)` en 0-255. Sin este caso, un panel en sintaxis CSS Color 4
+   * se leeria como practicamente blanco y el signo saldria al reves.
+   */
+  const NUMEROS_RE = /[\d.]+/g;
+  const luminancia = (color: string): number => {
+    const partes = color.match(NUMEROS_RE);
+    if (!partes || partes.length < 3) return 1;
+    const escala = color.startsWith("color(") ? 1 : 255;
+    const [r, g, b] = partes.slice(0, 3).map((n) => parseFloat(n) / escala);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   };
 
   // Devuelve la diana con `background-image` propio a su estado previo.
@@ -234,10 +282,29 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
     pressable = esPulsable ? zone : null;
     rect = pressable ? pressable.getBoundingClientRect() : null;
     // Paso 1: la oclusion se lee UNA VEZ por diana nueva, no por fotograma.
-    if (pressable && hayOclusion(pressable)) {
+    // De la misma lectura sale el SIGNO del hueco (ver `iluminar`).
+    const oclusion = pressable ? oclusionDe(pressable) : null;
+    if (pressable && oclusion !== null) {
       imagenDiana = pressable;
       imagenPrevio = pressable.style.backgroundImage;
     }
+    /*
+     * El signo del efecto lo decide el material que hay debajo, no la seccion.
+     *
+     * Sobre el shader (sin oclusion) el fondo llega a ser brillante, y ahi
+     * ACLARAR le come contraste al texto claro: medido, a la intensidad del
+     * prototipo costaba 1,4 puntos en `.hero-mail`. Por eso el hueco oscurece.
+     *
+     * Sobre un panel propio casi negro no hay nada que oscurecer: `.credit`
+     * mide 9,69:1 SIN hueco y la curva de contraste esta saturada, asi que
+     * oscurecer no se ve ni se mide (verificado con A/B controlado: el
+     * mecanismo de imagen daba lo mismo que la fuga del 22%). Ahi la luz si
+     * se ve, y parte de tan arriba que puede permitirsela sin bajar de AA.
+     *
+     * Las dos lecturas dicen lo mismo — lo que senalas responde — y ninguna
+     * de las dos tira el contraste por debajo del umbral.
+     */
+    iluminar = oclusion !== null && luminancia(oclusion) < LUM_OSCURA;
   };
 
   const onMove = (event: PointerEvent): void => {
@@ -328,11 +395,14 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
         if (!suspenderImagen) {
           const cx = pointerX - rect.left;
           const cy = pointerY - rect.top;
+          const tinta = iluminar ? "255 160 60" : "11 4 4";
+          const centro = (iluminar ? LUZ_CENTRO : HUECO_CENTRO) * pot;
+          const medio = (iluminar ? LUZ_MEDIO : HUECO_MEDIO) * pot;
           pressable.style.backgroundImage =
             `radial-gradient(circle at ${cx.toFixed(1)}px ${cy.toFixed(1)}px, ` +
-            `rgb(11 4 4 / ${(0.88 * pot).toFixed(3)}) 0px, ` +
-            `rgb(11 4 4 / ${(0.5 * pot).toFixed(3)}) ${(radio * 0.5).toFixed(1)}px, ` +
-            `rgb(11 4 4 / 0) ${radio.toFixed(1)}px)`;
+            `rgb(${tinta} / ${centro.toFixed(3)}) 0px, ` +
+            `rgb(${tinta} / ${medio.toFixed(3)}) ${(radio * 0.5).toFixed(1)}px, ` +
+            `rgb(${tinta} / 0) ${radio.toFixed(1)}px)`;
         }
       } else {
         // El recorte ES el canto: el hueco termina en el filo exacto del
@@ -343,10 +413,11 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
         huecoCtx.beginPath();
         huecoCtx.rect(rect.left, rect.top, rect.width, rect.height);
         huecoCtx.clip();
+        const tinta = iluminar ? "255 160 60" : "11 4 4";
         const luz = huecoCtx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
-        luz.addColorStop(0, `rgb(11 4 4 / ${(0.88 * pot).toFixed(3)})`);
-        luz.addColorStop(0.5, `rgb(11 4 4 / ${(0.5 * pot).toFixed(3)})`);
-        luz.addColorStop(1, "rgb(11 4 4 / 0)");
+        luz.addColorStop(0, `rgb(${tinta} / ${((iluminar ? LUZ_CENTRO : HUECO_CENTRO) * pot).toFixed(3)})`);
+        luz.addColorStop(0.5, `rgb(${tinta} / ${((iluminar ? LUZ_MEDIO : HUECO_MEDIO) * pot).toFixed(3)})`);
+        luz.addColorStop(1, `rgb(${tinta} / 0)`);
         huecoCtx.fillStyle = luz;
         huecoCtx.fillRect(rect.left, rect.top, rect.width, rect.height);
         huecoCtx.restore();
