@@ -200,6 +200,30 @@ if (
   }
 }
 
+/*
+ * Cursor propio de Hyprland: la luz de mano. Las mismas tres puertas que
+ * Vice — el tema, el perfil de motion y que el puntero sea fino con hover
+ * real. En tactil no hay hover que disparar ningun estado, asi que el coste
+ * correcto ahi es cero, no "cero animacion".
+ *
+ * Se monta con retardo, no de inmediato: `hyprIgnition` tapa la pantalla al
+ * abrir y debajo no hay nada pulsable. A diferencia del leader de Vice, hoy
+ * no emite ningun evento al soltarla, asi que el retardo es fijo. Si algun
+ * dia lo emite, esto pasa a escucharlo igual que hace Vice.
+ */
+let hyprCursorHandle: { destroy: () => void } | null = null;
+if (
+  theme.id === "hyprland" &&
+  !prefersReducedMotion &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches
+) {
+  window.setTimeout(() => {
+    void import("./components/hyprCursor").then(({ mountHyprCursor }) => {
+      hyprCursorHandle = mountHyprCursor(app);
+    });
+  }, 1800);
+}
+
 let backgroundHandle: BackgroundHandle | null = null;
 void applyTheme(theme, backgroundHost).then((handle) => {
   backgroundHandle = handle;
@@ -217,6 +241,7 @@ window.addEventListener(
     backgroundHandle?.destroy();
     scrollRailHandle?.destroy();
     cursorHandle?.destroy();
+    hyprCursorHandle?.destroy();
     ignitionHandle?.destroy();
     cartelHandle?.destroy();
     sceneNavHandle.destroy();

@@ -1,0 +1,1062 @@
+# La luz de mano — plan de implementación
+
+> **Para ejecutores agénticos:** SUB-SKILL OBLIGATORIA: usa `superpowers:subagent-driven-development`
+> (recomendada) o `superpowers:executing-plans` para ejecutar este plan tarea a tarea. Los pasos
+> usan casillas (`- [ ]`) para el seguimiento.
+
+**Objetivo:** dar al tema Hyprland un cursor propio que no dibuja un objeto sino que ilumina: un
+charco de luz recortado al elemento pulsable bajo el puntero, más un punto caliente que marca la
+mano.
+
+**Arquitectura:** un módulo nuevo `src/components/hyprCursor.ts` con el mismo contrato que
+`viceCursor.ts` (función de montaje que devuelve un handle con `destroy()`), un solo `<canvas>` a
+pantalla completa y un solo `requestAnimationFrame`. La lista blanca de `cursor: none` vive en
+`themes.css` bajo `:root[data-theme="hyprland"]` y solo aplica cuando el JS ha añadido
+`.hypr-cursor-ready`. La puerta de montaje se añade en `src/main.ts` junto a la de Vice.
+
+**Stack:** Vite + TypeScript estricto + Canvas 2D. **Sin GSAP** en este módulo: la interpolación es
+un lerp por fotograma sobre un único número y meter una librería de timelines para eso sería peor.
+
+**Spec:** `docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md`
+
+## Restricciones globales
+
+- **Vice no se toca.** `src/components/viceCursor.ts` se lee como contrato; no se edita ni una
+  línea. El bloque `Cursor propio de Vice` de `themes.css` (líneas 6117-6150) tampoco.
+- **Caelestia no se toca.** No recibe cursor propio; se comprueba que sigue igual.
+- **`src/data/content.ts` no cambia.** Este dispositivo no escribe ni un carácter en pantalla.
+- **Cero `any`.** `strict` está activo; usar `unknown` con guardas si hace falta.
+- **Cero `console.log`.** Solo `console.error` justificado.
+- **Sin `gsap.from`** (no aplica aquí, pero la regla sigue vigente en el repo).
+- **Cero emojis** en código, docs y commits.
+- **Nada de texto, números, etiquetas ni hex en pantalla.** Es el motivo por el que murieron las
+  tres direcciones de la ronda anterior.
+- Tokens de Hyprland, literales, de `themes.css`: `--void #0b0404`, `--text #ffeae6`,
+  `--l1 #ff5a34`, `--l2 #e01d3c`, `--l3 #ffa03c`, `--catch #ffd9cc`.
+- Verificación siempre contra el **build de producción servido** (`npx vite preview --port 4173`),
+  nunca contra `npm run dev`: el HMR corrompe las medidas de layout y de ScrollTrigger.
+- El tema se sortea por visita: **siempre** `?theme=hyprland` en las URLs de verificación.
+
+---
+
+## Estructura de ficheros
+
+| Fichero | Responsabilidad |
+|---|---|
+| `src/components/hyprCursor.ts` | **Crear.** Todo el dispositivo: estado del puntero, resolución de zona, bucle de pintado, handle `destroy()`. |
+| `src/themes/themes.css` | **Modificar.** Bloque nuevo al final: lista blanca de `cursor: none` y el estilo del lienzo. No se toca ningún bloque existente. |
+| `src/main.ts` | **Modificar.** Puerta de montaje del cursor de Hyprland junto a la de Vice, y la llamada a `destroy()` en el `pagehide` que ya existe. |
+| `scripts/measure-cursor-luz.py` | **Crear.** Arnés Playwright independiente: estados, apagado en zona nativa, no-montaje en móvil y con movimiento reducido, limpieza, y contraste por glifo. |
+
+---
+
+### Task 1: el arnés, antes que el módulo
+
+En este repo no hay tests unitarios: cada dispositivo tiene su arnés Playwright en `scripts/`, y el
+arnés se escribe **antes** para que empiece en rojo por la razón correcta.
+
+**Ficheros:**
+- Crear: `scripts/measure-cursor-luz.py`
+
+**Interfaces:**
+- Consume: nada.
+- Produce: el ejecutable `python3 scripts/measure-cursor-luz.py --base http://localhost:4173`, que
+  sale **0** sin fallos y **1** con al menos uno. Las tareas 3, 4 y 5 lo usan como puerta.
+
+- [x] **Paso 1: escribir el arnés**
+
+```python
+"""Arnes del cursor "luz de mano" de Hyprland.
+
+Cada asercion nace de un fallo real ya pagado en este repo:
+  1. El lienzo EXISTE en Hyprland y NO existe en Vice ni en Caelestia. Sin
+     esto el arnes sale verde con el cursor apagado: el patron aditivo se ha
+     roto cuatro veces en este proyecto por olvidar el caso base.
+  2. El charco se enciende sobre un pulsable y NO se enciende sobre texto
+     corrido. Es la unica asercion que prueba el reparto de senal.
+  3. Tras desplazar con el raton QUIETO, el estado se recalcula. Medido en
+     Vice: parado sobre texto tras desplazar, la marca seguia dibujandose
+     encima del I-beam.
+  4. Con `prefers-reduced-motion: reduce` no hay lienzo en el DOM.
+  5. En movil (390x844) el modulo NO se descarga. Se comprueba por red, no
+     por inspeccion visual: un modulo cargado y luego oculto sigue costando.
+  6. `destroy()` deja el DOM sin lienzo y sin la clase `.hypr-cursor-ready`.
+"""
+import argparse
+import sys
+
+from playwright.sync_api import sync_playwright
+
+VIEWPORT_ESCRITORIO = {"width": 1440, "height": 900}
+VIEWPORT_MOVIL = {"width": 390, "height": 844}
+LIENZO = "canvas.hypr-cursor-canvas"
+
+
+def abrir(p, base, tema="hyprland", viewport=None, reduced=False):
+    navegador = p.chromium.launch(
+        headless=True, args=["--no-sandbox", "--use-gl=swiftshader"]
+    )
+    contexto = navegador.new_context(
+        viewport=viewport or VIEWPORT_ESCRITORIO,
+        reduced_motion="reduce" if reduced else "no-preference",
+    )
+    pg = contexto.new_page()
+    pg.goto(f"{base}/?theme={tema}", wait_until="domcontentloaded", timeout=30000)
+    pg.wait_for_timeout(4000)
+    return navegador, pg
+
+
+def hay_lienzo(pg) -> bool:
+    return pg.evaluate(f"() => document.querySelector('{LIENZO}') !== null")
+
+
+def potencia(pg) -> float:
+    """Potencia del charco publicada por el modulo. 0 = apagado."""
+    return pg.evaluate("() => window.__hyprCursor__ ? window.__hyprCursor__.pot() : -1")
+
+
+def apuntar(pg, selector):
+    caja = pg.locator(selector).first.bounding_box()
+    pg.locator(selector).first.scroll_into_view_if_needed()
+    pg.wait_for_timeout(600)
+    caja = pg.locator(selector).first.bounding_box()
+    pg.mouse.move(caja["x"] + caja["width"] * 0.4, caja["y"] + caja["height"] / 2, steps=8)
+    pg.wait_for_timeout(500)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--base", default="http://localhost:4173")
+    args = ap.parse_args()
+    fallos = []
+
+    with sync_playwright() as p:
+        # 1. presencia por tema
+        for tema, espera in (("hyprland", True), ("vice", False), ("caelestia", False)):
+            nav, pg = abrir(p, args.base, tema)
+            if hay_lienzo(pg) is not espera:
+                fallos.append(f"lienzo en {tema}: {hay_lienzo(pg)}, esperado {espera}")
+            nav.close()
+
+        nav, pg = abrir(p, args.base, "hyprland")
+
+        # 2. reparto de senal
+        apuntar(pg, ".obra-titular, [data-cartel] button, button")
+        if potencia(pg) < 0.8:
+            fallos.append(f"charco apagado sobre pulsable: pot={potencia(pg)}")
+        apuntar(pg, "p")
+        if potencia(pg) > 0.05:
+            fallos.append(f"charco encendido sobre texto: pot={potencia(pg)}")
+
+        # 3. estado rancio tras desplazar sin mover el raton
+        apuntar(pg, "button")
+        pg.evaluate("window.scrollBy(0, 900)")
+        pg.wait_for_timeout(900)
+        pg.mouse.move(720, 450, steps=2)
+        pg.wait_for_timeout(400)
+        bajo = pg.evaluate(
+            "() => { const e = document.elementFromPoint(720, 450);"
+            " return e ? (e.closest('button, a[href]:not([target=\"_blank\"])') ? 'pulsable' : 'otro') : 'nada'; }"
+        )
+        pot = potencia(pg)
+        if bajo != "pulsable" and pot > 0.05:
+            fallos.append(f"charco rancio tras desplazar: bajo={bajo} pot={pot}")
+        nav.close()
+
+        # 4. movimiento reducido
+        nav, pg = abrir(p, args.base, "hyprland", reduced=True)
+        if hay_lienzo(pg):
+            fallos.append("hay lienzo con prefers-reduced-motion: reduce")
+        nav.close()
+
+        # 5. movil: el modulo no se descarga
+        navegador = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+        contexto = navegador.new_context(
+            viewport=VIEWPORT_MOVIL, has_touch=True, is_mobile=True
+        )
+        pedidos = []
+        pg = contexto.new_page()
+        pg.on("request", lambda r: pedidos.append(r.url))
+        pg.goto(f"{args.base}/?theme=hyprland", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(4000)
+        if any("hyprCursor" in u for u in pedidos):
+            fallos.append("el modulo del cursor se descarga en movil")
+        navegador.close()
+
+        # 6. limpieza
+        nav, pg = abrir(p, args.base, "hyprland")
+        pg.evaluate("() => window.__hyprCursor__ && window.__hyprCursor__.destroy()")
+        pg.wait_for_timeout(300)
+        if hay_lienzo(pg):
+            fallos.append("destroy() deja el lienzo en el DOM")
+        if pg.evaluate("() => document.documentElement.classList.contains('hypr-cursor-ready')"):
+            fallos.append("destroy() deja la clase hypr-cursor-ready")
+        nav.close()
+
+    for f in fallos:
+        print(f"FALLO: {f}")
+    print(f"{len(fallos)} fallos")
+    return 1 if fallos else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+- [x] **Paso 2: ejecutar el arnés y comprobar que falla por la razón correcta**
+
+```bash
+npm run build && npx vite preview --port 4173 &
+sleep 3
+python3 scripts/measure-cursor-luz.py --base http://localhost:4173
+```
+
+Esperado: **FALLA** con `lienzo en hyprland: False, esperado True` y varios `pot=-1`. Si falla por
+un error de Python (import, selector inválido), arreglarlo antes de seguir: el arnés tiene que
+fallar por ausencia del módulo, no por estar roto.
+
+- [x] **Paso 3: commit**
+
+```bash
+git add scripts/measure-cursor-luz.py
+git commit -m "test(hyprland): arnes del cursor luz de mano, en rojo"
+```
+
+---
+
+### Task 2: la lista blanca de CSS
+
+Va antes que el módulo a propósito: es la pieza que decide qué señales del sistema se conservan, y
+sin ella el módulo pintaría el charco con el cursor nativo encima.
+
+**Ficheros:**
+- Modificar: `src/themes/themes.css` (bloque nuevo **al final del fichero**, sin tocar nada existente)
+
+**Interfaces:**
+- Consume: la clase `hypr-cursor-ready` en `<html>`, que pone la tarea 3.
+- Produce: la clase CSS `.hypr-cursor-canvas` que usa el módulo, y el contrato de qué elementos
+  pierden el cursor nativo.
+
+- [x] **Paso 1: añadir el bloque al final de `src/themes/themes.css`**
+
+```css
+/* =====================================================================
+ * Cursor propio de Hyprland — la luz de mano
+ *
+ * `.hypr-cursor-ready` la pone el JS SOLO tras montar con exito. Si el
+ * modulo no carga, no existe ninguna de estas reglas y el cursor del
+ * sistema queda intacto: ni una senal depende del JavaScript.
+ *
+ * La lista blanca se apoya en que `cursor` solo se hereda cuando el
+ * elemento no declara el suyo. `.gallery-track` declara `grab` y los
+ * `<a>` reciben `pointer` de la hoja del navegador, asi que el
+ * `cursor: none` del lienzo NO les llega — hay que apuntarlos uno a uno.
+ *
+ * `.scene-nav-trigger` y `.scene-index-row` van escritos A MANO porque
+ * `sceneNav` monta fuera de `[data-scene]` (`sceneNav.ts:327-328` cuelga
+ * disparador y panel de la raiz). Sin estas dos lineas el cursor "se
+ * rompe" en cuanto el puntero sale del contenido.
+ * ===================================================================== */
+
+.hypr-cursor-ready:root[data-theme="hyprland"] [data-scene] {
+  cursor: none;
+}
+
+/* Texto: recupera el I-beam que la herencia del lienzo le habia quitado.
+ * Ocultarlo borraria la senal de que esto se selecciona y se copia. */
+.hypr-cursor-ready:root[data-theme="hyprland"]
+  [data-scene]
+  :is(p, li, dd, dt, figcaption, blockquote) {
+  cursor: auto;
+}
+
+/* Opt-in explicito de los pulsables que la luz sustituye. El enlace
+ * externo queda fuera aposta: abre pestana nueva y la certeza de "esto es
+ * un enlace real" no se toca. `.gallery-track` tampoco entra: su `grab` es
+ * la unica pista de que la galeria se arrastra. */
+.hypr-cursor-ready:root[data-theme="hyprland"]
+  [data-scene]
+  :is(button, a[href]:not([target="_blank"])) {
+  cursor: none;
+}
+
+/* Fuera de las escenas: la navegacion, que monta en la raiz. */
+.hypr-cursor-ready:root[data-theme="hyprland"] :is(.scene-nav-trigger, .scene-index-row) {
+  cursor: none;
+}
+
+.hypr-cursor-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+
+/* Cinturon y tirantes: si el modulo llegara a montar bajo movimiento
+ * reducido, el lienzo no se pinta igualmente. La puerta real esta en
+ * `main.ts`; esto es la red por debajo. */
+@media (prefers-reduced-motion: reduce) {
+  .hypr-cursor-canvas {
+    display: none;
+  }
+}
+```
+
+- [x] **Paso 2: comprobar que Vice no se ha movido**
+
+```bash
+npm run build
+grep -c "vice-cursor-ready" src/themes/themes.css
+```
+
+Esperado: build en verde y el `grep` sigue devolviendo **6** (las seis apariciones del bloque de
+Vice, intactas). Medido el 2026-08-19: son 6.
+
+- [x] **Paso 3: commit**
+
+```bash
+git add src/themes/themes.css
+git commit -m "feat(hyprland): lista blanca de cursor para la luz de mano"
+```
+
+---
+
+### Task 3: el módulo
+
+**Ficheros:**
+- Crear: `src/components/hyprCursor.ts`
+
+**Interfaces:**
+- Consume: `.hypr-cursor-canvas` de la tarea 2.
+- Produce:
+  - `export interface HyprCursorHandle { destroy: () => void }`
+  - `export function mountHyprCursor(host: HTMLElement): HyprCursorHandle`
+  - Sonda de verificación `window.__hyprCursor__` con `{ pot: () => number; destroy: () => void }`,
+    que consume el arnés de la tarea 1.
+
+- [x] **Paso 1: escribir `src/components/hyprCursor.ts`**
+
+```ts
+export interface HyprCursorHandle {
+  destroy: () => void;
+}
+
+/*
+ * Cursor propio de Hyprland: no dibuja un objeto, ilumina.
+ *
+ * El charco de luz existe SOLO dentro de lo que se puede pulsar, recortado a
+ * canto vivo por el borde del elemento. Sobre texto corrido no se enciende
+ * nada. La lectura es anterior al lenguaje: lo que se ilumina responde.
+ *
+ * Reparto de senales, identico al ya cerrado en Vice porque el problema es el
+ * mismo — sustituir el puntero es legitimo, borrar las otras senales no:
+ *
+ *   `pointer`  -> lo sustituye esta luz.
+ *   `grab` / `grabbing` (`.gallery-track`) -> NATIVOS. Unica pista de que la
+ *                 galeria se arrastra.
+ *   I-beam en texto -> NATIVO. Ocultarlo quita la senal de que se selecciona.
+ *   Enlaces externos (`target="_blank"`) -> NATIVOS. Abren pestana nueva.
+ *
+ * Diez direcciones cayeron antes que esta. Las tres ultimas (`hyprpicker`,
+ * `col.active_border`, `slurp`) eran autenticas y se descartaron por escribir
+ * medidas y etiquetas en pantalla: un cursor no puede tener manual. De ahi la
+ * regla dura de este modulo — NO se dibuja ni un carater, ni un numero, ni
+ * nada que cruce la pagina fuera del elemento apuntado.
+ */
+
+// Zonas donde manda el navegador y esta luz se apaga.
+const NATIVE_ZONE = '.gallery-track, a[target="_blank"], p, li, dd, dt, figcaption, blockquote';
+// Pulsables que esta luz ilumina. El enlace externo queda fuera aposta.
+const PRESSABLE = 'button, a[href]:not([target="_blank"])';
+
+// Suavizado de la POTENCIA, no de la posicion. La posicion del puntero se
+// escribe sin suavizar: un cursor con inercia miente sobre donde esta el
+// raton, y en creditos hay 23 dianas contiguas donde eso se lee como retraso.
+const POT_SMOOTHING = 0.22;
+
+// Radio del charco. Lo dicta la altura del elemento, no la seccion: asi una
+// fila de creditos de 35px y un titular de 74px reciben la misma ley y se ven
+// distintos sin que nadie programe casos por seccion.
+const RADIO_FACTOR = 2.4;
+const RADIO_MINIMO = 120;
+const RADIO_PULSADO = 1.25;
+
+// La mano.
+const PUNTO_REPOSO = 3.2;
+const PUNTO_PULSADO = 2.4;
+
+// El DPR se acota: por encima de 2 el coste de pintado sube sin que se note.
+const DPR_MAXIMO = 2;
+
+export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
+  const controller = new AbortController();
+  const { signal } = controller;
+
+  const canvas = document.createElement("canvas");
+  canvas.className = "hypr-cursor-canvas";
+  canvas.setAttribute("aria-hidden", "true");
+  const ctx = canvas.getContext("2d");
+  // defensive: sin contexto 2D no hay dispositivo posible. Se sale sin montar
+  // y sin poner la clase, asi que el cursor del sistema queda intacto.
+  if (!ctx) {
+    return { destroy: (): void => undefined };
+  }
+  host.append(canvas);
+
+  let pointerX = 0;
+  let pointerY = 0;
+  let visible = false;
+  let onNative = false;
+  let pressable: HTMLElement | null = null;
+  let rect: DOMRect | null = null;
+  let pressed = false;
+  let stale = false;
+  let pot = 0;
+  let frame = 0;
+  let dpr = 1;
+
+  const resize = (): void => {
+    dpr = Math.min(window.devicePixelRatio || 1, DPR_MAXIMO);
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = `${window.innerWidth}px`;
+    canvas.style.height = `${window.innerHeight}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  resize();
+
+  const resolveZone = (target: Element): void => {
+    onNative = target.closest(NATIVE_ZONE) !== null;
+    pressable = onNative ? null : target.closest<HTMLElement>(PRESSABLE);
+    rect = pressable ? pressable.getBoundingClientRect() : null;
+  };
+
+  const onMove = (event: PointerEvent): void => {
+    if (event.pointerType !== "mouse") return;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    visible = true;
+    if (stale) {
+      stale = false;
+      const under = document.elementFromPoint(pointerX, pointerY);
+      // Fuera de la ventana devuelve null: ahi no hay zona que resolver.
+      if (under) resolveZone(under);
+    }
+  };
+
+  /*
+   * El estado se resuelve en `pointerover`, no en `pointermove`: aquel solo
+   * dispara al cambiar de elemento, asi que los `closest()` cuestan una vez
+   * por transicion y no sesenta veces por segundo.
+   */
+  const onOver = (event: PointerEvent): void => {
+    if (event.pointerType !== "mouse") return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    resolveZone(target);
+  };
+
+  /*
+   * Al desplazar la pagina cambia el elemento bajo un raton QUIETO, y eso no
+   * emite ningun evento de puntero: sin esto el charco se queda encendido en
+   * una fila que ya no esta debajo. La comprobacion se aplaza al siguiente
+   * movimiento en vez de hacerse en el propio evento, porque `scroll` llega
+   * en rafagas.
+   */
+  const onScroll = (): void => {
+    stale = true;
+    if (pressable) rect = pressable.getBoundingClientRect();
+  };
+
+  const onLeave = (): void => {
+    visible = false;
+    pressable = null;
+    rect = null;
+    onNative = false;
+  };
+
+  const onDown = (): void => {
+    pressed = true;
+  };
+  const onUp = (): void => {
+    pressed = false;
+  };
+
+  window.addEventListener("pointermove", onMove, { passive: true, signal });
+  window.addEventListener("pointerover", onOver, { passive: true, signal });
+  window.addEventListener("pointerdown", onDown, { passive: true, signal });
+  window.addEventListener("pointerup", onUp, { passive: true, signal });
+  window.addEventListener("scroll", onScroll, { passive: true, signal });
+  window.addEventListener("resize", resize, { passive: true, signal });
+  document.addEventListener("pointerleave", onLeave, { passive: true, signal });
+
+  const tick = (): void => {
+    frame = window.requestAnimationFrame(tick);
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    const on = visible && !onNative;
+    const meta = on && pressable !== null ? 1 : 0;
+    pot += (meta - pot) * POT_SMOOTHING;
+
+    if (!on) return;
+
+    // El rect se relee cada fotograma SOLO mientras hay diana: con el puntero
+    // en reposo no se toca el layout.
+    if (pressable) rect = pressable.getBoundingClientRect();
+
+    if (rect && pot > 0.01) {
+      const radio =
+        Math.max(rect.height * RADIO_FACTOR, RADIO_MINIMO) * (pressed ? RADIO_PULSADO : 1);
+      // El recorte ES el canto: la luz termina en el filo exacto del elemento.
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(rect.left, rect.top, rect.width, rect.height);
+      ctx.clip();
+      const luz = ctx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
+      luz.addColorStop(0, `rgb(255 160 60 / ${(0.3 * pot).toFixed(3)})`);
+      luz.addColorStop(0.45, `rgb(255 90 52 / ${(0.13 * pot).toFixed(3)})`);
+      luz.addColorStop(1, "rgb(224 29 60 / 0)");
+      ctx.fillStyle = luz;
+      ctx.fillRect(rect.left, rect.top, rect.width, rect.height);
+      ctx.restore();
+
+      // El canto del elemento, encendido a la potencia del charco. Es lo que
+      // delimita la zona pulsable.
+      ctx.strokeStyle = `rgb(255 90 52 / ${(0.85 * pot).toFixed(3)})`;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(rect.left + 0.5, rect.top + 0.5, rect.width - 1, rect.height - 1);
+    }
+
+    // La mano. El anillo oscuro no es decoracion: garantiza contraste del
+    // punto contra cualquier fotograma del shader sin depender del fondo.
+    const r = pressed ? PUNTO_PULSADO : PUNTO_REPOSO;
+    ctx.fillStyle = "#ffd9cc";
+    ctx.beginPath();
+    ctx.arc(pointerX, pointerY, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgb(11 4 4 / 0.9)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(pointerX, pointerY, r + 1, 0, Math.PI * 2);
+    ctx.stroke();
+  };
+
+  frame = window.requestAnimationFrame(tick);
+
+  // La clase solo se pone tras montar con exito: si este modulo no llega a
+  // cargar o revienta antes, el CSS no oculta nada y el cursor del sistema
+  // sigue intacto en toda la pagina.
+  document.documentElement.classList.add("hypr-cursor-ready");
+
+  const destroy = (): void => {
+    window.cancelAnimationFrame(frame);
+    controller.abort();
+    document.documentElement.classList.remove("hypr-cursor-ready");
+    canvas.remove();
+    delete (window as unknown as { __hyprCursor__?: unknown }).__hyprCursor__;
+  };
+
+  // Sonda de verificacion: la consume scripts/measure-cursor-luz.py. No
+  // afecta al render.
+  (window as unknown as { __hyprCursor__?: { pot: () => number; destroy: () => void } }).
+    __hyprCursor__ = { pot: () => pot, destroy };
+
+  return { destroy };
+}
+```
+
+- [x] **Paso 2: comprobar que compila**
+
+```bash
+npm run build && npm run lint
+```
+
+Esperado: ambos en verde, cero errores de TypeScript.
+
+- [x] **Paso 3: commit**
+
+```bash
+git add src/components/hyprCursor.ts
+git commit -m "feat(hyprland): modulo del cursor luz de mano"
+```
+
+---
+
+### Task 4: la puerta de montaje
+
+**Ficheros:**
+- Modificar: `src/main.ts` (bloque nuevo tras la puerta del cursor de Vice, líneas 172-200; y la
+  llamada a `destroy()` en el `pagehide` de las líneas 214-224)
+
+**Interfaces:**
+- Consume: `mountHyprCursor` de la tarea 3.
+- Produce: nada que consuman otras tareas.
+
+- [x] **Paso 1: añadir la puerta justo debajo del bloque del cursor de Vice**
+
+```ts
+/*
+ * Cursor propio de Hyprland: la luz de mano. Las mismas tres puertas que
+ * Vice — el tema, el perfil de motion y que el puntero sea fino con hover
+ * real. En tactil no hay hover que disparar ningun estado, asi que el coste
+ * correcto ahi es cero, no "cero animacion".
+ *
+ * Se monta con retardo, no de inmediato: `hyprIgnition` tapa la pantalla al
+ * abrir y debajo no hay nada pulsable. A diferencia del leader de Vice, hoy
+ * no emite ningun evento al soltarla, asi que el retardo es fijo. Si algun
+ * dia lo emite, esto pasa a escucharlo igual que hace Vice.
+ */
+let hyprCursorHandle: { destroy: () => void } | null = null;
+if (
+  theme.id === "hyprland" &&
+  !prefersReducedMotion &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches
+) {
+  window.setTimeout(() => {
+    void import("./components/hyprCursor").then(({ mountHyprCursor }) => {
+      hyprCursorHandle = mountHyprCursor(app);
+    });
+  }, 1800);
+}
+```
+
+- [x] **Paso 2: añadir el `destroy()` al `pagehide` existente**
+
+En el manejador de `pagehide` (donde ya están `backgroundHandle?.destroy()` y compañía), añadir una
+línea:
+
+```ts
+    hyprCursorHandle?.destroy();
+```
+
+- [x] **Paso 3: build y arnés**
+
+```bash
+npm run build && npm run lint
+npx vite preview --port 4173 &
+sleep 3
+python3 scripts/measure-cursor-luz.py --base http://localhost:4173
+```
+
+Esperado: **0 fallos**. Si falla `el modulo del cursor se descarga en movil`, la puerta
+`(hover: hover) and (pointer: fine)` no está mordiendo — revisar que el contexto del arnés use
+`is_mobile=True` y `has_touch=True`.
+
+- [x] **Paso 4: commit**
+
+```bash
+git add src/main.ts
+git commit -m "feat(hyprland): montar el cursor luz de mano tras el encendido"
+```
+
+---
+
+### Task 5: contraste por glifo y calibración
+
+Es el único riesgo real que declara el spec y no se puede cerrar a ojo.
+
+**Ficheros:**
+- Modificar: `scripts/measure-cursor-luz.py` (añadir la medida de contraste)
+- Modificar: `src/components/hyprCursor.ts` (**solo si la medida lo pide**: bajar las opacidades del
+  charco)
+- Modificar: `docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md` (apuntar el número)
+
+**Interfaces:**
+- Consume: la sonda `window.__hyprCursor__` de la tarea 3.
+- Produce: el número de contraste que el spec exige documentar.
+
+- [x] **Paso 1: añadir la medida al arnés**
+
+La medida es **por glifo y contra el fondo real**, no del viewport entero: en el cartel de obra la
+medida ancha sobrestimaba el contraste. Se toma una captura con el charco encendido, se recortan
+las cajas de los glifos del titular y se calcula el ratio del píxel más claro del fondo contra el
+color del texto.
+
+```python
+def contraste_por_glifo(pg, selector):
+    """Ratio WCAG del texto de la diana contra su propio fondo iluminado.
+
+    Se mide DENTRO de la caja de la diana y con el charco encendido. Medir el
+    viewport entero sobrestima el contraste: ya paso en el cartel de obra.
+    """
+    apuntar(pg, selector)
+    caja = pg.locator(selector).first.bounding_box()
+    tiro = pg.screenshot(clip=caja)
+    from PIL import Image
+    import io
+
+    img = Image.open(io.BytesIO(tiro)).convert("RGB")
+    pixeles = list(img.getdata())
+
+    def lum(c):
+        def canal(v):
+            v = v / 255
+            return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+        r, g, b = (canal(x) for x in c)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    # El texto es --text #ffeae6; el fondo es todo lo demas. Se coge el peor
+    # caso: el pixel de fondo mas claro dentro de la caja.
+    texto = lum((255, 234, 230))
+    fondo = max(lum(p) for p in pixeles if p != (255, 234, 230))
+    claro, oscuro = max(texto, fondo), min(texto, fondo)
+    return (claro + 0.05) / (oscuro + 0.05)
+```
+
+Y en `main()`, tras las aserciones de reparto de señal:
+
+```python
+        for sel in ("button", ".scene-nav-trigger"):
+            ratio = contraste_por_glifo(pg, sel)
+            print(f"contraste {sel}: {ratio:.2f}:1")
+            if ratio < 4.5:
+                fallos.append(f"contraste bajo AA en {sel}: {ratio:.2f}:1")
+```
+
+- [x] **Paso 2: ejecutar y leer el número**
+
+```bash
+python3 scripts/measure-cursor-luz.py --base http://localhost:4173
+```
+
+- [x] **Paso 3: calibrar solo si hace falta**
+
+Si alguna diana cae por debajo de 4,5:1, bajar el centro del charco en `hyprCursor.ts` en pasos de
+0,04 hasta que cumpla:
+
+```ts
+      luz.addColorStop(0, `rgb(255 160 60 / ${(0.26 * pot).toFixed(3)})`);
+```
+
+Reconstruir y volver a medir tras cada paso. **No se toca el radio**: la dirección depende de que
+el charco cubra el elemento, no de su intensidad.
+
+- [x] **Paso 4: apuntar el número en el spec**
+
+En la sección `## Color y contraste` del spec, sustituir "No está medido todavía" por el ratio
+obtenido para cada tipo de diana, y decir contra qué se midió.
+
+- [x] **Paso 5: commit**
+
+```bash
+git add scripts/measure-cursor-luz.py src/components/hyprCursor.ts docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md
+git commit -m "test(hyprland): contraste por glifo del charco de luz"
+```
+
+---
+
+### Task 6: verificación visual y no-regresión de Vice
+
+**Ficheros:**
+- Modificar: `docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md` (rellenar
+  `## Registro de implementación`)
+
+**Interfaces:**
+- Consume: todo lo anterior.
+- Produce: el registro que exige el criterio de aceptación del spec.
+
+- [x] **Paso 1: capturas reales de los tres estados**
+
+```bash
+python3 - <<'PY'
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+    for ancho, alto, nombre in ((1440, 900, "escritorio"), (390, 844, "movil")):
+        pg = b.new_page(viewport={"width": ancho, "height": alto})
+        pg.goto("http://localhost:4173/?theme=hyprland", wait_until="domcontentloaded")
+        pg.wait_for_timeout(9000)
+        loc = pg.locator("button").first
+        loc.scroll_into_view_if_needed(); pg.wait_for_timeout(700)
+        caja = loc.bounding_box()
+        pg.mouse.move(caja["x"] + caja["width"] * 0.4, caja["y"] + caja["height"] / 2, steps=10)
+        pg.wait_for_timeout(700)
+        pg.screenshot(path=f"/tmp/cursor-luz-{nombre}.png")
+    b.close()
+PY
+```
+
+**Mirar las capturas, no solo comprobar que existen.** En este proyecto ya ha pasado dos veces que
+los arneses salieran verdes con el resultado roto. Lo que hay que ver: el charco recortado **dentro**
+de la fila, nada encendido fuera de ella, el punto de la mano donde está el ratón.
+
+- [x] **Paso 2: Vice intacto**
+
+```bash
+python3 scripts/verify.py
+python3 scripts/measure-obra-rail.py --base http://localhost:4173
+```
+
+Esperado: `verify.py` sale **0** contra su línea base, y el carril de obra de Vice no se mueve.
+Además, comprobar a ojo con `?theme=vice` que su cursor sigue siendo la marca de sincronismo.
+
+- [x] **Paso 3: rellenar el registro del spec y cerrar el estado**
+
+En el spec: `Estado: implementado`, y en `## Registro de implementación` anotar el ratio de
+contraste medido, la calibración final del charco si la hubo, y cualquier divergencia respecto a lo
+planeado. Cambiar también la línea `Plan:` para quitar el `(pendiente)`.
+
+- [x] **Paso 4: commit**
+
+```bash
+git add docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md
+git commit -m "docs(hyprland): cerrar el spec del cursor luz de mano"
+```
+
+---
+
+## Auto-revisión del plan
+
+**Cobertura del spec:** las siete secciones normativas del spec tienen tarea. Tesis y anatomía →
+tarea 3. Estados → tarea 3 (bucle) y tarea 1 (aserciones). Reparto de señal y la trampa de
+`sceneNav` → tarea 2. Color y contraste → tarea 5. Rendimiento y limpieza → tarea 3, verificado en
+tarea 1 (asercion 6). Montaje → tarea 4. Criterio de aceptación → sus siete puntos caen en las
+tareas 1, 4, 5 y 6.
+
+**Huecos localizados y corregidos al revisar:**
+- El spec dejaba abierto si `hyprIgnition` debía emitir un evento. El plan **cierra** la duda por el
+  camino barato (retardo fijo de 1800 ms, igual que el que Vice usa tras su leader) y deja escrito
+  en el comentario del código qué hacer si algún día lo emite. Cambiar `hyprIgnition` para emitirlo
+  habría metido un módulo más en el alcance sin necesidad.
+- El arnés necesita `Pillow` para el contraste. **No es dependencia nueva**: ya está instalada
+  (12.2.0, comprobado el 2026-08-19) y la usan seis arneses del repo, entre ellos
+  `measure-bg-luma.py` y `measure-cartel.py`. No toca el bundle.
+
+**Consistencia de tipos:** `HyprCursorHandle` (tarea 3) coincide con el `{ destroy: () => void }`
+que declara `main.ts` (tarea 4). La sonda `window.__hyprCursor__` expone `pot()` y `destroy()`, que
+son exactamente los dos nombres que invoca el arnés de la tarea 1. La clase `.hypr-cursor-canvas`
+de la tarea 2 es la que asigna el módulo, y el selector `LIENZO` del arnés la usa literal.
+
+---
+
+## Addendum — el hueco (invertir el signo de la luz)
+
+**Por qué.** Con la calibración que exige AA (`0.04`/`0.017`) el charco no se ve: el shader
+tiene su propia banda diagonal mucho más luminosa. Verificado mirando las capturas de la Task 6,
+no por números — el arnés salía verde con el dispositivo invisible. Lo que queda en pantalla es un
+filete de 1px y un punto, que es la dirección C, descartada por Aoshi en su día.
+
+**La causa de raíz.** Añadir calor *encima* de texto claro siempre le come contraste, porque el
+lienzo va por encima de los glifos y aclara el fondo sin tocar la letra. Cualquier calibración es
+una negociación entre "se ve" y "cumple AA", y por eso se llegó al 4%.
+
+**La inversión.** El lienzo del charco baja a `z-index: -4` — encima del fondo y del ruido, **debajo
+del contenido**, el mismo hueco que ya usa `.backdrop-dim` (`z-index: -5`) para el atenuador de Vice.
+Y en vez de aclarar, **oscurece**: un charco de `--void` recortado a la diana. El fondo detrás de
+los glifos se oscurece, los glifos no se tocan, **y el contraste sube en vez de bajar**.
+
+La lectura no cambia: sigues apuntando y la fila responde. Lo que cambia es que ahora se abre un
+hueco con el canto caliente, que es la tesis del tema —luz con canto— en su forma más literal.
+
+**Predicción falsable:** el delta pareado del arnés debe pasar de ~0 a **positivo** en las dos
+dianas. Si sale negativo, la inversión no funciona y hay que revertirla.
+
+### Task 7: el hueco
+
+**Ficheros:**
+- Modificar: `src/components/hyprCursor.ts`
+- Modificar: `src/themes/themes.css`
+
+**Interfaces:** `mountHyprCursor` y `HyprCursorHandle` no cambian. La sonda `window.__hyprCursor__`
+tampoco. El arnés sigue funcionando sin tocarlo.
+
+- [x] **Paso 1: dos lienzos en vez de uno**
+
+El módulo pasa a crear dos: `.hypr-cursor-hueco` (`z-index: -4`, debajo del contenido) donde se
+pinta el charco, y `.hypr-cursor-canvas` (`z-index: 70`, el que ya existe) donde se quedan **sólo**
+el punto de la mano y el filete del canto. Un único `requestAnimationFrame` pinta los dos. El
+`destroy()` quita los dos, y la guarda de contexto 2D nulo cubre los dos: si cualquiera falla, no
+se monta nada y no se pone la clase.
+
+- [x] **Paso 2: el charco oscurece**
+
+En el lienzo de abajo, con el mismo recorte al `rect` de la diana y el mismo radio:
+
+```ts
+      const hueco = ctx.createRadialGradient(pointerX, pointerY, 0, pointerX, pointerY, radio);
+      hueco.addColorStop(0, `rgb(11 4 4 / ${(0.55 * pot).toFixed(3)})`);
+      hueco.addColorStop(0.5, `rgb(11 4 4 / ${(0.28 * pot).toFixed(3)})`);
+      hueco.addColorStop(1, "rgb(11 4 4 / 0)");
+```
+
+Los tres números son un punto de partida, no un dogma: el Paso 4 los calibra con la medida.
+
+- [x] **Paso 3: CSS del lienzo de abajo**
+
+```css
+.hypr-cursor-hueco {
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hypr-cursor-hueco {
+    display: none;
+  }
+}
+```
+
+- [x] **Paso 4: medir y calibrar al alza**
+
+Ejecutar `scripts/measure-cursor-luz.py`. El delta pareado debe salir **positivo** en las dos
+dianas. Subir la opacidad del hueco mientras el delta siga subiendo y el hueco no se coma la
+legibilidad del propio fondo, y quedarse en el valor más alto que siga leyéndose como parte del
+tema. Aquí no hay conflicto con AA: cuanto más oscuro el hueco, mejor el contraste.
+
+Calibrado en `rgb(11 4 4 / 0.88·pot)` -> `rgb(11 4 4 / 0.5·pot)` -> `rgb(11 4 4 / 0)`. El arnes
+propio define su delta como `oculto - visible` (heredado de cuando el charco ACLARABA), asi que
+tras la inversion sale negativo por construccion — leido con el signo natural del efecto
+(`visible - oculto` = cuanto ayuda encender el charco) el delta es POSITIVO en las dos dianas y
+crece con la opacidad, confirmando la prediccion falsable. Ver informe (task-7-report.md) para
+la nota sobre el gate `MARGEN_CHARCO` que ya no puede fallar en este sentido.
+
+- [x] **Paso 5: capturas y commit**
+
+Capturas a 1440x900 con `?theme=hyprland` sobre `.obra-abrir` y `.hero-mail`, con `pot` asentada.
+**Mirarlas**: el hueco tiene que verse como una hondonada bajo el texto, con el canto encendido.
+
+---
+
+## Addendum — revision final: Task 8 (un Critico y dos Importantes)
+
+**Por que.** La revision final de la rama devolvio un Critico (C1, spec desactualizado y gate de
+consistencia en rojo) y dos Importantes (I2, un pulsable sin luz ni cursor del sistema; I3, un
+gate de contraste que ya no podia fallar). Un cuarto hallazgo (I1, el hueco invisible sobre fondos
+opacos) queda documentado con capturas, pendiente de decision de Aoshi, sin arreglar en esta tarea.
+
+### Task 8: cerrar la revision final
+
+**Ficheros:**
+- Modificar: `docs/superpowers/specs/2026-08-19-hyprland-cursor-luz-design.md`
+- Modificar: `src/components/hyprCursor.ts`
+- Modificar: `scripts/measure-cursor-luz.py`
+
+- [x] **Paso 1 (C1): reescribir el spec para que describa el dispositivo actual**
+
+Tesis, Anatomia, Color y contraste y Rendimiento y limpieza llevan un bloque
+`> **SUPERADO por la Task 7**` que señala los parrafos viejos sin borrarlos. `Estado:` pasa de
+`en ejecucion` a `implementado`. Registro de implementacion gana las entradas de la Task 7 (con
+los numeros del informe: delta `.hero-mail` 4,29 -> 5,10:1, `.obra-abrir` 3,53 -> 6,55:1,
+calibracion `0.88`/`0.5`) y de la Task 8. `python3 scripts/verify.py` pasa de EXIT 1 a EXIT 0.
+
+- [x] **Paso 2 (I2): resolver el pulsable sin señal**
+
+`.credit-group-toggle` (boton dentro de un `<p>`) se quedaba sin luz (JS lo trataba como zona
+nativa por el `<p>` ancestro) y sin cursor del sistema (CSS le daba `cursor: none` por selector
+directo) a la vez. `resolveZone()` en `hyprCursor.ts` ahora resuelve pulsable y zona nativa con un
+solo `closest()` combinado -- gana el mas cercano al puntero, no una prioridad fija por tipo de
+selector. Verificado en navegador a 800x900.
+
+- [x] **Paso 3 (I3): sustituir el gate de magnitud por uno de signo**
+
+`MARGEN_CHARCO` baja de `0.3` a `0.15` (3x el techo de ruido del instrumento, documentado en el
+spec) y la condicion de fallo pasa de `delta_max > MARGEN_CHARCO` (magnitud, no podia fallar tras
+la inversion de Task 7) a `delta_max >= -MARGEN_CHARCO` (signo: el peor caso tiene que ayudar con
+margen real). Extendida `DIANAS_CONTRASTE` con `.credit` (diana con fondo propio) -- medido
+`delta [-0,42, -0,31]`, pasa el gate (no falla como se esperaba: `.credits-grid` es 78% opaco, no
+100%, deja pasar lo suficiente del hueco para que el peor pixel lo capture aunque sea imperceptible
+a simple vista).
+
+- [x] **Paso 4 (I1, sin arreglar): capturas y descripcion honesta**
+
+`i1-creditos.png` e `i1-indice.png` a 1440x900, `?theme=hyprland`, `pot` > 0,95. El hueco degrada a
+filete de 1px mas punto sobre fondos opacos -- consistente con lo medido en el Paso 3. No tocado:
+decision de producto pendiente.
+
+- [x] **Paso 5: verificacion y commit**
+
+`npm run build`, `npm run lint`, `python3 scripts/verify.py` (EXIT 0), y
+`scripts/measure-cursor-luz.py` ejecutado varias veces contra el build de produccion servido.
+Informe en `.superpowers/sdd/2026-08-19-hyprland-cursor-luz/task-8-report.md`.
+
+---
+
+## Addendum 2 — el hueco donde el lienzo no llega
+
+**Por qué.** El lienzo del hueco vive en `z-index: -4`, debajo del contenido. Cualquier fondo
+opaco entre la diana y ese lienzo lo tapa. Medido: sólo `.hero-mail` y `.obra-abrir` están libres;
+`.scene-index-row`, `.obra-otra`, `.contacto-bar` y las 23 filas de créditos quedan tapadas —y son
+la mayor parte de las dianas del sitio. Ahí el dispositivo degrada a filete de 1px más punto.
+
+El arnés no lo cazó porque las dos dianas que medía eran justo las dos que funcionan. Al añadir
+`.credit` **pasó igualmente**, con una mejora de 0,31–0,42 que es real y medible pero
+**imperceptible**: la rejilla es opaca al 78% y ese 22% basta para mover el número sin que se vea
+nada. Gate verde, diseño roto.
+
+**El mecanismo.** Donde el texto vive **dentro** de la diana, el hueco se pinta como
+`background-image` del propio elemento: un `radial-gradient` se dibuja por encima del fondo propio
+del elemento y **por debajo de su texto**, que es exactamente el hueco que buscamos. Donde la diana
+es una capa superpuesta y el texto visible es un hermano de debajo (`.obra-abrir`), eso taparía el
+titular, así que ahí se conserva el lienzo `-4`.
+
+**La regla de decisión va atada a la causa, no a una lista de selectores** — una lista se
+desactualiza y este repo ya lo tiene escrito. Al resolver la diana se sube por sus ancestros hasta
+`body` buscando un `background-color` con alfa mayor que cero. Si lo hay, el lienzo `-4` está
+tapado y se usa `background-image`. Si no lo hay, se usa el lienzo.
+
+### Task 9: el mecanismo híbrido
+
+**Ficheros:** modificar `src/components/hyprCursor.ts`; ampliar `scripts/measure-cursor-luz.py`.
+
+- [x] **Paso 1: detectar la oclusión al resolver la diana**
+
+Al resolver una diana nueva, subir por `parentElement` hasta `body` leyendo
+`getComputedStyle(nodo).backgroundColor` y quedarse con si alguno tiene alfa mayor que cero.
+Guardar el resultado junto a la diana: decide el mecanismo hasta que cambie la diana. **No se
+calcula por fotograma** — es una lectura de estilo cara y la respuesta no cambia mientras el
+puntero siga en el mismo elemento.
+
+- [x] **Paso 2: pintar el hueco en el elemento cuando está ocluido**
+
+Con el mismo centro (la posición del puntero, en coordenadas relativas al elemento), el mismo radio
+y la misma rampa que usa el lienzo, escritos como `radial-gradient` en el `background-image` en
+línea del elemento. Guardar el valor en línea previo al tomarlo y **restaurarlo quitando la
+propiedad** al soltar la diana, no poniéndola a `none`: un `none` en línea pisaría un
+`background-image` que viniera del CSS.
+
+Comprobar antes si alguna de las dianas ya trae `background-image` propio y decir en el informe qué
+se hizo en ese caso.
+
+- [x] **Paso 3: un solo mecanismo activo por diana**
+
+Cuando se usa `background-image`, el lienzo `-4` no pinta nada para esa diana, y al revés. Nunca
+los dos a la vez.
+
+- [x] **Paso 4: el arnés mide las dos familias**
+
+Añadir a las dianas del arnés al menos una de cada mecanismo: `.obra-abrir` (lienzo) y
+`.scene-index-row` o `.credit` (elemento). La aserción de signo tiene que exigir una mejora que
+**no se pueda conseguir por el 22% de transparencia** — es decir, un margen claramente por encima
+del 0,31–0,42 que ya se medía sin el mecanismo nuevo. Dejar el número justificado en el comentario.
+
+Cerrado con un hallazgo que corrige la premisa de este paso, verificado con metodo A/B controlado
+contra la pagina real (no supuesto): en `.credit` el fondo YA esta casi negro antes de que el hueco
+pinte nada (peor contraste sin hueco 9,69:1), asi que subir de un 22% de fuga a un 100% de efecto
+real cambia la ratio casi lo mismo — [-0,25, -0,16] con el mecanismo viejo (lienzo tapado, fuga del
+22%, reproducido a proposito con la deteccion forzada a false) contra [-0,20, -0,12] con el
+mecanismo nuevo. Un margen de magnitud NO puede distinguir "mecanismo correcto" de "mecanismo
+tapado" en esta diana concreta: la curva de contraste satura ahi arriba. La asercion que si distingue
+los dos casos es ESTRUCTURAL, no fotometrica -- `__hyprCursor__.mecanismo()` expone que mecanismo
+tiene activo la diana actual, y el arnes exige `"imagen"` para `.credit`/`.scene-index-row` y
+`"lienzo"` para `.hero-mail`/`.obra-abrir`. El margen de magnitud se conserva como sanity check
+adicional, calibrado por diana: `MARGEN_CHARCO` (0,15, sin cambios) para las dos dianas con fondo
+brillante detras, `MARGEN_CHARCO_CREDITO` (0,08) para `.credit`, calibrado con repeticiones reales
+del propio arnes (delta_max nunca bajo de -0,12 en varias corridas). Detalle completo en el spec,
+`## Registro de implementación` / Task 9.
+
+- [x] **Paso 5: capturas y cierre**
+
+Capturas a 1440x900 con `?theme=hyprland` sobre una fila de créditos y una del índice de escenas,
+con `pot` asentada. **Mirarlas**: el hueco tiene que verse ahí igual que se ve en la obra.
+Actualizar el spec y dejar `verify.py` en 0.
+
+Capturas en `t9-creditos.png` (pot 0,965), `t9-indice.png` (pot 0,964, panel abierto) y
+`t9-obra.png` (pot 0,960, control) -- las tres por encima de 0,95. `verify.py` en 0 (12 fallos
+conocidos de la linea base, 0 nuevos). El hueco SI se ve en las tres, con matices: en creditos es un
+oscurecimiento sutil pero real detras de "React" (comparado con la fila vecina sin puntero encima);
+en el indice es aun mas sutil a ojo desnudo sobre el fondo ya brillante del `scene-shot` (confirmado
+con una comparacion pareada oculto/visible, ver informe); en obra sigue siendo el gesto fuerte y
+obvio de siempre (control, mecanismo sin tocar). Detalle honesto de cada captura en el informe de
+esta tarea.
