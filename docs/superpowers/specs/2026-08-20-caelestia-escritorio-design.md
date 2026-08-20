@@ -8,9 +8,9 @@ el bloque `:root[data-theme="caelestia"]` de `src/themes/themes.css`,
 **Vice no se toca** (cerrado el 2026-08-05). **Hyprland no se toca.** `shaderBackground.ts` es
 compartido y no se modifica.
 
-Hay **una excepción, y es la parte cara**: el cambio de workspace obliga a bifurcar el arranque en
-`src/main.ts`, que comparten los tres temas. Ver `## El cambio de workspace` y el criterio de
-aceptación que lo cubre.
+En `src/main.ts` se añade una rama `theme.id === "caelestia"` para montar el shell. **No es una
+bifurcación**: es la tercera entrada de un patrón que ya existe (`hyprland` en las líneas 143 y 153,
+`vice` en la 165 y la 183). Ver `## El cambio de workspace`.
 
 ---
 
@@ -315,14 +315,37 @@ página.** La dirección la marca el orden de las escenas. Duración de referenc
 Un workspace no se desplaza, se cambia. Es el gesto que sostiene la metáfora; con desplazamiento
 suave, la barra sería un menú con reloj.
 
-### El riesgo, dicho por delante
+### Corrección del 2026-08-20 — el riesgo declarado no existe
 
-El sitio usa Lenis y coreografía de scroll. En Caelestia hay que desactivar ambas y montar la escena
-por índice, y eso **bifurca el arranque en `src/main.ts`**, que comparten los tres temas. No es un
-módulo nuevo aislado como `viceInk` o `hyprEmber`: es una rama en el punto común.
+La primera versión de este spec decía que había que desactivar Lenis en Caelestia y que eso
+bifurcaba el arranque. **Las dos cosas eran falsas.** Comprobado leyendo el árbol:
 
-Es el único lugar del plan con riesgo real de rozar a Vice, que está cerrado. La mitigación es una
-tarea de verificación explícita, no una promesa. Ver criterios de aceptación.
+**Lenis ya no está montado en Caelestia.** `src/utils/reveal.ts:253`:
+
+```ts
+if (motion.style === "cinematic") {
+  await initSmoothScroll(gsap, ScrollTrigger);
+}
+```
+
+`cinematic` es Vice y solo Vice. Caelestia es `fluid` y Hyprland es `snap`: en ninguno de los dos se
+descarga siquiera el módulo. No hay nada que desactivar.
+
+**La rama por tema en `main.ts` es el patrón establecido, no una excepción.** Ya hay cuatro:
+`hyprland` en las líneas 143 y 153, `vice` en la 165 y la 183. Añadir `caelestia` es la quinta
+entrada de la misma lista.
+
+**Y `theme.choreography` ya es un gancho opcional del contrato** (`src/themes/types.ts`), que
+Caelestia simplemente no usa todavía. Definirlo no toca ninguna ruta de código de los otros temas.
+
+Efecto secundario favorable: hoy Caelestia cae en la rama genérica de `reveal.ts`, que para el estilo
+`fluid` usa `gsap.from` — prohibido por `CLAUDE.md`. Al darle coreografía propia, esa rama deja de
+ejecutarse en Caelestia.
+
+**Qué queda de riesgo, que no es cero:** el cambio de workspace altera la altura del documento y el
+comportamiento del scroll nativo. Eso no toca a Vice ni a Hyprland, pero sí a los anclas
+(`#hero`, `#quien-es`, `#obra`, `#creditos`, `#contacto`) que `sceneNav` usa en los tres temas. El
+criterio de aceptación 2 se mantiene tal cual: es barato y cubre exactamente esto.
 
 ### Qué está prohibido
 
@@ -368,7 +391,8 @@ tarea de verificación explícita, no una promesa. Ver criterios de aceptación.
    - que en el minuto anterior y el posterior al umbral (06:59/07:00 y 19:59/20:00) el contraste no
      baja en ningún fotograma intermedio;
    - que el matiz a las 11:00 es 225° ±1.
-4. El cambio de workspace no dispara ScrollTrigger ni deja Lenis vivo en Caelestia.
+4. El cambio de workspace no deja ScrollTrigger con pins activos en Caelestia, y `sceneNav` sigue
+   resolviendo los cinco anclas en los tres temas.
 5. Cero errores de consola y cero avisos de contexto WebGL perdido.
 6. `python3 scripts/verify.py` sale con código 0.
 7. Captura en navegador real, no solo headless, en día y en noche.
