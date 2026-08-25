@@ -1619,7 +1619,7 @@ sin robar el foco."
 > desactivar. Lo que sí hay que hacer es que las cinco escenas dejen de apilarse en vertical y
 > pasen a ser un carril horizontal.
 
-- [ ] **Paso 1: aserción en el arnés**
+- [x] **Paso 1: aserción en el arnés**
 
 ```python
         # ---- 9. cambio de workspace: la pagina no desplaza, el carril si
@@ -1666,7 +1666,7 @@ sin robar el foco."
 
 Correr. Esperado: `la pagina sigue desplazando en Caelestia`.
 
-- [ ] **Paso 2: escribir la coreografía**
+- [x] **Paso 2: escribir la coreografía**
 
 Crear `src/themes/caelestia.choreography.ts`:
 
@@ -1748,7 +1748,7 @@ export const caelestiaChoreography: Choreography = ({ gsap, ScrollTrigger, root 
 };
 ```
 
-- [ ] **Paso 3: engancharla al tema**
+- [x] **Paso 3: engancharla al tema**
 
 En `src/themes/caelestia.ts`:
 
@@ -1763,7 +1763,7 @@ En `src/themes/caelestia.ts`:
 > usa `gsap.from` — prohibido por `CLAUDE.md`. Es una mejora colateral, no un efecto secundario a
 > vigilar.
 
-- [ ] **Paso 4: sincronizar la pastilla activa**
+- [x] **Paso 4: sincronizar la pastilla activa**
 
 En `main.ts`, dentro del bloque de Caelestia:
 
@@ -1777,7 +1777,7 @@ En `main.ts`, dentro del bloque de Caelestia:
   });
 ```
 
-- [ ] **Paso 5: el carril en CSS**
+- [x] **Paso 5: el carril en CSS**
 
 ```css
 /*
@@ -1828,7 +1828,7 @@ En `main.ts`, dentro del bloque de Caelestia:
 }
 ```
 
-- [ ] **Paso 6: arnés completo, y la comprobación que protege a los otros dos temas**
+- [x] **Paso 6: arnés completo, y la comprobación que protege a los otros dos temas**
 
 ```bash
 npm run build && npm run lint && npx vite preview --port 4173 &

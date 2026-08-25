@@ -23,6 +23,10 @@ export const caelestiaTheme: Theme = {
   fontHref:
     "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=Hanken+Grotesk:wght@100..900&family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap",
   motion: { style: "fluid", ease: "back.out(1.5)", duration: 1.2, stagger: 0.08 },
+  async choreography() {
+    const { caelestiaChoreography } = await import("./caelestia.choreography");
+    return caelestiaChoreography;
+  },
   async mountBackground(container) {
     const { mountCaelestiaBlobs } = await import("../backgrounds/caelestiaBlobs");
     return mountCaelestiaBlobs(container);

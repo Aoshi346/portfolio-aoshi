@@ -240,6 +240,16 @@ if (theme.id === "caelestia") {
   void import("./components/caelestiaShell").then(({ mountCaelestiaShell }) => {
     caeShellHandle = mountCaelestiaShell(app);
   });
+
+  // La pastilla activa la marca quien escucha, no quien pulsa: asi tambien
+  // queda sincronizada si el cambio de workspace llega de otro origen.
+  app.addEventListener("caelestia:workspace", (evento) => {
+    if (!(evento instanceof CustomEvent)) return;
+    const detalle: unknown = evento.detail;
+    if (typeof detalle !== "object" || detalle === null || !("index" in detalle)) return;
+    const indice = Number((detalle as { index: unknown }).index);
+    if (Number.isFinite(indice)) caeShellHandle?.setScene(indice);
+  });
 }
 
 let backgroundHandle: BackgroundHandle | null = null;

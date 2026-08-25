@@ -297,6 +297,47 @@ def main():
                 fallos.append("la notificacion roba el foco")
         ctx.close()
 
+        # ---- 9. cambio de workspace: la pagina no desplaza, el carril si
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(3000)
+        alturaDoc = page.evaluate("document.documentElement.scrollHeight - window.innerHeight")
+        if alturaDoc > 4:
+            fallos.append("la pagina sigue desplazando en Caelestia: sobran %dpx" % alturaDoc)
+
+        page.eval_on_selector_all("[data-cae-ws]", "bs => bs[2].click()")
+        page.wait_for_timeout(900)
+        estado = page.evaluate(
+            """() => {
+                const t = document.querySelector('[data-cae-track]');
+                const activa = document.querySelector('[data-cae-ws][aria-current="true"]');
+                return {
+                  transform: t ? getComputedStyle(t).transform : null,
+                  activa: activa ? activa.dataset.caeWs : null,
+                };
+            }"""
+        )
+        if estado["activa"] != "obra":
+            fallos.append("tras pulsar la tercera pastilla, la activa es %r" % estado["activa"])
+        if not estado["transform"] or estado["transform"] == "none":
+            fallos.append("el carril no se ha movido: transform %r" % estado["transform"])
+
+        # Los anclas siguen resolviendo en los tres temas (sceneNav depende de ellos).
+        ctx.close()
+        for tema in ("vice", "hyprland", "caelestia"):
+            ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+            page = ctx.new_page()
+            page.goto(args.base + "/?theme=" + tema, wait_until="domcontentloaded", timeout=30000)
+            page.wait_for_timeout(2000)
+            faltan = page.evaluate(
+                """() => ['hero','quien-es','obra','creditos','contacto']
+                     .filter(id => !document.getElementById(id))"""
+            )
+            if faltan:
+                fallos.append("%s: anclas ausentes %s" % (tema, faltan))
+            ctx.close()
+
         nav.close()
 
     if fallos:

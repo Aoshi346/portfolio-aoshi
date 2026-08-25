@@ -3869,6 +3869,89 @@
 }
 
 /*
+ * El carril de workspaces. La pagina deja de desplazar en vertical: las cinco
+ * escenas van en fila y lo que se mueve es el carril.
+ *
+ * `data-cae-shell` lo pone la coreografia en `document.documentElement`, que es
+ * lo unico con lo que casa `:root`. `data-cae-track` va en el `<main>`.
+ */
+:root[data-theme="caelestia"][data-cae-shell="workspaces"] {
+  overflow: hidden;
+}
+
+:root[data-theme="caelestia"][data-cae-shell="workspaces"] body {
+  overflow: hidden;
+  height: 100dvh;
+}
+
+:root[data-theme="caelestia"] main[data-cae-track] {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+  height: 100dvh;
+  /* Hueco para la barra arriba y el dock abajo. El aire lateral NO va aqui:
+     `xPercent` desplaza un 100% del ANCHO DEL CARRIL (1440px medidos), asi que
+     el paso entre ventanas tiene que valer eso mismo. Con `padding-inline` las
+     ventanas median 1412 y cada cambio de workspace se pasaba 28px: a la
+     tercera pastilla asomaba la ventana siguiente por la derecha. El aire se lo
+     da cada ventana con su margen, que si entra en el paso. */
+  padding: 4.25rem 0 5.25rem;
+  will-change: transform;
+}
+
+:root[data-theme="caelestia"] main[data-cae-track] > * {
+  /* 100% menos el aire de los dos lados; el margen lo devuelve, de modo que
+     ventana + margenes = 100% del carril = un `xPercent` exacto. */
+  flex: 0 0 calc(100% - 1.75rem);
+  max-width: calc(100% - 1.75rem);
+  margin-inline: 0.875rem;
+  height: 100%;
+  /* Las cinco escenas llevan `min-h-screen` (100vh) del marcado compartido, y
+     un `min-height` gana siempre a `height`: dentro del carril las dejaba 152px
+     mas altas que el hueco util, con esos 152px cortados fuera de pantalla y
+     sin barra que los alcanzase. Aqui la ventana manda, y su contenido
+     desplaza dentro. Medido: 900px de escena en un hueco de 748. */
+  min-height: 0;
+  /* La ventana desplaza su contenido. Un escritorio cambia de espacio de un
+     golpe, y la ventana que hay dentro tiene su barra. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 1.25rem;
+  background: var(--cae-elev-1);
+  transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] main[data-cae-track] > *::-webkit-scrollbar {
+  width: 0.5625rem;
+}
+
+:root[data-theme="caelestia"] main[data-cae-track] > *::-webkit-scrollbar-thumb {
+  background: var(--cae-outline);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/*
+ * La barra de workspaces envuelve sus pastillas al estrecharse y crece con
+ * ello: medidos 44px de alto de 688px de ancho en adelante, 74 entre 480 y
+ * 688, y 132 por debajo de 480. El hueco de arriba del carril sigue esos tres
+ * escalones — con el hueco fijo de escritorio, en movil la barra se comia los
+ * primeros 76px de la ventana. Escalones discretos, no una funcion continua.
+ */
+@media (max-width: 42.9375rem) {
+  :root[data-theme="caelestia"] main[data-cae-track] {
+    padding-top: 6.125rem;
+  }
+}
+
+@media (max-width: 29.9375rem) {
+  :root[data-theme="caelestia"] main[data-cae-track] {
+    padding-top: 9.75rem;
+  }
+}
+
+/*
  * Reparto agrupado por area (solo Vice).
  *
  * El rol se repetia en las doce filas — "Frontend" cuatro veces seguidas,
