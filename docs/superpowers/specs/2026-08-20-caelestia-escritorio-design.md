@@ -117,8 +117,8 @@ hay que reimplementar HCT ni CAM16.
 | rol | claro `L` | claro `C` | oscuro `L` | oscuro `C` |
 |---|---|---|---|---|
 | `surface` | 0.980 | 0.012 | 0.185 | 0.016 |
-| `surface-container` | 0.955 | 0.020 | 0.235 | 0.022 |
-| `surface-container-high` | 0.925 | 0.026 | 0.285 | 0.026 |
+| `surface-container` | 0.955 | 0.020 | 0.265 | 0.022 |
+| `surface-container-high` | 0.925 | 0.026 | 0.345 | 0.026 |
 | `on-surface` | 0.245 | 0.035 | 0.925 | 0.016 |
 | `on-surface-variant` | 0.470 | 0.032 | 0.795 | 0.024 |
 | `outline` | 0.700 | 0.022 | 0.420 | 0.020 |
@@ -126,6 +126,17 @@ hay que reimplementar HCT ni CAM16.
 | `on-primary` | 0.990 | 0.010 | 0.270 | 0.095 |
 | `primary-container` | 0.895 | 0.062 | 0.395 | 0.105 |
 | `on-primary-container` | 0.310 | 0.100 | 0.900 | 0.062 |
+
+La rampa oscura de superficie no son los 0.05 de claridad por escalon que da la progresion
+regular (0.185 / 0.235 / 0.285): son 0.08 (0.185 / 0.265 / 0.345). Medido en la Tarea 2
+(`scripts/measure-caelestia-hora.py`): con 0.05, el peor matiz del barrido (315 grados, croma
+minimo) da pasos de luminancia relativa sRGB de 0.0062 y 0.0104 entre `surface`,
+`surface-container` y `surface-container-high` — el primero por debajo del umbral de 0.008 que
+exige el arnes. Con 0.08, el peor caso de un barrido de 24 matices por 5 escalas de croma sube a
+0.0118, con margen. La causa de fondo: la claridad OkLCH es perceptualmente uniforme, pero la
+luminancia relativa que usa WCAG (y el arnes) no lo es — se comprime cerca del negro, asi que el
+mismo delta de `L` que separa de sobra en claro (peor caso medido: 0.063) se queda corto en
+oscuro. El esquema claro no se toco: sus deltas ya sobraban.
 
 ### El matiz
 
