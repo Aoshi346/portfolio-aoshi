@@ -435,13 +435,8 @@ def main():
         page = ctx.new_page()
         page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(3000)
-        # El brief propone selectores `[data-cae-bar]`/`[data-cae-dock]`/`[data-cae-toast]`,
-        # pero `caelestiaShell.ts` los pinta como CLASES (`.cae-bar`, `.cae-dock`, `.cae-toast`),
-        # no como atributos `data-*`. Con los selectores del brief `querySelector` siempre
-        # devuelve null y la asercion fallaria SIEMPRE, incluso con el CSS correcto -- no mide
-        # nada. Se corrige a los selectores reales.
         desbordes = page.evaluate(
-            """() => ['.cae-bar','.cae-dock','.cae-toast']
+            """() => ['[data-cae-bar]','[data-cae-dock]','[data-cae-toast]']
                  .map(sel => {
                    const n = document.querySelector(sel);
                    if (!n) return sel + ' ausente';
