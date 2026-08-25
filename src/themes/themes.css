@@ -3810,6 +3810,65 @@
 }
 
 /*
+ * La notificacion del shell: dos disparos, disponibilidad al entrar y
+ * cambio de esquema al cruzar el umbral horario. El esquema es instantaneo
+ * por construccion (ver Tarea 1), asi que si cambia delante del visitante
+ * tiene que decir por que.
+ */
+:root[data-theme="caelestia"] .cae-toast {
+  position: fixed;
+  right: 0.875rem;
+  bottom: 5.5rem;
+  z-index: 61;
+  max-width: 17rem;
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.875rem;
+  border-radius: 1.125rem;
+  background: var(--cae-elev-2);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.6);
+  transform: translateY(0.875rem);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.42s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.32s,
+    background 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-toast.is-open {
+  transform: none;
+  opacity: 1;
+}
+
+:root[data-theme="caelestia"] .cae-toast .cae-dot {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+:root[data-theme="caelestia"] .cae-toast-t {
+  display: block;
+  font-size: 0.71875rem;
+  margin-bottom: 0.125rem;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-toast-s {
+  font-size: 0.65625rem;
+  line-height: 1.4;
+  color: var(--cae-on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-toast {
+    transition: opacity 0.01ms;
+    transform: none;
+  }
+}
+
+/*
  * Reparto agrupado por area (solo Vice).
  *
  * El rol se repetia en las doce filas — "Frontend" cuatro veces seguidas,

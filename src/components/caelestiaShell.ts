@@ -1,4 +1,4 @@
-import { contactChannels, sceneIndex, type ContactChannel } from "../data/content";
+import { contactChannels, identity, sceneIndex, type ContactChannel } from "../data/content";
 import { el, elFromMarkup } from "../utils/dom";
 
 /**
@@ -118,12 +118,57 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
     });
   };
 
+  // --------------------------------------------------------- notificaciones
+  const avisoTitulo = el("b", "cae-toast-t");
+  const avisoDetalle = el("span", "cae-toast-s");
+  const avisoPunto = el("i", "cae-dot");
+  const aviso = el("aside", "cae-toast", [
+    avisoPunto,
+    el("span", "cae-toast-body", [avisoTitulo, avisoDetalle]),
+  ]);
+  aviso.dataset.caeToast = "";
+  // `polite`, no `assertive`: informa, no interrumpe. Y nunca toma el foco.
+  aviso.setAttribute("aria-live", "polite");
+  root.append(aviso);
+
+  let cierre = 0;
+  const notificar = (titulo: string, detalle: string): void => {
+    avisoTitulo.textContent = titulo;
+    avisoDetalle.textContent = detalle;
+    aviso.classList.add("is-open");
+    window.clearTimeout(cierre);
+    cierre = window.setTimeout(() => aviso.classList.remove("is-open"), 4200);
+  };
+
+  const alCambiarEsquema = (evento: Event): void => {
+    if (!(evento instanceof CustomEvent)) return;
+    const detalle: unknown = evento.detail;
+    if (typeof detalle !== "object" || detalle === null || !("oscuro" in detalle)) return;
+    const oscuro = Boolean((detalle as { oscuro: unknown }).oscuro);
+    notificar(
+      oscuro ? "El escritorio ha cambiado a modo noche" : "El escritorio ha vuelto a modo día",
+      "El esquema se decide con tu reloj",
+    );
+  };
+  document.documentElement.addEventListener("caelestia:esquema", alCambiarEsquema);
+  limpiadores.push(() =>
+    document.documentElement.removeEventListener("caelestia:esquema", alCambiarEsquema),
+  );
+
+  // Primer aviso: el estado, que es lo que un reclutador viene a saber.
+  const primerAviso = window.setTimeout(() => {
+    notificar(identity.availability, `${identity.now} · ${identity.location}`);
+  }, 900);
+
   return {
     destroy: () => {
       window.clearInterval(tic);
+      window.clearTimeout(primerAviso);
+      window.clearTimeout(cierre);
       for (const limpiar of limpiadores) limpiar();
       barra.remove();
       dock.remove();
+      aviso.remove();
     },
     setScene,
   };

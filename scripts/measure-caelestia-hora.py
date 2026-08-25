@@ -270,6 +270,33 @@ def main():
                 fallos.append("%d accesos del dock sin icono" % dock["sinIcono"])
         ctx.close()
 
+        # ---- 8. la notificacion de disponibilidad aparece y no roba el foco
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(3000)
+        aviso = page.evaluate(
+            """() => {
+                const t = document.querySelector('[data-cae-toast]');
+                if (!t) return null;
+                return {
+                  visible: t.classList.contains('is-open'),
+                  live: t.getAttribute('aria-live'),
+                  robaFoco: document.activeElement === t || t.contains(document.activeElement),
+                };
+            }"""
+        )
+        if aviso is None:
+            fallos.append("no existe [data-cae-toast]")
+        else:
+            if not aviso["visible"]:
+                fallos.append("la notificacion de disponibilidad no llego a mostrarse")
+            if aviso["live"] != "polite":
+                fallos.append("la notificacion tiene aria-live=%r, esperado 'polite'" % aviso["live"])
+            if aviso["robaFoco"]:
+                fallos.append("la notificacion roba el foco")
+        ctx.close()
+
         nav.close()
 
     if fallos:

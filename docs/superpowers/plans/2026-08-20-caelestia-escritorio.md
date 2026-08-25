@@ -1441,7 +1441,7 @@ El arnes comprueba aria-label, rel noopener e icono en cada acceso."
   `detail: { oscuro: boolean }`, y `identity.availability` de `src/data/content.ts`.
 - Produce: nada nuevo hacia fuera.
 
-- [ ] **Paso 1: aserción en el arnés**
+- [x] **Paso 1: aserción en el arnés**
 
 ```python
         # ---- 8. la notificacion de disponibilidad aparece y no roba el foco
@@ -1474,7 +1474,7 @@ El arnes comprueba aria-label, rel noopener e icono en cada acceso."
 
 Correr. Esperado: `no existe [data-cae-toast]`.
 
-- [ ] **Paso 2: escribir la notificación**
+- [x] **Paso 2: escribir la notificación**
 
 En `mountCaelestiaShell`, después del dock:
 
@@ -1526,7 +1526,7 @@ En `destroy()`: `window.clearTimeout(primerAviso); window.clearTimeout(cierre); 
 
 Import: `import { contactChannels, identity, sceneEntries } from "../data/content";`
 
-- [ ] **Paso 3: estilos**
+- [x] **Paso 3: estilos**
 
 ```css
 :root[data-theme="caelestia"] .cae-toast {
@@ -1583,7 +1583,7 @@ Import: `import { contactChannels, identity, sceneEntries } from "../data/conten
 }
 ```
 
-- [ ] **Paso 4: arnés, build, lint y commit**
+- [x] **Paso 4: arnés, build, lint y commit**
 
 ```bash
 npm run build && npm run lint && npx vite preview --port 4173 &
