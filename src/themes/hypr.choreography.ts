@@ -60,7 +60,16 @@ type HyprTimerWindow = Window & { __hyprSkillTimers?: number[] };
  * bajo `reduce`, igual que en Vice: es una capa de refuerzo, no el canal por
  * el que se entiende que nombre esta enfocado.
  */
-export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
+/*
+ * `gsap` se desestructura del contexto, no se toma del ambito global: el
+ * contrato de `ChoreographyContext` lo entrega precisamente para eso, y Vice
+ * lo hace asi desde el principio. Sin esta palabra el modulo compilaba y
+ * pasaba el lint —el identificador existe como global en los tipos— pero el
+ * chunk construido reventaba con `gsap is not defined` en cuanto `reveal.ts`
+ * llamaba a la coreografia, y con el la seccion de creditos se quedaba sin
+ * sus gestos. No lo caza `tsc` ni `eslint`: solo se ve en el navegador.
+ */
+export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
   ScrollTrigger.getAll()
     .filter((t) => typeof t.vars.id === "string" && t.vars.id.startsWith(ID))
     .forEach((t) => t.kill());
