@@ -1907,7 +1907,7 @@ los tres temas, y hay capturas comparadas de Vice y Hyprland contra HEAD~1."
 > motor: el fondo pasa a ser una versión difusa del mismo matiz que gobierna la hora, en vez de
 > cuatro pasteles fijos que van por su cuenta.
 
-- [ ] **Paso 1: aserción en el arnés**
+- [x] **Paso 1: aserción en el arnés**
 
 ```python
         # ---- 10. el fondo sigue el matiz de la hora, no trae color propio
@@ -1929,7 +1929,7 @@ los tres temas, y hay capturas comparadas de Vice y Hyprland contra HEAD~1."
 > fondo **congelado**, no para validar el matiz. El matiz ya lo valida la aserción 2 sobre
 > `--cae-hue`. No lo conviertas en un umbral fino: sería medir ruido.
 
-- [ ] **Paso 2: reescribir el shader**
+- [x] **Paso 2: reescribir el shader**
 
 `src/backgrounds/caelestiaBlobs.ts`:
 
@@ -2004,7 +2004,7 @@ export function mountCaelestiaBlobs(container: HTMLElement): BackgroundHandle {
 > prohibido por el spec, y hay que resolverlo pasando el matiz por otra vía (por ejemplo, un
 > `--cae-hue` leído desde el propio módulo con `getComputedStyle` en el bucle de render).
 
-- [ ] **Paso 3: arnés, build, lint, captura y commit**
+- [x] **Paso 3: arnés, build, lint, captura y commit**
 
 ```bash
 npm run build && npm run lint && npx vite preview --port 4173 &

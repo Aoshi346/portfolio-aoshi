@@ -338,6 +338,20 @@ def main():
                 fallos.append("%s: anclas ausentes %s" % (tema, faltan))
             ctx.close()
 
+        # ---- 10. el fondo sigue el matiz de la hora, no trae color propio
+        muestras = {}
+        for minutos in (300, 660, 1020, 1380):
+            ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+            ctx.add_init_script("(%s)(%d)" % (RELOJ, minutos))
+            page = ctx.new_page()
+            page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+            page.wait_for_timeout(6000)
+            png = page.screenshot(clip={"x": 0, "y": 0, "width": 200, "height": 200})
+            muestras[minutos] = len(png)   # proxy barato: el PNG cambia si cambia el color
+            ctx.close()
+        if len(set(muestras.values())) < 3:
+            fallos.append("el fondo apenas cambia con la hora: %s" % muestras)
+
         nav.close()
 
     if fallos:
