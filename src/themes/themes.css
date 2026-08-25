@@ -3973,6 +3973,25 @@
 }
 
 /*
+ * El disparador compartido de navegacion de escenas queda inutil aqui: la
+ * barra del shell ya lleva las cinco escenas como pastillas siempre visibles
+ * (`.cae-ws`). Medido a 1440x900 el disparador (`.scene-nav-trigger`, caja
+ * [1240,0,1392,44], z-index 44) queda debajo de la barra (`.cae-bar`, caja
+ * [14,12,1426,56], z-index 60): `document.elementFromPoint` sobre el
+ * disparador devuelve `cae-bar`. Y forzando el clic tampoco lleva a ningun
+ * sitio: el panel abre, pulsar una fila cambia el hash, pero Caelestia ya no
+ * tiene scroll de pagina (las escenas son un carril horizontal) y el carril
+ * solo responde al evento `caelestia:workspace`, que el panel no emite. Se
+ * ocultan disparador y panel con `display:none` (no `opacity`/`visibility`)
+ * para sacarlos tambien del arbol de accesibilidad: un control enfocable,
+ * invisible y que no hace nada seria peor que quitarlo.
+ */
+:root[data-theme="caelestia"] .scene-nav-trigger,
+:root[data-theme="caelestia"] .scene-index {
+  display: none;
+}
+
+/*
  * Reparto agrupado por area (solo Vice).
  *
  * El rol se repetia en las doce filas — "Frontend" cuatro veces seguidas,
