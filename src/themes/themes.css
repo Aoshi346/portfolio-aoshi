@@ -3934,18 +3934,39 @@
 
 /*
  * La barra de workspaces envuelve sus pastillas al estrecharse y crece con
- * ello: medidos 44px de alto de 688px de ancho en adelante, 74 entre 480 y
- * 688, y 132 por debajo de 480. El hueco de arriba del carril sigue esos tres
- * escalones — con el hueco fijo de escritorio, en movil la barra se comia los
- * primeros 76px de la ventana. Escalones discretos, no una funcion continua.
+ * ello. El hueco de arriba del carril sigue esos escalones: con el hueco fijo
+ * de escritorio, la barra se comia los primeros pixeles de la ventana.
+ * Escalones discretos, no una funcion continua.
+ *
+ * Los cortes NO se adivinan: se barrio 380-1440 de pixel en pixel en cargas
+ * limpias, midiendo el borde inferior de la barra. Son CUATRO escalones, y sus
+ * saltos estan en 451, 539 y 661:
+ *
+ *   ancho      borde inferior de la barra   hueco necesario (+12 de aire)
+ *   >= 661     56                           68px  = 4.25rem
+ *   539-660    85.5                         98px  = 6.125rem
+ *   451-538    112                          124px = 7.75rem
+ *   <= 450     144                          156px = 9.75rem
+ *
+ * La version anterior tenia tres escalones cortados en 479 y 687, muestreados
+ * en 390/430/540/700/1440 — los cinco anchos que caen FUERA de la banda rota.
+ * En 480-538 la barra llegaba a 112 contra un hueco de 98: 14px de oclusion
+ * real, con `elementFromPoint` sobre el borde de la ventana devolviendo
+ * `HEADER.cae-bar`. Se barre el rango, no se muestrean puntos.
  */
-@media (max-width: 42.9375rem) {
+@media (max-width: 41.25rem) {
   :root[data-theme="caelestia"] main[data-cae-track] {
     padding-top: 6.125rem;
   }
 }
 
-@media (max-width: 29.9375rem) {
+@media (max-width: 33.625rem) {
+  :root[data-theme="caelestia"] main[data-cae-track] {
+    padding-top: 7.75rem;
+  }
+}
+
+@media (max-width: 28.125rem) {
   :root[data-theme="caelestia"] main[data-cae-track] {
     padding-top: 9.75rem;
   }

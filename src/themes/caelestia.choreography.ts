@@ -25,6 +25,33 @@ import type { Choreography } from "./choreography";
  * ScrollTrigger tampoco: en Caelestia no hay pins. Se recibe en el contexto
  * porque el contrato es comun a los tres temas, y se usa solo para refrescar
  * al cambiar el tamano de la ventana.
+ *
+ * DOS DUENOS PARA UNA SOLA POSICION, Y UNO NO LO SABIA. El carril lo mueve el
+ * `transform` de esta coreografia, pero los workspaces inactivos seguian en el
+ * arbol, visibles y ENFOCABLES. Tres pulsaciones de Tab desde una carga limpia
+ * metian el foco en el workspace 2, y el navegador desplazaba el contenedor de
+ * scroll mas cercano — el `body`, cuyo `overflow: hidden` sigue siendo
+ * desplazable POR PROGRAMA — para traerlo a la vista: `railX=0` con
+ * `bodySL=2705`. Las dos posiciones se sumaban y no volvian, la barra mentia
+ * sobre lo que habia en pantalla y solo se recuperaba recargando. Y lo sufria
+ * exactamente el usuario de teclado: el camino de accesibilidad.
+ *
+ * Se cierra por los dos lados a la vez, porque cada uno solo tapa la mitad:
+ *
+ *   1. `inert` en todo workspace que no sea el activo. El foco no puede entrar
+ *      donde no se ve, y de paso el contenido oculto sale del arbol de
+ *      accesibilidad — que es lo que un lector de pantalla espera de algo que
+ *      no esta en pantalla. El activo nunca lleva `inert`: sigue navegable
+ *      entero por teclado.
+ *   2. Un anclaje del scroll del documento. `inert` quita la via conocida,
+ *      pero no es la unica (un ancla `#obra`, un `scrollIntoView` de terceros,
+ *      un `focus()` por programa). El oyente en fase de captura devuelve el
+ *      documento a cero venga de donde venga, asi que `body.scrollLeft` no
+ *      puede quedar desincronizado del `transform` POR NINGUNA VIA.
+ *
+ * Ninguno de los dos depende de GSAP ni del perfil de movimiento: cuando la
+ * Tarea 10 haga que la coreografia corra tambien con `prefers-reduced-motion`,
+ * siguen valiendo tal cual.
  */
 const DURACION = 0.52;
 const CURVA = "power3.inOut";
@@ -41,6 +68,28 @@ export const caelestiaChoreography: Choreography = ({ gsap, ScrollTrigger, root 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let actual = 0;
 
+  const cuerpo = document.body;
+  const raiz = document.documentElement;
+
+  /**
+   * Devuelve el documento a cero. El unico dueno de donde esta el carril es el
+   * `transform`; el scroll del documento no participa y cualquier valor que
+   * tenga es deriva.
+   */
+  const anclarDocumento = (): void => {
+    if (raiz.scrollLeft !== 0) raiz.scrollLeft = 0;
+    if (raiz.scrollTop !== 0) raiz.scrollTop = 0;
+    if (cuerpo.scrollLeft !== 0) cuerpo.scrollLeft = 0;
+    if (cuerpo.scrollTop !== 0) cuerpo.scrollTop = 0;
+  };
+
+  /** Solo el activo queda navegable; los demas salen del foco y del arbol a11y. */
+  const aislarInactivos = (activo: number): void => {
+    escenas.forEach((escena, indice) => {
+      escena.inert = indice !== activo;
+    });
+  };
+
   const irA = (indice: number): void => {
     const destino = Math.max(0, Math.min(indice, escenas.length - 1));
     // El extremo de partida es la posicion ACTUAL, capturada antes de
@@ -48,6 +97,8 @@ export const caelestiaChoreography: Choreography = ({ gsap, ScrollTrigger, root 
     // carril saltaria de golpe siempre.
     const origen = actual;
     actual = destino;
+    aislarInactivos(destino);
+    anclarDocumento();
     // fromTo con los dos extremos escritos a mano: `gsap.from` esta prohibido
     // en este proyecto y ya provoco tres regresiones reales.
     gsap.fromTo(
@@ -64,6 +115,27 @@ export const caelestiaChoreography: Choreography = ({ gsap, ScrollTrigger, root 
 
   // Estado inicial explicito, sin leer el DOM.
   gsap.set(root, { xPercent: 0 });
+  aislarInactivos(0);
+  anclarDocumento();
+
+  /*
+   * Fase de CAPTURA: los eventos de scroll no burbujean, asi que un oyente en
+   * `document` solo los ve bajando. Se filtra por diana para no tocar el
+   * desplazamiento vertical que cada ventana hace de su propio contenido, que
+   * es legitimo y tiene que seguir funcionando.
+   */
+  const alDesplazar = (evento: Event): void => {
+    const diana: EventTarget | null = evento.target;
+    if (diana !== document && diana !== cuerpo && diana !== raiz) return;
+    anclarDocumento();
+  };
+  document.addEventListener("scroll", alDesplazar, true);
+
+  /*
+   * Segunda red, por si el navegador desplaza sin emitir `scroll` observable a
+   * tiempo: al entrar el foco en cualquier sitio, el documento vuelve a cero.
+   */
+  document.addEventListener("focusin", anclarDocumento, true);
 
   const alCambiar = (evento: Event): void => {
     if (!(evento instanceof CustomEvent)) return;
@@ -83,8 +155,8 @@ export const caelestiaChoreography: Choreography = ({ gsap, ScrollTrigger, root 
 
   /*
    * Sin `destroy()` propio: la coreografia se invoca una vez por carga y el
-   * arbol muere con la pagina. Los oyentes van sobre `document.documentElement`
-   * y `window`, que tienen el mismo ciclo de vida. Si esto deja de ser cierto
+   * arbol muere con la pagina. Los oyentes van sobre `document`,
+   * `document.documentElement` y `window`, que tienen el mismo ciclo de vida. Si esto deja de ser cierto
    * (navegacion sin recarga), hay que devolver un limpiador y llamarlo desde
    * `pagehide`.
    */
