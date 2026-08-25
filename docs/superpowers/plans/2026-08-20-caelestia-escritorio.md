@@ -141,7 +141,7 @@ estado, que es justo el acoplamiento que se quiere evitar.
 --cae-hue            (número sin unidad, para el shader)
 ```
 
-- [ ] **Paso 1: escribir el arnés que falla**
+- [x] **Paso 1: escribir el arnés que falla**
 
 Crear `scripts/measure-caelestia-hora.py`:
 
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Paso 2: correrlo y comprobar que falla**
+- [x] **Paso 2: correrlo y comprobar que falla**
 
 ```bash
 npm run build && npx vite preview --port 4173 &
@@ -311,7 +311,7 @@ python3 scripts/measure-caelestia-hora.py --base http://localhost:4173
 Esperado: `FALLOS`, con `token ausente --cae-surface` repetido para las 72 horas muestreadas.
 Si sale otra cosa, para y averigua por qué antes de seguir.
 
-- [ ] **Paso 3: escribir el motor**
+- [x] **Paso 3: escribir el motor**
 
 Crear `src/themes/caelestia.color.ts`:
 
@@ -509,7 +509,7 @@ Y añadirlo al `pagehide` existente (sobre la línea 217), junto a los demás:
     caeColorHandle?.destroy();
 ```
 
-- [ ] **Paso 4: correr el arnés y comprobar que pasa**
+- [x] **Paso 4: correr el arnés y comprobar que pasa**
 
 ```bash
 npm run build && npx vite preview --port 4173 &
@@ -521,7 +521,7 @@ Esperado: `OK — motor de color de Caelestia en verde`, código de salida 0.
 Si algún par cae por debajo de 4.5:1, **no toques el umbral del arnés**: ajusta la `L` del rol en
 `caelestia.color.ts` y actualiza la tabla del spec. El arnés es la referencia, no la variable.
 
-- [ ] **Paso 5: build y lint**
+- [x] **Paso 5: build y lint**
 
 ```bash
 npm run build && npm run lint
@@ -529,7 +529,7 @@ npm run build && npm run lint
 
 Esperado: los dos en verde, cero errores de TypeScript.
 
-- [ ] **Paso 6: commit**
+- [x] **Paso 6: commit**
 
 ```bash
 git add src/themes/caelestia.color.ts src/main.ts scripts/measure-caelestia-hora.py

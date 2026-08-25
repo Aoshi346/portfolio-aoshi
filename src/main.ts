@@ -224,6 +224,15 @@ if (
   }, 1800);
 }
 
+// El motor de color de Caelestia: la hora decide matiz y esquema. Va antes de
+// `applyTheme` para que los tokens esten puestos en el primer pintado.
+let caeColorHandle: { destroy: () => void } | null = null;
+if (theme.id === "caelestia") {
+  void import("./themes/caelestia.color").then(({ mountCaelestiaColor }) => {
+    caeColorHandle = mountCaelestiaColor(document.documentElement);
+  });
+}
+
 let backgroundHandle: BackgroundHandle | null = null;
 void applyTheme(theme, backgroundHost).then((handle) => {
   backgroundHandle = handle;
@@ -244,6 +253,7 @@ window.addEventListener(
     hyprCursorHandle?.destroy();
     ignitionHandle?.destroy();
     cartelHandle?.destroy();
+    caeColorHandle?.destroy();
     sceneNavHandle.destroy();
   },
   { once: true },

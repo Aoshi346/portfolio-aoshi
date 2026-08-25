@@ -1,6 +1,10 @@
 import type { Theme } from "./types";
 
-/** Material You: unico tema claro, muy redondeado, motion blando y amable. */
+/**
+ * El escritorio: un shell Material You 3 cuyo color y esquema los gobierna el
+ * reloj del visitante. Ver
+ * `docs/superpowers/specs/2026-08-20-caelestia-escritorio-design.md`.
+ */
 export const caelestiaTheme: Theme = {
   id: "caelestia",
   label: "Caelestia",
