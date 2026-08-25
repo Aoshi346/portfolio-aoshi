@@ -898,7 +898,7 @@ defecto no es esto."
   - Evento `caelestia:workspace` con `detail: { index: number; id: string }`, que consume la
     Tarea 7.
 
-- [ ] **Paso 1: leer el contrato de los datos**
+- [x] **Paso 1: leer el contrato de los datos**
 
 ```bash
 grep -n "sceneEntries" -B 8 src/data/content.ts | tail -20
@@ -907,7 +907,7 @@ grep -n "sceneEntries" -B 8 src/data/content.ts | tail -20
 Confirma los cinco ids: `hero`, `quien-es`, `obra`, `creditos`, `contacto`. **Usa esos, no los
 inventes.**
 
-- [ ] **Paso 2: aserción en el arnés**
+- [x] **Paso 2: aserción en el arnés**
 
 ```python
         # ---- 5. la barra: cinco pastillas, reloj y bandeja
@@ -951,7 +951,7 @@ inventes.**
 
 Correr. Esperado: `no existe [data-cae-bar]`.
 
-- [ ] **Paso 3: escribir la barra**
+- [x] **Paso 3: escribir la barra**
 
 Crear `src/components/caelestiaShell.ts`:
 
@@ -1040,7 +1040,7 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
 }
 ```
 
-- [ ] **Paso 4: montarla en `main.ts`**
+- [x] **Paso 4: montarla en `main.ts`**
 
 Junto al resto de módulos por tema, **después** del bloque del motor de color de la Tarea 1:
 
@@ -1061,7 +1061,7 @@ Y en el `pagehide`:
     caeShellHandle?.destroy();
 ```
 
-- [ ] **Paso 5: los estilos de la barra**
+- [x] **Paso 5: los estilos de la barra**
 
 Al final del bloque de Caelestia en `themes.css`:
 
@@ -1168,7 +1168,7 @@ Al final del bloque de Caelestia en `themes.css`:
 }
 ```
 
-- [ ] **Paso 6: correr el arnés, build, lint y commit**
+- [x] **Paso 6: correr el arnés, build, lint y commit**
 
 ```bash
 npm run build && npm run lint && npx vite preview --port 4173 &

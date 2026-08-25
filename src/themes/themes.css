@@ -3612,6 +3612,111 @@
 }
 
 /*
+ * La barra del shell: marca, pastillas de workspace y bandeja de estado.
+ * `--cae-elev-1`/`--cae-elev-2` (Tarea 2) las pinta por primera vez de verdad.
+ */
+:root[data-theme="caelestia"] .cae-bar {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.875rem;
+  right: 0.875rem;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.625rem 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--cae-elev-2);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px -18px rgb(0 0 0 / 0.5);
+  transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-mark {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .cae-ws-list {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+:root[data-theme="caelestia"] .cae-ws {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  padding: 0.3125rem 0.6875rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cae-on-surface-variant);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.28s cubic-bezier(0.2, 0, 0, 1),
+    color 0.28s,
+    padding 0.28s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-ws:hover {
+  background: var(--cae-elev-1);
+}
+
+:root[data-theme="caelestia"] .cae-ws[aria-current="true"] {
+  background: var(--cae-primary);
+  color: var(--cae-on-primary);
+  font-weight: 600;
+  padding-inline: 0.9375rem;
+}
+
+:root[data-theme="caelestia"] .cae-ws-n {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  opacity: 0.55;
+  margin-right: 0.3125rem;
+}
+
+:root[data-theme="caelestia"] .cae-tray {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+}
+
+:root[data-theme="caelestia"] .cae-avail {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.625rem;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--cae-anchor);
+}
+
+/* El reloj no es adorno: es lo que gobierna el tema. */
+:root[data-theme="caelestia"] .cae-clock {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--cae-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-ws {
+    transition: none;
+  }
+}
+
+/*
  * Reparto agrupado por area (solo Vice).
  *
  * El rol se repetia en las doce filas — "Frontend" cuatro veces seguidas,

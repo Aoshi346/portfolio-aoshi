@@ -233,6 +233,15 @@ if (theme.id === "caelestia") {
   });
 }
 
+// El shell de Caelestia: barra, dock y notificaciones. Misma puerta por tema
+// que usan el encendido de Hyprland y el cursor de Vice.
+let caeShellHandle: { destroy: () => void; setScene: (index: number) => void } | null = null;
+if (theme.id === "caelestia") {
+  void import("./components/caelestiaShell").then(({ mountCaelestiaShell }) => {
+    caeShellHandle = mountCaelestiaShell(app);
+  });
+}
+
 let backgroundHandle: BackgroundHandle | null = null;
 void applyTheme(theme, backgroundHost).then((handle) => {
   backgroundHandle = handle;
@@ -254,6 +263,7 @@ window.addEventListener(
     ignitionHandle?.destroy();
     cartelHandle?.destroy();
     caeColorHandle?.destroy();
+    caeShellHandle?.destroy();
     sceneNavHandle.destroy();
   },
   { once: true },

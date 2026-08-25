@@ -199,6 +199,44 @@ def main():
             fallos.append("el display no lleva los ejes: %s" % tipos["ejes"])
         ctx.close()
 
+        # ---- 5. la barra: cinco pastillas, reloj y bandeja
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+        ctx.add_init_script("(%s)(%d)" % (RELOJ, 660))
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(2000)
+        barra = page.evaluate(
+            """() => {
+                const b = document.querySelector('[data-cae-bar]');
+                if (!b) return null;
+                return {
+                  pastillas: b.querySelectorAll('[data-cae-ws]').length,
+                  reloj: (b.querySelector('[data-cae-clock]') || {}).textContent,
+                  activa: b.querySelectorAll('[data-cae-ws][aria-current="true"]').length,
+                };
+            }"""
+        )
+        if barra is None:
+            fallos.append("no existe [data-cae-bar]")
+        else:
+            if barra["pastillas"] != 5:
+                fallos.append("la barra tiene %d pastillas, esperadas 5" % barra["pastillas"])
+            if barra["reloj"] != "11:00":
+                fallos.append("el reloj marca %r, esperado '11:00'" % barra["reloj"])
+            if barra["activa"] != 1:
+                fallos.append("pastillas activas: %d, esperada 1" % barra["activa"])
+        ctx.close()
+
+        # ---- 6. los otros dos temas NO montan el shell
+        for otro in ("vice", "hyprland"):
+            ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+            page = ctx.new_page()
+            page.goto(args.base + "/?theme=" + otro, wait_until="domcontentloaded", timeout=30000)
+            page.wait_for_timeout(2000)
+            if page.query_selector("[data-cae-bar]"):
+                fallos.append("el shell de Caelestia se ha montado en %s" % otro)
+            ctx.close()
+
         nav.close()
 
     if fallos:
