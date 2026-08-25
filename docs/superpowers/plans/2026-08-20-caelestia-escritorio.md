@@ -1875,7 +1875,7 @@ movido en Vice o en Hyprland, para y arréglalo antes de commitear.
 git worktree remove /tmp/cae-base
 ```
 
-- [ ] **Paso 7: commit**
+- [x] **Paso 7: commit**
 
 ```bash
 git add -A src/ scripts/
