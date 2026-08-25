@@ -176,6 +176,29 @@ def main():
                 if r < 4.5:
                     fallos.append("umbral %d/%d: contraste %.2f:1 (< 4.5)" % (antes, despues, r))
 
+        # ---- 4. las tres familias cargan y el display lleva sus ejes
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="networkidle", timeout=30000)
+        page.wait_for_timeout(2500)
+        tipos = page.evaluate(
+            """() => {
+                const cs = getComputedStyle(document.documentElement);
+                const h1 = document.querySelector('h1');
+                return {
+                  display: cs.getPropertyValue('--font-display').trim(),
+                  cargadas: [...document.fonts].map(f => f.family),
+                  ejes: h1 ? getComputedStyle(h1).fontVariationSettings : null,
+                };
+            }"""
+        )
+        for familia in ("Fraunces", "Hanken Grotesk", "Martian Mono"):
+            if familia not in tipos["cargadas"]:
+                fallos.append("tipografia no cargada: %s" % familia)
+        if tipos["ejes"] is None or "WONK" not in str(tipos["ejes"]):
+            fallos.append("el display no lleva los ejes: %s" % tipos["ejes"])
+        ctx.close()
+
         nav.close()
 
     if fallos:

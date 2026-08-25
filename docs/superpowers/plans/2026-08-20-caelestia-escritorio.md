@@ -756,7 +756,7 @@ ellas no bajan de 0.008 en ninguna de las 24 horas."
 > fuentes antes del primer pintado; tocar solo uno no rompe nada visible, degrada la carga a la vía
 > lenta en silencio, que es peor que un error. El mismo aviso está escrito en `src/themes/vice.ts`.
 
-- [ ] **Paso 1: comprobar que la hoja existe antes de escribirla**
+- [x] **Paso 1: comprobar que la hoja existe antes de escribirla**
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" -A "Mozilla/5.0" \
@@ -766,7 +766,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -A "Mozilla/5.0" \
 Esperado: `200`. Si no, para: la fuente o el eje han cambiado en Google Fonts y hay que revisar el
 spec antes de continuar.
 
-- [ ] **Paso 2: escribir el `fontHref` en el módulo del tema**
+- [x] **Paso 2: escribir el `fontHref` en el módulo del tema**
 
 En `src/themes/caelestia.ts`, sustituir el `fontHref` y añadir el comentario:
 
@@ -786,7 +786,7 @@ En `src/themes/caelestia.ts`, sustituir el `fontHref` y añadir el comentario:
     "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=Hanken+Grotesk:wght@100..900&family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap",
 ```
 
-- [ ] **Paso 3: espejar el href en `index.html`**
+- [x] **Paso 3: espejar el href en `index.html`**
 
 ```bash
 grep -n "fontHrefs" index.html
@@ -808,7 +808,7 @@ console.log('href sincronizado');
 
 Esperado: `href sincronizado`.
 
-- [ ] **Paso 4: los tokens de familia**
+- [x] **Paso 4: los tokens de familia**
 
 En el bloque de Caelestia de `themes.css`, sustituir las tres líneas de familia:
 
@@ -836,7 +836,7 @@ Y aplicar los ejes donde se use el display:
 }
 ```
 
-- [ ] **Paso 5: verificar que la fuente carga de verdad**
+- [x] **Paso 5: verificar que la fuente carga de verdad**
 
 Añadir al final de `scripts/measure-caelestia-hora.py`, antes de `nav.close()`:
 
@@ -867,7 +867,7 @@ Añadir al final de `scripts/measure-caelestia-hora.py`, antes de `nav.close()`:
 
 Correr el arnés. Esperado: `OK`.
 
-- [ ] **Paso 6: build, lint y commit**
+- [x] **Paso 6: build, lint y commit**
 
 ```bash
 npm run build && npm run lint
