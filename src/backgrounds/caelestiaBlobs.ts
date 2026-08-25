@@ -17,7 +17,10 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform float uDark;
   varying vec2 vUv;
 
-  // OkLCH -> sRGB aproximado, suficiente para un fondo desenfocado.
+  // OkLCH -> lineal sRGB aproximado, suficiente para un fondo desenfocado.
+  // Devuelve LINEAL a proposito: los mix() de blobs mezclan colores fisicos,
+  // no valores ya codificados a gamma. La codificacion sRGB va al final,
+  // una sola vez, en toSrgb() -- ver comentario junto a gl_FragColor.
   vec3 fromHue(float hue, float l, float c) {
     float h = radians(hue);
     float a = cos(h) * c;
@@ -31,6 +34,20 @@ const FRAGMENT_SHADER = /* glsl */ `
       -3.3077115913,  2.6097574011, -0.7034186147,
        0.2309699292, -0.3413193965,  1.7076147010
     ) * lms, 0.0, 1.0);
+  }
+
+  /*
+   * OETF sRGB por canal (IEC 61966-2-1). El framebuffer de WebGL NO es sRGB:
+   * escribe el valor tal cual. fromHue() y los mix() de blobs trabajan en
+   * lineal (fisicamente correcto para mezclar luz); sin esto el resultado se
+   * escribe crudo y sale demasiado oscuro -- el error es invisible en L alto
+   * (claro) y de un orden de magnitud en L bajo (oscuro), porque la curva
+   * gamma comprime fuerte cerca de cero.
+   */
+  vec3 toSrgb(vec3 c) {
+    vec3 lo = c * 12.92;
+    vec3 hi = 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055;
+    return mix(lo, hi, step(0.0031308, c));
   }
 
   void main() {
@@ -52,7 +69,9 @@ const FRAGMENT_SHADER = /* glsl */ `
 
     col += (hash(uv * uResolution + t) - 0.5) * 0.010;
 
-    gl_FragColor = vec4(col, 1.0);
+    // Gamma UNA sola vez, al final, despues de todos los mix(): mezclar en
+    // gamma en vez de lineal ensucia los medios tonos entre blobs.
+    gl_FragColor = vec4(toSrgb(clamp(col, 0.0, 1.0)), 1.0);
   }
 `;
 

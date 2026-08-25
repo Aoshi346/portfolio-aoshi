@@ -47,6 +47,53 @@ RELOJ = """(minutos) => {
   window.Date = Fija;
 }"""
 
+# Lee el pixel (1,1) del canvas del fondo justo dentro de gl.drawArrays (antes
+# de que el navegador intercambie el buffer): preserveDrawingBuffer es false
+# en shaderBackground.ts (a proposito, no se toca), asi que leer despues del
+# hecho devuelve basura. El hook expone window.__caePixel para recogerlo.
+HOOK_PIXEL = """() => {
+  window.__caePixel = null;
+  const proto = WebGLRenderingContext.prototype;
+  const orig = proto.drawArrays;
+  proto.drawArrays = function(...args) {
+    const r = orig.apply(this, args);
+    try {
+      const px = new Uint8Array(4);
+      this.readPixels(1, 1, 1, 1, this.RGBA, this.UNSIGNED_BYTE, px);
+      window.__caePixel = Array.from(px);
+    } catch (e) { /* swiftshader a veces tira en el primer frame, se reintenta */ }
+    return r;
+  };
+}"""
+
+
+def hue_at(minutos):
+    """Espejo de hueAt() en caelestia.color.ts. Si diverge, este arnes miente."""
+    return ((minutos / 1440 * 360 + 60) % 360 + 360) % 360
+
+
+def _srgb_a_lineal(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _matiz_oklab_deg(rgb255):
+    """RGB 0-255 (sRGB, gamma) -> matiz OkLab en grados. Round-trip completo
+    (EOTF sRGB -> lineal -> LMS -> OkLab), matrices canonicas de Bjorn Ottosson."""
+    import math
+    r, g, b = (_srgb_a_lineal(v / 255.0) for v in rgb255[:3])
+    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    l_, m_, s_ = (max(x, 0.0) ** (1 / 3) for x in (l, m, s))
+    a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    b_ = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    return math.degrees(math.atan2(b_, a)) % 360
+
+
+def _dist_angular(h1, h2):
+    d = abs(h1 - h2) % 360
+    return min(d, 360 - d)
+
 
 def rel_luminance(rgb):
     def canal(v):
@@ -339,18 +386,49 @@ def main():
             ctx.close()
 
         # ---- 10. el fondo sigue el matiz de la hora, no trae color propio
+        #
+        # El proxy de bytes de PNG (comentado en el codigo, no borrado) NO es
+        # gate: el shader viejo de 4 pasteles fijos tambien produce PNGs de
+        # tamanos distintos por el ruido/animacion de los blobs -- se
+        # comprobo con git worktree sobre el shader anterior y da 4 tamanos
+        # distintos igual, o sea que "OK" incluso en el caso que se supone
+        # que tiene que cazar. Se deja como asercion COMPLEMENTARIA de "no
+        # esta congelado", nunca como la unica prueba de esta tarea.
+        #
+        # El gate real: matiz medido por pixel (readPixels dentro del propio
+        # drawArrays, ver HOOK_PIXEL) contra hueAt(minutos) de
+        # caelestia.color.ts, con tolerancia -- es un fondo desenfocado con
+        # ruido y una conversion OkLCH->sRGB aproximada en el shader, un
+        # umbral fino mediria ruido, no el bug.
+        TOLERANCIA_GRADOS = 30
         muestras = {}
         for minutos in (300, 660, 1020, 1380):
             ctx = nav.new_context(viewport={"width": 1440, "height": 900})
             ctx.add_init_script("(%s)(%d)" % (RELOJ, minutos))
+            ctx.add_init_script("(%s)()" % HOOK_PIXEL)
             page = ctx.new_page()
             page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
             page.wait_for_timeout(6000)
             png = page.screenshot(clip={"x": 0, "y": 0, "width": 200, "height": 200})
-            muestras[minutos] = len(png)   # proxy barato: el PNG cambia si cambia el color
+            muestras[minutos] = len(png)   # complementario: solo "no congelado"
+
+            pixel = page.evaluate("() => window.__caePixel")
             ctx.close()
+            if not pixel:
+                fallos.append("%02d:%02d: no se pudo leer el pixel del canvas" % (minutos // 60, minutos % 60))
+                continue
+
+            esperado = hue_at(minutos)
+            medido = _matiz_oklab_deg(pixel)
+            d = _dist_angular(esperado, medido)
+            if d > TOLERANCIA_GRADOS:
+                fallos.append(
+                    "%02d:%02d: matiz del fondo %.1f, esperado %.1f +/- %d (pixel %s)"
+                    % (minutos // 60, minutos % 60, medido, esperado, TOLERANCIA_GRADOS, pixel)
+                )
+
         if len(set(muestras.values())) < 3:
-            fallos.append("el fondo apenas cambia con la hora: %s" % muestras)
+            fallos.append("el fondo apenas cambia con la hora (proxy de bytes): %s" % muestras)
 
         nav.close()
 
