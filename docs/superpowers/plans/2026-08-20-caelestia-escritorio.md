@@ -2029,7 +2029,7 @@ El spec lo deja como pregunta abierta. **Decisión para este plan:** a menos de 
 se quedan en el número (el nombre se oculta) y el dock reduce la celda a 2.375rem. Ni se colapsa el
 dock ni se esconde la barra: las dos son la navegación entera del tema.
 
-- [ ] **Paso 1: aserción en el arnés**
+- [x] **Paso 1: aserción en el arnés**
 
 ```python
         # ---- 11. movil: nada se sale del viewport
@@ -2053,7 +2053,7 @@ dock ni se esconde la barra: las dos son la navegación entera del tema.
         ctx.close()
 ```
 
-- [ ] **Paso 2: los estilos**
+- [x] **Paso 2: los estilos**
 
 ```css
 @media (max-width: 820px) {
@@ -2100,7 +2100,7 @@ dock ni se esconde la barra: las dos son la navegación entera del tema.
 > visual pero **dentro del árbol de accesibilidad**, que es lo que se quiere. No lo cambies por
 > `display: none` sobre el texto: eso sí lo quitaría del lector de pantalla.
 
-- [ ] **Paso 3: arnés, captura móvil y commit**
+- [x] **Paso 3: arnés, captura móvil y commit**
 
 ```bash
 python3 scripts/measure-caelestia-hora.py --base http://localhost:4173

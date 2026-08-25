@@ -430,6 +430,31 @@ def main():
         if len(set(muestras.values())) < 3:
             fallos.append("el fondo apenas cambia con la hora (proxy de bytes): %s" % muestras)
 
+        # ---- 11. movil: nada se sale del viewport
+        ctx = nav.new_context(viewport={"width": 390, "height": 844})
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(3000)
+        # El brief propone selectores `[data-cae-bar]`/`[data-cae-dock]`/`[data-cae-toast]`,
+        # pero `caelestiaShell.ts` los pinta como CLASES (`.cae-bar`, `.cae-dock`, `.cae-toast`),
+        # no como atributos `data-*`. Con los selectores del brief `querySelector` siempre
+        # devuelve null y la asercion fallaria SIEMPRE, incluso con el CSS correcto -- no mide
+        # nada. Se corrige a los selectores reales.
+        desbordes = page.evaluate(
+            """() => ['.cae-bar','.cae-dock','.cae-toast']
+                 .map(sel => {
+                   const n = document.querySelector(sel);
+                   if (!n) return sel + ' ausente';
+                   const r = n.getBoundingClientRect();
+                   return (r.right > 391 || r.left < -1) ? sel + ' se sale: ' + JSON.stringify([r.left, r.right]) : null;
+                 }).filter(Boolean)"""
+        )
+        for d in desbordes:
+            fallos.append("movil 390: %s" % d)
+        if page.evaluate("document.documentElement.scrollWidth > 391"):
+            fallos.append("movil 390: la pagina desplaza en horizontal")
+        ctx.close()
+
         nav.close()
 
     if fallos:
