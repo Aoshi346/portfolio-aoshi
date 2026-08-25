@@ -1202,7 +1202,7 @@ comprueba ademas que el shell NO se monta en Vice ni en Hyprland."
 > aquí y solo aquí: son cadenas propias y estáticas, no dato externo. Nunca metas por ahí un query
 > param ni una respuesta de API.
 
-- [ ] **Paso 1: leer los canales reales**
+- [x] **Paso 1: leer los canales reales**
 
 ```bash
 sed -n '340,385p' src/data/content.ts
@@ -1211,7 +1211,7 @@ sed -n '340,385p' src/data/content.ts
 Confirma las etiquetas: `Correo`, `LinkedIn`, `Teléfono`, `GitHub`. **Usa `href` de los datos, no
 literales.**
 
-- [ ] **Paso 2: aserción en el arnés**
+- [x] **Paso 2: aserción en el arnés**
 
 ```python
         # ---- 7. el dock: cuatro accesos con etiqueta accesible y rel seguro
@@ -1250,7 +1250,7 @@ literales.**
 
 Correr. Esperado: `no existe [data-cae-dock]`.
 
-- [ ] **Paso 3: los iconos**
+- [x] **Paso 3: los iconos**
 
 En `caelestiaShell.ts`, arriba del módulo:
 
@@ -1280,7 +1280,7 @@ const ICONOS: Record<ContactChannel["key"], string> = {
  */
 ```
 
-- [ ] **Paso 4: construir el dock**
+- [x] **Paso 4: construir el dock**
 
 Dentro de `mountCaelestiaShell`, después de la barra:
 
@@ -1322,7 +1322,7 @@ import { el, elFromMarkup } from "../utils/dom";
 > `Record<ContactChannel["key"], string>` hace que un canal nuevo sin icono **no compile**, que es
 > mejor que un `?? "correo"` silencioso.
 
-- [ ] **Paso 5: los estilos del dock**
+- [x] **Paso 5: los estilos del dock**
 
 ```css
 :root[data-theme="caelestia"] .cae-dock {
@@ -1415,7 +1415,7 @@ import { el, elFromMarkup } from "../utils/dom";
 }
 ```
 
-- [ ] **Paso 6: arnés, build, lint y commit**
+- [x] **Paso 6: arnés, build, lint y commit**
 
 ```bash
 npm run build && npm run lint && npx vite preview --port 4173 &

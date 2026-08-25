@@ -237,6 +237,39 @@ def main():
                 fallos.append("el shell de Caelestia se ha montado en %s" % otro)
             ctx.close()
 
+        # ---- 7. el dock: cuatro accesos con etiqueta accesible y rel seguro
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(2000)
+        dock = page.evaluate(
+            """() => {
+                const d = document.querySelector('[data-cae-dock]');
+                if (!d) return null;
+                const enlaces = [...d.querySelectorAll('a')];
+                return {
+                  n: enlaces.length,
+                  sinLabel: enlaces.filter(a => !a.getAttribute('aria-label')).length,
+                  externosSinRel: enlaces.filter(
+                    a => a.target === '_blank' && !(a.rel || '').includes('noopener')
+                  ).length,
+                  sinIcono: enlaces.filter(a => !a.querySelector('svg')).length,
+                };
+            }"""
+        )
+        if dock is None:
+            fallos.append("no existe [data-cae-dock]")
+        else:
+            if dock["n"] < 4:
+                fallos.append("el dock tiene %d accesos, esperados 4 o mas" % dock["n"])
+            if dock["sinLabel"]:
+                fallos.append("%d accesos del dock sin aria-label" % dock["sinLabel"])
+            if dock["externosSinRel"]:
+                fallos.append("%d enlaces externos sin rel noopener" % dock["externosSinRel"])
+            if dock["sinIcono"]:
+                fallos.append("%d accesos del dock sin icono" % dock["sinIcono"])
+        ctx.close()
+
         nav.close()
 
     if fallos:
