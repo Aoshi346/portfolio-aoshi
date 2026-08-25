@@ -25,9 +25,18 @@ const CLARO: Record<string, Rol> = {
 };
 
 const OSCURO: Record<string, Rol> = {
+  /*
+   * La rampa de superficie se abrio de 0.05 a 0.08 de claridad por escalon
+   * (Tarea 2, arnes measure-caelestia-hora.py). Con 0.05 la luminancia
+   * relativa sRGB — que es la que compara el arnes, no la claridad OkLCH —
+   * se comprime cerca del negro: medido 0.0062/0.0104 de paso en el peor
+   * matiz (315 grados, croma minimo), por debajo del umbral de 0.008. Con
+   * 0.08 el peor caso del barrido (24 matices x 5 escalas de croma) da
+   * 0.0118, con margen.
+   */
   "surface": [0.185, 0.016],
-  "surface-container": [0.235, 0.022],
-  "surface-container-high": [0.285, 0.026],
+  "surface-container": [0.265, 0.022],
+  "surface-container-high": [0.345, 0.026],
   "on-surface": [0.925, 0.016],
   "on-surface-variant": [0.795, 0.024],
   "outline": [0.42, 0.02],

@@ -135,6 +135,23 @@ def main():
                             % (minutos // 60, minutos % 60, fg, bg, r)
                         )
 
+            # ---- rampa tonal: las tres superficies tienen que ser DISTINTAS.
+            # El tema viejo usaba `#ffffff 62%` para todas y por eso no habia
+            # jerarquia de elevacion: todo flotaba a la misma altura.
+            rampa = [
+                vals.get("--cae-surface"),
+                vals.get("--cae-surface-container"),
+                vals.get("--cae-surface-container-high"),
+            ]
+            if all(rampa):
+                lums = [rel_luminance(c) for c in rampa]
+                pasos = [abs(lums[i + 1] - lums[i]) for i in range(2)]
+                if min(pasos) < 0.008:
+                    fallos.append(
+                        "%02d:%02d rampa plana: pasos de luminancia %s"
+                        % (minutos // 60, minutos % 60, [round(p, 4) for p in pasos])
+                    )
+
             # ---- 2. el matiz a las 11:00 es 225 +/- 1
             if minutos == 660:
                 hue = vals.get("__hue")

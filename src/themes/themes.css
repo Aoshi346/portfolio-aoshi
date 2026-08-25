@@ -3502,48 +3502,66 @@
 
 /* ---------------------------------------------------------------- Caelestia */
 
+/*
+ * El escritorio. Aqui ya no hay colores literales: los pone
+ * `caelestia.color.ts` en `:root` a partir de la hora del visitante, y este
+ * bloque solo los reparte por rol. Ver
+ * `docs/superpowers/specs/2026-08-20-caelestia-escritorio-design.md`.
+ */
 :root[data-theme="caelestia"] {
-  --color-ink: #f4f0f9;
-  --color-paper: #1c1b1f;
-  --color-accent: #6c4fd8;
-  --color-accent-2: #2f9e79;
-  --color-line: #d9d0e4;
+  --color-ink: var(--cae-surface);
+  --color-paper: var(--cae-on-surface);
+  --color-accent: var(--cae-primary);
+  --color-accent-2: var(--cae-anchor);
+  --color-line: var(--cae-outline);
 
   /*
-   * Tema CLARO: el telon es `--color-ink` (#f4f0f9) y el texto `--color-paper`
-   * (#1c1b1f), al reves que en Vice. Tinta oscura atenuada sobre fondo claro
-   * pierde mucho mas contraste que crema atenuada sobre fondo oscuro, asi que
-   * los porcentajes de Vice no valen aqui: con 55% los numeros median 3,72:1.
-   * El umbral aritmetico esta en 61,7%; 70% deja margen y mide 5,97:1.
+   * Tema de dos caras. El 70% de antes estaba calibrado contra un unico fondo
+   * claro y ya no vale: ahora el rol atenuado es un token propio con su
+   * claridad fija, medida por el arnes en las 24 horas.
    */
-  --nav-dim: 70%;
-  --nav-dim-soft: 66%;
+  --nav-dim: 100%;
+  --nav-dim-soft: 100%;
 
   --font-display: "Outfit", system-ui, sans-serif;
   --font-body: "Outfit", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --radius-card: 28px;
-  --display-tracking: -0.025em;
+  --radius-card: 22px;
+  --display-tracking: -0.03em;
   --display-weight: 800;
-  /* Material You no grita: caja baja y aire. */
   --display-transform: none;
-  --display-leading: 0.95;
+  --display-leading: 0.98;
   --bg-fallback: linear-gradient(160deg, #f4f0f9 0%, #e4dcf3 50%, #dbeee6 100%);
+
+  /* Las tres alturas de la rampa. Es la pieza que faltaba. */
+  --cae-elev-1: var(--cae-surface-container);
+  --cae-elev-2: var(--cae-surface-container-high);
+  --cae-elev-3: var(--cae-primary-container);
+
+  background: var(--cae-surface);
+  color: var(--cae-on-surface);
 }
 
 /*
- * Contenedores tonales con elevacion: es la pieza que faltaba para que
- * Caelestia se lea como Material You y no como texto suelto sobre un degradado.
+ * El corte de esquema. Se pone durante un fotograma cuando el reloj cruza el
+ * umbral: interpolar entre los dos esquemas atraviesa contraste 1:1 de forma
+ * matematicamente inevitable, asi que no puede haber transicion aqui.
  */
+:root[data-theme="caelestia"].cae-corte,
+:root[data-theme="caelestia"].cae-corte * {
+  transition: none !important;
+}
+
+/* Contenedores tonales con elevacion real, cada uno en su altura. */
 :root[data-theme="caelestia"] .hero-surface,
 :root[data-theme="caelestia"] .scene-surface {
-  background: color-mix(in srgb, #ffffff 62%, transparent);
-  backdrop-filter: blur(24px) saturate(1.25);
-  border: 1px solid color-mix(in srgb, #ffffff 72%, transparent);
+  background: var(--cae-elev-1);
+  border: 1px solid var(--cae-outline);
   border-radius: var(--radius-card);
   padding: clamp(1.75rem, 4vw, 3.25rem);
-  box-shadow: 0 30px 70px -30px rgba(70, 45, 110, 0.35);
+  box-shadow: none;
+  transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root[data-theme="caelestia"] .hero-surface {
@@ -3551,28 +3569,11 @@
 }
 
 /*
- * Misma compensacion que Vice (buscar "Important 4" mas arriba), con el
- * mismo diagnostico: `.hero-kick` paso a ser hermano de `.hero-surface`
- * para que la rejilla de Hyprland pudiera usarlo como columna 1. En
- * Caelestia la etiqueta vivia DENTRO de la tarjeta Material You — perdia su
- * padding Y su borde de 1px al salir. Medido con Playwright contra 204998c:
- * `.hero-kick` pasaba de x:101/y:267/ancho:982 (inset por padding:
- * clamp(1.75rem,4vw,3.25rem) + border:1px, igual que el resto de la
- * tarjeta) a x:48/y:214/ancho:1344 (a sangre, fuera de la tarjeta) en
- * 1440x900. Se repone el mismo inset (padding de la tarjeta + su borde)
- * directamente sobre `.hero-kick`: `position: relative; top` para el
- * vertical (no `margin-top` — mismo motivo que en Vice, buscar el
- * comentario ahi: `.hero` tambien centra sus items en el eje principal).
- * Para el horizontal no basta con margen + `align-self: stretch`:
- * `.hero-surface` tiene ademas un tope propio (`max-width: 68rem`, arriba)
- * que en este viewport de referencia es MAS ESTRECHO que el `.hero`
- * completo (1088px vs 1344px), y el `min-width`/`max-width` de un item de
- * flex se resuelve sobre su propio ancho de caja, ANTES del margen — un
- * `max-width: 68rem` en `.hero-kick` deja su caja en 1088px con el margen
- * puesto fuera, no en 982px con el margen absorbido dentro de esos 1088px.
- * Se calcula un ancho explicito en su lugar: el mismo tope, menos el mismo
- * margen a cada lado, que es exactamente lo que `.hero-surface` le resta a
- * su contenido interno con su padding+borde.
+ * Compensacion heredada: `.hero-kick` paso a ser hermano de `.hero-surface`
+ * para que la rejilla de Hyprland pudiera usarlo como columna 1, y al salir de
+ * la tarjeta perdio su padding y su borde. Se reponen aqui. El comentario
+ * largo con las medidas esta en el historial de este archivo (buscar
+ * "x:101/y:267/ancho:982"); no se repite para no duplicarlo.
  */
 :root[data-theme="caelestia"] [data-scene="hero"] .hero-kick {
   position: relative;
@@ -3582,17 +3583,20 @@
   width: calc(min(68rem, 100%) - 2 * (clamp(1.75rem, 4vw, 3.25rem) + 1px));
 }
 
-/* Chips como contenedores tonales: sobre fondo claro, un 4% de tinta no se ve. */
 :root[data-theme="caelestia"] .chip {
-  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-accent) 28%, transparent);
-  color: color-mix(in srgb, var(--color-paper) 88%, transparent);
+  background: var(--cae-primary-container);
+  border-color: transparent;
+  color: var(--cae-on-primary-container);
 }
 
-/* En claro, el grano en `overlay` ensucia: multiplicar es mas limpio. */
+/* El grano se retira: con rampa tonal real ya hay profundidad sin ensuciar. */
 :root[data-theme="caelestia"] .bg-noise {
-  opacity: 0.035;
-  mix-blend-mode: multiply;
+  opacity: 0;
+}
+
+:root[data-theme="caelestia"] :focus-visible {
+  outline: 2px solid var(--cae-anchor);
+  outline-offset: 3px;
 }
 
 /*

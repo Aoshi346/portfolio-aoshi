@@ -555,7 +555,7 @@ Arnes nuevo: scripts/measure-caelestia-hora.py, 72 horas muestreadas."
   `--color-line`, `--radius-card`) alimentados desde los `--cae-*`, más
   `--cae-elev-1/2/3` para las tres alturas de superficie.
 
-- [ ] **Paso 1: añadir la aserción de rampa al arnés**
+- [x] **Paso 1: añadir la aserción de rampa al arnés**
 
 En `scripts/measure-caelestia-hora.py`, dentro del bucle de las 24 horas, después del bloque de
 `PARES`:
@@ -579,12 +579,12 @@ En `scripts/measure-caelestia-hora.py`, dentro del bucle de las 24 horas, despu�
                     )
 ```
 
-- [ ] **Paso 2: correr y comprobar que falla**
+- [x] **Paso 2: correr y comprobar que falla**
 
 Esperado: `rampa plana` en las 72 horas — porque `themes.css` todavía no usa los tokens y las
 superficies siguen siendo `color-mix(in srgb, #ffffff 62%, transparent)` para todo.
 
-- [ ] **Paso 3: reescribir el bloque**
+- [x] **Paso 3: reescribir el bloque**
 
 Sustituir **todo** el bloque `:root[data-theme="caelestia"]` de `themes.css` (desde
 `/* ---- Caelestia */` hasta justo antes del comentario de `Reparto agrupado por area (solo Vice)`)
@@ -696,12 +696,12 @@ por:
 > `--cae-on-surface-variant`, que tiene su claridad fija y la mide el arnés. Si al revisar
 > `sceneNav` ves que el atenuado se ha perdido, es esto: usa el token, no el porcentaje.
 
-- [ ] **Paso 4: correr el arnés y comprobar que pasa**
+- [x] **Paso 4: correr el arnés y comprobar que pasa**
 
 Esperado: `OK`. Si sigue saliendo `rampa plana`, comprueba que `caelestia.color.ts` está
 escribiendo en `document.documentElement` y no en `app`.
 
-- [ ] **Paso 5: build, lint y captura**
+- [x] **Paso 5: build, lint y captura**
 
 ```bash
 npm run build && npm run lint
@@ -728,7 +728,7 @@ with sync_playwright() as p:
 
 Míralas. Las tres superficies deben distinguirse a simple vista.
 
-- [ ] **Paso 6: commit**
+- [x] **Paso 6: commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-caelestia-hora.py
