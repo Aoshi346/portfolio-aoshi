@@ -119,6 +119,11 @@ export interface CaelestiaColorHandle {
 export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
   let oscuroActual: boolean | null = null;
   let temporizador = 0;
+  // Ventana de 60ms del corte de esquema (`cae-corte`). Guardado para poder
+  // cancelarlo en `destroy()`: sin esto, un desmontaje que cae dentro de esa
+  // ventana deja el temporizador vivo y toca `root.classList` despues de
+  // que el modulo ya se dio por desmontado.
+  let corteTimeout = 0;
 
   const aplicar = (): void => {
     const ahora = new Date();
@@ -127,7 +132,8 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
 
     if (oscuroActual !== null && oscuroActual !== oscuro) {
       root.classList.add("cae-corte");
-      window.setTimeout(() => root.classList.remove("cae-corte"), 60);
+      window.clearTimeout(corteTimeout);
+      corteTimeout = window.setTimeout(() => root.classList.remove("cae-corte"), 60);
       root.dispatchEvent(
         new CustomEvent("caelestia:esquema", { detail: { oscuro }, bubbles: true }),
       );
@@ -148,6 +154,7 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
   return {
     destroy: () => {
       window.clearInterval(temporizador);
+      window.clearTimeout(corteTimeout);
     },
   };
 }
