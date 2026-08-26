@@ -2254,7 +2254,7 @@ marcar.
 Añadir además una sección `## Registro de implementación` con lo que se desvió del spec y por qué.
 Si no se desvió nada, dilo — un registro vacío también es información.
 
-- [ ] **Paso 6: los gates de crítica**
+- [x] **Paso 6: los gates de crítica**
 
 ```
 Subagente lidia-naive-tester  (flujo y primera impresión)

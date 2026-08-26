@@ -1,6 +1,7 @@
 # El escritorio — Caelestia deja de ser una piel y pasa a ser un shell gobernado por la hora
 
 Estado: implementado
+Plan: `docs/superpowers/plans/2026-08-20-caelestia-escritorio.md`
 Fecha: 2026-08-20
 Alcance: la fase A (el shell) de un rediseño en seis fases. Toca `src/themes/caelestia.ts`,
 el bloque `:root[data-theme="caelestia"]` de `src/themes/themes.css`,
@@ -557,3 +558,42 @@ Las decisiones de este documento se tomaron sobre maquetas vivas e interactivas,
 descripciones. Viven bajo `.superpowers/brainstorm/` y **no están versionadas** (el directorio está
 en `.gitignore`): son material de trabajo, no entregable. Lo que se conserva de ellas son los
 números que aparecen en este spec.
+
+### Los gates de critica (26-ago-2026)
+
+`lidia-naive-tester`: **pasa con reservas** — "contactaria, pero con reservas". Le funciona el dock
+siempre visible con sus iconos y tooltip, y el aviso de disponibilidad ("justo lo que necesito saber
+como reclutadora"). La frena que dos de las cinco pastillas tienen el rotulo equivocado: **"Fundido"**
+no comunica contacto y **"Creditos"** contiene el stack, no creditos. **Eso no lo introduce esta fase**
+— son los nombres de escena de `src/data/content.ts`, compartidos por los tres temas — pero la fase lo
+**agrava**, porque la pastilla pasa a ser la navegacion entera y esta siempre a la vista. Queda como
+decision del autor, fuera de esta fase: tocar `content.ts` cambiaria tambien a Vice, que esta cerrado.
+
+`vera-art-director`: **BLOCK, 6.55/10 contra un gate de 7.5**. Su P0 (marca y reloj bajo AA) coincidio
+con el de la revision de rama completa, por metodos independientes, y **esta arreglado** (ver arriba).
+Sus tres P1 quedan abiertos y son decision de producto, no defectos de ejecucion:
+
+1. **La rampa de la tarjeta se lee al nivel del chrome, no al de tarjeta.** `elev-1` es un solo escalon
+   y el limite lo acaba marcando el borde de 1px, no el color. La barra, el dock y el aviso (`elev-2`,
+   dos escalones) si se leen. O se profundiza el escalon, o se acepta explicitamente que el borde es el
+   mecanismo de elevacion de la tarjeta.
+2. **Perdida de identidad de color a las 23:00.** La marea de croma empuja el naranja a su piso (0.32x)
+   a proposito, para no confundirse con Hyprland; el coste es que la noche se lee casi monocroma parda.
+   Es el precio deliberado de la marea, medido y ahora tambien visto.
+3. **El chrome no tiene escala tipografica**: siete tamanos entre 10 y 13px sin relacion modular. Es el
+   mismo patron de "decimales rem ad-hoc" ya registrado en Vice.
+
+Precedente: Vice se cerro con un BLOCK de `vera` aceptado explicitamente por el autor (7.12/10 sobre el
+mismo gate de 7.5).
+
+### Una nota sobre los instrumentos
+
+Ocho veces en esta fase el fallo no estuvo en el diseno sino en lo que decia comprobarlo: una regex que
+leia `oklch()` como si fueran bytes RGB (daba 1.00:1 en todo), un `%%` de Python que no parseaba, un
+`Date.now` que no afecta a `new Date()` (dos capturas identicas presentadas como dia y noche), un reloj
+congelado que hacia **inalcanzable por construccion** la rama del cruce de umbral, un proxy de tamano de
+PNG que pasaba contra el shader que venia a cazar, una asercion de foco que se titulaba "y usa el ancla"
+y solo leia `outlineStyle`, unos `PARES` de contraste que vigilaban roles que no se pintan, y un A/B de
+rendimiento que se provocaba a si mismo el aviso que media (`page.screenshot()` fuerza su propio
+`ReadPixels`). Los numeros del spec aguantaron; lo que fallaba era el instrumento. La leccion operativa:
+**ningun gate se da por bueno sin haberlo visto dar rojo contra el fallo que dice cazar.**
