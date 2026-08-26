@@ -3539,6 +3539,7 @@
   --display-leading: 0.98;
   --bg-fallback: linear-gradient(160deg, #f4f0f9 0%, #e4dcf3 50%, #dbeee6 100%);
 
+
   /* Las tres alturas de la rampa. Es la pieza que faltaba. */
   --cae-elev-1: var(--cae-surface-container);
   --cae-elev-2: var(--cae-surface-container-high);
@@ -3628,7 +3629,29 @@
   padding: 0.5rem 0.625rem 0.5rem 1rem;
   border-radius: 999px;
   background: var(--cae-elev-2);
-  backdrop-filter: blur(18px);
+  /*
+   * SIN `backdrop-filter` a proposito. `--cae-elev-2` resuelve a un `oklch()`
+   * sin alfa, o sea OPACO: el desenfoque desenfocaba un respaldo que este
+   * mismo fondo tapa entero, y a cambio hacia que el compositor tratara la
+   * pieza como capa con respaldo sobre el lienzo WebGL. Era coste sin efecto.
+   *
+   * Medido conmutando el blur en la MISMA pagina, con el lienzo congelado
+   * para que el shader no moviera pixeles entre tomas: sobre el rectangulo
+   * completo de cada pieza — esquinas redondeadas incluidas, que es donde el
+   * elemento si es transparente — CERO pixeles cambian mas de 2/255, y el
+   * peor delta es 1/255 en la barra y el dock, 0 en el aviso.
+   *
+   * OJO con la otra mitad de la historia: la auditoria atribuia a este blur
+   * cuatro avisos `GPU stall due to ReadPixels` de consola. NO se reproduce.
+   * Con tres repeticiones por brazo y sin tomar ninguna captura (la captura
+   * fuerza su propio ReadPixels y contamina la medida), el brazo SIN blur dio
+   * [4, 0, 0] y el brazo CON blur [0, 0, 0]: es un artefacto de arranque en
+   * frio de swiftshader, no lo causa el desenfoque. Se quita por ser una
+   * declaracion muerta y medida como invisible, no por ese aviso.
+   *
+   * Si algun dia este fondo pasa a llevar alfa, volver a ponerlo tendra
+   * sentido — y entonces habra que volver a medir, no dar por buena esta nota.
+   */
   box-shadow: 0 10px 30px -18px rgb(0 0 0 / 0.5);
   transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -3770,7 +3793,29 @@
   padding: 0.4375rem;
   border-radius: 1.375rem;
   background: var(--cae-elev-2);
-  backdrop-filter: blur(16px);
+  /*
+   * SIN `backdrop-filter` a proposito. `--cae-elev-2` resuelve a un `oklch()`
+   * sin alfa, o sea OPACO: el desenfoque desenfocaba un respaldo que este
+   * mismo fondo tapa entero, y a cambio hacia que el compositor tratara la
+   * pieza como capa con respaldo sobre el lienzo WebGL. Era coste sin efecto.
+   *
+   * Medido conmutando el blur en la MISMA pagina, con el lienzo congelado
+   * para que el shader no moviera pixeles entre tomas: sobre el rectangulo
+   * completo de cada pieza — esquinas redondeadas incluidas, que es donde el
+   * elemento si es transparente — CERO pixeles cambian mas de 2/255, y el
+   * peor delta es 1/255 en la barra y el dock, 0 en el aviso.
+   *
+   * OJO con la otra mitad de la historia: la auditoria atribuia a este blur
+   * cuatro avisos `GPU stall due to ReadPixels` de consola. NO se reproduce.
+   * Con tres repeticiones por brazo y sin tomar ninguna captura (la captura
+   * fuerza su propio ReadPixels y contamina la medida), el brazo SIN blur dio
+   * [4, 0, 0] y el brazo CON blur [0, 0, 0]: es un artefacto de arranque en
+   * frio de swiftshader, no lo causa el desenfoque. Se quita por ser una
+   * declaracion muerta y medida como invisible, no por ese aviso.
+   *
+   * Si algun dia este fondo pasa a llevar alfa, volver a ponerlo tendra
+   * sentido — y entonces habra que volver a medir, no dar por buena esta nota.
+   */
   box-shadow: 0 14px 34px -22px rgb(0 0 0 / 0.55);
   transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -3874,7 +3919,29 @@
   padding: 0.75rem 0.875rem;
   border-radius: 1.125rem;
   background: var(--cae-elev-2);
-  backdrop-filter: blur(18px);
+  /*
+   * SIN `backdrop-filter` a proposito. `--cae-elev-2` resuelve a un `oklch()`
+   * sin alfa, o sea OPACO: el desenfoque desenfocaba un respaldo que este
+   * mismo fondo tapa entero, y a cambio hacia que el compositor tratara la
+   * pieza como capa con respaldo sobre el lienzo WebGL. Era coste sin efecto.
+   *
+   * Medido conmutando el blur en la MISMA pagina, con el lienzo congelado
+   * para que el shader no moviera pixeles entre tomas: sobre el rectangulo
+   * completo de cada pieza — esquinas redondeadas incluidas, que es donde el
+   * elemento si es transparente — CERO pixeles cambian mas de 2/255, y el
+   * peor delta es 1/255 en la barra y el dock, 0 en el aviso.
+   *
+   * OJO con la otra mitad de la historia: la auditoria atribuia a este blur
+   * cuatro avisos `GPU stall due to ReadPixels` de consola. NO se reproduce.
+   * Con tres repeticiones por brazo y sin tomar ninguna captura (la captura
+   * fuerza su propio ReadPixels y contamina la medida), el brazo SIN blur dio
+   * [4, 0, 0] y el brazo CON blur [0, 0, 0]: es un artefacto de arranque en
+   * frio de swiftshader, no lo causa el desenfoque. Se quita por ser una
+   * declaracion muerta y medida como invisible, no por ese aviso.
+   *
+   * Si algun dia este fondo pasa a llevar alfa, volver a ponerlo tendra
+   * sentido — y entonces habra que volver a medir, no dar por buena esta nota.
+   */
   box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.6);
   transform: translateY(0.875rem);
   opacity: 0;
