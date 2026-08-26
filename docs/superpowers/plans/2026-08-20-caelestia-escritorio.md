@@ -2207,7 +2207,7 @@ mas ajustado mediria carga de maquina."
 
 **Archivos:** ninguno de código. Es la puerta antes de proponer merge.
 
-- [ ] **Paso 1: la batería completa**
+- [x] **Paso 1: la batería completa**
 
 ```bash
 npm run build
@@ -2224,7 +2224,7 @@ Los cinco en verde. `verify.py` tiene que salir con **código 0** contra
 python3 scripts/verify.py --update-baseline    # y revisa el diff antes de commitear
 ```
 
-- [ ] **Paso 2: anti-mock**
+- [x] **Paso 2: anti-mock**
 
 ```bash
 grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|lorem ipsum|Lorem" \
@@ -2234,17 +2234,17 @@ grep -rE "mockData|fakeData|hardcoded|TODO.*real|// fake|demo_data|placeholder|l
 Esperado: sin resultados en lo que has tocado. Si aparece algo, **arréglalo, no lo documentes como
 deuda**.
 
-- [ ] **Paso 3: capturas reales, no solo headless**
+- [x] **Paso 3: capturas reales, no solo headless**
 
 Cuatro como mínimo: Caelestia de día y de noche, en 1440x900 y en 390x844. Y las de control de Vice
 y Hyprland de la Tarea 7. **Míralas.** El arnés caza números; las capturas cazan lo que los números
 no ven.
 
-- [ ] **Paso 4: consola limpia**
+- [x] **Paso 4: consola limpia**
 
 Cero errores JS, cero avisos de contexto WebGL perdido, en los tres temas.
 
-- [ ] **Paso 5: cerrar el estado del spec**
+- [x] **Paso 5: cerrar el estado del spec**
 
 En `docs/superpowers/specs/2026-08-20-caelestia-escritorio-design.md`, cambiar
 `Estado: en diseno` por `Estado: implementado` **solo si todas las casillas de este plan están
@@ -2264,7 +2264,7 @@ Subagente vera-art-director   (ejecución visual)
 **Píname el modelo de los dos subagentes** (`model: sonnet` salvo que la subtarea exija el top):
 heredan el modelo de la sesión y un fan-out sin pinear factura todo a tarifa alta.
 
-- [ ] **Paso 7: PROGRESS.json y propuesta de merge**
+- [x] **Paso 7: PROGRESS.json y propuesta de merge**
 
 Actualizar `PROGRESS.json` a `completed` con su `completedAt`, y **pedir aprobación antes de
 mergear a `main`**. No mergees por tu cuenta.

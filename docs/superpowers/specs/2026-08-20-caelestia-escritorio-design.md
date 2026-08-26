@@ -1,6 +1,6 @@
 # El escritorio — Caelestia deja de ser una piel y pasa a ser un shell gobernado por la hora
 
-Estado: en diseno
+Estado: implementado
 Fecha: 2026-08-20
 Alcance: la fase A (el shell) de un rediseño en seis fases. Toca `src/themes/caelestia.ts`,
 el bloque `:root[data-theme="caelestia"]` de `src/themes/themes.css`,
@@ -450,6 +450,88 @@ plan, igual que se hizo con Hyprland:
 
 Las cinco dependen del shell y no al revés: hasta que no esté fijado cuánto alto deja la barra,
 cuánto come el dock y cómo se cambia de escena, diseñar una sección es diseñar a ciegas.
+
+---
+
+## Registro de implementación
+
+La fase A se implemento en 21 commits sobre `f5843fa`, en diez tareas mas una oleada de
+arreglos. Lo que se desvio del spec, y por que:
+
+**La rampa oscura de superficie subio de 0.05 a 0.08 de claridad OkLCH por escalon**
+(`surface-container` 0.235 -> 0.265, `surface-container-high` 0.285 -> 0.345). Ya esta en la
+tabla de roles de este spec con su nota (`## El motor de color`): con 0.05 el peor matiz del
+barrido (315 grados, croma minimo) daba pasos de luminancia relativa de solo 0.0062 y 0.0104,
+por debajo del umbral de 0.008 del arnes; con 0.08 el peor caso sube a 0.0118. El esquema claro
+no se toco.
+
+**`sceneNav` (disparador y panel) se oculta en Caelestia** con `display: none`, decision del
+autor tomada durante la implementacion. La barra del shell ya lleva las cinco escenas como
+pastillas siempre visibles; medido a 1440x900 el disparador quedaba debajo de la barra
+(`elementFromPoint` sobre su caja devolvia `cae-bar`), y forzando el clic el panel abria pero
+cambiaba solo el hash — Caelestia ya no tiene scroll de pagina, el carril responde unicamente al
+evento `caelestia:workspace`, que el panel no emite. Un control enfocable, invisible y sin efecto
+seria peor que quitarlo, asi que se saca tambien del arbol de accesibilidad. El criterio de
+aceptacion 4 se mantiene: los cinco anclas siguen resolviendo en los tres temas.
+
+**`src/utils/reveal.ts` y `src/themes/types.ts` se modificaron**, algo que el spec no preveia.
+`reveal.ts` salia con un `return` temprano ante `prefers-reduced-motion: reduce` **antes** de
+pedir la coreografia del tema. Para Vice y Hyprland es lo correcto: su coreografia es solo
+movimiento. La de Caelestia ademas monta maquetacion — pone `data-cae-shell`, marca el carril,
+aisla con `inert` los workspaces inactivos y los cambia — asi que con `reduce` el tema se quedaba
+como pagina vertical apilada y las pastillas de la barra no hacian nada visible. Se resolvio con
+una bandera opcional en el contrato `Theme` (`choreographyBuildsLayout`) que **solo declara
+Caelestia**; en Vice y Hyprland queda `undefined` y su ruta por `reveal.ts` es byte a byte
+identica a la de antes — demostrado comparando los chunks JS descargados con movimiento reducido:
+Vice descarga los mismos 5 chunks antes y despues, sin `gsap`, sin `ScrollTrigger`, sin `lenis`.
+La reduccion del movimiento la aplica entonces la propia coreografia de Caelestia, con
+`duration: 0`.
+
+**El wallpaper necesito codificacion gamma sRGB**, que el spec no menciona porque asumia que
+`shaderBackground.ts` ya la traia. El shader mezclaba en lineal (correcto) pero escribia
+`gl_FragColor` sin codificar a gamma: el esquema oscuro se fundia con negro puro en vez de
+teñirse de la superficie del spec. Se corrigio aplicando la OETF sRGB una sola vez, al final,
+sobre el color ya mezclado.
+
+**Los escalones de `padding-top` de la ventana se calibraron y luego se retiraron.** La Tarea 7
+midio cuatro escalones (cortes en 451, 539 y 661px) barriendo 380-1440 con las pastillas
+llevando nombre. La Tarea 9 (movil, 390x844) les dejo solo el numero por debajo de 820px, y con
+pastilla-solo-numero la barra deja de envolver en todo ese rango: el borde inferior se queda
+entre 56 y 58px en todo el ancho 380-1440, asi que basta el hueco fijo de escritorio (4.25rem) y
+la escalera se retira entera. Queda escrito en el propio CSS por si algun dia una pastilla vuelve
+a llevar nombre por debajo de 820px: la escalera habria que reconstruirla barriendo de nuevo, no
+reactivarla con los numeros viejos.
+
+**Cuatro instrumentos de medida del propio arnes (`measure-caelestia-hora.py`) resultaron estar
+rotos**, y hubo que arreglarlos antes de poder creer sus resultados:
+
+1. `leer()` comparaba el color resuelto contra un centinela (`#010203`) que un rol futuro podia
+   alcanzar de verdad — falso negativo latente. Se cambio a `CSS.supports('color', raw)`, un
+   indicador dedicado del parser que no puede colisionar con ningun color legitimo.
+2. La asercion del foco visible solo leia `outlineStyle`: un anillo de anchura 0 o de cualquier
+   color pasaba en verde. Se amplio a comprobar tambien el ancho real y que el color computado
+   coincide con `--cae-anchor`, ambos resueltos a bytes sRGB via canvas.
+3. La asercion del matiz del fondo usaba como unica prueba el tamaño en bytes del PNG recortado
+   — un proxy que tambien pasaba en verde contra el shader viejo de manchas fijas, por el ruido
+   de la animacion. Se sustituyo por lectura real del pixel (hook de `drawArrays`+`readPixels`)
+   decodificada a matiz OkLab y comparada contra `hueAt()` del motor de color, con tolerancia.
+4. La asercion movil ("nada se sale del viewport") tuvo un vaiven de selectores: paso de
+   `[data-cae-bar]`/`[data-cae-dock]`/`[data-cae-toast]` a `.cae-bar`/`.cae-dock`/`.cae-toast`
+   con un comentario que afirmaba que el modulo solo pinta clases, no atributos `data-*` — falso:
+   pinta ambos. Se devolvio a los selectores `data-*` originales por consistencia con las
+   aserciones que ya los usaban en verde desde las Tareas 4, 5 y 6.
+
+La leccion vale la pena dejarla escrita: los numeros de este spec aguantaron la implementacion
+completa sin cambios (salvo la rampa oscura, ya documentada arriba); lo que fallaba una y otra vez
+era el instrumento que decia estar comprobandolos, no el diseño.
+
+**Las preguntas abiertas del spec:**
+
+- El wallpaper generativo definitivo sigue siendo fase propia, como estaba previsto: la Tarea 8
+  solo le quito al shader actual el color propio, no lo rediseño.
+- Movil queda resuelto: pastillas a solo-numero y dock de celda reducida por debajo de 820px,
+  sin esconder ninguno de los dos.
+- El curriculum en PDF del dock **no se monta**: el fichero no existe. Se añade cuando exista.
 
 ---
 
