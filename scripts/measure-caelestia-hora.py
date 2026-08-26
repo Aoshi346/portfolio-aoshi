@@ -450,6 +450,47 @@ def main():
             fallos.append("movil 390: la pagina desplaza en horizontal")
         ctx.close()
 
+        # ---- 12. movimiento reducido: el cambio de workspace es instantaneo
+        #
+        # El umbral de 120 ms lleva margen a proposito contra los 520 ms de la
+        # animacion: uno mas ajustado mediria carga de maquina, no la
+        # animacion (ver CLAUDE.md). Con `reduce` el carril no se anima, LLEGA.
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(3000)
+        page.eval_on_selector_all("[data-cae-ws]", "bs => bs[4].click()")
+        page.wait_for_timeout(120)   # muy por debajo de los 520 ms de la animacion
+        llegado = page.evaluate(
+            """() => {
+                const t = document.querySelector('[data-cae-track]');
+                if (!t) return 0;
+                const m = getComputedStyle(t).transform.match(/-?[\\d.]+/g);
+                return m ? Math.abs(Number(m[4])) : 0;
+            }"""
+        )
+        ancho = page.evaluate("window.innerWidth")
+        if llegado < ancho * 3.5:
+            fallos.append(
+                "con movimiento reducido el carril no llego de golpe: %.0f de %.0f"
+                % (llegado, ancho * 4)
+            )
+        ctx.close()
+
+        # ---- 13. el foco es visible y usa el ancla
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(2500)
+        page.keyboard.press("Tab")
+        page.keyboard.press("Tab")
+        contorno = page.evaluate(
+            "() => { const e = document.activeElement; return e ? getComputedStyle(e).outlineStyle : null }"
+        )
+        if contorno in (None, "none"):
+            fallos.append("el elemento con foco no tiene contorno visible")
+        ctx.close()
+
         nav.close()
 
     if fallos:

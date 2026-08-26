@@ -2130,7 +2130,7 @@ El dock reduce la celda. Ninguno de los dos se esconde: son la navegacion."
 - Modificar: `src/themes/themes.css`
 - Modificar: `src/themes/caelestia.choreography.ts` (ya lo contempla; verificar)
 
-- [ ] **Paso 1: aserción en el arnés**
+- [x] **Paso 1: aserción en el arnés**
 
 ```python
         # ---- 12. movimiento reducido: el cambio de workspace es instantaneo
@@ -2174,7 +2174,7 @@ El dock reduce la celda. Ninguno de los dos se esconde: son la navegacion."
 > animación. `CLAUDE.md` lo dice: un umbral más ajustado que el ruido del instrumento mide carga de
 > máquina, no la animación.
 
-- [ ] **Paso 2: el bloque de movimiento reducido**
+- [x] **Paso 2: el bloque de movimiento reducido**
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -2190,7 +2190,7 @@ El dock reduce la celda. Ninguno de los dos se esconde: son la navegacion."
 Y confirmar que `caelestia.choreography.ts` pone `duration: 0` cuando
 `prefers-reduced-motion: reduce` — ya está escrito así en la Tarea 7; **verifícalo, no lo asumas**.
 
-- [ ] **Paso 3: arnés, build, lint y commit**
+- [x] **Paso 3: arnés, build, lint y commit**
 
 ```bash
 git add -A src/ scripts/

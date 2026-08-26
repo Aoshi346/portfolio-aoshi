@@ -4025,6 +4025,22 @@
 }
 
 /*
+ * Movimiento reducido: el cambio de espacio de trabajo es INSTANTANEO, no
+ * inexistente. La coreografia ya pone `duration: 0` en el `fromTo` del carril
+ * (`caelestia.choreography.ts`); aqui se apagan las transiciones de CSS que
+ * quedarian por debajo -- el fondo de las ventanas del carril, la barra y el
+ * dock -- para que nada siga interpolando por su cuenta despues del salto.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] main[data-cae-track],
+  :root[data-theme="caelestia"] main[data-cae-track] > *,
+  :root[data-theme="caelestia"] .cae-bar,
+  :root[data-theme="caelestia"] .cae-dock {
+    transition: none;
+  }
+}
+
+/*
  * Reparto agrupado por area (solo Vice).
  *
  * El rol se repetia en las doce filas — "Frontend" cuatro veces seguidas,

@@ -376,6 +376,18 @@ criterio de aceptación 2 se mantiene tal cual: es barato y cubre exactamente es
 - Dock y pastillas: 280 ms.
 - `prefers-reduced-motion: reduce` anula toda transición y deja el cambio de workspace instantáneo.
 
+> **Corrección del 2026-08-25 (Tarea 10).** Ese "instantáneo" era inalcanzable: `utils/reveal.ts`
+> salía por un `return` temprano con `prefers-reduced-motion: reduce` **antes** de pedir la
+> coreografía del tema. Para Vice y Hyprland es lo correcto — su coreografía es solo movimiento —
+> pero la de Caelestia además **monta maquetación** (pone `data-cae-shell`, marca el carril, aísla
+> con `inert` los workspaces inactivos y los cambia), así que con `reduce` el tema se quedaba como
+> página vertical apilada y las pastillas no hacían nada visible. Se arregla con una bandera
+> opcional en el contrato `Theme` (`choreographyBuildsLayout`) que **solo declara Caelestia**: al
+> quedar `undefined` en los otros dos, su ruta por `reveal.ts` no cambia (comprobado con una
+> comparación de layout, tipografía, color, `scrollHeight` y `overflow` contra el estado previo, en
+> escritorio y móvil, con movimiento normal y reducido: cero diferencias). La reducción del
+> movimiento la aplica entonces la propia coreografía, con `duration: 0`.
+
 ---
 
 ## Accesibilidad

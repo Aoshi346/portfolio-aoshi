@@ -27,6 +27,13 @@ export const caelestiaTheme: Theme = {
     const { caelestiaChoreography } = await import("./caelestia.choreography");
     return caelestiaChoreography;
   },
+  /*
+   * La coreografia de Caelestia monta el shell (carril, `inert`,
+   * `data-cae-shell`), no solo lo anima: tiene que correr tambien con
+   * movimiento reducido, reduciendo ella misma su propio movimiento. Ver
+   * `types.ts`. Vice y Hyprland no declaran esta bandera.
+   */
+  choreographyBuildsLayout: true,
   async mountBackground(container) {
     const { mountCaelestiaBlobs } = await import("../backgrounds/caelestiaBlobs");
     return mountCaelestiaBlobs(container);
