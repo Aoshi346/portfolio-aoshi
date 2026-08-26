@@ -27,12 +27,33 @@ TOKENS = [
 ]
 
 # Pares que tienen que cumplir AA en TODAS las horas.
+#
+# El criterio es LO QUE DE VERDAD SE PINTA, no la pareja que sugiere el nombre
+# del rol. Esa distincion es justo lo que fallo: la lista vigilaba
+# `on-surface-variant` sobre `surface-container` (= `--cae-elev-1`), pero la
+# barra, el dock y el aviso se pintan sobre `--cae-elev-2`
+# (= `surface-container-high`), y `--cae-primary` no aparecia en ningun par.
+# Trece aserciones en verde con el reloj de la barra — la pieza que el spec
+# pone en el centro del tema — a 4.16:1 en el peor matiz de la manana.
+#
+# Reparto real del shell (ver el tramo Caelestia de `themes.css`):
+#   .cae-bar / .cae-dock / .cae-toast  fondo  --cae-elev-2
+#   .cae-mark, .cae-clock              texto  --cae-primary            sobre elev-2
+#   .cae-ws, .cae-avail, .cae-toast-s  texto  --cae-on-surface-variant sobre elev-2
+#   .cae-toast-t                       texto  --cae-on-surface         sobre elev-2
+#   .cae-ws[aria-current]              texto  --cae-on-primary         sobre primary
+#   .cae-ws:hover, .cae-dock-item      texto  --cae-on-surface-variant sobre elev-1
+#   .cae-dock-item:hover               texto  --cae-on-anchor          sobre anchor
 PARES = [
     ("--cae-on-surface", "--cae-surface"),
     ("--cae-on-surface-variant", "--cae-surface-container"),
     ("--cae-on-primary", "--cae-primary"),
     ("--cae-on-primary-container", "--cae-primary-container"),
     ("--cae-on-anchor", "--cae-anchor"),
+    # Anadidos: el fondo real de la barra, el dock y el aviso.
+    ("--cae-primary", "--cae-surface-container-high"),
+    ("--cae-on-surface-variant", "--cae-surface-container-high"),
+    ("--cae-on-surface", "--cae-surface-container-high"),
 ]
 
 # Se inyecta antes de que cargue nada: el motor lee la hora una sola vez, al
@@ -88,6 +109,11 @@ def _matiz_oklab_deg(rgb255):
     a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
     b_ = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
     return math.degrees(math.atan2(b_, a)) % 360
+
+
+def is_dark_at(minutos):
+    """Espejo de isDarkAt() en caelestia.color.ts. Si diverge, este arnes miente."""
+    return minutos < 7 * 60 or minutos >= 20 * 60
 
 
 def _dist_angular(h1, h2):
@@ -384,22 +410,25 @@ def main():
                 fallos.append("%s: anclas ausentes %s" % (tema, faltan))
             ctx.close()
 
-        # ---- 10. el fondo sigue el matiz de la hora, no trae color propio
+        # ---- 10. el fondo sigue la hora: MATIZ y ESQUEMA
         #
-        # El proxy de bytes de PNG (comentado en el codigo, no borrado) NO es
-        # gate: el shader viejo de 4 pasteles fijos tambien produce PNGs de
-        # tamanos distintos por el ruido/animacion de los blobs -- se
-        # comprobo con git worktree sobre el shader anterior y da 4 tamanos
-        # distintos igual, o sea que "OK" incluso en el caso que se supone
-        # que tiene que cazar. Se deja como asercion COMPLEMENTARIA de "no
-        # esta congelado", nunca como la unica prueba de esta tarea.
+        # Dos gates, no uno. El del matiz ya estaba; el de la luminancia es
+        # nuevo y cubre la otra mitad del bug critico que tuvo esta tarea: el
+        # matiz es IDENTICO de dia y de noche (`hueAt` no mira el esquema),
+        # asi que si `uDark` se quedara clavado, el fondo dejaria de
+        # oscurecerse por la noche y las trece aserciones seguirian en verde.
         #
-        # El gate real: matiz medido por pixel (readPixels dentro del propio
-        # drawArrays, ver HOOK_PIXEL) contra hueAt(minutos) de
-        # caelestia.color.ts, con tolerancia -- es un fondo desenfocado con
-        # ruido y una conversion OkLCH->sRGB aproximada en el shader, un
-        # umbral fino mediria ruido, no el bug.
+        # Los dos comparan pixel (readPixels dentro del propio drawArrays,
+        # ver HOOK_PIXEL) contra `caelestia.color.ts`: el matiz contra
+        # `hueAt(minutos)`, la luminancia contra `isDarkAt(minutos)`. Las dos
+        # tolerancias son ANCHAS a proposito -- es un fondo desenfocado, con
+        # ruido y blobs animados, y una conversion OkLCH->sRGB aproximada en
+        # el shader: un umbral fino mediria ruido, no el bug. El shader pide
+        # L 0.975 de dia y 0.175 de noche (`lBase` en caelestiaBlobs.ts), que
+        # en luminancia relativa sRGB son extremos opuestos de la escala.
         TOLERANCIA_GRADOS = 30
+        LUM_MAX_NOCHE = 0.25
+        LUM_MIN_DIA = 0.45
         muestras = {}
         for minutos in (300, 660, 1020, 1380):
             ctx = nav.new_context(viewport={"width": 1440, "height": 900})
@@ -409,7 +438,7 @@ def main():
             page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
             page.wait_for_timeout(6000)
             png = page.screenshot(clip={"x": 0, "y": 0, "width": 200, "height": 200})
-            muestras[minutos] = len(png)   # complementario: solo "no congelado"
+            muestras[minutos] = len(png)   # informativo, NO gate: ver mas abajo
 
             pixel = page.evaluate("() => window.__caePixel")
             ctx.close()
@@ -426,8 +455,36 @@ def main():
                     % (minutos // 60, minutos % 60, medido, esperado, TOLERANCIA_GRADOS, pixel)
                 )
 
+            lum = rel_luminance(pixel[:3])
+            oscuro = is_dark_at(minutos)
+            print(
+                "    fondo %02d:%02d  esquema=%s  luminancia=%.3f  matiz=%.1f"
+                % (minutos // 60, minutos % 60, "noche" if oscuro else "dia", lum, medido)
+            )
+            if oscuro and lum > LUM_MAX_NOCHE:
+                fallos.append(
+                    "%02d:%02d: el fondo no se oscurece de noche: luminancia %.3f (> %.2f, pixel %s)"
+                    % (minutos // 60, minutos % 60, lum, LUM_MAX_NOCHE, pixel)
+                )
+            if not oscuro and lum < LUM_MIN_DIA:
+                fallos.append(
+                    "%02d:%02d: el fondo no se aclara de dia: luminancia %.3f (< %.2f, pixel %s)"
+                    % (minutos // 60, minutos % 60, lum, LUM_MIN_DIA, pixel)
+                )
+
+        # El proxy de bytes de PNG NO es gate y ahora el codigo lo respeta.
+        # Antes el comentario decia "complementaria, nunca la unica prueba" y
+        # justo debajo hacia `fallos.append(...)`, que saca el arnes con codigo
+        # 1: era un gate, y ademas flaky por naturaleza (cuatro capturas de un
+        # shader animado con ruido). Se degrada a informativo en vez de
+        # quitarle el comentario porque lo que dice el comentario es cierto: se
+        # comprobo con `git worktree` sobre el shader anterior -- el de cuatro
+        # pasteles FIJOS, el caso que se supone que tiene que cazar -- y daba
+        # cuatro tamanos distintos igual. No discrimina nada. Lo que de verdad
+        # cubre esta tarea son los dos gates de arriba (matiz y luminancia).
+        print("  [info] tamanos de PNG del fondo por hora: %s" % muestras)
         if len(set(muestras.values())) < 3:
-            fallos.append("el fondo apenas cambia con la hora (proxy de bytes): %s" % muestras)
+            print("  [info] el proxy de bytes ve poca variacion; no es gate, ver arriba")
 
         # ---- 11. movil: nada se sale del viewport
         ctx = nav.new_context(viewport={"width": 390, "height": 844})
