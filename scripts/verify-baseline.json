@@ -1,7 +1,6 @@
 {
   "_comentario": "Fallos conocidos y aceptados de scripts/verify.py. El arnes sale 0 mientras la ejecucion coincida con esta lista, y 1 en cuanto aparezca uno nuevo O se arregle uno de estos sin quitarlo de aqui. Regenerar con: python3 scripts/verify.py --update-baseline",
   "fallos": [
-    "el estado del spec concuerda con su plan ([\"docs/superpowers/specs/2026-08-19-hyprland-fondo-haz-design.md dice 'implementado' pero docs/superpowers/plans/2026-08-19-hyprland-fondo-haz.md tiene 4 pasos sin marcar\"])",
     "public/media/obra/ciberseg-panel.webp no es el relleno honesto de la galeria",
     "public/media/obra/ciberseg-vulnerabilidades.webp no es el relleno honesto de la galeria",
     "public/media/obra/echoplan-aprobaciones.webp no es el relleno honesto de la galeria",
