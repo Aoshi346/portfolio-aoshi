@@ -66,6 +66,22 @@ const ORIGEN = 60;
 /** El ancla no gira nunca: es lo unico constante del tema. */
 const AZUFRE = { l: 0.855, lOscuro: 0.905, c: 0.152, h: 96 } as const;
 
+/*
+ * El color del cromo del navegador, uno por esquema. `themes/index.ts` pone el
+ * `themeColor` estatico del tema ANTES de que este modulo monte (es la semilla
+ * previa a JS), y aqui se corrige a la hora real: sin esto la barra del
+ * navegador se quedaba clara a las tres de la madrugada.
+ *
+ * Van en hexadecimal y no en `oklch()` a proposito: el soporte de espacios de
+ * color modernos en `meta[name="theme-color"]` no es uniforme entre
+ * navegadores, y un valor que el navegador no entienda no degrada — se ignora
+ * entero. Son el promedio de la superficie sobre los 24 matices; con croma
+ * 0.012/0.016 la superficie es casi neutra, asi que el matiz no se echa de
+ * menos a este tamano.
+ */
+const CROMO_DIA = "#f8f8f8";
+const CROMO_NOCHE = "#121212";
+
 const MINUTOS_DIA = 1440;
 const AMANECE = 7 * 60;
 const ANOCHECE = 20 * 60;
@@ -154,6 +170,9 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
     }
     oscuroActual = oscuro;
     root.dataset.caeEsquema = oscuro ? "noche" : "dia";
+
+    const cromo = document.querySelector('meta[name="theme-color"]');
+    if (cromo) cromo.setAttribute("content", oscuro ? CROMO_NOCHE : CROMO_DIA);
 
     for (const [nombre, valor] of Object.entries(caelestiaTokens(minutos))) {
       root.style.setProperty(nombre, valor);

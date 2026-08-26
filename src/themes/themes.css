@@ -3537,8 +3537,24 @@
   --display-weight: 900;
   --display-transform: none;
   --display-leading: 0.98;
-  --bg-fallback: linear-gradient(160deg, #f4f0f9 0%, #e4dcf3 50%, #dbeee6 100%);
-
+  /*
+   * Lo UNICO que se ve si WebGL no arranca. El degradado anterior era pastel
+   * fijo de la paleta vieja: de noche dejaba `--cae-on-surface` (casi blanco)
+   * sobre lavanda claro. Ahora se arma con los tres tonos de wallpaper que
+   * escribe `caelestia.color.ts`, que ya siguen la hora y el matiz — de dia
+   * L 0.93/0.95/0.96, de noche 0.24/0.21/0.20 — asi que el modo degradado
+   * cambia de esquema con el resto del tema en vez de quedarse anclado.
+   *
+   * Los tres valores de reserva son la semilla previa a JS (el modulo de
+   * color monta con `import()` diferido): matiz neutro y claros, a juego con
+   * `themeColor` de `caelestia.ts`.
+   */
+  --bg-fallback: linear-gradient(
+    160deg,
+    var(--cae-wall-1, #eeeeee) 0%,
+    var(--cae-wall-2, #f4f4f4) 50%,
+    var(--cae-wall-3, #f8f8f8) 100%
+  );
 
   /* Las tres alturas de la rampa. Es la pieza que faltaba. */
   --cae-elev-1: var(--cae-surface-container);

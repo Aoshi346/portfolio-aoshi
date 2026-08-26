@@ -8,7 +8,14 @@ import type { Theme } from "./types";
 export const caelestiaTheme: Theme = {
   id: "caelestia",
   label: "Caelestia",
-  themeColor: "#f4f0f9",
+  /*
+   * Semilla del cromo del navegador: la aplica `themes/index.ts` antes de que
+   * cargue `caelestia.color.ts`, que a partir de ahi la corrige por hora
+   * (`CROMO_DIA` / `CROMO_NOCHE`). El lavanda anterior era de la paleta vieja
+   * y ya no existe en ningun token. Se siembra con el valor DIURNO porque el
+   * esquema claro cubre 13 de las 24 horas.
+   */
+  themeColor: "#f8f8f8",
   /*
    * Fraunces es el display, y sus ejes van escritos a mano en `themes.css`
    * (`--cae-display-axes`): con `opsz` a 9 los remates se afilan, con SOFT a 0
