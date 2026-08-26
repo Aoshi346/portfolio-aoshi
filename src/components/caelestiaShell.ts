@@ -82,7 +82,15 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
   const barra = el("header", "cae-bar", [marca, navegacion, bandeja]);
   barra.dataset.caeBar = "";
 
-  root.append(barra);
+  /*
+   * `prepend`, no `append`: la barra esta fija arriba de todo visualmente,
+   * pero el orden del DOM regia el orden de tabulacion, y al final del arbol
+   * de `#app` hacian falta 37 pulsaciones de Tab para alcanzar la primera
+   * pastilla desde una carga limpia (medido). El resto del arbol de `#app`
+   * que la precede (`bg-theme`, `noise`) es `aria-hidden` y no contiene nada
+   * enfocable, asi que anteponerla la deja como el primer parada real.
+   */
+  root.prepend(barra);
 
   // El reloj de la barra es lo que gobierna el tema: tiene que ir al minuto.
   const tic = window.setInterval(() => {
@@ -110,7 +118,14 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
 
   const dock = el("div", "cae-dock", accesos);
   dock.dataset.caeDock = "";
-  root.append(dock);
+  /*
+   * Se inserta justo tras `<main>`, no al final de `#app`: asi el orden de
+   * tabulacion queda barra -> contenido -> dock, en vez de colarse detras del
+   * cromo de cine y la navegacion de escenas.
+   */
+  const mainEl = root.querySelector("main");
+  if (mainEl) mainEl.after(dock);
+  else root.append(dock);
 
   const setScene = (index: number): void => {
     pastillas.forEach((boton, i) => {
