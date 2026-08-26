@@ -58,6 +58,32 @@
   already slipped through once. Read the spec's epilogue before re-tuning anything: the whole
   calibration predates the `gsap` fix.
 
+- **Caelestia's shell is DONE and merged** (`2026-08-20-caelestia-escritorio`, phase A of six): the
+  theme stopped being a set of tokens and became **a Material You 3 desktop shell whose colour and
+  scheme are governed by the visitor's clock**. The hue walks the full 360-degree wheel over 24
+  hours; lightness never moves, so **contrast is invariant by construction** — measured once, valid
+  for all 1440 clock positions. Scheme is light 07:00-20:00, dark outside, and **never interpolated**:
+  surface and text swap lightness order, so any continuous path between schemes crosses 1:1 contrast.
+  Proven in motion, not just by arithmetic: sampling every ~15ms across the threshold, `L` jumps
+  0.245 to 0.925 in one step with no intermediate value in 90+ samples.
+  The five scenes are a **horizontal workspace rail** — a workspace is not scrolled, it is switched —
+  so the theme has no page scroll and inactive workspaces are `inert`. `sceneNav` is hidden here
+  (`display: none`): the bar already carries the five scenes as always-visible pills, and its panel
+  changed the hash without moving anything. Fraunces (`opsz 9 wght 900 SOFT 0 WONK 1`) over Hanken
+  Grotesk and Martian Mono. `scripts/measure-caelestia-hora.py` gates it with 16 assertions.
+  **Phases B1-B5 (the five sections inside the window) are NOT done** — their layout still assumes a
+  page that scrolls, so cramped content inside a workspace is expected, not a defect.
+  `vera-art-director` gate BLOCK explicitly accepted (6.55/10 against a 7.5 gate), same as Vice: its
+  P0 was fixed, its three P1s are open product decisions recorded in the spec.
+  **Read the spec's `Registro de implementación` before re-tuning anything.** It records the lesson
+  that cost this phase most: **eight times the failure was in the instrument, not the design** — a
+  regex reading `oklch()` as RGB bytes (1.00:1 everywhere), a frozen clock that made the
+  threshold-crossing branch unreachable *by construction*, a PNG-size proxy that passed against the
+  very shader it existed to catch, a focus assertion titled "and uses the anchor" that only read
+  `outlineStyle`, contrast `PARES` watching roles that are never painted, and an A/B that triggered
+  the warning it was measuring (`page.screenshot()` forces its own `ReadPixels`). The spec's numbers
+  all held. **Never accept a gate you have not seen go red against the failure it claims to catch.**
+
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**
 - Three themes over one DOM, switched by `data-theme` (vice / hyprland / caelestia). The skin is decided by CSS, never by the markup. The theme is picked at random per visit: to verify, always use `?theme=vice`
