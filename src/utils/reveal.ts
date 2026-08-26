@@ -226,7 +226,28 @@ function prepareHeroIntro(gsap: Gsap, root: HTMLElement): void {
 export async function initScrollReveal(root: HTMLElement, theme: Theme): Promise<void> {
   const motion = theme.motion;
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (prefersReducedMotion) return;
+
+  /*
+   * Con movimiento reducido no hay reveal: las recetas genericas de aqui abajo
+   * son puro movimiento y saltarselas es exactamente lo que se pide.
+   *
+   * La UNICA excepcion es un tema cuya coreografia ademas MONTA MAQUETACION
+   * (`choreographyBuildsLayout`, ver `themes/types.ts`). Caelestia es ese
+   * caso: su coreografia pone `data-cae-shell`, marca el carril, aisla con
+   * `inert` los workspaces inactivos y los cambia. Saltarsela dejaba el tema
+   * como pagina vertical apilada, con las pastillas de la barra sin efecto
+   * visible; el spec pide que el cambio sea instantaneo, no inexistente. La
+   * reduccion del movimiento la aplica entonces la propia coreografia.
+   *
+   * La bandera es opcional y solo la declara Caelestia: en Vice y Hyprland
+   * queda `undefined`, esta condicion es falsa y el retorno temprano se
+   * comporta byte a byte como antes. Y por la forma de la condicion (exige
+   * `theme.choreography`), con `reduce` no se puede llegar nunca a las recetas
+   * genericas de mas abajo: la rama de la coreografia siempre retorna antes.
+   */
+  const coreografiaDeMaquetacion =
+    theme.choreographyBuildsLayout === true && theme.choreography !== undefined;
+  if (prefersReducedMotion && !coreografiaDeMaquetacion) return;
 
   /*
    * El core de GSAP se pide SOLO, sin esperar a ScrollTrigger. Lo unico que

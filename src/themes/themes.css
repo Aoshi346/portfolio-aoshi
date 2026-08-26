@@ -3502,48 +3502,95 @@
 
 /* ---------------------------------------------------------------- Caelestia */
 
+/*
+ * El escritorio. Aqui ya no hay colores literales: los pone
+ * `caelestia.color.ts` en `:root` a partir de la hora del visitante, y este
+ * bloque solo los reparte por rol. Ver
+ * `docs/superpowers/specs/2026-08-20-caelestia-escritorio-design.md`.
+ */
 :root[data-theme="caelestia"] {
-  --color-ink: #f4f0f9;
-  --color-paper: #1c1b1f;
-  --color-accent: #6c4fd8;
-  --color-accent-2: #2f9e79;
-  --color-line: #d9d0e4;
+  --color-ink: var(--cae-surface);
+  --color-paper: var(--cae-on-surface);
+  --color-accent: var(--cae-primary);
+  --color-accent-2: var(--cae-anchor);
+  --color-line: var(--cae-outline);
 
   /*
-   * Tema CLARO: el telon es `--color-ink` (#f4f0f9) y el texto `--color-paper`
-   * (#1c1b1f), al reves que en Vice. Tinta oscura atenuada sobre fondo claro
-   * pierde mucho mas contraste que crema atenuada sobre fondo oscuro, asi que
-   * los porcentajes de Vice no valen aqui: con 55% los numeros median 3,72:1.
-   * El umbral aritmetico esta en 61,7%; 70% deja margen y mide 5,97:1.
+   * Tema de dos caras. El 70% de antes estaba calibrado contra un unico fondo
+   * claro y ya no vale: ahora el rol atenuado es un token propio con su
+   * claridad fija, medida por el arnes en las 24 horas.
    */
-  --nav-dim: 70%;
-  --nav-dim-soft: 66%;
+  --nav-dim: 100%;
+  --nav-dim-soft: 100%;
 
-  --font-display: "Outfit", system-ui, sans-serif;
-  --font-body: "Outfit", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  /* Red de seguridad, igual que en Vice y Hyprland: sin esto las utilidades
+     `font-mono` de Tailwind filtran `ui-monospace`. */
+  --font-mono: "Martian Mono", ui-monospace, monospace;
 
-  --radius-card: 28px;
-  --display-tracking: -0.025em;
-  --display-weight: 800;
-  /* Material You no grita: caja baja y aire. */
+  /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
+  --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
+
+  --radius-card: 22px;
+  --display-tracking: -0.03em;
+  --display-weight: 900;
   --display-transform: none;
-  --display-leading: 0.95;
-  --bg-fallback: linear-gradient(160deg, #f4f0f9 0%, #e4dcf3 50%, #dbeee6 100%);
+  --display-leading: 0.98;
+  /*
+   * Lo UNICO que se ve si WebGL no arranca. El degradado anterior era pastel
+   * fijo de la paleta vieja: de noche dejaba `--cae-on-surface` (casi blanco)
+   * sobre lavanda claro. Ahora se arma con los tres tonos de wallpaper que
+   * escribe `caelestia.color.ts`, que ya siguen la hora y el matiz — de dia
+   * L 0.93/0.95/0.96, de noche 0.24/0.21/0.20 — asi que el modo degradado
+   * cambia de esquema con el resto del tema en vez de quedarse anclado.
+   *
+   * Los tres valores de reserva son la semilla previa a JS (el modulo de
+   * color monta con `import()` diferido): matiz neutro y claros, a juego con
+   * `themeColor` de `caelestia.ts`.
+   */
+  --bg-fallback: linear-gradient(
+    160deg,
+    var(--cae-wall-1, #eeeeee) 0%,
+    var(--cae-wall-2, #f4f4f4) 50%,
+    var(--cae-wall-3, #f8f8f8) 100%
+  );
+
+  /* Las tres alturas de la rampa. Es la pieza que faltaba. */
+  --cae-elev-1: var(--cae-surface-container);
+  --cae-elev-2: var(--cae-surface-container-high);
+  --cae-elev-3: var(--cae-primary-container);
+
+  background: var(--cae-surface);
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] [data-display],
+:root[data-theme="caelestia"] h1,
+:root[data-theme="caelestia"] h2 {
+  font-family: var(--font-display);
+  font-variation-settings: var(--cae-display-axes);
 }
 
 /*
- * Contenedores tonales con elevacion: es la pieza que faltaba para que
- * Caelestia se lea como Material You y no como texto suelto sobre un degradado.
+ * El corte de esquema. Se pone durante un fotograma cuando el reloj cruza el
+ * umbral: interpolar entre los dos esquemas atraviesa contraste 1:1 de forma
+ * matematicamente inevitable, asi que no puede haber transicion aqui.
  */
+:root[data-theme="caelestia"].cae-corte,
+:root[data-theme="caelestia"].cae-corte * {
+  transition: none !important;
+}
+
+/* Contenedores tonales con elevacion real, cada uno en su altura. */
 :root[data-theme="caelestia"] .hero-surface,
 :root[data-theme="caelestia"] .scene-surface {
-  background: color-mix(in srgb, #ffffff 62%, transparent);
-  backdrop-filter: blur(24px) saturate(1.25);
-  border: 1px solid color-mix(in srgb, #ffffff 72%, transparent);
+  background: var(--cae-elev-1);
+  border: 1px solid var(--cae-outline);
   border-radius: var(--radius-card);
   padding: clamp(1.75rem, 4vw, 3.25rem);
-  box-shadow: 0 30px 70px -30px rgba(70, 45, 110, 0.35);
+  box-shadow: none;
+  transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root[data-theme="caelestia"] .hero-surface {
@@ -3551,28 +3598,11 @@
 }
 
 /*
- * Misma compensacion que Vice (buscar "Important 4" mas arriba), con el
- * mismo diagnostico: `.hero-kick` paso a ser hermano de `.hero-surface`
- * para que la rejilla de Hyprland pudiera usarlo como columna 1. En
- * Caelestia la etiqueta vivia DENTRO de la tarjeta Material You — perdia su
- * padding Y su borde de 1px al salir. Medido con Playwright contra 204998c:
- * `.hero-kick` pasaba de x:101/y:267/ancho:982 (inset por padding:
- * clamp(1.75rem,4vw,3.25rem) + border:1px, igual que el resto de la
- * tarjeta) a x:48/y:214/ancho:1344 (a sangre, fuera de la tarjeta) en
- * 1440x900. Se repone el mismo inset (padding de la tarjeta + su borde)
- * directamente sobre `.hero-kick`: `position: relative; top` para el
- * vertical (no `margin-top` — mismo motivo que en Vice, buscar el
- * comentario ahi: `.hero` tambien centra sus items en el eje principal).
- * Para el horizontal no basta con margen + `align-self: stretch`:
- * `.hero-surface` tiene ademas un tope propio (`max-width: 68rem`, arriba)
- * que en este viewport de referencia es MAS ESTRECHO que el `.hero`
- * completo (1088px vs 1344px), y el `min-width`/`max-width` de un item de
- * flex se resuelve sobre su propio ancho de caja, ANTES del margen — un
- * `max-width: 68rem` en `.hero-kick` deja su caja en 1088px con el margen
- * puesto fuera, no en 982px con el margen absorbido dentro de esos 1088px.
- * Se calcula un ancho explicito en su lugar: el mismo tope, menos el mismo
- * margen a cada lado, que es exactamente lo que `.hero-surface` le resta a
- * su contenido interno con su padding+borde.
+ * Compensacion heredada: `.hero-kick` paso a ser hermano de `.hero-surface`
+ * para que la rejilla de Hyprland pudiera usarlo como columna 1, y al salir de
+ * la tarjeta perdio su padding y su borde. Se reponen aqui. El comentario
+ * largo con las medidas esta en el historial de este archivo (buscar
+ * "x:101/y:267/ancho:982"); no se repite para no duplicarlo.
  */
 :root[data-theme="caelestia"] [data-scene="hero"] .hero-kick {
   position: relative;
@@ -3582,17 +3612,535 @@
   width: calc(min(68rem, 100%) - 2 * (clamp(1.75rem, 4vw, 3.25rem) + 1px));
 }
 
-/* Chips como contenedores tonales: sobre fondo claro, un 4% de tinta no se ve. */
 :root[data-theme="caelestia"] .chip {
-  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-accent) 28%, transparent);
-  color: color-mix(in srgb, var(--color-paper) 88%, transparent);
+  background: var(--cae-primary-container);
+  border-color: transparent;
+  color: var(--cae-on-primary-container);
 }
 
-/* En claro, el grano en `overlay` ensucia: multiplicar es mas limpio. */
+/* El grano se retira: con rampa tonal real ya hay profundidad sin ensuciar. */
 :root[data-theme="caelestia"] .bg-noise {
-  opacity: 0.035;
-  mix-blend-mode: multiply;
+  opacity: 0;
+}
+
+:root[data-theme="caelestia"] :focus-visible {
+  outline: 2px solid var(--cae-anchor);
+  outline-offset: 3px;
+}
+
+/*
+ * La barra del shell: marca, pastillas de workspace y bandeja de estado.
+ * `--cae-elev-1`/`--cae-elev-2` (Tarea 2) las pinta por primera vez de verdad.
+ */
+:root[data-theme="caelestia"] .cae-bar {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.875rem;
+  right: 0.875rem;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.625rem 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--cae-elev-2);
+  /*
+   * SIN `backdrop-filter` a proposito. `--cae-elev-2` resuelve a un `oklch()`
+   * sin alfa, o sea OPACO: el desenfoque desenfocaba un respaldo que este
+   * mismo fondo tapa entero, y a cambio hacia que el compositor tratara la
+   * pieza como capa con respaldo sobre el lienzo WebGL. Era coste sin efecto.
+   *
+   * Medido conmutando el blur en la MISMA pagina, con el lienzo congelado
+   * para que el shader no moviera pixeles entre tomas: sobre el rectangulo
+   * completo de cada pieza — esquinas redondeadas incluidas, que es donde el
+   * elemento si es transparente — CERO pixeles cambian mas de 2/255, y el
+   * peor delta es 1/255 en la barra y el dock, 0 en el aviso.
+   *
+   * OJO con la otra mitad de la historia: la auditoria atribuia a este blur
+   * cuatro avisos `GPU stall due to ReadPixels` de consola. NO se reproduce.
+   * Con tres repeticiones por brazo y sin tomar ninguna captura (la captura
+   * fuerza su propio ReadPixels y contamina la medida), el brazo SIN blur dio
+   * [4, 0, 0] y el brazo CON blur [0, 0, 0]: es un artefacto de arranque en
+   * frio de swiftshader, no lo causa el desenfoque. Se quita por ser una
+   * declaracion muerta y medida como invisible, no por ese aviso.
+   *
+   * Si algun dia este fondo pasa a llevar alfa, volver a ponerlo tendra
+   * sentido — y entonces habra que volver a medir, no dar por buena esta nota.
+   */
+  box-shadow: 0 10px 30px -18px rgb(0 0 0 / 0.5);
+  transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-mark {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .cae-ws-list {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+:root[data-theme="caelestia"] .cae-ws {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  padding: 0.3125rem 0.6875rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cae-on-surface-variant);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.28s cubic-bezier(0.2, 0, 0, 1),
+    color 0.28s,
+    padding 0.28s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-ws:hover {
+  background: var(--cae-elev-1);
+}
+
+:root[data-theme="caelestia"] .cae-ws[aria-current="true"] {
+  background: var(--cae-primary);
+  color: var(--cae-on-primary);
+  font-weight: 600;
+  padding-inline: 0.9375rem;
+}
+
+:root[data-theme="caelestia"] .cae-ws-n {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  opacity: 0.55;
+  margin-right: 0.3125rem;
+}
+
+:root[data-theme="caelestia"] .cae-tray {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+}
+
+:root[data-theme="caelestia"] .cae-avail {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.625rem;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--cae-anchor);
+}
+
+/* El reloj no es adorno: es lo que gobierna el tema. */
+:root[data-theme="caelestia"] .cae-clock {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--cae-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-ws {
+    transition: none;
+  }
+}
+
+/*
+ * Movil, tablet estrecho: cinco pastillas con nombre no caben a 390px. Se
+ * quedan solo con el numero (Tarea 9, decision del plan) -- ni se colapsa el
+ * dock ni se esconde la barra, son la navegacion entera del tema.
+ *
+ * `font-size: 0` en el boton y tamano real en el `<i>` del numero deja el
+ * nombre fuera de la caja visual pero DENTRO del arbol de accesibilidad. No
+ * cambiar por `display: none` sobre el texto: eso si lo sacaria del lector
+ * de pantalla.
+ */
+@media (max-width: 51.25rem) {
+  :root[data-theme="caelestia"] .cae-bar {
+    padding-inline: 0.75rem 0.5rem;
+    gap: 0.375rem;
+  }
+
+  :root[data-theme="caelestia"] .cae-ws {
+    font-size: 0;
+    padding: 0.375rem 0.5rem;
+  }
+
+  :root[data-theme="caelestia"] .cae-ws-n {
+    font-size: 0.75rem;
+    opacity: 1;
+    margin-right: 0;
+  }
+
+  :root[data-theme="caelestia"] .cae-mark,
+  :root[data-theme="caelestia"] .cae-avail {
+    display: none;
+  }
+
+  :root[data-theme="caelestia"] .cae-toast {
+    left: 0.875rem;
+    right: 0.875rem;
+    max-width: none;
+  }
+}
+
+/*
+ * El dock: centrado abajo, dimensionado a su contenido. Un dock estirado a
+ * todo el ancho se lee como pie de pagina, no como dock.
+ */
+:root[data-theme="caelestia"] .cae-dock {
+  position: fixed;
+  bottom: 0.875rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  gap: 0.375rem;
+  padding: 0.4375rem;
+  border-radius: 1.375rem;
+  background: var(--cae-elev-2);
+  /*
+   * SIN `backdrop-filter` a proposito. `--cae-elev-2` resuelve a un `oklch()`
+   * sin alfa, o sea OPACO: el desenfoque desenfocaba un respaldo que este
+   * mismo fondo tapa entero, y a cambio hacia que el compositor tratara la
+   * pieza como capa con respaldo sobre el lienzo WebGL. Era coste sin efecto.
+   *
+   * Medido conmutando el blur en la MISMA pagina, con el lienzo congelado
+   * para que el shader no moviera pixeles entre tomas: sobre el rectangulo
+   * completo de cada pieza — esquinas redondeadas incluidas, que es donde el
+   * elemento si es transparente — CERO pixeles cambian mas de 2/255, y el
+   * peor delta es 1/255 en la barra y el dock, 0 en el aviso.
+   *
+   * OJO con la otra mitad de la historia: la auditoria atribuia a este blur
+   * cuatro avisos `GPU stall due to ReadPixels` de consola. NO se reproduce.
+   * Con tres repeticiones por brazo y sin tomar ninguna captura (la captura
+   * fuerza su propio ReadPixels y contamina la medida), el brazo SIN blur dio
+   * [4, 0, 0] y el brazo CON blur [0, 0, 0]: es un artefacto de arranque en
+   * frio de swiftshader, no lo causa el desenfoque. Se quita por ser una
+   * declaracion muerta y medida como invisible, no por ese aviso.
+   *
+   * Si algun dia este fondo pasa a llevar alfa, volver a ponerlo tendra
+   * sentido — y entonces habra que volver a medir, no dar por buena esta nota.
+   */
+  box-shadow: 0 14px 34px -22px rgb(0 0 0 / 0.55);
+  transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-dock-item {
+  position: relative;
+  width: 2.875rem;
+  height: 2.875rem;
+  border-radius: 0.9375rem;
+  display: grid;
+  place-items: center;
+  background: var(--cae-elev-1);
+  color: var(--cae-on-surface-variant);
+  transition:
+    background 0.28s cubic-bezier(0.2, 0, 0, 1),
+    color 0.28s,
+    transform 0.28s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-dock-item:hover,
+:root[data-theme="caelestia"] .cae-dock-item:focus-visible {
+  transform: translateY(-0.4375rem);
+  background: var(--cae-anchor);
+  color: var(--cae-on-anchor);
+}
+
+:root[data-theme="caelestia"] .cae-dock-icon svg {
+  width: 1.3125rem;
+  height: 1.3125rem;
+  display: block;
+}
+
+:root[data-theme="caelestia"] .cae-dock-item::after {
+  content: attr(data-cae-label);
+  position: absolute;
+  bottom: calc(100% + 0.625rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(0.25rem);
+  white-space: nowrap;
+  pointer-events: none;
+  font-size: 0.65625rem;
+  padding: 0.3125rem 0.625rem;
+  border-radius: 0.5625rem;
+  background: var(--cae-on-surface);
+  color: var(--cae-surface);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.24s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-dock-item:hover::after,
+:root[data-theme="caelestia"] .cae-dock-item:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%);
+}
+
+:root[data-theme="caelestia"] .cae-dock-item[data-cae-live]::before {
+  content: "";
+  position: absolute;
+  bottom: 0.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 50%;
+  background: var(--cae-anchor);
+}
+
+/* Movil, tablet estrecho: celda del dock mas pequena (Tarea 9). */
+@media (max-width: 51.25rem) {
+  :root[data-theme="caelestia"] .cae-dock-item {
+    width: 2.375rem;
+    height: 2.375rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-dock-item,
+  :root[data-theme="caelestia"] .cae-dock-item::after {
+    transition: none;
+  }
+  :root[data-theme="caelestia"] .cae-dock-item:hover {
+    transform: none;
+  }
+}
+
+/*
+ * La notificacion del shell: dos disparos, disponibilidad al entrar y
+ * cambio de esquema al cruzar el umbral horario. El esquema es instantaneo
+ * por construccion (ver Tarea 1), asi que si cambia delante del visitante
+ * tiene que decir por que.
+ */
+:root[data-theme="caelestia"] .cae-toast {
+  position: fixed;
+  right: 0.875rem;
+  bottom: 5.5rem;
+  z-index: 61;
+  max-width: 17rem;
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.875rem;
+  border-radius: 1.125rem;
+  background: var(--cae-elev-2);
+  /*
+   * SIN `backdrop-filter` a proposito. `--cae-elev-2` resuelve a un `oklch()`
+   * sin alfa, o sea OPACO: el desenfoque desenfocaba un respaldo que este
+   * mismo fondo tapa entero, y a cambio hacia que el compositor tratara la
+   * pieza como capa con respaldo sobre el lienzo WebGL. Era coste sin efecto.
+   *
+   * Medido conmutando el blur en la MISMA pagina, con el lienzo congelado
+   * para que el shader no moviera pixeles entre tomas: sobre el rectangulo
+   * completo de cada pieza — esquinas redondeadas incluidas, que es donde el
+   * elemento si es transparente — CERO pixeles cambian mas de 2/255, y el
+   * peor delta es 1/255 en la barra y el dock, 0 en el aviso.
+   *
+   * OJO con la otra mitad de la historia: la auditoria atribuia a este blur
+   * cuatro avisos `GPU stall due to ReadPixels` de consola. NO se reproduce.
+   * Con tres repeticiones por brazo y sin tomar ninguna captura (la captura
+   * fuerza su propio ReadPixels y contamina la medida), el brazo SIN blur dio
+   * [4, 0, 0] y el brazo CON blur [0, 0, 0]: es un artefacto de arranque en
+   * frio de swiftshader, no lo causa el desenfoque. Se quita por ser una
+   * declaracion muerta y medida como invisible, no por ese aviso.
+   *
+   * Si algun dia este fondo pasa a llevar alfa, volver a ponerlo tendra
+   * sentido — y entonces habra que volver a medir, no dar por buena esta nota.
+   */
+  box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.6);
+  transform: translateY(0.875rem);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.42s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.32s,
+    background 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .cae-toast.is-open {
+  transform: none;
+  opacity: 1;
+}
+
+:root[data-theme="caelestia"] .cae-toast .cae-dot {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+:root[data-theme="caelestia"] .cae-toast-t {
+  display: block;
+  font-size: 0.71875rem;
+  margin-bottom: 0.125rem;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-toast-s {
+  font-size: 0.65625rem;
+  line-height: 1.4;
+  color: var(--cae-on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-toast {
+    transition: opacity 0.01ms;
+    transform: none;
+  }
+}
+
+/*
+ * A 390/430px `.hero-corner` (pie de la ventana: "Caracas, Venezuela" +
+ * correo) cae mas abajo que en escritorio, y el `bottom: 5.5rem` de la
+ * regla base dejaba la notificacion tapando la linea de ubicacion entera y
+ * rozando el enlace de correo (medido). No bloquea nada pulsable
+ * (`pointer-events: none` en la regla base), pero tapa contenido igual.
+ *
+ * Esta regla va DESPUES de la base a proposito, no en el primer bloque
+ * `@media (max-width: 51.25rem)` de mas arriba: con la misma especificidad,
+ * gana quien aparece ultimo en el fichero, y la base (sin condicion) esta
+ * despues de aquel bloque — un `bottom` puesto ahi nunca llegaba a pintarse
+ * (comprobado: la version anterior de este arreglo vivia alli y no hacia
+ * nada, media exactamente el `bottom: 5.5rem` de la base).
+ */
+@media (max-width: 51.25rem) {
+  :root[data-theme="caelestia"] .cae-toast {
+    bottom: 4.5rem;
+  }
+}
+
+/*
+ * El carril de workspaces. La pagina deja de desplazar en vertical: las cinco
+ * escenas van en fila y lo que se mueve es el carril.
+ *
+ * `data-cae-shell` lo pone la coreografia en `document.documentElement`, que es
+ * lo unico con lo que casa `:root`. `data-cae-track` va en el `<main>`.
+ */
+:root[data-theme="caelestia"][data-cae-shell="workspaces"] {
+  overflow: hidden;
+}
+
+:root[data-theme="caelestia"][data-cae-shell="workspaces"] body {
+  overflow: hidden;
+  height: 100dvh;
+}
+
+:root[data-theme="caelestia"] main[data-cae-track] {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+  height: 100dvh;
+  /* Hueco para la barra arriba y el dock abajo. El aire lateral NO va aqui:
+     `xPercent` desplaza un 100% del ANCHO DEL CARRIL (1440px medidos), asi que
+     el paso entre ventanas tiene que valer eso mismo. Con `padding-inline` las
+     ventanas median 1412 y cada cambio de workspace se pasaba 28px: a la
+     tercera pastilla asomaba la ventana siguiente por la derecha. El aire se lo
+     da cada ventana con su margen, que si entra en el paso. */
+  padding: 4.25rem 0 5.25rem;
+  will-change: transform;
+}
+
+:root[data-theme="caelestia"] main[data-cae-track] > * {
+  /* 100% menos el aire de los dos lados; el margen lo devuelve, de modo que
+     ventana + margenes = 100% del carril = un `xPercent` exacto. */
+  flex: 0 0 calc(100% - 1.75rem);
+  max-width: calc(100% - 1.75rem);
+  margin-inline: 0.875rem;
+  height: 100%;
+  /* Las cinco escenas llevan `min-h-screen` (100vh) del marcado compartido, y
+     un `min-height` gana siempre a `height`: dentro del carril las dejaba 152px
+     mas altas que el hueco util, con esos 152px cortados fuera de pantalla y
+     sin barra que los alcanzase. Aqui la ventana manda, y su contenido
+     desplaza dentro. Medido: 900px de escena en un hueco de 748. */
+  min-height: 0;
+  /* La ventana desplaza su contenido. Un escritorio cambia de espacio de un
+     golpe, y la ventana que hay dentro tiene su barra. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 1.25rem;
+  background: var(--cae-elev-1);
+  transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] main[data-cae-track] > *::-webkit-scrollbar {
+  width: 0.5625rem;
+}
+
+:root[data-theme="caelestia"] main[data-cae-track] > *::-webkit-scrollbar-thumb {
+  background: var(--cae-outline);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/*
+ * La barra de workspaces envolvia sus pastillas al estrecharse y crecia con
+ * ello (Tarea 7). El hueco de arriba del carril seguia esos escalones: con el
+ * hueco fijo de escritorio, la barra se comia los primeros pixeles de la
+ * ventana.
+ *
+ * La Tarea 7 midio CUATRO escalones (cortes en 451, 539 y 661) barriendo
+ * 380-1440 con las pastillas llevando NOMBRE. La Tarea 9 (movil, 390x844)
+ * cambio el ancho de las pastillas por debajo de 820px -- se quedan solo con
+ * el numero, ver el bloque `@media (max-width: 51.25rem)` de `.cae-ws` mas
+ * arriba -- y eso invalida los cortes: se volvio a barrer.
+ *
+ * Con pastilla-solo-numero la barra ya NO envuelve en ningun ancho de
+ * 280 a 820px (comprobado punto a punto): un boton de ~24px de numero mas
+ * gap no llena una fila de 5 aunque el viewport sea de 280px. La barra queda
+ * en una sola linea en TODO el rango 380-1440, con el borde inferior siempre
+ * entre 56 y 58px (el margen de +-2px es redondeo de subpixel de los gaps en
+ * rem, no un escalon real). El hueco fijo de escritorio (4.25rem = 68px,
+ * definido en el `padding` base de `main[data-cae-track]` mas arriba) ya le
+ * sobra aire (10 a 12px) en todo el rango: la escalera de tres pasos de la
+ * Tarea 7 quedo sin trabajo que hacer y se retira. Si algun dia una pastilla
+ * vuelve a llevar nombre por debajo de 820px, esta escalera hay que
+ * reconstruirla barriendo de nuevo -- no reactivarla a ciegas con los
+ * numeros viejos, que se midieron para un ancho de pastilla distinto.
+ */
+
+/*
+ * El disparador compartido de navegacion de escenas queda inutil aqui: la
+ * barra del shell ya lleva las cinco escenas como pastillas siempre visibles
+ * (`.cae-ws`). Medido a 1440x900 el disparador (`.scene-nav-trigger`, caja
+ * [1240,0,1392,44], z-index 44) queda debajo de la barra (`.cae-bar`, caja
+ * [14,12,1426,56], z-index 60): `document.elementFromPoint` sobre el
+ * disparador devuelve `cae-bar`. Y forzando el clic tampoco lleva a ningun
+ * sitio: el panel abre, pulsar una fila cambia el hash, pero Caelestia ya no
+ * tiene scroll de pagina (las escenas son un carril horizontal) y el carril
+ * solo responde al evento `caelestia:workspace`, que el panel no emite. Se
+ * ocultan disparador y panel con `display:none` (no `opacity`/`visibility`)
+ * para sacarlos tambien del arbol de accesibilidad: un control enfocable,
+ * invisible y que no hace nada seria peor que quitarlo.
+ */
+:root[data-theme="caelestia"] .scene-nav-trigger,
+:root[data-theme="caelestia"] .scene-index {
+  display: none;
+}
+
+/*
+ * Movimiento reducido: el cambio de espacio de trabajo es INSTANTANEO, no
+ * inexistente. La coreografia ya pone `duration: 0` en el `fromTo` del carril
+ * (`caelestia.choreography.ts`); aqui se apagan las transiciones de CSS que
+ * quedarian por debajo -- el fondo de las ventanas del carril, la barra y el
+ * dock -- para que nada siga interpolando por su cuenta despues del salto.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] main[data-cae-track],
+  :root[data-theme="caelestia"] main[data-cae-track] > *,
+  :root[data-theme="caelestia"] .cae-bar,
+  :root[data-theme="caelestia"] .cae-dock {
+    transition: none;
+  }
 }
 
 /*

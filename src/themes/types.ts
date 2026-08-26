@@ -36,6 +36,26 @@ export interface Theme {
    * aplican las recetas genericas de `utils/reveal.ts`.
    */
   choreography?: () => Promise<Choreography>;
+  /**
+   * La coreografia de este tema no es SOLO movimiento: tambien monta
+   * maquetacion, asi que tiene que correr tambien con
+   * `prefers-reduced-motion: reduce`.
+   *
+   * Por que existe la bandera. `utils/reveal.ts` se saltaba entero el reveal
+   * con movimiento reducido, coreografia incluida. Para Vice y Hyprland eso es
+   * exactamente lo que se pide: su coreografia solo anima. Para Caelestia no:
+   * la suya es quien pone `data-cae-shell="workspaces"`, marca el carril,
+   * aisla con `inert` los workspaces inactivos y mueve el carril. Sin ella,
+   * Caelestia con `reduce` se quedaba como pagina vertical apilada y las
+   * pastillas de la barra no hacian nada visible — y el spec pide que el
+   * cambio de workspace sea INSTANTANEO, no inexistente.
+   *
+   * Es opcional a proposito y solo la declara `caelestia.ts`: al quedar
+   * `undefined` en Vice y Hyprland, su ruta por `reveal.ts` no cambia. La
+   * reduccion del movimiento la hace entonces la propia coreografia (en
+   * Caelestia, `duration: 0`).
+   */
+  choreographyBuildsLayout?: boolean;
   /** Import dinamico: cada visita descarga un shader, no los tres. */
   mountBackground: (container: HTMLElement) => Promise<BackgroundHandle>;
 }
