@@ -22,9 +22,10 @@ import type { Choreography } from "./choreography";
  * Lenis NO interviene aqui: `reveal.ts` solo lo monta para `motion.style ===
  * "cinematic"`, que es Vice. Ver la correccion del 2026-08-20 en el spec.
  *
- * ScrollTrigger tampoco: en Caelestia no hay pins. Se recibe en el contexto
- * porque el contrato es comun a los tres temas, y se usa solo para refrescar
- * al cambiar el tamano de la ventana.
+ * ScrollTrigger tampoco: en Caelestia no hay ni un solo pin ni trigger, asi
+ * que no se destructura del contexto (el contrato es comun a los tres temas,
+ * pero nada obliga a usar cada pieza). El `resize` solo re-fija la posicion
+ * del carril con `gsap.set` — ver el comentario junto a `alRedimensionar`.
  *
  * DOS DUENOS PARA UNA SOLA POSICION, Y UNO NO LO SABIA. El carril lo mueve el
  * `transform` de esta coreografia, pero los workspaces inactivos seguian en el
@@ -56,7 +57,7 @@ import type { Choreography } from "./choreography";
 const DURACION = 0.52;
 const CURVA = "power3.inOut";
 
-export const caelestiaChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
+export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   const escenas = Array.from(root.children).filter(
     (nodo): nodo is HTMLElement => nodo instanceof HTMLElement,
   );
@@ -147,9 +148,14 @@ export const caelestiaChoreography: Choreography = ({ gsap, ScrollTrigger, root 
   };
   document.documentElement.addEventListener("caelestia:workspace", alCambiar);
 
+  // Sin `ScrollTrigger.refresh()`: Caelestia no crea ni un solo ScrollTrigger
+  // (ni pin, ni trigger de ningun tipo), asi que refrescar no tiene nada que
+  // recalcular y solo fuerza un layout forzado en cada evento de `resize` —
+  // en movil eso dispara cada vez que aparece o se retira la barra de
+  // direcciones. Lo unico que hace falta aqui es re-fijar la posicion del
+  // carril. No lo "restaures" pensando que faltaba: es a proposito.
   const alRedimensionar = (): void => {
     gsap.set(root, { xPercent: -100 * actual });
-    ScrollTrigger.refresh();
   };
   window.addEventListener("resize", alRedimensionar);
 
