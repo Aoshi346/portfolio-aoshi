@@ -18,7 +18,21 @@ const CLARO: Record<string, Rol> = {
   "on-surface": [0.245, 0.035],
   "on-surface-variant": [0.47, 0.032],
   "outline": [0.7, 0.022],
-  "primary": [0.505, 0.13],
+  /*
+   * `primary` bajo de 0.505 a 0.450 de claridad. La calibracion original se
+   * hizo contra `surface` (L 0.980), donde 0.505 da 4.87:1 en el peor matiz —
+   * pero la marca y el reloj de la barra NO se pintan sobre `surface`, sino
+   * sobre `elev-2` (= `surface-container-high`, L 0.925), y ahi el mismo par
+   * caia a 4.16:1. Barriendo el dia cada 5 minutos, 55 de 288 muestras por
+   * debajo de AA, todas entre las 07:00 y las 11:35. Con L 0.450 el peor caso
+   * del barrido sube a 5.19:1.
+   *
+   * Bajar esta L solo puede MEJORAR el otro par que la usa (la pastilla
+   * activa, que lleva `primary` de fondo y `on-primary` de texto): medido,
+   * 5.01:1 -> 6.27:1. El esquema OSCURO no se toca, ahi el par ya daba
+   * 6.32:1 en el peor caso.
+   */
+  "primary": [0.45, 0.13],
   "on-primary": [0.99, 0.01],
   "primary-container": [0.895, 0.062],
   "on-primary-container": [0.31, 0.1],

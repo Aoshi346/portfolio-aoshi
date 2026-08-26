@@ -122,7 +122,7 @@ hay que reimplementar HCT ni CAM16.
 | `on-surface` | 0.245 | 0.035 | 0.925 | 0.016 |
 | `on-surface-variant` | 0.470 | 0.032 | 0.795 | 0.024 |
 | `outline` | 0.700 | 0.022 | 0.420 | 0.020 |
-| `primary` | 0.505 | 0.130 | 0.815 | 0.115 |
+| `primary` | 0.450 | 0.130 | 0.815 | 0.115 |
 | `on-primary` | 0.990 | 0.010 | 0.270 | 0.095 |
 | `primary-container` | 0.895 | 0.062 | 0.395 | 0.105 |
 | `on-primary-container` | 0.310 | 0.100 | 0.900 | 0.062 |
@@ -137,6 +137,21 @@ exige el arnes. Con 0.08, el peor caso de un barrido de 24 matices por 5 escalas
 luminancia relativa que usa WCAG (y el arnes) no lo es — se comprime cerca del negro, asi que el
 mismo delta de `L` que separa de sobra en claro (peor caso medido: 0.063) se queda corto en
 oscuro. El esquema claro no se toco: sus deltas ya sobraban.
+
+**`primary` en el esquema claro bajo de 0.505 a 0.450 de claridad**, y por la misma clase de
+error, un escalon mas arriba: el rol se calibro contra `surface` (L 0.980), donde 0.505 da 4.87:1
+en el peor matiz — pero los dos sitios donde `primary` se usa como TEXTO, la marca y el reloj de
+la barra, no se pintan sobre `surface` sino sobre `elev-2` (= `surface-container-high`, L 0.925).
+Ahi el mismo par caia a 4.16:1. Barriendo el dia cada 5 minutos, 55 de 288 muestras por debajo de
+AA, todas entre las 07:00 y las 11:35 — unas 4h40 al dia, y justo en la franja de mas trafico.
+Con L 0.450 el peor caso sube a 5.19:1. El unico otro par que usa el rol es la pastilla activa
+(`primary` de fondo, `on-primary` de texto), y bajar la claridad solo puede mejorarlo: medido,
+5.01:1 -> 6.27:1. El esquema oscuro no se toco (6.32:1 en el peor caso).
+
+La leccion no es el numero: es que el arnes vigilaba `on-surface-variant` sobre `surface-container`
+y **ningun** par con `--cae-primary`, asi que trece aserciones daban verde con el reloj — la pieza
+que este spec pone en el centro del tema — incumpliendo AA media manana. Los pares del arnes
+ahora se derivan de lo que de verdad se pinta, no del nombre del rol.
 
 ### El matiz
 
@@ -156,8 +171,9 @@ el desfase 270 (*amanecer rojo*, la primera elección) la jornada laboral caía 
 | 17:00 | 165° | 96% | teal |
 
 El crema a las 11:00 es exactamente el cliché de fondo que el proyecto rechaza, y caía justo en la
-franja de más tráfico. Con desfase 60, las 11:00 miden `oklch(0.505 0.130 225)` — azul a croma
-pleno, verificado en el navegador.
+franja de más tráfico. Con desfase 60, las 11:00 miden `oklch(0.450 0.130 225)` — azul a croma
+pleno, verificado en el navegador. (La claridad era 0.505 en el diseño original; bajó a 0.450 por
+contraste contra `elev-2`, ver la nota de la tabla de roles.)
 
 ### La marea de croma
 
