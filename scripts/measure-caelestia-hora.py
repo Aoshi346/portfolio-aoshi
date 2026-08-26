@@ -128,18 +128,17 @@ def leer(page, minutos):
             canvas.height = 1;
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
             const out = {};
-            const centinela = '#010203';
             for (const t of tokens) {
               const raw = cs.getPropertyValue(t).trim();
               if (!raw) { out[t] = null; continue; }
-              ctx.fillStyle = centinela;
+              // Indicador dedicado, no una comparacion de valor resultante:
+              // `CSS.supports('color', raw)` es el parser real del
+              // navegador diciendo si la cadena es un color valido, asi que
+              // no puede colisionar con ningun color legitimo (a diferencia
+              // de comparar `fillStyle` contra un centinela como '#010203',
+              // que un rol futuro podria alcanzar de verdad).
+              if (!CSS.supports('color', raw)) { out[t] = null; continue; }
               ctx.fillStyle = raw;
-              if (ctx.fillStyle === centinela) {
-                // fillStyle no acepto el valor y se quedo con el centinela:
-                // el token esta vacio o el color no parsea.
-                out[t] = null;
-                continue;
-              }
               ctx.fillRect(0, 0, 1, 1);
               const d = ctx.getImageData(0, 0, 1, 1).data;
               out[t] = [d[0], d[1], d[2]];
@@ -478,6 +477,15 @@ def main():
         ctx.close()
 
         # ---- 13. el foco es visible y usa el ancla
+        #
+        # Antes solo leia `outlineStyle`, y eso da verde con un anillo de
+        # anchura 0 (invisible) o de cualquier color: demostrado inyectando
+        # `:focus-visible { outline-width: 0 }`, el anillo desaparece de la
+        # pantalla y la version vieja de esta asercion seguia en verde. Ahora
+        # comprueba las tres cosas que promete el titulo: que el contorno
+        # existe, que tiene anchura real, y que su color es el del ancla
+        # (`--cae-anchor`) -- resuelto por el propio navegador via canvas 2D
+        # para no comparar cadenas oklch()/rgb() con distinta notacion.
         ctx = nav.new_context(viewport={"width": 1440, "height": 900})
         page = ctx.new_page()
         page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
@@ -485,10 +493,49 @@ def main():
         page.keyboard.press("Tab")
         page.keyboard.press("Tab")
         contorno = page.evaluate(
-            "() => { const e = document.activeElement; return e ? getComputedStyle(e).outlineStyle : null }"
+            """() => {
+                const e = document.activeElement;
+                if (!e) return null;
+                const cs = getComputedStyle(e);
+                const anclaRaw = getComputedStyle(document.documentElement)
+                  .getPropertyValue('--cae-anchor').trim();
+                const canvas = document.createElement('canvas');
+                canvas.width = 1; canvas.height = 1;
+                const c2d = canvas.getContext('2d', { willReadFrequently: true });
+                const bytesDe = (raw) => {
+                  if (!raw || !CSS.supports('color', raw)) return null;
+                  c2d.fillStyle = raw;
+                  c2d.fillRect(0, 0, 1, 1);
+                  return Array.from(c2d.getImageData(0, 0, 1, 1).data.slice(0, 3));
+                };
+                return {
+                  style: cs.outlineStyle,
+                  width: cs.outlineWidth,
+                  colorBytes: bytesDe(cs.outlineColor),
+                  anclaBytes: bytesDe(anclaRaw),
+                };
+            }"""
         )
-        if contorno in (None, "none"):
-            fallos.append("el elemento con foco no tiene contorno visible")
+        if contorno is None:
+            fallos.append("no hay elemento con foco tras dos Tab")
+        else:
+            if contorno["style"] in (None, "none"):
+                fallos.append("el elemento con foco no tiene contorno")
+            if contorno["width"] in (None, "0px"):
+                fallos.append("el contorno de foco tiene anchura 0 (invisible)")
+            cb, ab = contorno["colorBytes"], contorno["anclaBytes"]
+            if not cb or not ab:
+                fallos.append("no se pudo resolver el color del contorno o del ancla")
+            else:
+                # Tolerancia en sRGB (no igualdad de cadena): el navegador
+                # puede devolver outline-color y --cae-anchor en notaciones
+                # distintas (oklch/rgb) para el mismo color percibido.
+                dist = sum((a - b) ** 2 for a, b in zip(cb, ab)) ** 0.5
+                if dist > 12:
+                    fallos.append(
+                        "el contorno de foco no usa el color del ancla: %s vs %s (dist %.1f)"
+                        % (cb, ab, dist)
+                    )
         ctx.close()
 
         nav.close()
