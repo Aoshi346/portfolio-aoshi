@@ -3916,6 +3916,26 @@
 }
 
 /*
+ * A 390/430px `.hero-corner` (pie de la ventana: "Caracas, Venezuela" +
+ * correo) cae mas abajo que en escritorio, y el `bottom: 5.5rem` de la
+ * regla base dejaba la notificacion tapando la linea de ubicacion entera y
+ * rozando el enlace de correo (medido). No bloquea nada pulsable
+ * (`pointer-events: none` en la regla base), pero tapa contenido igual.
+ *
+ * Esta regla va DESPUES de la base a proposito, no en el primer bloque
+ * `@media (max-width: 51.25rem)` de mas arriba: con la misma especificidad,
+ * gana quien aparece ultimo en el fichero, y la base (sin condicion) esta
+ * despues de aquel bloque — un `bottom` puesto ahi nunca llegaba a pintarse
+ * (comprobado: la version anterior de este arreglo vivia alli y no hacia
+ * nada, media exactamente el `bottom: 5.5rem` de la base).
+ */
+@media (max-width: 51.25rem) {
+  :root[data-theme="caelestia"] .cae-toast {
+    bottom: 4.5rem;
+  }
+}
+
+/*
  * El carril de workspaces. La pagina deja de desplazar en vertical: las cinco
  * escenas van en fila y lo que se mueve es el carril.
  *
