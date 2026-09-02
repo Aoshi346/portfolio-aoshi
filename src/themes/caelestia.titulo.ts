@@ -100,6 +100,10 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
   const cursor = hero?.querySelector<HTMLElement>(".cae-term-cursor") ?? null;
   const trazo = hero?.querySelector<SVGSVGElement>(".cae-trazo") ?? null;
   const firma = hero?.querySelector<HTMLElement>(".cae-firma") ?? null;
+  const regla = hero?.querySelector<HTMLElement>(".cae-regla") ?? null;
+  const meta = hero?.querySelector<HTMLElement>(".cae-meta") ?? null;
+  const lineas = hero ? Array.from(hero.querySelectorAll<HTMLElement>(".cae-ln")) : [];
+  const bloques = hero ? Array.from(hero.querySelectorAll<HTMLElement>(".cae-statcol > div")) : [];
   if (!term || !typed || !cursor || !trazo || !firma) return NULO;
 
   const paths = Array.from(trazo.querySelectorAll<SVGPathElement>("path"));
@@ -179,7 +183,110 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
     gsap.to(firma, { opacity: 1, duration: 0.2, delay: 0.56, ease: "power2.out" });
   });
 
+  // 8. La regla se abre y la meta entra detras de ella.
+  if (regla) tl.fromTo(regla, { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out" });
+  if (meta) {
+    tl.fromTo(
+      meta,
+      { opacity: 0, x: -8 },
+      { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" },
+      regla ? "<" : undefined,
+    );
+  }
+
+  // 9. Barrido de tinta: cada linea del titular se descubre de izquierda a
+  // derecha, como si se pasara un pincel.
+  if (lineas.length > 0) {
+    tl.fromTo(
+      lineas,
+      { clipPath: "inset(0 100% 0 0)" },
+      { clipPath: "inset(0 0% 0 0)", duration: 0.72, ease: "power2.inOut", stagger: 0.11 },
+    );
+  }
+
+  // 10. Volteo de las cifras: cada bloque cae de boca abajo, en el eje X, con
+  // perspectiva propia para que se note el giro.
+  if (bloques.length > 0) {
+    gsap.set(bloques, { transformPerspective: 600 });
+    tl.fromTo(
+      bloques,
+      { opacity: 0, rotateX: -82, y: 6 },
+      { opacity: 1, rotateX: 0, y: 0, duration: 0.6, ease: "power3.out", stagger: 0.09 },
+    );
+  }
+
   return {
     destroy: () => tl.kill(),
   };
+}
+
+const ROCE_SELECTOR = ".cae-widget, .cae-statcol > div, .cae-ws, .cae-dock-item";
+
+/**
+ * El roce: el fondo se aparta y el elemento se levanta un poco cuando el
+ * puntero pasa por encima de un pulsable clave. Vive FUERA de la timeline de
+ * `montarEntrada` — es un gesto continuo de interaccion, no de entrada.
+ *
+ * DELEGADO EN `document`, no un `addEventListener` por elemento. `.cae-ws`
+ * (las pastillas de la barra) y `.cae-dock-item` NO cuelgan de `root` (el
+ * `<main>` de esta coreografia): `mountCaelestiaShell` los cuelga de `#app`,
+ * un hermano de `<main>`, y llega por su PROPIO `import()` dinamico en
+ * `main.ts` — una carrera distinta a la de `caelestiaChoreography`, sin orden
+ * garantizado entre las dos. Un `querySelectorAll(root)` snapshot tomado
+ * aqui puede correr antes de que el shell exista todavia y se quedaria sin
+ * pastillas ni dock para siempre. Delegar en `document` con `pointerover` /
+ * `pointerout` (que SI burbujean — `pointerenter`/`pointerleave` no) evita la
+ * carrera: no importa cuando aparezca el nodo, el oyente ya esta puesto.
+ *
+ * Sin `destroy()`: mismo patron que el resto de `caelestia.choreography.ts`
+ * (ver su comentario final "Sin destroy() propio" — `Choreography` devuelve
+ * `void` y ningun tema de este proyecto tiene mecanismo de limpieza).
+ */
+export function montarRoce(gsap: Gsap, root: HTMLElement): void {
+  let activo: HTMLElement | null = null;
+
+  const salirDe = (el: HTMLElement): void => {
+    const lienzo = document.querySelector<HTMLCanvasElement>("canvas");
+    // `clearProps: "transform"` (no solo x/y a 0) porque un `matrix(1, 0, 0,
+    // 1, 0, 0)` no es lo mismo que "sin tocar": el lienzo debe volver al
+    // `transform: none` de reposo, no a un identity matrix inline.
+    if (lienzo) {
+      gsap.to(lienzo, { x: 0, y: 0, duration: 0.7, ease: "power3.out", clearProps: "transform" });
+    }
+    gsap.to(el, { y: 0, duration: 0.3, ease: "power3.out", clearProps: "transform" });
+  };
+
+  const entrarEn = (el: HTMLElement): void => {
+    const lienzo = document.querySelector<HTMLCanvasElement>("canvas");
+    if (!lienzo) return;
+    const ventana = root.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const dx = (r.left + r.width / 2 - (ventana.left + ventana.width / 2)) / (ventana.width / 2);
+    const dy = (r.top + r.height / 2 - (ventana.top + ventana.height / 2)) / (ventana.height / 2);
+    gsap.to(lienzo, { x: -dx * 14, y: -dy * 10, duration: 0.7, ease: "power3.out" });
+    gsap.to(el, { y: -2, duration: 0.3, ease: "power3.out" });
+  };
+
+  const alPasar = (evento: PointerEvent): void => {
+    const diana =
+      evento.target instanceof Element ? evento.target.closest<HTMLElement>(ROCE_SELECTOR) : null;
+    if (diana === activo) return;
+    if (activo) salirDe(activo);
+    activo = diana;
+    if (activo) entrarEn(activo);
+  };
+
+  // Si el puntero sale del documento entero (relatedTarget nulo) sin pasar
+  // por otra diana, `alPasar` nunca se dispara para "apagar" el gesto:
+  // segunda red, igual que `pg.mouse.move(2, 2)` en el arnes.
+  const alSalirDelDocumento = (evento: PointerEvent): void => {
+    if (evento.relatedTarget) return;
+    if (activo) {
+      salirDe(activo);
+      activo = null;
+    }
+  };
+
+  document.addEventListener("pointerover", alPasar);
+  document.addEventListener("pointerout", alSalirDelDocumento);
 }

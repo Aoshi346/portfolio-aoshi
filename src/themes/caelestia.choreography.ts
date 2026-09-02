@@ -1,5 +1,5 @@
 import type { Choreography } from "./choreography";
-import { montarEntrada, montarTitulo } from "./caelestia.titulo";
+import { montarEntrada, montarRoce, montarTitulo } from "./caelestia.titulo";
 
 /**
  * La coreografia de Caelestia: las cinco escenas dejan de apilarse en vertical
@@ -138,6 +138,13 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   // esta coreografia (ver el comentario "Sin destroy() propio" al final del
   // fichero) — el handle que devuelve existe para tests/composicion futura.
   montarEntrada(gsap, root);
+
+  // El roce (tarea 7): el fondo se aparta y el elemento se levanta al pasar
+  // el raton por encima del widget, las cifras, las pastillas de la barra o
+  // el dock. Sin `destroy()` propio por el mismo motivo que el resto de esta
+  // coreografia — ver el comentario "Sin destroy() propio" al final del
+  // fichero, y el docstring de `montarRoce` en caelestia.titulo.ts.
+  montarRoce(gsap, root);
 
   /*
    * Fase de CAPTURA: los eventos de scroll no burbujean, asi que un oyente en

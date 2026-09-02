@@ -31,15 +31,32 @@ def assert_que(cond: bool, etiqueta: str) -> None:
 
 
 def abrir(pg, base: str, hora: str | None = None) -> None:
-    """Carga Caelestia. `hora` en HH:MM congela el reloj del visitante."""
+    """Carga Caelestia. `hora` en HH:MM ancla el reloj del visitante a esa hora.
+
+    NO es una foto fija de un solo instante: `Date.now()` sigue avanzando en
+    tiempo real desde ese ancla. Congelarlo del todo (un `Date.now()`
+    constante) rompe GSAP -- su ticker mide el tiempo transcurrido como
+    `Date.now() - _lastUpdate` (`node_modules/gsap/dist/gsap.js:1205`), asi
+    que con el reloj parado ese delta es siempre 0 y NINGUNA animacion avanza
+    nunca, en ninguna pagina abierta con `hora`. Se descubrio con `roce()`
+    (tarea 7): el lienzo no se movia ni con `pg.hover()` ni disparando un
+    `PointerEvent` a mano dentro de la pagina -- ni la propia timeline de
+    `montarEntrada` avanzaba, solo que nadie lo habia comprobado antes porque
+    los tests previos solo miran el estado INICIAL o el de movimiento
+    reducido (que se salta GSAP entero). Ancorar y dejar avanzar mantiene la
+    hora estable para lo que dura un test (segundos) sin parar el reloj que
+    GSAP necesita.
+    """
     if hora is not None:
         hh, mm = (int(x) for x in hora.split(":"))
         pg.add_init_script(
             "(() => { const R = Date;"
-            f" const fijo = new R(2026, 7, 26, {hh}, {mm}, 0);"
+            " const inicioReal = R.now();"
+            f" const inicioAncla = new R(2026, 7, 26, {hh}, {mm}, 0).getTime();"
             " class F extends R {"
-            "   constructor(...a){ return a.length ? new R(...a) : new R(fijo); }"
-            "   static now(){ return fijo.getTime(); } }"
+            "   constructor(...a){"
+            "     return a.length ? new R(...a) : new R(inicioAncla + (R.now() - inicioReal)); }"
+            "   static now(){ return inicioAncla + (R.now() - inicioReal); } }"
             " window.Date = F; })()"
         )
     pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
@@ -269,6 +286,20 @@ def entrada(pg, base: str) -> None:
     ctx.close()
 
 
+def roce(pg, base: str) -> None:
+    print("\n[roce] el fondo se aparta al pasar el raton")
+    abrir(pg, base, "13:00")
+    antes = pg.evaluate("() => getComputedStyle(document.querySelector('canvas')).transform")
+    pg.hover("#hero .cae-widget")
+    pg.wait_for_timeout(900)
+    durante = pg.evaluate("() => getComputedStyle(document.querySelector('canvas')).transform")
+    assert_que(antes != durante, f"el lienzo se desplaza con el raton encima ({antes!r} -> {durante!r})")
+    pg.mouse.move(2, 2)
+    pg.wait_for_timeout(1100)
+    despues = pg.evaluate("() => getComputedStyle(document.querySelector('canvas')).transform")
+    assert_que(despues == antes, "y vuelve a su sitio al salir")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -287,6 +318,7 @@ def main() -> int:
         firma_y_cifras(pg, args.base)
         widget(pg, args.base)
         entrada(pg, args.base)
+        roce(pg, args.base)
 
         print("\n[consola] la pagina no tira errores")
         assert_que(not errores, f"cero errores de consola ({errores[:2]})")
