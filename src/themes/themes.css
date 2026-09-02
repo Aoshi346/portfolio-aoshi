@@ -1951,6 +1951,12 @@
   }
 }
 
+/* La ficha de Caelestia viaja en los tres temas y se envia oculta: solo la
+   pinta `:root[data-theme="caelestia"]`. Patron aditivo estricto. */
+[data-ficha="neofetch"] {
+  display: none;
+}
+
 /*
   "Quien soy" en Hyprland es LA PLACA (justo debajo). Las reglas de este tema
   para el bloque de afirmacion y prueba, la ficha, la franja de cifras y la
