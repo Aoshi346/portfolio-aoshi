@@ -291,11 +291,16 @@ def main() -> int:
         for texto in textos:
             piezas.extend(p.strip() for p in re.split(r"\s+·\s+", texto) if p.strip())
         # `Desde <cifra>` es la unica composicion de este modulo: el rotulo lo
-        # pone la ficha y la cifra sale de `stats`. Se exime el prefijo, no la
-        # cifra — sin esto habria que meter "Desde 2021" en content.ts, que es
-        # inventarse un campo para contentar al gate.
+        # pone la ficha y la cifra sale de `stats`. Se exime EL PREFIJO Y SOLO
+        # EL PREFIJO: se le quita "Desde " a la pieza y se compara lo que
+        # queda, que es la cifra.
+        #
+        # Con `not p.startswith("Desde ")` —que es como estaba— la exencion se
+        # comia la pieza ENTERA: `Desde 1492` (literal inventado, confirmado en
+        # el bundle) salia en verde. Justo la clase de dato falso que este gate
+        # existe para cazar.
         comprobar(len(piezas) >= 12, f"el gate ve texto de la ficha ({len(piezas)} piezas)")
-        huerfanos = [p for p in piezas if p not in fuente and not p.startswith("Desde ")]
+        huerfanos = [p for p in piezas if p.removeprefix("Desde ") not in fuente]
         comprobar(not huerfanos, f"todo texto sale de content.ts (huerfanos: {huerfanos})")
 
         print("\n[8] Los ejes del shell no se han movido")
@@ -305,12 +310,23 @@ def main() -> int:
         # (opsz 144). Reutilizar un token para los dos es el fallo que B1 vino
         # a cerrar.
         #
-        # El display del shell se lee en el `h1`, NO en `.cae-mark`. La marca
-        # de la barra es Martian Mono y no lleva ejes variables: medida,
-        # devuelve `normal` siempre, asi que una asercion sobre ella no vigila
-        # el opsz del shell — habla de otro elemento y de otra familia. De la
-        # marca solo se comprueba lo que si es suyo: que sigue siendo la mono
-        # del shell y no se la ha arrastrado al display de la ficha.
+        # NO se lee en `.cae-mark`: la marca de la barra es Martian Mono y no
+        # lleva ejes variables — medida, devuelve `normal` siempre, asi que una
+        # asercion sobre ella no vigila el opsz de nada. De la marca solo se
+        # comprueba lo que si es suyo: que sigue siendo la mono del shell.
+        #
+        # Se lee en el PRIMER `h1` de la pagina, que hoy es el del hero. Ojo
+        # con la etiqueta: ese `h1` NO es "el display del shell", es un
+        # consumidor cualquiera de `--cae-display-axes` (la regla que se lo da
+        # es `[data-display], h1, h2`). Y es fragil: en `main` ya hay un
+        # segundo `h1` (`.cae-tit`, de B1), asi que tras el merge este
+        # `querySelector` puede acabar mirando otro nodo.
+        #
+        # Por eso la asercion ROBUSTA de las tres es la que compara los dos
+        # TOKENS entre si: no depende de que nodo se elija, y es la que dice
+        # literalmente lo que la fase B1 vino a cerrar (dos tokens, nunca uno
+        # reutilizado). Las otras dos son la comprobacion de que los tokens,
+        # ademas de existir, llegan pintados a donde tienen que llegar.
         ejes = pagina.evaluate("""() => {
             const cs = getComputedStyle(document.documentElement);
             const marca = document.querySelector('.cae-mark');
@@ -322,14 +338,17 @@ def main() -> int:
                 tokenCartel: cs.getPropertyValue('--cae-display-axes-cartel').trim(),
             };
         }""")
-        print(f"       shell {ejes['shell']} · nombre {ejes['nombre']}")
+        print(f"       primer h1 {ejes['shell']} · nombre de la ficha {ejes['nombre']}")
         print(f"       tokens: shell {ejes['tokenShell']!r} · cartel {ejes['tokenCartel']!r}")
         comprobar('"opsz" 9' in ejes["shell"],
-                  f"el display del shell sigue en opsz 9 ({ejes['shell']})")
-        comprobar('"opsz" 144' in ejes["nombre"], f"el nombre usa opsz 144 ({ejes['nombre']})")
-        # Dos tokens, nunca uno reutilizado: si alguien apunta el cartel al
-        # token del shell, las dos aserciones de arriba se caen — pero esta lo
-        # dice por su nombre en vez de dejarlo deducir.
+                  f"el primer h1 de la pagina (hoy, el del hero) sigue en opsz 9 "
+                  f"({ejes['shell']})")
+        comprobar('"opsz" 144' in ejes["nombre"],
+                  f"el nombre de la ficha usa opsz 144 ({ejes['nombre']})")
+        # La asercion robusta: dos tokens, nunca uno reutilizado. Si alguien
+        # apunta el cartel al token del shell, las dos de arriba se caen
+        # tambien — pero esta lo dice por su nombre, y sigue valiendo aunque el
+        # `querySelector('h1')` acabe eligiendo otro nodo tras el merge de B1.
         comprobar(ejes["tokenShell"] != ejes["tokenCartel"] and ejes["tokenCartel"] != "",
                   f"cartel y shell son tokens distintos ({ejes['tokenCartel']!r})")
         comprobar("Martian" in ejes["marcaFamilia"],
