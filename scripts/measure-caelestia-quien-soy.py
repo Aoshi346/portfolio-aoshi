@@ -155,6 +155,24 @@ def main() -> int:
                   f"el pseudo-elemento .ficha-k::before no anima bajo reduce ({pseudo['duracion']})")
         contexto_reduce.close()
 
+        print("\n[4] El retrato morfa, no corta")
+        pagina.evaluate("""() => {
+            window.__morf = [];
+            const img = document.querySelector('[data-ficha-retrato] img');
+            const tic = () => {
+                window.__morf.push(getComputedStyle(img).clipPath);
+                if (window.__morf.length < 90) requestAnimationFrame(tic);
+            };
+            requestAnimationFrame(tic);
+        }""")
+        # Hover REAL: un MouseEvent sintetico no dispara `:hover`.
+        pagina.hover("[data-ficha-retrato]")
+        pagina.wait_for_timeout(1400)
+        estados = len(set(pagina.evaluate("window.__morf")))
+        # Umbral 4 y no 9: un umbral pegado a la medida mide la carga de la
+        # maquina, no el diseno. Sin transicion salen exactamente 2.
+        comprobar(estados >= 4, f"el clip-path recorre estados intermedios ({estados})")
+
         comprobar(not errores, f"consola sin errores ({len(errores)})")
         navegador.close()
 
