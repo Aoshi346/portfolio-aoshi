@@ -100,7 +100,11 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
     const origen = actual;
     actual = destino;
     aislarInactivos(destino);
-    if (ficha && destino === indiceFicha) ficha.reproducir();
+    // Solo al ENTRAR en su workspace, no al pulsar la pastilla del que ya
+    // esta delante: no vuelves a abrir la aplicacion en la que ya estas, y
+    // sin ningun affordance que prometa repeticion, 2,6 s de tecleo donde ya
+    // estabas se lee como parpadeo. No es un caso que falte: es el arreglo.
+    if (ficha && destino === indiceFicha && destino !== origen) ficha.reproducir();
     anclarDocumento();
     // fromTo con los dos extremos escritos a mano: `gsap.from` esta prohibido
     // en este proyecto y ya provoco tres regresiones reales.

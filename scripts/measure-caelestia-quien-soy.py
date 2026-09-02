@@ -173,6 +173,26 @@ def main() -> int:
         comprobar(abs(filete["texto"] - filete["regla"]) <= 2,
                   f"el filete mide el largo del texto ({filete['regla']} vs {filete['texto']})")
 
+        print("\n[3b] Volver a pulsar la pastilla activa no relanza la entrada")
+        # Barata y con poder de deteccion: la escena ya esta aterrizada (el
+        # gate 3 espero a que el filete se asentara), asi que un relanzamiento
+        # se delata solo — `reproducir()` pone el comando a "" y el filete a 0
+        # en su primer fotograma. Se lee a los 400 ms: dentro del tecleo
+        # (0.34-0.78 s) y muy lejos de los 2.02 s en que el filete volveria a
+        # estar entero, asi que un relanzamiento NO puede colarse como verde.
+        pagina.click('[data-cae-ws="quien-es"]')
+        pagina.wait_for_timeout(400)
+        repeticion = pagina.evaluate("""() => ({
+            comando: document.querySelector('[data-ficha-cmd]').textContent,
+            regla: Math.round(document.querySelector('[data-ficha-regla]').getBoundingClientRect().width),
+        })""")
+        print(f"       tras repulsar: comando {repeticion['comando']!r} "
+              f"\u00b7 filete {repeticion['regla']} px")
+        comprobar(repeticion["comando"] == "neofetch",
+                  f"el comando no se vuelve a teclear ({repeticion['comando']!r})")
+        comprobar(repeticion["regla"] > 0,
+                  f"el filete no vuelve a cero ({repeticion['regla']})")
+
         print("\n[6] Movimiento reducido: el pseudo-elemento de la fila tambien se apaga")
         # `*` NO alcanza pseudo-elementos: el guard de arriba
         # ([data-ficha="neofetch"] *) deja fuera a `.ficha-k::before` (la
