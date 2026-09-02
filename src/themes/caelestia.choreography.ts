@@ -92,6 +92,25 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
     });
   };
 
+  /*
+   * La ficha de «Quien soy» se lanza cuando SU workspace se activa, no al
+   * cargar: es una aplicacion arrancando, y arranca cuando la abres. Se monta
+   * una sola vez; `reproducir()` es lo que se repite.
+   *
+   * `gsap` sale del contexto de esta coreografia y se le pasa por parametro:
+   * el modulo NO importa `gsap` por su cuenta.
+   *
+   * VA ANTES DE `irA` A PROPOSITO. `irA` lo lee, y con las declaraciones mas
+   * abajo la unica razon de que hoy funcione es que `irA` solo se invoca desde
+   * el oyente, que se registra despues: una TDZ armada esperando a que alguien
+   * añada un deep-link por hash y llame a `irA()` durante la inicializacion.
+   * Eso reventaria con `ReferenceError` SOLO en el navegador, que es el modo
+   * de fallo mas caro de este proyecto. Declarado arriba, no puede pasar.
+   */
+  const escenaFicha = escenas.find((escena) => escena.querySelector('[data-ficha="neofetch"]'));
+  const ficha = escenaFicha ? montarFicha(gsap, escenaFicha) : null;
+  const indiceFicha = escenaFicha ? escenas.indexOf(escenaFicha) : -1;
+
   const irA = (indice: number): void => {
     const destino = Math.max(0, Math.min(indice, escenas.length - 1));
     // El extremo de partida es la posicion ACTUAL, capturada antes de
@@ -123,19 +142,6 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   // Estado inicial explicito, sin leer el DOM.
   gsap.set(root, { xPercent: 0 });
   aislarInactivos(0);
-
-  /*
-   * La ficha de «Quien soy» se lanza cuando SU workspace se activa, no al
-   * cargar: es una aplicacion arrancando, y arranca cuando la abres. Se monta
-   * una sola vez; `reproducir()` es lo que se repite.
-   *
-   * `gsap` sale del contexto de esta coreografia y se le pasa por parametro:
-   * el modulo NO importa `gsap` por su cuenta.
-   */
-  const escenaFicha = escenas.find((escena) => escena.querySelector('[data-ficha="neofetch"]'));
-  const ficha = escenaFicha ? montarFicha(gsap, escenaFicha) : null;
-  const indiceFicha = escenaFicha ? escenas.indexOf(escenaFicha) : -1;
-
   anclarDocumento();
 
   /*

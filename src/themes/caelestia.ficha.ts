@@ -43,6 +43,17 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
   // con el parametro, que es un valor con el mismo nombre.
   let linea: ReturnType<Gsap["timeline"]> | null = null;
   let latido: ReturnType<Gsap["fromTo"]> | null = null;
+  /*
+   * Si la ficha ya esta PUESTA. No basta con mirar `linea`: antes de la
+   * primera entrada es `null`, asi que una condicion `!linea || !linea.isActive()`
+   * da verdadero con la escena aun sin abrir y pinta el filete por adelantado
+   * (medido: un `resize` la llevaba de 0 a 249 sin haber pulsado nada). Y al
+   * reves, bajo `prefers-reduced-motion` no hay timeline y la ficha SI esta
+   * puesta. Solo una bandera propia dice la verdad en los dos casos.
+   */
+  let aterrizada = false;
+  /** El modulo sigue vivo: corta las promesas en vuelo tras `destroy()`. */
+  let vivo = true;
 
   /*
    * El filete del largo EXACTO del correo, como hace neofetch con
@@ -73,6 +84,15 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
   const reproducir = (): void => {
     if (linea) linea.kill();
     if (latido) latido.kill();
+    latido = null;
+    aterrizada = false;
+    /*
+     * El latido deja el cursor del prompt final en cualquier punto de su yoyo
+     * (medido: 0.83). Matarlo NO restablece la opacidad, asi que sin esto una
+     * entrada nueva corre 2,6 s con el cursor congelado en una opacidad
+     * rancia que no significa nada.
+     */
+    gsap.set(cursorFinal, { opacity: 1 });
     const ancho = anchoDelTexto();
 
     if (reduce) {
@@ -83,6 +103,7 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
       comando.textContent = COMANDO;
       cursor.style.opacity = "0";
       regla.style.width = `${ancho}px`;
+      aterrizada = true;
       return;
     }
 
@@ -90,6 +111,7 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
     // fromTo con los dos extremos escritos a mano: `gsap.from` esta prohibido.
     const tl = gsap.timeline({
       onComplete: () => {
+        aterrizada = true;
         latido = gsap.fromTo(
           cursorFinal,
           { opacity: 1 },
@@ -134,19 +156,35 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
   };
 
   /*
-   * El filete se remide al redimensionar: el ancho del texto cambia con el
-   * tamano de fuente, y un filete congelado en el ancho de otra ventana miente
-   * justo sobre lo que viene a decir.
+   * El filete se remide cuando el ancho del texto puede haber cambiado: el
+   * ancho depende del tamano de fuente, y un filete congelado en la medida de
+   * otra ventana miente justo sobre lo que viene a decir.
+   *
+   * Solo si la ficha ya esta aterrizada: durante la entrada el ancho lo
+   * gobierna la timeline y escribirlo aqui la pisaria; antes de la entrada no
+   * hay nada que remedir y pintarlo seria adelantar el gesto.
    */
-  const alRedimensionar = (): void => {
-    if (!linea || !linea.isActive()) regla.style.width = `${anchoDelTexto()}px`;
+  const remedirFilete = (): void => {
+    if (aterrizada) regla.style.width = `${anchoDelTexto()}px`;
   };
-  window.addEventListener("resize", alRedimensionar);
-  limpiadores.push(() => window.removeEventListener("resize", alRedimensionar));
+  window.addEventListener("resize", remedirFilete);
+  limpiadores.push(() => window.removeEventListener("resize", remedirFilete));
+
+  /*
+   * Y cuando aterriza la webfont. Martian Mono viene de Google Fonts: si llega
+   * DESPUES de que el visitante abra «Quien soy» —red lenta, cache fria— el
+   * filete se habria medido contra la fuente de reserva y se quedaria mintiendo
+   * sobre el largo del correo, que es lo unico que promete no hacer.
+   * `document.fonts.ready` no se puede desuscribir, de ahi la bandera `vivo`.
+   */
+  void document.fonts.ready.then(() => {
+    if (vivo) remedirFilete();
+  });
 
   return {
     reproducir,
     destroy: () => {
+      vivo = false;
       if (linea) linea.kill();
       if (latido) latido.kill();
       for (const limpiar of limpiadores) limpiar();
