@@ -1951,12 +1951,6 @@
   }
 }
 
-/* La ficha de Caelestia viaja en los tres temas y se envia oculta: solo la
-   pinta `:root[data-theme="caelestia"]`. Patron aditivo estricto. */
-[data-ficha="neofetch"] {
-  display: none;
-}
-
 /*
   "Quien soy" en Hyprland es LA PLACA (justo debajo). Las reglas de este tema
   para el bloque de afirmacion y prueba, la ficha, la franja de cifras y la
@@ -3537,6 +3531,10 @@
 
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
   --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
+  /* El eje de cartel, a `opsz 144`: lo usan los titulares grandes (B1, y aqui
+     el nombre de la ficha). Token propio, nunca se reutiliza `--cae-display-axes`
+     ampliado — a `opsz 9` escalado sale romo. */
+  --cae-display-axes-cartel: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
 
   --radius-card: 22px;
   --display-tracking: -0.03em;
@@ -3632,6 +3630,322 @@
 :root[data-theme="caelestia"] :focus-visible {
   outline: 2px solid var(--cae-anchor);
   outline-offset: 3px;
+}
+
+/*
+  LA FICHA DEL SISTEMA — el dispositivo de «Quien soy» en Caelestia.
+
+  La escena es la salida de `neofetch`: el comando que un escritorio ejecuta
+  para decir que maquina es esta. B1 abre con `whoami`, que pregunta quien
+  eres; este pregunta que maquina eres.
+
+  La desviacion deliberada: el NOMBRE ocupa el sitio donde neofetch imprime el
+  titulo de la distribucion y es lo unico que NO va en monoespaciada. Sin el,
+  la convencion de terminal deja todas las lineas pesando igual y la escena no
+  tiene un primero.
+*/
+:root[data-theme="caelestia"] [data-ficha="neofetch"] {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 3.25rem 3.5rem;
+  font-family: "Martian Mono", ui-monospace, monospace;
+  color: var(--cae-on-surface);
+}
+
+/* La escena vieja se retira entera bajo Caelestia: la ficha dice todo esto y
+   mejor. No se borran del DOM — Vice e Hyprland las siguen usando. */
+:root[data-theme="caelestia"] .about-card,
+:root[data-theme="caelestia"] .about-stats,
+:root[data-theme="caelestia"] .about-track,
+:root[data-theme="caelestia"] .about-pairs,
+:root[data-theme="caelestia"] .about-body > [data-line],
+:root[data-theme="caelestia"] [data-scene="about"] .hero-kick {
+  display: none;
+}
+
+/* La seccion trae `px-6 py-24` y `min-h-screen` del marcado compartido. Sin
+   neutralizarlo, el aire que se mide no es el de la ficha: es el de la
+   maquetacion que esta fase viene a sustituir (medido: 96 px de relleno). */
+:root[data-theme="caelestia"] [data-scene="about"] {
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  display: block;
+}
+
+:root[data-theme="caelestia"] [data-scene="about"] .about-grid,
+:root[data-theme="caelestia"] [data-scene="about"] .about-body {
+  display: contents;
+}
+
+/* La linea de comando se queda: la terminal no desaparece cuando imprime. */
+:root[data-theme="caelestia"] .ficha-cmd-linea {
+  margin: 0 0 2.1rem;
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .ficha-cmd-fin {
+  margin: 2.1rem 0 0;
+}
+
+:root[data-theme="caelestia"] .ficha-prompt {
+  color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .ficha-cmd {
+  font-weight: 400;
+}
+
+:root[data-theme="caelestia"] .ficha-cursor {
+  font-style: normal;
+}
+
+:root[data-theme="caelestia"] .ficha-cuerpo {
+  display: grid;
+  grid-template-columns: 312px 1fr;
+  gap: 4.25rem;
+  align-items: center;
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+:root[data-theme="caelestia"] .ficha-arte {
+  display: flex;
+  justify-content: center;
+}
+
+/* El nombre, a `opsz 144`. `opsz` en Fraunces NO es estilo: la fuente trae
+   dibujos distintos segun el tamano al que se lea, y `opsz 9` — el del shell —
+   ampliado sale romo. Es la leccion de B1. */
+:root[data-theme="caelestia"] .ficha-nombre {
+  margin: 0 0 0.5rem;
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: 3.35rem;
+  line-height: 0.95;
+  letter-spacing: -0.018em;
+  white-space: nowrap;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .ficha-id {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+/* La cabecera del comando es el correo, y es pulsable: la via de contacto
+   principal y la unica parada de tabulador legitima de la escena. */
+:root[data-theme="caelestia"] .ficha-host {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: var(--cae-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.18s ease;
+}
+
+:root[data-theme="caelestia"] .ficha-host:hover {
+  border-bottom-color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .ficha-host:focus-visible {
+  outline: 2px solid var(--cae-anchor);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* La disponibilidad se dice como la dice el sistema: punto de azufre y texto,
+   igual que `.cae-avail` / `.cae-dot` en la barra. Una pastilla rellena es un
+   dialecto distinto para la misma frase, y le pelea el primer plano al nombre.
+   Lo que la hace segunda parada de lectura es el SITIO, no el color. */
+:root[data-theme="caelestia"] .ficha-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding-left: 0.9rem;
+  margin-left: 0.15rem;
+  border-left: 1px solid var(--cae-outline);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--cae-on-surface-variant);
+  transition: color 0.2s ease;
+}
+
+:root[data-theme="caelestia"] .ficha-estado:hover {
+  color: var(--cae-on-surface);
+}
+
+/* El ancla no gira con la hora: una senal de estado tiene que decir lo mismo a
+   las 09:00 y a las 03:00. */
+:root[data-theme="caelestia"] .ficha-punto {
+  display: block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--cae-anchor);
+  animation: ficha-latir 2.4s ease-in-out infinite;
+}
+
+@keyframes ficha-latir {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* El ancho lo pone `caelestia.ficha.ts` midiendo el texto del correo con
+   `Range`: neofetch imprime el filete del largo EXACTO de usuario@host. */
+:root[data-theme="caelestia"] .ficha-regla {
+  width: 0;
+  height: 1px;
+  margin: 0.7rem 0 1.2rem;
+  background: var(--cae-outline);
+}
+
+/* La unica frase humana del contenido, y lo unico en la fuente de texto: entre
+   el nombre en Fraunces y los campos en monoespaciada, marca que esto lo dice
+   una persona y no el sistema. */
+:root[data-theme="caelestia"] .ficha-frase {
+  margin: 0 0 1.45rem;
+  max-width: 44rem;
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  font-size: 1.06rem;
+  line-height: 1.5;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .ficha-filas {
+  display: grid;
+  gap: 0.62rem;
+  margin: 0;
+}
+
+:root[data-theme="caelestia"] .ficha-fila {
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  gap: 1.1rem;
+  padding: 0.2rem 0.55rem;
+  margin-left: -0.55rem;
+  border-radius: 0.4rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  transition: background 0.18s ease;
+}
+
+:root[data-theme="caelestia"] .ficha-k {
+  position: relative;
+  font-weight: 600;
+  color: var(--cae-on-surface-variant);
+  transition: color 0.16s ease;
+}
+
+/* El prompt marca la linea que miras, y ENTRA DESLIZANDO: aparecer de golpe se
+   lee como un fallo de pintado. */
+:root[data-theme="caelestia"] .ficha-k::before {
+  content: ">";
+  position: absolute;
+  left: -0.9ch;
+  opacity: 0;
+  transform: translateX(-5px);
+  color: var(--cae-anchor);
+  transition: opacity 0.14s ease, transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .ficha-fila:hover {
+  background: var(--cae-surface);
+}
+
+:root[data-theme="caelestia"] .ficha-fila:hover .ficha-k {
+  color: var(--cae-anchor);
+}
+
+:root[data-theme="caelestia"] .ficha-fila:hover .ficha-k::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* El valor NO se mueve al roce: lo que responde es la pregunta, no el dato. */
+:root[data-theme="caelestia"] .ficha-v {
+  margin: 0;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .ficha-s {
+  display: block;
+  margin-top: 0.16rem;
+  font-size: 0.92em;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .ficha-s + .ficha-s {
+  margin-top: 0.05rem;
+}
+
+/* La tira con la que neofetch cierra siempre. Aqui son los tokens de la hora,
+   asi que el color lo pone `var()` y se actualiza solo con el reloj. */
+:root[data-theme="caelestia"] .ficha-tira {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+}
+
+:root[data-theme="caelestia"] .ficha-tono {
+  display: block;
+  width: 38px;
+  height: 18px;
+  border-radius: 0.3rem;
+  border: 1px solid rgb(0 0 0 / 0.09);
+  transform-origin: center bottom;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .ficha-tono:hover {
+  transform: scaleY(1.7);
+}
+
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-surface"] { background: var(--cae-surface); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-surface-container"] { background: var(--cae-surface-container); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-surface-container-high"] { background: var(--cae-surface-container-high); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-primary"] { background: var(--cae-primary); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-primary-container"] { background: var(--cae-primary-container); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-anchor"] { background: var(--cae-anchor); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-wall-1"] { background: var(--cae-wall-1); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-wall-2"] { background: var(--cae-wall-2); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-wall-3"] { background: var(--cae-wall-3); }
+
+/* La tira no se explica en reposo: solo habla cuando la rozas. */
+:root[data-theme="caelestia"] .ficha-rotulo {
+  margin-left: 0.7rem;
+  font-size: 0.72rem;
+  opacity: 0;
+  color: var(--cae-on-surface-variant);
+  transition: opacity 0.15s ease;
+}
+
+:root[data-theme="caelestia"] .ficha-tira:hover .ficha-rotulo {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] [data-ficha="neofetch"],
+  :root[data-theme="caelestia"] [data-ficha="neofetch"] * {
+    transition: none;
+  }
+
+  :root[data-theme="caelestia"] .ficha-punto {
+    animation: none;
+  }
 }
 
 /*

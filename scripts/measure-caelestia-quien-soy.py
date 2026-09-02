@@ -51,9 +51,46 @@ def main() -> int:
         pagina.wait_for_timeout(3000)
         escena_activa(pagina)
 
-        print("\n[1] La ficha existe y esta en el DOM")
-        hay = pagina.evaluate('() => !!document.querySelector(\'[data-ficha="neofetch"]\')')
-        comprobar(hay, "la ficha [data-ficha=neofetch] existe en el DOM")
+        print("\n[1] Cabe en la ventana, y el aire esta repartido")
+        medida = pagina.evaluate("""() => {
+            const sc = document.querySelector('[data-scene="about"]');
+            const ventana = sc.closest('main[data-cae-track] > *');
+            const wr = ventana.getBoundingClientRect();
+            let top = Infinity, bot = -Infinity;
+            // Solo las HOJAS: un contenedor a toda la altura devolveria el alto
+            // de la ventana y dejaria el aire en 0/0, que no dice nada.
+            const visitar = (el) => {
+                for (const h of el.children) {
+                    if (h.children.length === 0) {
+                        const r = h.getBoundingClientRect();
+                        if (r.width > 0 && r.height > 0) {
+                            top = Math.min(top, r.top); bot = Math.max(bot, r.bottom);
+                        }
+                    } else visitar(h);
+                }
+            };
+            visitar(sc);
+            return {
+                alto: Math.round(bot - top),
+                arriba: Math.round(top - wr.top),
+                abajo: Math.round(wr.bottom - bot),
+                desborde: ventana.scrollHeight - ventana.clientHeight,
+                ventana: Math.round(wr.height),
+            };
+        }""")
+        print(f"       alto {medida['alto']} · aire {medida['arriba']}/{medida['abajo']} "
+              f"· ventana {medida['ventana']}")
+        comprobar(medida["ventana"] == 748, f"la ventana mide 748 px ({medida['ventana']})")
+        comprobar(medida["abajo"] >= 0, f"aire bajo el pie >= 0 ({medida['abajo']})")
+        comprobar(medida["desborde"] <= 1, f"la ventana no desborda ({medida['desborde']} px)")
+
+        print("\n[2] El nombre no parte")
+        lineas = pagina.evaluate("""() => {
+            const n = document.querySelector('[data-ficha-nombre]');
+            const lh = parseFloat(getComputedStyle(n).lineHeight);
+            return Math.max(1, Math.round(n.getBoundingClientRect().height / lh));
+        }""")
+        comprobar(lineas == 1, f"el nombre cabe en 1 linea ({lineas})")
 
         comprobar(not errores, f"consola sin errores ({len(errores)})")
         navegador.close()
