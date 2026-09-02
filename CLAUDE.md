@@ -84,6 +84,36 @@
   the warning it was measuring (`page.screenshot()` forces its own `ReadPixels`). The spec's numbers
   all held. **Never accept a gate you have not seen go red against the failure it claims to catch.**
 
+- **Caelestia's phase B1 (Título) is DONE** (`2026-08-26-caelestia-titulo`, first of the five
+  inside-window phases): the `#hero` scene stopped being cramped shell leftovers and became **the
+  desktop presenting itself** — a justified three-line headline at `opsz 144` (the shell stays at
+  `opsz 9`; two separate tokens, `--cae-display-axes-cartel` vs `--cae-display-axes`, never one
+  reused), a signature and a right-edge stat column, an "Ahora mismo" widget built entirely from
+  `content.ts` literals (no derived field invented — `10.º semestre` is parsed out of
+  `education[0].period`'s parenthetical, not a new field), and a `whoami`-typed terminal entrance
+  whose signature lands as 15 traced Fraunces glyph paths. The background is new too:
+  **`src/backgrounds/caelestiaBlobs.ts` no longer exists** — it's `src/backgrounds/caelestiaFiguras.ts`
+  now, five Material 3 Expressive figures (puffy/sunny/cookie/clover/burst) that morph with the
+  visitor's hour and share `shaderBackground.ts` (float-uniform-only, so a `vec3`/`vec2` in the
+  approved prototype got split into loose floats and rebuilt inside the shader). Hovering the
+  widget or a stat nudges the whole background aside via a CSS transform, reduced-motion skips the
+  entrance straight to the landed state, and the ink-sweep/number-flip closing gestures run off the
+  same timeline. `scripts/measure-caelestia-titulo.py` gates it with the eight assertion families in
+  its own docstrings — all eight were seen red against the exact failure they claim to catch before
+  being accepted (see the spec's implementation notes for what broke each one). **Mobile is
+  explicitly out of scope for B1**: the headline's justification target is a fixed 1080px measure
+  with no narrow-viewport fallback, so at 390px the titles overflow and the stat column overlaps
+  them — known, not a regression to chase. **B2-B5 (Quién soy, Obra, Créditos, Fundido, still
+  inside the same window) remain pending** — B1 only closes `#hero`.
+  `lidia-naive-tester` gate green (7.1/10, zero P0). `vera-art-director` gate came back **BLOCK**
+  initially (6.36/10 against the 7.5 gate) on a real P0, not a polish issue: the phase-A generic
+  workspace-panel rule gave Título the same opaque `background` as the other four scenes (which
+  ARE application windows), covering 78% of the generative background — fixed before accepting the
+  gate (a scoped CSS exception for `[data-scene="hero"]`, reviewed, no leak to the other scenes or
+  to Vice/Hyprland). Three polish findings remain accepted as known debt (a typography-scale gap
+  recurring for the 5th time project-wide, widget spacing off the 4/8px grid, one repeated font-axis
+  literal) — full detail in the B1 spec's implementation record and "Gates de crítica" section.
+
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**
 - Three themes over one DOM, switched by `data-theme` (vice / hyprland / caelestia). The skin is decided by CSS, never by the markup. The theme is picked at random per visit: to verify, always use `?theme=vice`

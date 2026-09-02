@@ -1,6 +1,7 @@
 # Spec de Caelestia — Título: el escritorio se presenta solo
 
-Estado: pendiente de plan
+Estado: implementado
+Plan: docs/superpowers/plans/2026-08-26-caelestia-titulo.md
 Fecha: 2026-08-26
 Alcance: la **fase B1** de las seis del rediseño de Caelestia — la escena `#hero` dentro del
 workspace. Toca `src/sections/hero.ts` (o el módulo que lo construya, leer el directorio),
@@ -417,3 +418,110 @@ Todas vivas y conmutables en el companion de brainstorming
 | `06-titular` | la óptica `opsz 9` vs `144` y cinco tratamientos |
 | `07` y `08` | diez composiciones de titular, cinco de subtítulo, ocho y seis entradas |
 | `15-fondo-composicion` | el fondo definitivo: seis composiciones, reloj, deriva y barrido de 24 h |
+
+---
+
+## Registro de implementación
+
+Las tareas 1-7 se implementaron sobre `main`, un commit por tarea, sin desviaciones del spec que
+merezcan registro propio (a diferencia de la fase A, aquí los números se sostuvieron tal cual).
+Lo que sí deja rastro es el cierre (tarea 8): los ocho gates de `measure-caelestia-titulo.py` se
+rompieron uno por uno a propósito, cada uno confirmado en rojo contra el fallo exacto que dice
+cazar, y revertido con diff limpio antes de pasar al siguiente. Es la misma disciplina que pagó la
+fase A — **ningún gate se da por bueno sin haberlo visto dar rojo** — y aquí los ocho la superaron:
+
+1. **Óptica.** `.cae-tit .cae-ln` apuntado a `--cae-display-axes` (el token del shell, `opsz 9`) en
+   vez de `--cae-display-axes-cartel` (`opsz 144`). Rojo inmediato: "el titular usa opsz 144" cae
+   a `opsz 9` — la marca de la barra, que no se tocó, siguió en verde, confirmando que los dos
+   tokens son de verdad independientes y no uno reciclado con casos especiales.
+2. **Compila.** Un `;` de más en `caelestiaFiguras.ts` **no basta cualquiera**: `float t = uTime *
+   0.28;;;` sigue siendo GLSL válido (sentencias vacías) y no rompe nada. El punto real es partir
+   una lista de argumentos — `vec3 col = tono(0;);` — que sí falla a compilar. Con eso roto,
+   `CURRENT_PROGRAM` da `null` y el gate de movimiento cae en cascada a 0 %: es exactamente el
+   síntoma que el spec ya anotaba (`## Los gates`, punto 5) y confirma por qué la aserción de
+   compilación tiene que ir separada de la de movimiento, no inferirse de ella.
+3. **Se mueve.** Aislado del punto anterior: con el shader compilando bien pero
+   `shaderBackground.ts` forzado a `draw(0)` en vez de `draw((timestamp - start) / 1000)` dentro
+   de `animate()`, "compila" se mantuvo en verde y "se mueve" cayó solo a 0.0 % (piso 10 %) — la
+   prueba de que las dos aserciones cazan fallos distintos y no se solapan.
+4. **Barrido de 24 h.** La primera rotura intentada — subir `--cae-wall-3` (el token CSS que
+   genera `caelestia.color.ts`) a 0.70 de noche — **no movió la aguja**: ese token solo alimenta
+   `--bg-fallback`, un degradado CSS detrás del lienzo, no algo que el lector de píxeles WebGL
+   pueda ver. El wall-3 que de verdad pinta el fondo vive **duplicado** en
+   `caelestiaFiguras.ts::rampaAt()` (cuarto elemento del array de rellenos, `0.375` de noche).
+   Subido a `0.7` ahí, un barrido reducido de horas oscuras (00:00, 02:00, 04:00, 22:00, 23:00,
+   23:45 — no las 96 muestras completas del arnés oficial, por presupuesto de tiempo) dio
+   2.13:1 a las 23:00, muy por debajo del piso AA 4.5:1. Queda anotado porque es una trampa real:
+   hay dos sistemas de color con el mismo nombre de rol y solo uno alimenta el shader.
+5. **Justificación.** `linea.getBoundingClientRect().width` en vez de `Range().getBoundingClientRect().width`
+   reprodujo el fallo palabra por palabra que ya describía el comentario del código: las tres
+   líneas salen con el **mismo** tamaño de fuente (90.7372 px las tres) porque la caja de bloque
+   del `<span>` mide el contenedor, no el texto — y la diferencia de ancho salta de 2.9 px a
+   593.5 px (tope del gate: 4 px). El bloque "parece" justificado y no lo está.
+6. **Cabe.** Quitar el `while` que estrecha `objetivo` en `justificarTitular` hizo que "aire bajo
+   el pie" pasara de 12 px a **-31 px**: el bloque pisa el dock. Coincide con los dos
+   desbordamientos de 138 y 142 px que el spec ya documentaba (`## Los gates`, punto 2) — el
+   bucle de estrechado no es cosmético, es lo único que evita ese choque.
+7. **Anti-mock.** Añadir `wfila("Repositorios públicos", "2")` al widget (un dato que no existe en
+   ningún sitio de `content.ts`) tumbó la única aserción negativa del arnés: "el widget no inventa
+   datos derivados". El resto de literales, sin tocar, siguieron en verde.
+8. **Movimiento reducido.** Neutralizar la guarda de `matchMedia("(prefers-reduced-motion:
+   reduce)")` en `montarEntrada` (`if (false)` en vez del `if` real) dejó la terminal en
+   `display: flex` y la firma en opacidad 0 con `reduced_motion="reduce"` activo — ambas
+   aserciones cayeron. Sin la guarda, la escena entera depende de que GSAP corra la timeline
+   completa, que es justo lo que el modo reducido tiene que evitar.
+
+Tras las ocho reversiones, `git diff` sobre el árbol quedó vacío en cada una (no solo al final) y
+el arnés oficial completo volvió a dar **0 fallo(s)**.
+
+**`verify.py` (el gate de todo el repo) sale en código 1**, pero por un motivo ajeno a esta fase:
+`check_spec_plan_consistency()` señala dos specs de OTRAS fases —
+`docs/superpowers/specs/2026-08-19-hyprland-fondo-haz-design.md` (dice "implementado" con su plan
+sin marcar) y el plan de maquetado de la fase B2
+(`docs/superpowers/plans/2026-08-26-caelestia-quien-soy-maquetado.md`, sin spec que lo reclame) —
+que ya estaban así en `main` antes de esta rama (confirmado con `git show main:...`). No es una
+regresión de B1 ni de este spec, y arreglarlas queda fuera del alcance de ficheros de esta fase:
+que quede anotado aquí para que nadie las persiga pensando que las causó el Título.
+
+**Móvil se confirmó roto, tal y como este spec ya anticipaba** (`## Lo que queda fuera`): a
+390×844 el titular se desborda del viewport — la medida de justificación es un objetivo fijo de
+1080 px sin salto a viewport estrecho, así que en las capturas reales las líneas salen cortadas
+("Co", "que", "n") y la columna de cifras se solapa con el texto del titular. Es lo esperado, no
+una regresión que perseguir.
+
+## Gates de crítica
+
+**`lidia-naive-tester`: verde.** 7,1/10, "Algo Claro" / "Contactaría, con matices", cero P0. El
+titular ("Construyo sistemas que aguantan producción, no demos.") y la ficha de cifras concretas
+son lo que la hace quedarse; nada dispara el umbral de "No contactaría". Hallazgos abiertos, sin
+bloquear: P1 — la tarjeta "Ahora mismo" mezcla una fila de estudios y una de experiencia sin
+encabezado que las distinga. P2 — el dato del semestre aparece dos veces (widget y columna de
+cifras), no hay ningún botón con texto tipo "contáctame" (solo iconos), y la disponibilidad se
+anuncia dos veces (pastilla + tarjeta). Ninguno de los tres alcanza el umbral de tres versiones
+para escalar a P0 automático — todos son hallazgos nuevos de esta v12.
+
+**`vera-art-director`: BLOCK inicial, 6,36/10 contra el gate de 7,5 — P0 arreglado, veredicto no
+repetido tras el fix.** El hallazgo dominante (F-001, P0) era estructural, no de acabado: la regla
+genérica de panel de la fase A (`main[data-cae-track] > *`, pensada para las cuatro escenas que sí
+son "aplicaciones" con ventana) le daba a Título el mismo `background: var(--cae-elev-1)` opaco que
+a las demás — medido, 78,04 % de cobertura opaca del viewport, idéntico en claro y oscuro. El fondo
+de figuras al que esta fase dedica su sección más larga solo asomaba en un marco de 14–84 px.
+Contradecía la premisa central del spec ("el escritorio desnudo", `## La decisión de partida`) con
+una causa de una sola regla, así que se corrigió antes de aceptar el gate, no después: una excepción
+de mayor especificidad para `[data-scene="hero"]` que solo toca `background` (revisada, con
+comentario explicando el porqué de la excepción, sin fuga a las otras cuatro escenas ni a Vice ni a
+Hyprland, confirmada con el arnés oficial completo en 0 fallos tras el cambio).
+
+Quedan tres hallazgos de acabado, no vueltos a medir tras el fix (no cambian con él) y aceptados
+como conocidos, en la misma línea que los P1 de Vice y de la fase A:
+- **F-002 (P0 por recurrencia, fuera de alcance de B1).** Ocho tamaños de fuente sueltos
+  (9–30 px) en el widget/firma/cifras, sin escala de tokens. Es la 5ª vez que este patrón aparece
+  entre Vice, Hyprland y la fase A de Caelestia — un problema de todo el proyecto, no algo que B1
+  pueda resolver solo sin tocar los otros temas.
+- **F-003 (P1).** Seis de siete valores de padding/gap del widget caen fuera de la rejilla 4/8 px.
+- **F-004 (P2).** El eje `wght 700` de Fraunces se repite tres veces como literal en vez de como
+  token.
+
+Aceptado explícitamente: el P0 estructural (F-001) está corregido y verificado; F-002/F-003/F-004
+quedan como decisión de producto/deuda conocida, documentada aquí para que quien retome B2–B5 no
+las redescubra desde cero.

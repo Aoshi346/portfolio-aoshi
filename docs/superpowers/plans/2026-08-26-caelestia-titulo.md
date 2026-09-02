@@ -42,7 +42,7 @@ Primero el instrumento. Sin él, las seis tareas siguientes no tienen contra qu�
 - Produces: `--cae-display-axes-cartel`, el token que usarán las tareas 3 y 6.
 - Produces: `scripts/measure-caelestia-titulo.py` con `abrir(base, hora=None)` y `assert_que(cond, etiqueta)`, que todas las tareas siguientes amplían.
 
-- [ ] **Step 1: Escribir el arnés con su primera aserción, que tiene que fallar**
+- [x] **Step 1: Escribir el arnés con su primera aserción, que tiene que fallar**
 
 Crear `scripts/measure-caelestia-titulo.py`:
 
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Correrlo y ver los tres rojos**
+- [x] **Step 2: Correrlo y ver los tres rojos**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -153,7 +153,7 @@ python3 scripts/measure-caelestia-titulo.py --base http://localhost:4173
 
 Esperado: FALLO en el token (cadena vacía) y FALLO en el titular (no existe `.cae-tit`). La aserción de la marca debe salir **OK** ya — si sale roja, algo del shell se ha roto y hay que parar.
 
-- [ ] **Step 3: Añadir el token**
+- [x] **Step 3: Añadir el token**
 
 En `src/themes/themes.css`, dentro de `:root[data-theme="caelestia"]`, justo debajo de `--cae-display-axes`:
 
@@ -172,11 +172,11 @@ En `src/themes/themes.css`, dentro de `:root[data-theme="caelestia"]`, justo deb
   --cae-display-axes-cartel: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
 ```
 
-- [ ] **Step 4: Volver a correr el arnés**
+- [x] **Step 4: Volver a correr el arnés**
 
 Esperado: el token en verde, la marca en verde, el titular sigue en rojo (aún no existe). Eso es correcto: lo cierra la tarea 3.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/measure-caelestia-titulo.py src/themes/themes.css
@@ -199,7 +199,7 @@ git commit -m "test(caelestia): arnes de la escena Titulo y token de optica de c
 - Consumes: `hueAt`, `chromaScaleAt`, `isDarkAt` de `../themes/caelestia.color` — **son exports públicos ya existentes**, no hay que reimplementarlos.
 - Produces: `mountCaelestiaFiguras(container: HTMLElement): BackgroundHandle`.
 
-- [ ] **Step 1: Escribir las aserciones del fondo, que tienen que fallar**
+- [x] **Step 1: Escribir las aserciones del fondo, que tienen que fallar**
 
 Añadir a `scripts/measure-caelestia-titulo.py`, antes de `main()`:
 
@@ -291,7 +291,7 @@ Y llamarla en `main()`, después de `optica(pg, args.base)`:
         fondo(pg, args.base)
 ```
 
-- [ ] **Step 2: Correrlo y ver los rojos**
+- [x] **Step 2: Correrlo y ver los rojos**
 
 ```bash
 python3 scripts/measure-caelestia-titulo.py --base http://localhost:4173
@@ -301,7 +301,7 @@ Esperado: «el fondo se mueve» en **FALLO** con un porcentaje muy bajo (`caeles
 
 > **Aviso de duración:** el barrido abre 96 pestañas. Con swiftshader tarda entre 8 y 15 minutos. Es el precio de vigilar las transiciones y solo se paga en esta tarea y en la 8.
 
-- [ ] **Step 3: Escribir el módulo del fondo**
+- [x] **Step 3: Escribir el módulo del fondo**
 
 Crear `src/backgrounds/caelestiaFiguras.ts`. El shader va **copiado del prototipo** `docs/superpowers/specs/2026-08-26-caelestia-titulo-prototipo.glsl`, quitando lo que su propia cabecera dice que hay que quitar: la rama `uComp` (se deja fija la composición A3, se borran las otras cinco), `uDeriva` y `uVel` (mandos del companion, se dejan en 1.0).
 
@@ -409,7 +409,7 @@ export function mountCaelestiaFiguras(container: HTMLElement): BackgroundHandle 
 
 > **Comprobar antes de escribir:** `shaderBackground.ts` (232 líneas) tiene que aceptar uniforms `vec2` y `vec3`. Si solo admite `float`, hay dos salidas y **ninguna es tocar ese fichero**, que es compartido con Vice: pasar `uFigA`/`uFigB`/`uElong` como floats sueltos (`uFigAn`, `uFigAa`, …), o ampliarlo detrás de una comprobación de tipo que no cambie el comportamiento existente. Leerlo en el paso 1 y decidir antes de escribir el módulo.
 
-- [ ] **Step 4: Cambiar el `mountBackground` del tema**
+- [x] **Step 4: Cambiar el `mountBackground` del tema**
 
 En `src/themes/caelestia.ts`, sustituir el cuerpo de `mountBackground`:
 
@@ -420,7 +420,7 @@ En `src/themes/caelestia.ts`, sustituir el cuerpo de `mountBackground`:
   },
 ```
 
-- [ ] **Step 5: Borrar el fondo viejo y comprobar que no queda nada apuntándole**
+- [x] **Step 5: Borrar el fondo viejo y comprobar que no queda nada apuntándole**
 
 ```bash
 git rm src/backgrounds/caelestiaBlobs.ts
@@ -429,7 +429,7 @@ grep -rn "caelestiaBlobs\|mountCaelestiaBlobs" src/ docs/ scripts/ .claude/ READ
 
 Esperado: solo aparece en documentos que describen la fase A en pasado. Si sale en `src/`, arreglarlo.
 
-- [ ] **Step 6: Build, lint y arnés**
+- [x] **Step 6: Build, lint y arnés**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -440,7 +440,7 @@ python3 scripts/measure-caelestia-titulo.py --base http://localhost:4173
 
 Esperado: las tres del fondo en verde. Movimiento ≥ 10 %, peor contraste del día ≥ 4.5:1.
 
-- [ ] **Step 7: Comprobar a ojo que Vice y Hyprland siguen intactos**
+- [x] **Step 7: Comprobar a ojo que Vice y Hyprland siguen intactos**
 
 ```bash
 python3 -c "
@@ -459,7 +459,7 @@ with sync_playwright() as p:
 
 Abrir las tres capturas. Vice y Hyprland tienen que estar **exactamente igual** que antes.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A src/backgrounds src/themes/caelestia.ts scripts/measure-caelestia-titulo.py
@@ -483,7 +483,7 @@ git commit -m "feat(caelestia): el fondo pasa a ser figuras de Material 3 morfad
 - Produces: `justificarTitular(root: HTMLElement, medida?: number, altoMax?: number): void` y `montarTitulo(ctx: { gsap: GSAPType; root: HTMLElement }): TituloHandle`, donde `interface TituloHandle { destroy: () => void }`.
 - Produces las clases `.cae-tit`, `.cae-ln`, que usan las tareas 6 y 7.
 
-- [ ] **Step 1: Escribir las aserciones de la justificación, que tienen que fallar**
+- [x] **Step 1: Escribir las aserciones de la justificación, que tienen que fallar**
 
 Añadir a `scripts/measure-caelestia-titulo.py`:
 
@@ -525,11 +525,11 @@ def titular(pg, base: str) -> None:
 
 Llamarla en `main()` tras `fondo(...)`.
 
-- [ ] **Step 2: Correrlo y ver el rojo**
+- [x] **Step 2: Correrlo y ver el rojo**
 
 Esperado: FALLO en «el titular tiene tres líneas» — `.cae-tit` no existe.
 
-- [ ] **Step 3: Añadir el bloque al DOM compartido**
+- [x] **Step 3: Añadir el bloque al DOM compartido**
 
 En `src/sections/hero.ts`, antes del `const section = el(...)`, añadir:
 
@@ -558,7 +558,7 @@ Y meter `caeHead` en el array de hijos de `section`, después de `surface`:
     [eyebrow, divider, surface, caeHead, corner],
 ```
 
-- [ ] **Step 4: Ocultarlo en los otros dos temas**
+- [x] **Step 4: Ocultarlo en los otros dos temas**
 
 En `src/style.css`, junto a las reglas que ya ocultan `.hero-divider`:
 
@@ -603,7 +603,7 @@ Y en `src/themes/themes.css`, dentro del bloque de Caelestia:
 
 > **Comprobar:** las reglas de `.hero-surface` para Caelestia que ya existen en `themes.css` (la tarjeta Material con `backdrop-filter`) dejan de aplicarse. Buscarlas y borrarlas en el mismo commit, no dejarlas muertas.
 
-- [ ] **Step 5: Escribir el módulo que justifica**
+- [x] **Step 5: Escribir el módulo que justifica**
 
 Crear `src/themes/caelestia.titulo.ts`:
 
@@ -672,7 +672,7 @@ export function montarTitulo(root: HTMLElement): TituloHandle {
 }
 ```
 
-- [ ] **Step 6: Llamarlo desde la coreografía**
+- [x] **Step 6: Llamarlo desde la coreografía**
 
 En `src/themes/caelestia.choreography.ts`, dentro de `caelestiaChoreography`, después de que el carril esté montado:
 
@@ -684,7 +684,7 @@ En `src/themes/caelestia.choreography.ts`, dentro de `caelestiaChoreography`, de
 
 y añadir `titulo.destroy()` a la limpieza que ya devuelve la función.
 
-- [ ] **Step 7: Build, lint y arnés**
+- [x] **Step 7: Build, lint y arnés**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -694,7 +694,7 @@ python3 scripts/measure-caelestia-titulo.py --base http://localhost:4173
 
 Esperado: las cuatro del titular en verde, y la de `optica` del titular también (ya existe `.cae-ln`).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/sections/hero.ts src/themes/caelestia.titulo.ts src/themes/caelestia.choreography.ts src/style.css src/themes/themes.css scripts/measure-caelestia-titulo.py
@@ -714,7 +714,7 @@ git commit -m "feat(caelestia): titular justificado a medida comun en la escena 
 - Consumes: `.cae-head` de la tarea 3.
 - Produces: `.cae-firma` (destino del aterrizaje de la tarea 6), `.cae-meta`, `.cae-regla`, `.cae-statcol` y sus `.cae-v2` (que voltea la tarea 7).
 
-- [ ] **Step 1: Aserciones — texto literal y anti-mock**
+- [x] **Step 1: Aserciones — texto literal y anti-mock**
 
 ```python
 def firma_y_cifras(pg, base: str) -> None:
@@ -749,11 +749,11 @@ def firma_y_cifras(pg, base: str) -> None:
     )
 ```
 
-- [ ] **Step 2: Correrlo y ver los rojos**
+- [x] **Step 2: Correrlo y ver los rojos**
 
 Esperado: los cinco en FALLO.
 
-- [ ] **Step 3: Añadir firma y columna al DOM**
+- [x] **Step 3: Añadir firma y columna al DOM**
 
 En `src/sections/hero.ts`, dentro del bloque de Caelestia que creaste en la tarea 3, antes de `const caeHead`:
 
@@ -787,7 +787,7 @@ Añadir `stats` al import de la primera línea:
 import { identity, stats } from "../data/content";
 ```
 
-- [ ] **Step 4: La piel**
+- [x] **Step 4: La piel**
 
 En `src/themes/themes.css`, en el bloque de Caelestia:
 
@@ -863,11 +863,11 @@ En `src/themes/themes.css`, en el bloque de Caelestia:
 }
 ```
 
-- [ ] **Step 5: Build, lint y arnés**
+- [x] **Step 5: Build, lint y arnés**
 
 Esperado: las cinco de `firma_y_cifras` en verde, y **la de «aire bajo el pie» de la tarea 3 sigue en verde** — la columna añade alto y es donde se destapó el desbordamiento de 138 px. Si sale roja, bajar `medida` en `justificarTitular` antes de tocar nada más.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/sections/hero.ts src/themes/themes.css scripts/measure-caelestia-titulo.py
@@ -886,7 +886,7 @@ git commit -m "feat(caelestia): firma sobre el titular y cifras en columna al ca
 **Interfaces:**
 - Produces: `.cae-widget` y sus hijos directos `.cae-wfila` (que anima la tarea 7).
 
-- [ ] **Step 1: Aserción anti-mock**
+- [x] **Step 1: Aserción anti-mock**
 
 ```python
 def widget(pg, base: str) -> None:
@@ -910,9 +910,9 @@ def widget(pg, base: str) -> None:
     assert_que("Repositorios públicos" not in texto, "el widget no inventa datos derivados")
 ```
 
-- [ ] **Step 2: Correrlo y ver los ocho rojos**
+- [x] **Step 2: Correrlo y ver los ocho rojos**
 
-- [ ] **Step 3: Añadir el widget al DOM**
+- [x] **Step 3: Añadir el widget al DOM**
 
 En `src/sections/hero.ts`, antes de `const caeHead`:
 
@@ -951,7 +951,7 @@ import { education, experience, identity, stats } from "../data/content";
 > propio. O se extrae con una constante local documentada, o se usa `period`
 > entero. **No inventar un campo.**
 
-- [ ] **Step 4: La piel del widget**
+- [x] **Step 4: La piel del widget**
 
 ```css
 :root[data-theme="caelestia"] .cae-widget {
@@ -977,7 +977,7 @@ y en `src/style.css`, junto a `.cae-head`:
 
 (El resto de reglas —`.cae-whd`, `.cae-pilla`, `.cae-wnow`, `.cae-wsub`, `.cae-wfila`, `.cae-wn`— van en `themes.css` con los mismos valores de la maqueta: mono 9px `letter-spacing: .2em` para el rótulo, pastilla de `--cae-anchor` sobre `--cae-on-anchor`, Fraunces 20px para `now`.)
 
-- [ ] **Step 5: Build, lint y arnés. Commit**
+- [x] **Step 5: Build, lint y arnés. Commit**
 
 ```bash
 git add src/sections/hero.ts src/themes/themes.css src/style.css scripts/measure-caelestia-titulo.py
@@ -1001,7 +1001,7 @@ git commit -m "feat(caelestia): widget Ahora mismo en la escena Titulo"
 - Consumes: `.cae-firma` de la tarea 4 (destino del aterrizaje).
 - Produces: `FIRMA: { ancho: number; glifos: readonly { c: string; d: string }[] }` en `caelestia.firma.ts`, y `montarEntrada(gsap, root): { destroy: () => void }` en `caelestia.titulo.ts`.
 
-- [ ] **Step 1: Aserciones de la entrada**
+- [x] **Step 1: Aserciones de la entrada**
 
 ```python
 def entrada(pg, base: str) -> None:
@@ -1026,9 +1026,9 @@ def entrada(pg, base: str) -> None:
     ctx.close()
 ```
 
-- [ ] **Step 2: Correrlo y ver los rojos**
+- [x] **Step 2: Correrlo y ver los rojos**
 
-- [ ] **Step 3: Escribir el generador de contornos**
+- [x] **Step 3: Escribir el generador de contornos**
 
 Crear `scripts/gen-firma-paths.py`:
 
@@ -1107,7 +1107,7 @@ if __name__ == "__main__":
     sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else "/tmp/fraunces.ttf"))
 ```
 
-- [ ] **Step 4: Generar el módulo y comprobarlo**
+- [x] **Step 4: Generar el módulo y comprobarlo**
 
 ```bash
 python3 -m venv /tmp/fenv && /tmp/fenv/bin/pip install -q fonttools
@@ -1119,7 +1119,7 @@ grep -c '{ c:' src/themes/caelestia.firma.ts   # esperado: 15
 
 Contrastar el `ancho` con el del artefacto aprobado: `docs/superpowers/specs/2026-08-26-caelestia-firma-paths.json` dice **945.7**. Si no coincide, los ejes o la fuente no son los mismos.
 
-- [ ] **Step 5: Escribir la entrada**
+- [x] **Step 5: Escribir la entrada**
 
 Añadir a `src/themes/caelestia.titulo.ts` la función `montarEntrada(gsap, root)`. Piezas, en orden y con sus tiempos:
 
@@ -1149,7 +1149,7 @@ Añadir a `src/themes/caelestia.titulo.ts` la función `montarEntrada(gsap, root
 
 8. Guarda de movimiento reducido: si `matchMedia("(prefers-reduced-motion: reduce)").matches`, no se construye la timeline — se pone el estado final con `gsap.set` y `.cae-term` a `display: none`.
 
-- [ ] **Step 6: Build, lint, arnés. Commit**
+- [x] **Step 6: Build, lint, arnés. Commit**
 
 ```bash
 git add scripts/gen-firma-paths.py src/themes/caelestia.firma.ts src/themes/caelestia.titulo.ts src/sections/hero.ts src/themes/themes.css scripts/measure-caelestia-titulo.py
@@ -1168,7 +1168,7 @@ git commit -m "feat(caelestia): la escena Titulo entra con whoami y el nombre tr
 - Consumes: todo lo anterior.
 - Produces: nada nuevo. Cierra la coreografía de la escena.
 
-- [ ] **Step 1: Aserción del roce**
+- [x] **Step 1: Aserción del roce**
 
 ```python
 def roce(pg, base: str) -> None:
@@ -1185,9 +1185,9 @@ def roce(pg, base: str) -> None:
     assert_que(despues == antes, "y vuelve a su sitio al salir")
 ```
 
-- [ ] **Step 2: Correrlo y ver los rojos**
+- [x] **Step 2: Correrlo y ver los rojos**
 
-- [ ] **Step 3: Implementar los tres gestos**
+- [x] **Step 3: Implementar los tres gestos**
 
 En la timeline de `montarEntrada`, después del aterrizaje:
 
@@ -1212,7 +1212,7 @@ Y el roce, fuera de la timeline, sobre `.cae-widget`, `.cae-statcol > div`, `.ca
 
 con su `pointerleave` devolviendo a 0, y **todos los listeners guardados para quitarlos en `destroy()`**.
 
-- [ ] **Step 4: Build, lint, arnés completo. Commit**
+- [x] **Step 4: Build, lint, arnés completo. Commit**
 
 ```bash
 git add src/themes/caelestia.titulo.ts scripts/measure-caelestia-titulo.py
@@ -1229,7 +1229,7 @@ git commit -m "feat(caelestia): barrido del titular, volteo de cifras y el fondo
 - Modify: `CLAUDE.md` y `.claude/CLAUDE.md` (estado de los temas)
 - Modify: `.claude/rules/verification.md` (la tabla de arneses)
 
-- [ ] **Step 1: Arnés completo en verde, y contra los tres temas**
+- [x] **Step 1: Arnés completo en verde, y contra los tres temas**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -1243,7 +1243,7 @@ python3 scripts/verify.py
 
 Los cuatro tienen que salir con código 0.
 
-- [ ] **Step 2: Ver cada gate dar rojo**
+- [x] **Step 2: Ver cada gate dar rojo**
 
 Uno por uno, romper a propósito lo que cada aserción dice cazar y confirmar que enrojece. **Ningún gate se da por bueno sin esto** — es la lección que más costó en la fase A: ocho veces el fallo estuvo en el instrumento.
 
@@ -1258,7 +1258,7 @@ Uno por uno, romper a propósito lo que cada aserción dice cazar y confirmar qu
 | anti-mock | añadir «Repositorios públicos · 2» al widget |
 | reducido | quitar la guarda de `matchMedia` |
 
-- [ ] **Step 3: Capturas reales, móvil y escritorio**
+- [x] **Step 3: Capturas reales, móvil y escritorio**
 
 ```bash
 python3 -c "
@@ -1277,17 +1277,17 @@ with sync_playwright() as p:
 
 Mirarlas. **Móvil está fuera del alcance de esta fase** (el carril de workspaces en pantalla estrecha es una decisión abierta desde la fase A): si sale roto, anotarlo, no arreglarlo.
 
-- [ ] **Step 4: Actualizar spec y documentos**
+- [x] **Step 4: Actualizar spec y documentos**
 
 - En el spec: `Estado: implementado` y añadir `Plan: docs/superpowers/plans/2026-08-26-caelestia-titulo.md`.
 - En `CLAUDE.md` y `.claude/CLAUDE.md`, en el estado de los temas: la fase B1 cerrada, B2–B5 pendientes, y que `caelestiaBlobs.ts` ya no existe.
 - En `.claude/rules/verification.md`, añadir `measure-caelestia-titulo.py` a la tabla de arneses.
 
-- [ ] **Step 5: Gates de crítica**
+- [x] **Step 5: Gates de crítica**
 
 Lanzar `lidia-naive-tester` y `vera-art-director` sobre `?theme=caelestia`, **pinando el modelo** (`model: sonnet`) según la norma de `/home/aoshi/proyectos/CLAUDE.md`. Anotar el resultado en el spec, aceptando o no el BLOCK explícitamente, como en Vice y en la fase A.
 
-- [ ] **Step 6: Commit final**
+- [x] **Step 6: Commit final**
 
 ```bash
 git add -A docs/ CLAUDE.md .claude/ scripts/
