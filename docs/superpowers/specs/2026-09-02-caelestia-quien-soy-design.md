@@ -20,7 +20,7 @@ workspaces:
 
 | | antes | después |
 |---|---|---|
-| alto del contenido | 475 px | **637 px** |
+| alto del contenido | 475 px | **638 px** |
 | aire sin usar arriba / abajo | **152 / 121** | **55 / 56** |
 | líneas del nombre | **3** («Aoshi / Blanco / Sanz») | **1** |
 | líneas de «Disponible para proyectos» | **2** | 1 |
@@ -92,7 +92,7 @@ veces lo mismo.
 
    ┌──────────┐        Aoshi Blanco Sanz              <- Fraunces, opsz 144
    │          │        a.blanco1501@gmail.com │ ● Disponible para proyectos
-   │  retrato │        ─────────────────                <- del largo exacto del host
+   │  retrato │        ──────────────────────           <- del largo exacto del correo
    │ squircle │        Llevo datos reales a interfaces que la gente usa todos los días.
    │          │
    └──────────┘        Rol            Desarrollador Full Stack
