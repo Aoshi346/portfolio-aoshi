@@ -3707,6 +3707,73 @@
   color: var(--cae-on-surface-variant);
 }
 
+/*
+ * El widget "Ahora mismo": tarjeta flotante en la esquina superior derecha
+ * de la escena Titulo. Hermano de `.cae-head`, no hijo — vive sobre el
+ * fondo directamente, con su propia superficie tonal.
+ */
+:root[data-theme="caelestia"] .cae-widget {
+  display: block;
+  position: absolute;
+  top: 30px;
+  right: 48px;
+  width: 316px;
+  padding: 20px 22px;
+  border-radius: 24px;
+  background: var(--cae-surface-container);
+  border: 1px solid var(--cae-outline);
+}
+
+:root[data-theme="caelestia"] .cae-whd {
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-pilla {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--cae-anchor);
+  color: var(--cae-on-anchor);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme="caelestia"] .cae-wnow {
+  margin: 12px 0 2px;
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+:root[data-theme="caelestia"] .cae-wsub {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-wfila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--cae-outline);
+  font-size: 12px;
+}
+
+:root[data-theme="caelestia"] .cae-wn {
+  color: var(--cae-on-surface-variant);
+  text-align: right;
+  white-space: nowrap;
+}
+
 :root[data-theme="caelestia"] .chip {
   background: var(--cae-primary-container);
   border-color: transparent;

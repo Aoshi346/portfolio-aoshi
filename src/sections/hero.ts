@@ -1,4 +1,4 @@
-import { identity, stats } from "../data/content";
+import { education, experience, identity, stats } from "../data/content";
 import { el } from "../utils/dom";
 
 /**
@@ -125,10 +125,36 @@ export function createHero(): HTMLElement {
 
   const caeHead = el("div", "cae-head", [kicker, titular, statcol]);
 
+  /*
+   * El widget "Ahora mismo" de Caelestia. `education[0].period` no tiene un
+   * campo de semestre propio — es un solo string
+   * ("2021 — presente (10.º semestre)") — así que se extrae el contenido
+   * entre paréntesis en vez de inventar un campo nuevo en content.ts o
+   * escribir el literal a mano (que quedaría desacoplado de la fuente en
+   * cuanto cambie el semestre real).
+   */
+  const semestre = education[0].period.match(/\(([^)]+)\)/)?.[1] ?? education[0].period;
+
+  const disponible = el("span", "cae-pilla", [identity.availability]);
+  const wnow = el("p", "cae-wnow", [identity.now]);
+  const wsub = el("p", "cae-wsub", [`${identity.location} · Desde ${identity.since}`]);
+
+  const wfila = (izq: string, der: string): HTMLElement =>
+    el("div", "cae-wfila", [el("span", "", [izq]), el("span", "cae-wn", [der])]);
+
+  const widget = el("div", "cae-widget", [
+    el("p", "cae-whd", ["Ahora mismo"]),
+    disponible,
+    wnow,
+    wsub,
+    wfila(education[0].degree, semestre),
+    wfila(experience[0].organization, experience[0].period),
+  ]);
+
   const section = el(
     "section",
     "hero relative flex min-h-screen flex-col justify-center overflow-hidden px-6 py-24 md:px-12",
-    [eyebrow, divider, surface, caeHead, corner],
+    [eyebrow, divider, surface, widget, caeHead, corner],
   );
   section.setAttribute("data-scene", "hero");
 

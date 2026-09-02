@@ -222,6 +222,31 @@ def firma_y_cifras(pg, base: str) -> None:
     )
 
 
+def widget(pg, base: str) -> None:
+    print("\n[widget] todo lo que pinta existe en content.ts")
+    abrir(pg, base, "13:00")
+    texto = pg.evaluate(
+        "() => document.querySelector('#hero .cae-widget')?.textContent ?? ''"
+    )
+    esperado = [
+        "Disponible para proyectos",   # identity.availability
+        "Freelancer",                  # identity.now
+        "Caracas, Venezuela",          # identity.location
+        "2021",                        # identity.since
+        "Ingeniería de Sistemas",      # education[0].degree
+        "Telefónica Venezuela",        # experience[0].organization
+        "Ago 2025 — May 2026",         # experience[0].period
+        # El semestre no es un campo propio: se extrae del parentesis de
+        # education[0].period ("2021 — presente (10.º semestre)"), nunca un
+        # literal inventado a mano. Ver hero.ts.
+        "10.º semestre",
+    ]
+    for e in esperado:
+        assert_que(e in texto, f"el widget dice {e!r}, literal de content.ts")
+    # El fallo real que hubo: un dato derivado que no existe en ninguna parte.
+    assert_que("Repositorios públicos" not in texto, "el widget no inventa datos derivados")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -238,6 +263,7 @@ def main() -> int:
         fondo(pg, args.base)
         titular(pg, args.base)
         firma_y_cifras(pg, args.base)
+        widget(pg, args.base)
 
         print("\n[consola] la pagina no tira errores")
         assert_que(not errores, f"cero errores de consola ({errores[:2]})")
