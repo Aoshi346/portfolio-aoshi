@@ -132,6 +132,47 @@ def main() -> int:
             f"({nombre['anchoTexto']} <= {nombre['anchoDisponible']})",
         )
 
+        print("\n[3] El filete mide el largo del correo")
+        # Se mide el estado ATERRIZADO, no un fotograma de la entrada: el
+        # filete se despliega en t=1.6..2.02 s de la timeline y a los 1400 ms
+        # que espera `escena_activa` todavia va por 24 px de 249. La espera es
+        # acotada y exige ademas ancho > 0, asi que sigue pudiendo fallar: si
+        # el filete no se mide nunca se queda en 0 y agota el plazo.
+        try:
+            pagina.wait_for_function(
+                """() => {
+                    const r = document.querySelector('[data-ficha-regla]');
+                    if (!r) return false;
+                    const w = r.getBoundingClientRect().width;
+                    const prev = window.__reglaPrev;
+                    window.__reglaPrev = w;
+                    return w > 0 && prev !== undefined && Math.abs(prev - w) < 0.5;
+                }""",
+                timeout=6000,
+            )
+        except Exception as exc:  # noqa: BLE001 - se reporta como FALLO, no se traga
+            print(f"       el filete no llego a asentarse: {type(exc).__name__}")
+        # Con `Range`, nunca con la caja del <a>: `.ficha-host` es un enlace y su
+        # getBoundingClientRect() devolveria el ancho de la COLUMNA, no el del
+        # texto — el filete saldria siempre del ancho entero y el gate diria
+        # verde midiendo otra cosa. Es la trampa que B1 ya pago con su
+        # justificacion.
+        filete = pagina.evaluate("""() => {
+            const host = document.querySelector('[data-ficha-host]');
+            const regla = document.querySelector('[data-ficha-regla]');
+            const rg = document.createRange();
+            rg.selectNodeContents(host);
+            return {
+                texto: Math.round(rg.getBoundingClientRect().width),
+                regla: Math.round(regla.getBoundingClientRect().width),
+                caja: Math.round(host.getBoundingClientRect().width),
+            };
+        }""")
+        print(f"       texto {filete['texto']} px \u00b7 filete {filete['regla']} px "
+              f"\u00b7 (caja del <a>: {filete['caja']} px)")
+        comprobar(abs(filete["texto"] - filete["regla"]) <= 2,
+                  f"el filete mide el largo del texto ({filete['regla']} vs {filete['texto']})")
+
         print("\n[6] Movimiento reducido: el pseudo-elemento de la fila tambien se apaga")
         # `*` NO alcanza pseudo-elementos: el guard de arriba
         # ([data-ficha="neofetch"] *) deja fuera a `.ficha-k::before` (la
@@ -153,6 +194,29 @@ def main() -> int:
         print(f"       .ficha-k::before transition-duration bajo reduce: {pseudo['duracion']}")
         comprobar(pseudo["duracion"] == "0s",
                   f"el pseudo-elemento .ficha-k::before no anima bajo reduce ({pseudo['duracion']})")
+
+        # «Escena montada, sin recorrido»: bajo reduce la ficha no se teclea ni
+        # se despliega, pero tiene que estar ENTERA. Sin esto, un modulo que
+        # devolviera pronto bajo reduce dejaria el comando vacio y el filete a
+        # cero, y el arnes seguiria verde con la escena a medio pintar.
+        reducido = pg_reduce.evaluate("""() => {
+            const cmd = document.querySelector('[data-ficha-cmd]');
+            const regla = document.querySelector('[data-ficha-regla]');
+            const punto = document.querySelector('.ficha-punto');
+            const nombre = document.querySelector('[data-ficha-nombre]');
+            return {
+                comando: cmd.textContent,
+                regla: Math.round(regla.getBoundingClientRect().width),
+                latido: getComputedStyle(punto).animationName,
+                recorte: getComputedStyle(nombre).clipPath,
+            };
+        }""")
+        print(f"       comando {reducido['comando']!r} \u00b7 filete {reducido['regla']} px "
+              f"\u00b7 latido {reducido['latido']} \u00b7 recorte {reducido['recorte']}")
+        comprobar(reducido["comando"] == "neofetch",
+                  f"el comando ya esta escrito ({reducido['comando']!r})")
+        comprobar(reducido["regla"] > 0, f"el filete ya esta a su ancho ({reducido['regla']})")
+        comprobar(reducido["latido"] == "none", f"el punto no late ({reducido['latido']})")
         contexto_reduce.close()
 
         print("\n[4] El retrato morfa, no corta")

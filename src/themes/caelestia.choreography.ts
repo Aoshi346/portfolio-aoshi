@@ -1,4 +1,5 @@
 import type { Choreography } from "./choreography";
+import { montarFicha } from "./caelestia.ficha";
 
 /**
  * La coreografia de Caelestia: las cinco escenas dejan de apilarse en vertical
@@ -99,6 +100,7 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
     const origen = actual;
     actual = destino;
     aislarInactivos(destino);
+    if (ficha && destino === indiceFicha) ficha.reproducir();
     anclarDocumento();
     // fromTo con los dos extremos escritos a mano: `gsap.from` esta prohibido
     // en este proyecto y ya provoco tres regresiones reales.
@@ -117,6 +119,19 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   // Estado inicial explicito, sin leer el DOM.
   gsap.set(root, { xPercent: 0 });
   aislarInactivos(0);
+
+  /*
+   * La ficha de «Quien soy» se lanza cuando SU workspace se activa, no al
+   * cargar: es una aplicacion arrancando, y arranca cuando la abres. Se monta
+   * una sola vez; `reproducir()` es lo que se repite.
+   *
+   * `gsap` sale del contexto de esta coreografia y se le pasa por parametro:
+   * el modulo NO importa `gsap` por su cuenta.
+   */
+  const escenaFicha = escenas.find((escena) => escena.querySelector('[data-ficha="neofetch"]'));
+  const ficha = escenaFicha ? montarFicha(gsap, escenaFicha) : null;
+  const indiceFicha = escenaFicha ? escenas.indexOf(escenaFicha) : -1;
+
   anclarDocumento();
 
   /*
