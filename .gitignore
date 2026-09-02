@@ -45,3 +45,6 @@ credentials.*
 
 # Brainstorming visual companion (superpowers)
 .superpowers/
+
+# Worktrees de sesion (subagent-driven-development)
+worktrees/
