@@ -7,7 +7,12 @@ dev`: el HMR corrompe las medidas.
     python3 scripts/measure-caelestia-quien-soy.py --base http://localhost:4173
 """
 import argparse
+import pathlib
+import re
 import sys
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
 from playwright.sync_api import sync_playwright
 
 FALLOS: list[str] = []
@@ -256,6 +261,204 @@ def main() -> int:
         # Umbral 4 y no 9: un umbral pegado a la medida mide la carga de la
         # maquina, no el diseno. Sin transicion salen exactamente 2.
         comprobar(estados >= 4, f"el clip-path recorre estados intermedios ({estados})")
+
+
+        print("\n[7] Anti-mock: todo texto visible existe en content.ts")
+        # `content.ts` se lee desde la RAIZ del repo: el arnes se lanza con
+        # `python3 scripts/measure-...py` desde el raiz, como documenta la
+        # cabecera. Si no se encuentra, se falla en alto en vez de saltarse el
+        # gate: un anti-mock que se auto-desactiva cuando no halla la fuente es
+        # exactamente el instrumento que no puede dar rojo.
+        fuente_path = pathlib.Path(__file__).resolve().parent.parent / "src" / "data" / "content.ts"
+        comprobar(fuente_path.is_file(), f"se encuentra la fuente de contenido ({fuente_path})")
+        fuente = fuente_path.read_text(encoding="utf-8") if fuente_path.is_file() else ""
+        textos = pagina.evaluate("""() => {
+            const ficha = document.querySelector('[data-ficha="neofetch"]');
+            const nodos = ficha.querySelectorAll(
+                '[data-ficha-nombre], [data-ficha-host], .ficha-estado, [data-ficha-frase], .ficha-v, .ficha-s');
+            return Array.from(nodos)
+                .map((n) => (n.firstChild && n.firstChild.nodeType === 3
+                    ? n.firstChild.textContent : n.textContent).trim())
+                .filter((t) => t.length > 0);
+        }""")
+        # Los valores compuestos («rol · organizacion») se parten por el
+        # separador: cada mitad tiene que existir literal en content.ts. El
+        # separador se parte con expresion regular y NO con la cadena " · ":
+        # la fila de enfoque une sus dos titulos con DOS espacios a cada lado,
+        # asi que un split por la cadena exacta la dejaria entera y daria un
+        # fallo falso.
+        piezas: list[str] = []
+        for texto in textos:
+            piezas.extend(p.strip() for p in re.split(r"\s+·\s+", texto) if p.strip())
+        # `Desde <cifra>` es la unica composicion de este modulo: el rotulo lo
+        # pone la ficha y la cifra sale de `stats`. Se exime el prefijo, no la
+        # cifra — sin esto habria que meter "Desde 2021" en content.ts, que es
+        # inventarse un campo para contentar al gate.
+        comprobar(len(piezas) >= 12, f"el gate ve texto de la ficha ({len(piezas)} piezas)")
+        huerfanos = [p for p in piezas if p not in fuente and not p.startswith("Desde ")]
+        comprobar(not huerfanos, f"todo texto sale de content.ts (huerfanos: {huerfanos})")
+
+        print("\n[8] Los ejes del shell no se han movido")
+        # `opsz` en Fraunces no es estilo: son dibujos distintos de la letra
+        # segun el tamano al que se lea. El display del shell tiene que seguir
+        # en su token (opsz 9) y solo el nombre de la ficha usa el del cartel
+        # (opsz 144). Reutilizar un token para los dos es el fallo que B1 vino
+        # a cerrar.
+        #
+        # El display del shell se lee en el `h1`, NO en `.cae-mark`. La marca
+        # de la barra es Martian Mono y no lleva ejes variables: medida,
+        # devuelve `normal` siempre, asi que una asercion sobre ella no vigila
+        # el opsz del shell — habla de otro elemento y de otra familia. De la
+        # marca solo se comprueba lo que si es suyo: que sigue siendo la mono
+        # del shell y no se la ha arrastrado al display de la ficha.
+        ejes = pagina.evaluate("""() => {
+            const cs = getComputedStyle(document.documentElement);
+            const marca = document.querySelector('.cae-mark');
+            return {
+                shell: getComputedStyle(document.querySelector('h1')).fontVariationSettings,
+                nombre: getComputedStyle(document.querySelector('[data-ficha-nombre]')).fontVariationSettings,
+                marcaFamilia: getComputedStyle(marca).fontFamily,
+                tokenShell: cs.getPropertyValue('--cae-display-axes').trim(),
+                tokenCartel: cs.getPropertyValue('--cae-display-axes-cartel').trim(),
+            };
+        }""")
+        print(f"       shell {ejes['shell']} · nombre {ejes['nombre']}")
+        print(f"       tokens: shell {ejes['tokenShell']!r} · cartel {ejes['tokenCartel']!r}")
+        comprobar('"opsz" 9' in ejes["shell"],
+                  f"el display del shell sigue en opsz 9 ({ejes['shell']})")
+        comprobar('"opsz" 144' in ejes["nombre"], f"el nombre usa opsz 144 ({ejes['nombre']})")
+        # Dos tokens, nunca uno reutilizado: si alguien apunta el cartel al
+        # token del shell, las dos aserciones de arriba se caen — pero esta lo
+        # dice por su nombre en vez de dejarlo deducir.
+        comprobar(ejes["tokenShell"] != ejes["tokenCartel"] and ejes["tokenCartel"] != "",
+                  f"cartel y shell son tokens distintos ({ejes['tokenCartel']!r})")
+        comprobar("Martian" in ejes["marcaFamilia"],
+                  f"la marca de la barra sigue en la mono del shell ({ejes['marcaFamilia']})")
+
+        print("\n[5] Contraste de los pares que se pintan, en los dos esquemas")
+        # NO se inventa una API para forzar la hora. El motor de color lee el
+        # reloj del sistema (`new Date().getHours()`), asi que el esquema se
+        # cambia con la ZONA HORARIA del contexto de Playwright, que es real y
+        # no toca el codigo de produccion.
+        #
+        # Dos muestras bastan, y no es un atajo: la fase A dejo demostrado que
+        # la claridad de cada rol NO se mueve con el matiz, asi que dentro de
+        # un esquema el contraste es invariante a la hora. Lo que cambia el
+        # contraste es el ESQUEMA, y esquemas hay dos.
+        #
+        # Las zonas se ELIGEN EN CALIENTE contra el reloj real, no se fijan en
+        # el codigo. Un par fijo no puede garantizar el cruce: la ventana de
+        # dia dura 13 h y la de noche 11, asi que para cualquier separacion
+        # fija hay horas en que las dos zonas caen del mismo lado — y un par
+        # separado 24 h exactas (p. ej. UTC+14 y UTC-10) da SIEMPRE la MISMA
+        # hora local, que es el barrido que no cruza el umbral que la fase A ya
+        # pago con un reloj congelado.
+        CANDIDATAS = (
+            "Pacific/Kiritimati", "Pacific/Auckland", "Asia/Tokyo", "Asia/Kolkata",
+            "Europe/Madrid", "Atlantic/Reykjavik", "America/New_York",
+            "America/Los_Angeles", "Pacific/Honolulu", "Pacific/Midway",
+        )
+        ahora_utc = datetime.now(timezone.utc)
+
+        def es_noche(zona: str) -> bool:
+            local = ahora_utc.astimezone(ZoneInfo(zona))
+            minutos = local.hour * 60 + local.minute
+            return minutos < 7 * 60 or minutos >= 20 * 60
+
+        zona_dia = next((z for z in CANDIDATAS if not es_noche(z)), None)
+        zona_noche = next((z for z in CANDIDATAS if es_noche(z)), None)
+        comprobar(zona_dia is not None and zona_noche is not None,
+                  f"hay una zona de dia y una de noche ({zona_dia} / {zona_noche})")
+
+        PARES = [
+            ("[data-ficha-nombre]", "el nombre"),
+            ("[data-ficha-host]", "el correo"),
+            (".ficha-estado", "la disponibilidad"),
+            ("[data-ficha-frase]", "la frase"),
+            (".ficha-k", "las claves"),
+            (".ficha-v", "los valores"),
+            (".ficha-s", "los detalles"),
+        ]
+        # Los tokens de Caelestia son `oklch()`, y `getComputedStyle` los
+        # devuelve TAL CUAL: "oklch(0.925 0.005 51.3)". Leer esos tres numeros
+        # como bytes RGB es el instrumento roto que la fase A ya pago (daba
+        # 1.00:1 en todo). Se convierten pintandolos en un lienzo 1x1 y leyendo
+        # el pixel: eso da los bytes sRGB que el navegador PINTA de verdad,
+        # sea cual sea la sintaxis del token. Se comprueba ademas que la
+        # conversion funciona (dos colores distintos dan pixeles distintos):
+        # si `fillStyle` rechazara la cadena, se quedaria con el valor anterior
+        # y todos los pares saldrian identicos, o sea otra tautologia.
+        CONTRASTE_JS = """(sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return null;
+            const cv = document.createElement("canvas");
+            cv.width = cv.height = 1;
+            const ctx = cv.getContext("2d", { willReadFrequently: true });
+            const bytes = (c, debajo) => {
+                ctx.clearRect(0, 0, 1, 1);
+                if (debajo) {
+                    ctx.fillStyle = `rgb(${debajo[0]},${debajo[1]},${debajo[2]})`;
+                    ctx.fillRect(0, 0, 1, 1);
+                }
+                ctx.fillStyle = "#000";
+                ctx.fillStyle = c;
+                if (ctx.fillStyle === "#000000" && !/^#0{6}$|black|rgb\\(0, 0, 0\\)/.test(c)) return null;
+                ctx.fillRect(0, 0, 1, 1);
+                const d = ctx.getImageData(0, 0, 1, 1).data;
+                return [d[0], d[1], d[2]];
+            };
+            const lum = ([r, g, b]) => {
+                const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+                return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+            };
+            // El fondo REAL: se sube por los ancestros hasta el primero que
+            // pinte algo. Comparar contra el rol teorico es como se colo que
+            // el reloj de la barra estuviera bajo AA cuatro horas al dia.
+            let nodo = el, fondo = null;
+            while (nodo && fondo === null) {
+                const bg = getComputedStyle(nodo).backgroundColor;
+                if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") fondo = bg;
+                nodo = nodo.parentElement;
+            }
+            const bFondo = bytes(fondo || "rgb(255,255,255)", [255, 255, 255]);
+            const bTexto = bytes(getComputedStyle(el).color, bFondo);
+            if (!bFondo || !bTexto) return null;
+            const a = lum(bTexto), b = lum(bFondo);
+            return {
+                ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+                texto: bTexto, fondo: bFondo,
+            };
+        }"""
+
+        peor, peor_etiqueta = 21.0, ""
+        esquemas_vistos: list[str] = []
+        for zona in (z for z in (zona_dia, zona_noche) if z):
+            ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, timezone_id=zona)
+            pg3 = ctx.new_page()
+            pg3.goto(f"{args.base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+            pg3.wait_for_timeout(3000)
+            pg3.click('[data-cae-ws="quien-es"]')
+            pg3.wait_for_timeout(2000)
+            esquema = pg3.evaluate("() => document.documentElement.dataset.caeEsquema")
+            esquemas_vistos.append(esquema)
+            hora = pg3.evaluate("() => new Date().getHours() + ':' + new Date().getMinutes()")
+            for selector, etiqueta in PARES:
+                medida_par = pg3.evaluate(CONTRASTE_JS, selector)
+                comprobar(medida_par is not None,
+                          f"se pudo medir {etiqueta} en esquema {esquema} ({selector})")
+                if medida_par is None:
+                    continue
+                if medida_par["ratio"] < peor:
+                    peor, peor_etiqueta = medida_par["ratio"], f"{etiqueta} en esquema {esquema}"
+            print(f"       {zona} (hora local {hora}): esquema {esquema}")
+            ctx.close()
+        # Si las dos zonas dan el mismo esquema, el gate mide dos veces lo
+        # mismo y no vale: un barrido que no cruza el umbral es el fallo que la
+        # fase A pago con un reloj congelado.
+        comprobar(len(set(esquemas_vistos)) == 2,
+                  f"se han visto los DOS esquemas ({esquemas_vistos})")
+        print(f"       peor par: {peor:.2f}:1 ({peor_etiqueta})")
+        comprobar(peor >= 4.5, f"contraste >= 4.5:1 en los dos esquemas ({peor:.2f}:1, {peor_etiqueta})")
 
         comprobar(not errores, f"consola sin errores ({len(errores)})")
         navegador.close()
