@@ -84,13 +84,53 @@ def main() -> int:
         comprobar(medida["abajo"] >= 0, f"aire bajo el pie >= 0 ({medida['abajo']})")
         comprobar(medida["desborde"] <= 1, f"la ventana no desborda ({medida['desborde']} px)")
 
-        print("\n[2] El nombre no parte")
-        lineas = pagina.evaluate("""() => {
+        print("\n[2] El nombre esta en 1 linea de caja y no desborda su columna")
+        nombre = pagina.evaluate("""() => {
             const n = document.querySelector('[data-ficha-nombre]');
             const lh = parseFloat(getComputedStyle(n).lineHeight);
-            return Math.max(1, Math.round(n.getBoundingClientRect().height / lh));
+            const lineas = Math.max(1, Math.round(n.getBoundingClientRect().height / lh));
+
+            // El ancho REAL del texto, con Range: getBoundingClientRect() del
+            // propio elemento da el ancho del CONTENEDOR (con white-space:nowrap
+            // el elemento no se encoge al texto salvo que sea inline), asi que
+            // esa medida da siempre verde y no vigila nada. Range mide el texto.
+            const rango = document.createRange();
+            rango.selectNodeContents(n);
+            const anchoTexto = rango.getBoundingClientRect().width;
+
+            // El ancho disponible NO es el clientWidth de la columna
+            // (`cuerpo.children[1]`): esa columna es una pista `1fr` de un
+            // grid SIN `minmax(0, 1fr)`, y una pista `1fr` sin ese piso tiene
+            // de minimo automatico su propio contenido (`auto` = max-content)
+            // — con `white-space: nowrap` el minimo del texto es su ancho
+            // entero, asi que la pista SIEMPRE crece hasta igualar el texto y
+            // la comprobacion "cabe en su columna" se volveria trivialmente
+            // verdadera sea cual sea el tamano de letra (medido: a 8rem,
+            // columnaWidth y anchoTexto salian los dos 972.84, identicos).
+            // El ancho real y fijo es el PRESUPUESTO: el propio `.ficha-cuerpo`
+            // no crece con el contenido (tiene `max-width: 1180px`), asi que
+            // cuerpo.width - retrato.width - gap es una cota que no se mueve
+            // aunque el nombre la desborde.
+            const cuerpo = n.closest('.ficha-cuerpo');
+            const cuerpoRect = cuerpo.getBoundingClientRect();
+            const retrato = cuerpo.children[0];
+            const anchoRetrato = retrato.getBoundingClientRect().width;
+            const gap = parseFloat(getComputedStyle(cuerpo).columnGap) || 0;
+            const anchoDisponible = cuerpoRect.width - anchoRetrato - gap;
+
+            return {
+                lineas,
+                anchoTexto: Math.round(anchoTexto),
+                anchoDisponible: Math.round(anchoDisponible),
+            };
         }""")
-        comprobar(lineas == 1, f"el nombre cabe en 1 linea ({lineas})")
+        print(f"       ancho del texto {nombre['anchoTexto']} · ancho disponible en la columna {nombre['anchoDisponible']}")
+        comprobar(nombre["lineas"] == 1, f"el nombre esta en 1 linea de caja ({nombre['lineas']})")
+        comprobar(
+            nombre["anchoTexto"] <= nombre["anchoDisponible"],
+            f"el texto del nombre cabe en el ancho disponible de su columna "
+            f"({nombre['anchoTexto']} <= {nombre['anchoDisponible']})",
+        )
 
         comprobar(not errores, f"consola sin errores ({len(errores)})")
         navegador.close()
