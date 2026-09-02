@@ -105,7 +105,18 @@ export function createHero(): HTMLElement {
    */
   const CORTE = ["Construyo sistemas", "que aguantan producción,", "no demos."] as const;
   const lineas = CORTE.map((texto) => el("span", "cae-ln", [texto]));
-  const titular = el("p", "cae-tit", lineas);
+  // Revision final (Importante 1): con `.hero-surface` oculto bajo Caelestia
+  // (themes.css), su `<h1>` (el `name` de arriba) queda sin pintar y un
+  // tercio de las visitas (el tema se sortea) no renderizan ningun `<h1>` —
+  // ni en el DOM, ni en el arbol de accesibilidad, ni para un crawler. Este
+  // titular es el equivalente semantico correcto bajo Caelestia (el "Que
+  // hago" de la escena), asi que pasa de `<p>` a `<h1>` sin condicionales:
+  // vive dentro de `.cae-head`, que `style.css` ya oculta por defecto
+  // (`display: none`) en Vice/Hyprland, asi que este segundo `<h1>` nunca
+  // se pinta ahi — solo Caelestia lo enciende (themes.css lo pone en
+  // `display: block` via `.cae-head`). El DOM compartido no distingue tag,
+  // solo clase, asi que esto no rompe el patron de los tres temas.
+  const titular = el("h1", "cae-tit", lineas);
   titular.setAttribute("data-cae-titular", "");
 
   const firma = el("span", "cae-firma", [identity.name]);

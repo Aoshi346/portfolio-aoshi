@@ -187,11 +187,24 @@ def titular(pg, base: str) -> None:
         " const desk = document.querySelector('#hero');"
         " const dr = desk.getBoundingClientRect();"
         " const libre = dr.top + dr.height - 84 - head.getBoundingClientRect().bottom;"
-        " return { n: lns.length, anchos, tam, libre }; }"
+        " const texto = lns.map((l) => l.textContent ?? '').join(' ');"
+        " return { n: lns.length, anchos, tam, libre, texto }; }"
     )
     assert_que(m is not None and m["n"] == 3, "el titular tiene tres lineas")
     if not m:
         return
+
+    # Revision final (Importante 3): el corte manual en `CORTE` (hero.ts) no
+    # sale de partir `identity.headline` por espacios -- nada ataba las dos
+    # cadenas, asi que podian divergir en silencio si el headline cambiaba en
+    # content.ts. El literal de abajo DEBE coincidir con `identity.headline`
+    # de `src/data/content.ts`; si ese headline cambia, este assert tiene que
+    # cambiar en el mismo commit (o el titular quedaria desactualizado).
+    HEADLINE_CONTENT_TS = "Construyo sistemas que aguantan producción, no demos."
+    assert_que(
+        m["texto"] == HEADLINE_CONTENT_TS,
+        f"las tres lineas juntas reproducen identity.headline literal ({m['texto']!r})",
+    )
 
     # Medido con Range, NO con la caja del span: los .ln son de bloque y su
     # getBoundingClientRect devuelve el ancho del CONTENEDOR. Con esa medida las
@@ -300,6 +313,39 @@ def roce(pg, base: str) -> None:
     assert_que(despues == antes, "y vuelve a su sitio al salir")
 
 
+def escritorio_desnudo(pg, base: str) -> None:
+    """Revision final (Importante 4): el fix P0 del gate de Vera (commit
+    b341ad2) puso `background: transparent` en `#hero` para que el fondo
+    generativo se viera a traves, sin panel opaco heredado de la regla
+    generica de la fase A (`main[data-cae-track] > *` pinta `--cae-elev-1`
+    a las otras cuatro escenas, que SI son ventanas de aplicacion). Esa regla
+    no tenia ningun assert propio: un cambio futuro en el selector generico
+    podia volver a tapar el 78% del fondo (la cifra medida por Vera) sin que
+    nada lo cazara. Visto en rojo a mano contra el fallo real que dice cazar:
+    comentando la excepcion de themes.css, esta asercion cae de OK a FALLO
+    leyendo `rgb(...)` de `--cae-elev-1` en vez de transparente.
+    """
+    print("\n[escritorio_desnudo] el hero no hereda el panel opaco de las otras escenas")
+    abrir(pg, base, "13:00")
+    fondo_hero = pg.evaluate(
+        "() => getComputedStyle(document.querySelector('#hero')).backgroundColor"
+    )
+    # Un `background: transparent` se reporta como `rgba(0, 0, 0, 0)` en
+    # getComputedStyle (Chromium) -- comprobamos por alpha 0, no por el
+    # string exacto, para no depender del formato que use el motor.
+    alpha = pg.evaluate(
+        "(v) => { const m = v.match(/rgba?\\(([^)]+)\\)/);"
+        " if (!m) return 1;"
+        " const partes = m[1].split(',').map((x) => parseFloat(x));"
+        " return partes.length === 4 ? partes[3] : 1; }",
+        fondo_hero,
+    )
+    assert_que(
+        alpha == 0,
+        f"#hero no pinta background opaco heredado de la fase A ({fondo_hero!r})",
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -313,6 +359,7 @@ def main() -> int:
         pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
 
         optica(pg, args.base)
+        escritorio_desnudo(pg, args.base)
         fondo(pg, args.base)
         titular(pg, args.base)
         firma_y_cifras(pg, args.base)

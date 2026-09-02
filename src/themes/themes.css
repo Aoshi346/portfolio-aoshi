@@ -3610,9 +3610,18 @@
  * tarjeta Material de `.hero-surface` (arriba, `.scene-surface`) y la
  * compensacion de posicion de `.hero-kick` que vivian aqui quedaron muertas
  * en cuanto los tres se ocultan y se han retirado en el mismo commit.
+ *
+ * Revision final (Critico 1): `.hero-kick` NO es exclusivo del hero — es la
+ * etiqueta compartida de las cinco escenas (ver comentario en style.css:169:
+ * el "Quien soy" de about, el tag de cada ficha de obra, el "Con que
+ * construyo" de creditos y la de contacto reusan la misma clase). Sin el
+ * `[data-scene="hero"]` de aqui abajo, esta regla los apagaba a los 9 —
+ * verificado en el build: 9 de 9 con rect vacio bajo Caelestia. `.hero-surface`
+ * y `.hero-corner` si son exclusivos de hero.ts (grep confirmado), asi que
+ * siguen sin ambito.
  */
+:root[data-theme="caelestia"] [data-scene="hero"] .hero-kick,
 :root[data-theme="caelestia"] .hero-surface,
-:root[data-theme="caelestia"] .hero-kick,
 :root[data-theme="caelestia"] .hero-corner {
   display: none;
 }

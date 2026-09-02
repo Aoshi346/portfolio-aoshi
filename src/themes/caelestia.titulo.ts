@@ -256,6 +256,16 @@ export function montarRoce(gsap: Gsap, root: HTMLElement): void {
 
   let activo: HTMLElement | null = null;
 
+  // Revision final (Importante 2): `.cae-dock-item` ya tiene su propio
+  // `:hover { transform: translateY(-0.4375rem) }` en CSS (themes.css) y un
+  // `transform` inline de GSAP gana SIEMPRE a una regla de hoja de estilos
+  // (ver CLAUDE.md, Never-Do) — con el `gsap.to(el, {y:-2})` de aqui puesto
+  // sobre el dock, el hover se quedaba en -2px en vez de los -7px del CSS
+  // mientras el puntero seguia encima. El lienzo SI debe seguir apartandose
+  // (eso no lo cubre ningun CSS), asi que solo se salta la mitad que levanta
+  // el propio elemento cuando la diana es el dock.
+  const esDock = (el: HTMLElement): boolean => el.matches(".cae-dock-item");
+
   const salirDe = (el: HTMLElement): void => {
     const lienzo = document.querySelector<HTMLCanvasElement>("canvas");
     // `clearProps: "transform"` (no solo x/y a 0) porque un `matrix(1, 0, 0,
@@ -264,7 +274,9 @@ export function montarRoce(gsap: Gsap, root: HTMLElement): void {
     if (lienzo) {
       gsap.to(lienzo, { x: 0, y: 0, duration: 0.7, ease: "power3.out", clearProps: "transform" });
     }
-    gsap.to(el, { y: 0, duration: 0.3, ease: "power3.out", clearProps: "transform" });
+    if (!esDock(el)) {
+      gsap.to(el, { y: 0, duration: 0.3, ease: "power3.out", clearProps: "transform" });
+    }
   };
 
   const entrarEn = (el: HTMLElement): void => {
@@ -275,7 +287,9 @@ export function montarRoce(gsap: Gsap, root: HTMLElement): void {
     const dx = (r.left + r.width / 2 - (ventana.left + ventana.width / 2)) / (ventana.width / 2);
     const dy = (r.top + r.height / 2 - (ventana.top + ventana.height / 2)) / (ventana.height / 2);
     gsap.to(lienzo, { x: -dx * 14, y: -dy * 10, duration: 0.7, ease: "power3.out" });
-    gsap.to(el, { y: -2, duration: 0.3, ease: "power3.out" });
+    if (!esDock(el)) {
+      gsap.to(el, { y: -2, duration: 0.3, ease: "power3.out" });
+    }
   };
 
   const alPasar = (evento: PointerEvent): void => {
