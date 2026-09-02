@@ -3596,7 +3596,6 @@
 }
 
 /* Contenedores tonales con elevacion real, cada uno en su altura. */
-:root[data-theme="caelestia"] .hero-surface,
 :root[data-theme="caelestia"] .scene-surface {
   background: var(--cae-elev-1);
   border: 1px solid var(--cae-outline);
@@ -3606,23 +3605,36 @@
   transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
 }
 
-:root[data-theme="caelestia"] .hero-surface {
-  max-width: 68rem;
+/*
+ * Caelestia esconde el hero de los otros temas: aqui manda .cae-head. La
+ * tarjeta Material de `.hero-surface` (arriba, `.scene-surface`) y la
+ * compensacion de posicion de `.hero-kick` que vivian aqui quedaron muertas
+ * en cuanto los tres se ocultan y se han retirado en el mismo commit.
+ */
+:root[data-theme="caelestia"] .hero-surface,
+:root[data-theme="caelestia"] .hero-kick,
+:root[data-theme="caelestia"] .hero-corner {
+  display: none;
 }
 
-/*
- * Compensacion heredada: `.hero-kick` paso a ser hermano de `.hero-surface`
- * para que la rejilla de Hyprland pudiera usarlo como columna 1, y al salir de
- * la tarjeta perdio su padding y su borde. Se reponen aqui. El comentario
- * largo con las medidas esta en el historial de este archivo (buscar
- * "x:101/y:267/ancho:982"); no se repite para no duplicarlo.
- */
-:root[data-theme="caelestia"] [data-scene="hero"] .hero-kick {
+:root[data-theme="caelestia"] .cae-head {
+  display: block;
+  margin-top: auto;
   position: relative;
-  top: calc(clamp(1.75rem, 4vw, 3.25rem) + 1px);
-  margin-left: calc(clamp(1.75rem, 4vw, 3.25rem) + 1px);
-  margin-right: calc(clamp(1.75rem, 4vw, 3.25rem) + 1px);
-  width: calc(min(68rem, 100%) - 2 * (clamp(1.75rem, 4vw, 3.25rem) + 1px));
+  padding-right: 230px; /* el hueco de la columna de cifras (tarea 4) */
+}
+
+:root[data-theme="caelestia"] .cae-tit {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+:root[data-theme="caelestia"] .cae-tit .cae-ln {
+  display: block;
+  white-space: nowrap;
+  line-height: 0.9;
+  letter-spacing: -0.018em;
+  font-variation-settings: var(--cae-display-axes-cartel);
 }
 
 :root[data-theme="caelestia"] .chip {

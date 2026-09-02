@@ -92,10 +92,27 @@ export function createHero(): HTMLElement {
   // tocar el DOM): fila 1 = surface, fila 2 = corner.
   const surface = el("div", "hero-surface", [nameWrap, lead]);
 
+  /*
+   * El titular de Caelestia. Vive en el DOM COMUN y `style.css` lo oculta en
+   * Vice y Hyprland (`display: none`), que es el mismo patron que ya usan
+   * `.hero-divider` y `.hero-name-ghost`.
+   *
+   * Las tres lineas van escritas a mano y no salen de partir
+   * `identity.headline` por espacios: el corte es una decision de diseno
+   * (el spec explica por que "que" no puede quedar colgando al final de la
+   * primera linea) y el texto sigue siendo literal de `content.ts`.
+   */
+  const CORTE = ["Construyo sistemas", "que aguantan producción,", "no demos."] as const;
+  const lineas = CORTE.map((texto) => el("span", "cae-ln", [texto]));
+  const titular = el("p", "cae-tit", lineas);
+  titular.setAttribute("data-cae-titular", "");
+
+  const caeHead = el("div", "cae-head", [titular]);
+
   const section = el(
     "section",
     "hero relative flex min-h-screen flex-col justify-center overflow-hidden px-6 py-24 md:px-12",
-    [eyebrow, divider, surface, corner],
+    [eyebrow, divider, surface, caeHead, corner],
   );
   section.setAttribute("data-scene", "hero");
 

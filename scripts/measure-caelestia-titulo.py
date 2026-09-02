@@ -155,6 +155,41 @@ def fondo(pg, base: str) -> None:
     assert_que(peor >= 4.5, f"peor contraste del dia {peor:.2f}:1 a las {cuando} (piso AA 4.5:1)")
 
 
+def titular(pg, base: str) -> None:
+    print("\n[titular] tres lineas a la misma medida, y el bloque cabe")
+    abrir(pg, base, "13:00")
+    m = pg.evaluate(
+        "() => {"
+        " const lns = Array.from(document.querySelectorAll('#hero .cae-tit .cae-ln'));"
+        " if (lns.length === 0) return null;"
+        " const anchos = lns.map((l) => {"
+        "   const r = document.createRange(); r.selectNodeContents(l);"
+        "   return r.getBoundingClientRect().width; });"
+        " const tam = lns.map((l) => parseFloat(getComputedStyle(l).fontSize));"
+        " const head = document.querySelector('#hero .cae-head');"
+        " const desk = document.querySelector('#hero');"
+        " const dr = desk.getBoundingClientRect();"
+        " const libre = dr.top + dr.height - 84 - head.getBoundingClientRect().bottom;"
+        " return { n: lns.length, anchos, tam, libre }; }"
+    )
+    assert_que(m is not None and m["n"] == 3, "el titular tiene tres lineas")
+    if not m:
+        return
+
+    # Medido con Range, NO con la caja del span: los .ln son de bloque y su
+    # getBoundingClientRect devuelve el ancho del CONTENEDOR. Con esa medida las
+    # tres lineas salian del mismo tamano y el bloque solo PARECIA justificado.
+    ancho = max(m["anchos"]) - min(m["anchos"])
+    assert_que(ancho <= 4.0, f"las tres lineas miden lo mismo: {ancho:.1f} px de diferencia (tope 4)")
+
+    # Si los tres tamanos de fuente coinciden, la medida esta mal hecha aunque
+    # los anchos cuadren: es exactamente el sintoma del fallo de arriba.
+    distintos = len({round(t) for t in m["tam"]}) == 3
+    assert_que(distintos, f"los tres tamanos de fuente son distintos entre si ({m['tam']})")
+
+    assert_que(m["libre"] >= -1, f"aire bajo el pie {m['libre']:.0f} px (no pisa el dock)")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -169,6 +204,7 @@ def main() -> int:
 
         optica(pg, args.base)
         fondo(pg, args.base)
+        titular(pg, args.base)
 
         print("\n[consola] la pagina no tira errores")
         assert_que(not errores, f"cero errores de consola ({errores[:2]})")

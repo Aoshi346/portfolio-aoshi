@@ -224,6 +224,12 @@ body {
   display: none;
 }
 
+/* Piezas que solo pinta Caelestia (fase B1). Mismo patron que .hero-divider:
+   viven en el DOM comun y los otros dos temas las apagan. */
+.cae-head {
+  display: none;
+}
+
 /*
  * No el accent puro: mismo motivo que `.hero-kick` — la
  * Task 11 sustituira el video de prueba por el real y el punto donde hoy

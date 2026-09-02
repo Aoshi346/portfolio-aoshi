@@ -1,4 +1,5 @@
 import type { Choreography } from "./choreography";
+import { montarTitulo } from "./caelestia.titulo";
 
 /**
  * La coreografia de Caelestia: las cinco escenas dejan de apilarse en vertical
@@ -118,6 +119,19 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   gsap.set(root, { xPercent: 0 });
   aislarInactivos(0);
   anclarDocumento();
+
+  // El titular se justifica midiendo texto real, asi que necesita el DOM ya
+  // colocado. `root` ES el <main>: ver el docstring de arriba.
+  //
+  // Sin `titulo.destroy()`: esta coreografia no tiene mecanismo de limpieza
+  // propio (`Choreography` devuelve `void` — ver el docstring de
+  // hypr.choreography.ts, "ningun tema tiene destroy()") y ninguno de sus
+  // otros oyentes de `window`/`document` (scroll, focusin, resize, el evento
+  // de workspace) se retira tampoco: todos viven tanto como la pagina, igual
+  // que explica el comentario "Sin destroy() propio" al final de este
+  // fichero. El oyente de resize de `montarTitulo` sigue exactamente el mismo
+  // patron.
+  montarTitulo(root);
 
   /*
    * Fase de CAPTURA: los eventos de scroll no burbujean, asi que un oyente en
