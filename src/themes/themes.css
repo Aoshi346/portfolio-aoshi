@@ -3708,6 +3708,63 @@
 }
 
 /*
+ * La entrada de escena (tarea 6): una terminal falsa que teclea `whoami` y,
+ * al terminar, el nombre trazado con los contornos reales de Fraunces
+ * (`caelestia.firma.ts`) que aterriza sobre `.cae-firma`. Las dos piezas van
+ * `position: fixed` — centradas en el VIEWPORT, no en `.hero` — porque el
+ * aterrizaje de `montarEntrada` mide con `getBoundingClientRect()` y mueve
+ * con un transform sin escalar (sin dividir por ningun `k`, a diferencia del
+ * companion de brainstorming: aqui no hay bastidor con `scale()`).
+ */
+:root[data-theme="caelestia"] .cae-term,
+:root[data-theme="caelestia"] .cae-trazo-stage {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+:root[data-theme="caelestia"] .cae-term {
+  z-index: 60;
+}
+
+:root[data-theme="caelestia"] .cae-trazo-stage {
+  z-index: 55;
+}
+
+:root[data-theme="caelestia"] .cae-term-line {
+  margin: 0;
+  padding: 18px 28px;
+  border-radius: 10px;
+  background: var(--cae-elev-2);
+  border: 1px solid var(--cae-outline);
+  font-family: var(--font-mono);
+  font-size: 20px;
+  letter-spacing: 0.01em;
+  color: var(--cae-on-surface);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.22);
+}
+
+:root[data-theme="caelestia"] .cae-term-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .cae-trazo {
+  width: min(74vw, 820px);
+  height: auto;
+  overflow: visible;
+  fill: currentColor;
+  fill-opacity: 0;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  color: var(--cae-on-surface);
+}
+
+/*
  * El widget "Ahora mismo": tarjeta flotante en la esquina superior derecha
  * de la escena Titulo. Hermano de `.cae-head`, no hijo — vive sobre el
  * fondo directamente, con su propia superficie tonal.

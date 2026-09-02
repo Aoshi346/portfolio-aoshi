@@ -1,5 +1,6 @@
 import { education, experience, identity, stats } from "../data/content";
-import { el } from "../utils/dom";
+import { FIRMA } from "../themes/caelestia.firma";
+import { el, elFromMarkup } from "../utils/dom";
 
 /**
  * Apertura. Suelo de conversion garantizado: nombre, rol y contacto legibles
@@ -151,10 +152,33 @@ export function createHero(): HTMLElement {
     wfila(experience[0].organization, experience[0].period),
   ]);
 
+  /*
+   * La entrada de escena de Caelestia (tarea 6): una terminal falsa que
+   * teclea `whoami` y, al terminar, el nombre trazado con los contornos
+   * reales de Fraunces aterriza sobre `.cae-firma`. `montarEntrada`
+   * (caelestia.titulo.ts) hace el movimiento; aqui solo va el DOM que
+   * necesita. Vive en el DOM comun y `style.css` lo apaga en Vice/Hyprland,
+   * mismo patron que `.cae-head`/`.cae-widget`.
+   */
+  const termTyped = el("span", "cae-term-typed");
+  const termCursor = el("span", "cae-term-cursor", ["_"]);
+  const termLine = el("p", "cae-term-line", ["$ ", termTyped, termCursor]);
+  const term = el("div", "cae-term", [termLine]);
+  term.setAttribute("aria-hidden", "true");
+
+  // Contornos generados por `scripts/gen-firma-paths.py` — dato propio,
+  // controlado y bundleado, no entrada externa: `elFromMarkup` es seguro aqui
+  // (ver src/utils/dom.ts).
+  const trazoMarkup = `<svg class="cae-trazo" viewBox="0 -80 ${FIRMA.ancho} 90">${FIRMA.glifos
+    .map((g) => `<path d="${g.d}"></path>`)
+    .join("")}</svg>`;
+  const trazoStage = elFromMarkup("cae-trazo-stage", trazoMarkup);
+  trazoStage.setAttribute("aria-hidden", "true");
+
   const section = el(
     "section",
     "hero relative flex min-h-screen flex-col justify-center overflow-hidden px-6 py-24 md:px-12",
-    [eyebrow, divider, surface, widget, caeHead, corner],
+    [eyebrow, divider, surface, widget, caeHead, corner, term, trazoStage],
   );
   section.setAttribute("data-scene", "hero");
 

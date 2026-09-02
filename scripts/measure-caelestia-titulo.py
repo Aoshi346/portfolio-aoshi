@@ -247,6 +247,28 @@ def widget(pg, base: str) -> None:
     assert_que("Repositorios públicos" not in texto, "el widget no inventa datos derivados")
 
 
+def entrada(pg, base: str) -> None:
+    print("\n[entrada] el trazo existe y el movimiento reducido lo salta")
+    abrir(pg, base, "13:00")
+    n = pg.evaluate("() => document.querySelectorAll('#hero .cae-trazo path').length")
+    assert_que(n == 15, f"el trazo tiene los 15 glifos de la firma ({n})")
+
+    # Con movimiento reducido: sin terminal, sin trazo y todo montado.
+    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
+    pr = ctx.new_page()
+    abrir(pr, base, "13:00")
+    est = pr.evaluate(
+        "() => {"
+        " const t = document.querySelector('#hero .cae-term');"
+        " const f = document.querySelector('#hero .cae-firma');"
+        " return { term: t ? getComputedStyle(t).display : 'none',"
+        "          firma: f ? parseFloat(getComputedStyle(f).opacity) : 0 }; }"
+    )
+    assert_que(est["term"] == "none", f"con movimiento reducido no hay terminal ({est['term']!r})")
+    assert_que(est["firma"] >= 0.99, f"con movimiento reducido la firma esta puesta ({est['firma']})")
+    ctx.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -264,6 +286,7 @@ def main() -> int:
         titular(pg, args.base)
         firma_y_cifras(pg, args.base)
         widget(pg, args.base)
+        entrada(pg, args.base)
 
         print("\n[consola] la pagina no tira errores")
         assert_que(not errores, f"cero errores de consola ({errores[:2]})")

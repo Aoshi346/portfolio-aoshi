@@ -1,5 +1,5 @@
 import type { Choreography } from "./choreography";
-import { montarTitulo } from "./caelestia.titulo";
+import { montarEntrada, montarTitulo } from "./caelestia.titulo";
 
 /**
  * La coreografia de Caelestia: las cinco escenas dejan de apilarse en vertical
@@ -132,6 +132,12 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   // fichero. El oyente de resize de `montarTitulo` sigue exactamente el mismo
   // patron.
   montarTitulo(root);
+
+  // La entrada (tarea 6): terminal + trazo del nombre, aterrizando sobre
+  // `.cae-firma`. Sin `destroy()` propio por el mismo motivo que el resto de
+  // esta coreografia (ver el comentario "Sin destroy() propio" al final del
+  // fichero) — el handle que devuelve existe para tests/composicion futura.
+  montarEntrada(gsap, root);
 
   /*
    * Fase de CAPTURA: los eventos de scroll no burbujean, asi que un oyente en

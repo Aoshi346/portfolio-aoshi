@@ -234,6 +234,13 @@ body {
   display: none;
 }
 
+/* Piezas de la entrada de escena (tarea 6): terminal falsa + trazo del
+   nombre. Mismo patron — el DOM es comun, solo Caelestia las enciende. */
+.cae-term,
+.cae-trazo-stage {
+  display: none;
+}
+
 /*
  * No el accent puro: mismo motivo que `.hero-kick` — la
  * Task 11 sustituira el video de prueba por el real y el punto donde hoy
