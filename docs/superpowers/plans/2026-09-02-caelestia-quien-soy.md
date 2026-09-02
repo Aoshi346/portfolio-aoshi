@@ -1054,7 +1054,7 @@ el comando sale **vacío**.
 Crea `src/themes/caelestia.ficha.ts`:
 
 ```ts
-import type { Choreography } from "./choreography";
+import type { Gsap } from "./choreography";
 
 /**
  * Lo unico de la ficha de «Quien soy» que el CSS no puede hacer: medir el
@@ -1063,10 +1063,11 @@ import type { Choreography } from "./choreography";
  * Vive aparte de `caelestia.choreography.ts` a proposito: la coreografia
  * gobierna el carril de workspaces y no tiene por que saber que hay dentro de
  * cada ventana. Aqui no se toca el carril.
+ *
+ * El `gsap` llega SIEMPRE por parametro, desde el contexto de la coreografia.
+ * Un `import gsap from "gsap"` suelto compila, pasa el linter y revienta en el
+ * navegador: le paso a Hyprland y su coreografia no corrio durante semanas.
  */
-
-/** El `gsap` llega del contexto de la coreografia, nunca de un import suelto. */
-type Gsap = Parameters<Choreography>[0]["gsap"];
 
 export interface FichaHandle {
   destroy: () => void;
@@ -1284,10 +1285,14 @@ git commit -m "feat(caelestia): la entrada de la ficha y el filete medido con Ra
                 .filter((t) => t.length > 0);
         }""")
         # Los valores compuestos («rol · organizacion») se parten por el separador:
-        # cada mitad tiene que existir literal en content.ts.
+        # cada mitad tiene que existir literal en content.ts. El separador se
+        # parte con expresion regular y NO con la cadena " · ": la fila de
+        # enfoque une sus dos titulos con dos espacios a cada lado, asi que un
+        # split por la cadena exacta la dejaria entera y daria un fallo falso.
+        import re
         piezas: list[str] = []
         for texto in textos:
-            piezas.extend(p.strip() for p in texto.split(" · ") if p.strip())
+            piezas.extend(p.strip() for p in re.split(r"\s+·\s+", texto) if p.strip())
         huerfanos = [p for p in piezas if p not in fuente and not p.startswith("Desde ")]
         comprobar(not huerfanos, f"todo texto sale de content.ts (huerfanos: {huerfanos})")
 
@@ -1299,10 +1304,15 @@ git commit -m "feat(caelestia): la entrada de la ficha y el filete medido con Ra
         comprobar('"opsz" 9' in ejes["marca"], f"la marca de la barra sigue en opsz 9 ({ejes['marca']})")
         comprobar('"opsz" 144' in ejes["nombre"], f"el nombre usa opsz 144 ({ejes['nombre']})")
 
-        print("\n[5] Contraste de los pares que se pintan, barriendo el dia")
-        # La claridad de cada rol NO se mueve con la hora (fase A), asi que el
-        # contraste es invariante al matiz. Se barre igualmente porque el ESQUEMA
-        # si cambia, y con el la pareja de claridades.
+        print("\n[5] Contraste de los pares que se pintan, en los dos esquemas")
+        # NO se inventa una API para forzar la hora. El motor de color lee el
+        # reloj del sistema, asi que el esquema se cambia con la ZONA HORARIA
+        # del contexto de Playwright, que es real y no toca el codigo.
+        #
+        # Dos muestras bastan, y no es un atajo: la fase A dejo demostrado que
+        # la claridad de cada rol NO se mueve con el matiz, asi que dentro de un
+        # esquema el contraste es invariante a la hora. Lo que cambia el
+        # contraste es el ESQUEMA, y esquemas hay dos.
         PARES = [
             ("[data-ficha-nombre]", "el nombre"),
             ("[data-ficha-host]", "el correo"),
@@ -1312,53 +1322,54 @@ git commit -m "feat(caelestia): la entrada de la ficha y el filete medido con Ra
             (".ficha-v", "los valores"),
             (".ficha-s", "los detalles"),
         ]
-        peor = 21.0
-        peor_etiqueta = ""
-        for minutos in range(0, 1440, 60):
-            pagina.evaluate(
-                """(m) => {
-                    // Se fuerza la hora reescribiendo los tokens que el motor
-                    // publica en :root, sin tocar el motor.
-                    const ev = new CustomEvent('caelestia:hora-de-prueba', { detail: { m } });
-                    document.documentElement.dispatchEvent(ev);
-                }""",
-                minutos,
-            )
+        CONTRASTE_JS = """(sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return null;
+            const lum = (c) => {
+                const [r, g, b] = c.match(/[\\d.]+/g).slice(0, 3).map(Number);
+                const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+                return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+            };
+            // El fondo REAL: se sube por los ancestros hasta el primero que
+            // pinte algo. Comparar contra el rol teorico es como se colo que el
+            // reloj de la barra estuviera bajo AA cuatro horas al dia.
+            let nodo = el, fondo = null;
+            while (nodo && fondo === null) {
+                const bg = getComputedStyle(nodo).backgroundColor;
+                if (bg && bg !== "rgba(0, 0, 0, 0)") fondo = bg;
+                nodo = nodo.parentElement;
+            }
+            const a = lum(getComputedStyle(el).color);
+            const b = lum(fondo || "rgb(255,255,255)");
+            return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+        }"""
+
+        peor, peor_etiqueta = 21.0, ""
+        # Kiritimati (UTC+14) y Honolulu (UTC-10) caen en extremos opuestos del
+        # dia a la vez: pase lo que pase, uno de los dos esta fuera de 07:00-20:00.
+        for zona in ("Pacific/Kiritimati", "Pacific/Honolulu"):
+            ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, timezone_id=zona)
+            pg3 = ctx.new_page()
+            pg3.goto(f"{args.base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+            pg3.wait_for_timeout(3000)
+            pg3.click('[data-cae-ws="quien-es"]')
+            pg3.wait_for_timeout(2000)
+            esquema = pg3.evaluate("() => document.documentElement.dataset.caeEsquema")
             for selector, etiqueta in PARES:
-                ratio = pagina.evaluate(
-                    """(sel) => {
-                        const el = document.querySelector(sel);
-                        if (!el) return null;
-                        const lum = (c) => {
-                            const [r, g, b] = c.match(/[\\d.]+/g).slice(0, 3).map(Number);
-                            const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
-                            return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-                        };
-                        let fondo = el, color = null;
-                        while (fondo && color === null) {
-                            const bg = getComputedStyle(fondo).backgroundColor;
-                            if (bg && bg !== 'rgba(0, 0, 0, 0)') color = bg;
-                            fondo = fondo.parentElement;
-                        }
-                        const a = lum(getComputedStyle(el).color);
-                        const b = lum(color || 'rgb(255,255,255)');
-                        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-                    }""",
-                    selector,
-                )
+                ratio = pg3.evaluate(CONTRASTE_JS, selector)
                 if ratio is not None and ratio < peor:
-                    peor, peor_etiqueta = ratio, f"{etiqueta} a las {minutos // 60:02d}:00"
-        print(f"       peor par del dia: {peor:.2f}:1 ({peor_etiqueta})")
-        comprobar(peor >= 4.5, f"contraste >= 4.5:1 en todo el dia ({peor:.2f}:1, {peor_etiqueta})")
+                    peor, peor_etiqueta = ratio, f"{etiqueta} en esquema {esquema}"
+            print(f"       {zona}: esquema {esquema}")
+            ctx.close()
+        print(f"       peor par: {peor:.2f}:1 ({peor_etiqueta})")
+        comprobar(peor >= 4.5, f"contraste >= 4.5:1 en los dos esquemas ({peor:.2f}:1, {peor_etiqueta})")
 ```
 
-> **Nota sobre el barrido:** el evento `caelestia:hora-de-prueba` **no existe todavía**. Si
-> `caelestia.color.ts` no expone una forma de forzar la hora, mide las **dos** posiciones que de
-> verdad importan sin inventar API: carga la página con el reloj del sistema tal cual (esquema
-> claro) y repite con el contexto de Playwright a una hora nocturna usando
-> `browser.new_context(timezone_id="Pacific/Kiritimati")` u otra zona que caiga fuera de 07:00–20:00.
-> **Dos muestras reales valen más que un barrido que se apoya en una API inventada** — y una API
-> inventada es exactamente el fallo que este proyecto ya pagó ocho veces.
+> **Comprueba que has visto los dos esquemas.** Si las dos zonas horarias imprimen el mismo
+> `esquema`, el gate está midiendo dos veces lo mismo y no vale: cambia una zona hasta que salgan
+> `dia` y `noche`. Un barrido que no cruza el umbral es exactamente el fallo que la fase A pagó con
+> un reloj congelado.
+
 
 - [ ] **Paso 2: correrlos y arreglar lo que salga**
 
