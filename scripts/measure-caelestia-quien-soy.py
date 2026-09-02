@@ -132,6 +132,29 @@ def main() -> int:
             f"({nombre['anchoTexto']} <= {nombre['anchoDisponible']})",
         )
 
+        print("\n[6] Movimiento reducido: el pseudo-elemento de la fila tambien se apaga")
+        # `*` NO alcanza pseudo-elementos: el guard de arriba
+        # ([data-ficha="neofetch"] *) deja fuera a `.ficha-k::before` (la
+        # flecha ">" que entra deslizando al rozar una fila), asi que sigue
+        # animando bajo movimiento reducido si no se cubre aparte.
+        contexto_reduce = navegador.new_context(viewport={"width": 1440, "height": 900},
+                                                  reduced_motion="reduce")
+        pg_reduce = contexto_reduce.new_page()
+        pg_reduce.goto(f"{args.base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        pg_reduce.wait_for_timeout(3000)
+        pg_reduce.click('[data-cae-ws="quien-es"]')
+        pg_reduce.wait_for_timeout(1400)
+        script_pseudo = (
+            "() => { const k = document.querySelector('.ficha-k'); "
+            "const antes = getComputedStyle(k, '::before'); "
+            "return { duracion: antes.transitionDuration }; }"
+        )
+        pseudo = pg_reduce.evaluate(script_pseudo)
+        print(f"       .ficha-k::before transition-duration bajo reduce: {pseudo['duracion']}")
+        comprobar(pseudo["duracion"] == "0s",
+                  f"el pseudo-elemento .ficha-k::before no anima bajo reduce ({pseudo['duracion']})")
+        contexto_reduce.close()
+
         comprobar(not errores, f"consola sin errores ({len(errores)})")
         navegador.close()
 

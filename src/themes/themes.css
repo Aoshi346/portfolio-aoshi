@@ -3943,6 +3943,18 @@
     transition: none;
   }
 
+  /* El selector universal `*` de arriba NO alcanza a los pseudo-elementos —
+     no son nodos del DOM, asi que `* ::before/::after` no los recoge y hace
+     falta nombrarlos aparte. Sin esta regla, `.ficha-k::before` (la flecha
+     ">" que entra deslizando 5px al rozar una fila) se queda animando bajo
+     movimiento reducido: medido, `transition-duration` seguia en
+     `0.14s, 0.18s` con el guard de arriba puesto. Es el UNICO pseudo-elemento
+     con transicion en este bloque (comprobado); si se añade otro
+     ::before/::after con transition o animation, hay que sumarlo aqui. */
+  :root[data-theme="caelestia"] .ficha-k::before {
+    transition: none;
+  }
+
   :root[data-theme="caelestia"] .ficha-punto {
     animation: none;
   }
