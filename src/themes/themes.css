@@ -4290,6 +4290,20 @@
   transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
 }
 
+/*
+ * Titulo (`#hero`) es la unica escena sin ventana: el spec la llama "el
+ * escritorio desnudo" — el fondo generativo (`caelestiaFiguras.ts`, montado en
+ * `.bg-theme` a `z-index: -20`) tiene que verse directamente, con el
+ * contenido flotando encima, no dentro de un panel opaco. La regla general de
+ * arriba le pintaba `--cae-elev-1` igual que a las otras cuatro (78,04% del
+ * viewport tapado, medido por Vera en F-001): esta excepcion solo quita el
+ * fondo, deja intactos el `border-radius`/`overflow-y`/margenes que sostienen
+ * las cuentas del carril de mas arriba.
+ */
+:root[data-theme="caelestia"] main[data-cae-track] > [data-scene="hero"] {
+  background: transparent;
+}
+
 :root[data-theme="caelestia"] main[data-cae-track] > *::-webkit-scrollbar {
   width: 0.5625rem;
 }
