@@ -15,6 +15,7 @@ resultado se COMMITEA: no hay descarga en tiempo de ejecucion.
       'https://raw.githubusercontent.com/google/fonts/main/ofl/fraunces/Fraunces%5BSOFT%2CWONK%2Copsz%2Cwght%5D.ttf'
     /tmp/fenv/bin/python scripts/gen-firma-paths.py /tmp/fraunces.ttf
 """
+import re
 import sys
 
 from fontTools.misc.transform import Transform
@@ -46,10 +47,17 @@ def main(ttf: str) -> int:
         if d:
             # Dos decimales: el trazo se dibuja a 780 px de ancho, asi que la
             # tercera cifra es ruido y son 8 KB menos en el bundle.
-            d = " ".join(
-                f"{float(t):.2f}" if t.replace(".", "", 1).replace("-", "", 1).isdigit() else t
-                for t in d.replace("-", " -").split()
-            )
+            #
+            # UN SOLO regex sobre TODO el string, no un tokenizado por
+            # espacios: fontTools no separa un numero de la letra de comando
+            # que lo precede ("H47.05", "Q25.9…"), que es el primer numero de
+            # CASI TODO segmento de trazo. El tokenizado por espacios (con el
+            # truco de separar "-" a mano) solo redondeaba los numeros que ya
+            # llevaban un espacio real delante — negativos separados por el
+            # truco, y positivos que por casualidad no seguian a una letra
+            # pegada. 543 numeros de la firma real se colaban enteros, con
+            # los 15-17 digitos de ruido de un float64.
+            d = re.sub(r"-?\d+\.\d+", lambda m: f"{float(m.group()):.2f}", d)
             salida.append({"c": ch, "d": d})
         x += hmtx[nombre][0] * escala
 
