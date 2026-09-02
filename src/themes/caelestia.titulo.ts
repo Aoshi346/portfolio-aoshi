@@ -241,8 +241,19 @@ const ROCE_SELECTOR = ".cae-widget, .cae-statcol > div, .cae-ws, .cae-dock-item"
  * Sin `destroy()`: mismo patron que el resto de `caelestia.choreography.ts`
  * (ver su comentario final "Sin destroy() propio" — `Choreography` devuelve
  * `void` y ningun tema de este proyecto tiene mecanismo de limpieza).
+ *
+ * `prefers-reduced-motion`: SOLO de este gesto. El transform del carril de
+ * workspaces (`caelestiaChoreography`) todavia no respeta la preferencia —
+ * es un hueco previo, ya anotado como "Tarea 10" en el docstring de ese
+ * fichero, y queda fuera de esta funcion a proposito. Pero el roce es codigo
+ * nuevo de esta tarea, asi que se comprueba UNA VEZ al montar: si el visitante
+ * pide movimiento reducido, ni siquiera se ponen los oyentes — no hay nada
+ * que "desactivar" en cada evento, no hay fondo que apartar ni elemento que
+ * levantar.
  */
 export function montarRoce(gsap: Gsap, root: HTMLElement): void {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
   let activo: HTMLElement | null = null;
 
   const salirDe = (el: HTMLElement): void => {
