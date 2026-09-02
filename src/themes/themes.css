@@ -3532,6 +3532,19 @@
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
   --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
 
+  /*
+   * La optica del CARTEL, solo para el titular de la escena Titulo.
+   *
+   * `opsz` en Fraunces no es estilo: la fuente trae DIBUJOS DISTINTOS segun el
+   * tamano al que se vaya a leer. `opsz 9` engorda las finas para que
+   * sobrevivan a tamano de texto; a 15px (la marca de la barra) es lo correcto,
+   * y ampliado a 84px sale romo y sin contraste.
+   *
+   * Los ejes de la barra, las pastillas y la firma NO se tocan: ahi el texto se
+   * lee a 15-30px y necesita el dibujo de texto.
+   */
+  --cae-display-axes-cartel: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
+
   --radius-card: 22px;
   --display-tracking: -0.03em;
   --display-weight: 900;
