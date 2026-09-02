@@ -121,7 +121,7 @@ function createCard(): HTMLElement {
 
 function createStats(): HTMLElement {
   // `scene-surface`: en Caelestia el fondo detras de esta franja es un shader
-  // animado (`caelestiaBlobs`), no un color fijo — sin una superficie encima,
+  // animado (`caelestiaFiguras`), no un color fijo — sin una superficie encima,
   // el numero en accent cae por debajo de 3:1 en los frames donde el blob
   // se corre debajo del texto (medido con el arnes de contraste).
   //

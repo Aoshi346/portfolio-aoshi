@@ -42,7 +42,7 @@ export const caelestiaTheme: Theme = {
    */
   choreographyBuildsLayout: true,
   async mountBackground(container) {
-    const { mountCaelestiaBlobs } = await import("../backgrounds/caelestiaBlobs");
-    return mountCaelestiaBlobs(container);
+    const { mountCaelestiaFiguras } = await import("../backgrounds/caelestiaFiguras");
+    return mountCaelestiaFiguras(container);
   },
 };
