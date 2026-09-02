@@ -91,7 +91,7 @@ veces lo mismo.
 ~ $ neofetch▌
 
    ┌──────────┐        Aoshi Blanco Sanz              <- Fraunces, opsz 144
-   │          │        aoshi@caelestia │ ● Disponible para proyectos
+   │          │        a.blanco1501@gmail.com │ ● Disponible para proyectos
    │  retrato │        ─────────────────                <- del largo exacto del host
    │ squircle │        Llevo datos reales a interfaces que la gente usa todos los días.
    │          │
@@ -132,7 +132,8 @@ solo enumeraba datos.
 
 `neofetch` imprime el subrayado del **largo exacto** de `usuario@host`. Aquí igual: se mide con
 `document.createRange()` + `selectNodeContents()` sobre el texto y la entrada hace crecer el filete
-hasta ese número. Medido: **filete 170 px, texto 170 px**.
+hasta ese número. Medido con el correo: **filete 249 px, texto 249 px** — el filete se reajusta solo
+si el texto cambia, y eso está comprobado (con `aoshi@caelestia` daba 170 / 170).
 
 **Nunca con la caja del elemento**: un `<p>` de bloque devuelve el ancho de la columna, no el del
 texto. Es la trampa que B1 ya pagó con su justificación.
@@ -180,7 +181,7 @@ generador quedan en `2026-09-02-caelestia-quien-soy-figuras.py`.
 
 ## La insignia de disponibilidad
 
-Sube a la **línea de identidad**, junto a `aoshi@caelestia`, separada por un filete de un píxel: deja
+Sube a la **línea de identidad**, junto al correo, separada por un filete de un píxel: deja
 de ser la última fila del listado y pasa a ser lo segundo que se lee después del nombre. **Lo que la
 hace segunda parada es el sitio, no el color.**
 
@@ -208,7 +209,7 @@ Con el shell ya montado —barra, dock y ventana— lo único que se anima es la
 | 0,78 | Enter | `opacity` 1 → 0,2 → 1 | 0,04 s, `power1.inOut` |
 | 0,86 | entra el retrato, el logotipo de la distro | `opacity` 0 → 1, `scale` 1,06 → 1 | 0,55 s, `power2.out` |
 | 1,05 | **el nombre se descubre de izquierda a derecha** | `clip-path: inset(0 100% 0 0)` → `inset(0 0% 0 0)` | 0,72 s, `power2.inOut` |
-| 1,45 | `aoshi@caelestia` | `opacity`, `x` −6 → 0 | 0,28 s, `power2.out` |
+| 1,45 | el correo | `opacity`, `x` −6 → 0 | 0,28 s, `power2.out` |
 | 1,60 | el filete crece hasta el largo del host | `width` 0 → 170 px | 0,42 s, `power2.inOut` |
 | 1,85 | los campos, uno a uno, como una salida que se imprime | `opacity`, `x` −6 → 0 | 0,22 s c/u, escalonados 70 ms |
 | 2,45 | la tira de color cierra, como en el `neofetch` de verdad | `opacity`, `scaleX` 0,2 → 1 | 0,18 s c/u, escalonados 35 ms |
@@ -251,9 +252,16 @@ envoltorios.
 
 ## El contenido: leído, no copiado
 
-Todo texto visible sale de `src/data/content.ts`: `identity.name`, `identity.role`,
-`identity.location`, `identity.now`, `identity.availability`, `identity.githubAvatar`,
-`aboutCopy[0]`, `education[0]`, `experience[0]` y los dos `focusAreas`.
+Todo texto visible sale de `src/data/content.ts`: `identity.name`, `identity.email`,
+`identity.role`, `identity.location`, `identity.now`, `identity.availability`,
+`identity.githubAvatar`, `aboutCopy[0]`, `education[0]`, `experience[0]` y los dos `focusAreas`.
+
+**La cabecera del comando es el correo**, no un `usuario@host` inventado. Una versión intermedia
+puso `aoshi@caelestia`, que era lo único de toda la escena que no salía de ningún sitio; el correo
+es un dato real, es la vía de contacto principal, y de paso la escena gana lo que le faltaba: **algo
+que se pueda pulsar**. Va como `mailto:` y es **la única parada de tabulador legítima** de la
+escena — el resto no navega a ninguna parte y su contenido está entero a la vista, que es la lección
+que `about.ts` ya dejó escrita al quitarle el `tabIndex` a las celdas de la placa de Hyprland.
 
 **`Desde 2021` se lee de `stats` por su rótulo, no por su índice** — la misma precaución que ya toma
 `statValue()` en `about.ts`, para que reordenar el array mañana no rompa esto en silencio.
@@ -297,7 +305,7 @@ Los pares que esta escena pinta de verdad, y que por tanto hay que vigilar:
 |---|---|
 | `on-surface` sobre `surface-container` | el nombre, los valores de las filas, la frase |
 | `on-surface-variant` sobre `surface-container` | las claves, los detalles, la insignia |
-| `primary` sobre `surface-container` | `aoshi@caelestia` y el `~ $` del prompt |
+| `primary` sobre `surface-container` | el correo y el `~ $` del prompt |
 | `anchor` sobre `surface-container` | el punto de la insignia y el `>` del roce |
 | `on-surface` sobre `surface` | las filas al roce, que cambian de fondo |
 

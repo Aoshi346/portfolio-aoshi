@@ -200,6 +200,13 @@
       sc.querySelectorAll('[data-track-col="focus"] .about-item')
     ).map(par);
     const img = sc.querySelector('.about-avatar');
+    // El correo sale del dock, que lo pinta desde `contactChannels` — y ese, de
+    // `identity.email`. Asi la cabecera del comando deja de ser lo unico
+    // inventado de la escena: `usuario@host` pasa a ser un dato real.
+    const correoNodo = doc.querySelector('.cae-dock-item[href^="mailto:"]');
+    const correo = correoNodo
+      ? (correoNodo.dataset.caeLabel || correoNodo.getAttribute('href').replace('mailto:', ''))
+      : '';
     // El «Desde 2021» sale de la franja de cifras por su ROTULO, no por su
     // indice: `stats` es un array de este mismo repo y atarlo a stats[0] deja
     // una rotura silenciosa la proxima vez que alguien lo reordene. Es la misma
@@ -220,6 +227,7 @@
       // solo dice DATOS, y quien recluta necesita una linea que se lea.
       lead: t('[data-line="lead"]'),
       avatar: img ? img.src : '',
+      email: correo,
       exp: exp ? par(exp) : { titulo: '', detalle: '' },
       edu: edu ? par(edu) : { titulo: '', detalle: '' },
       enfoque,
@@ -282,7 +290,16 @@
       font-size: 3.35rem; line-height: 0.95; letter-spacing: -0.018em;
       margin: 0 0 0.5rem; white-space: nowrap; color: var(--cae-on-surface);
     }
-    .nf-host { font-size: 0.95rem; color: var(--cae-primary); margin: 0; letter-spacing: 0.02em; }
+    /* La cabecera del comando es el correo, y es pulsable: es la via de contacto
+       principal y la unica parada de tabulador legitima de la escena — el resto
+       no navega a ninguna parte y su contenido esta entero a la vista. */
+    .nf-host {
+      font-size: 0.95rem; color: var(--cae-primary); margin: 0; letter-spacing: 0.02em;
+      text-decoration: none; border-bottom: 1px solid transparent;
+      transition: border-color 0.18s ease;
+    }
+    .nf-host:hover { border-bottom-color: var(--cae-primary); }
+    .nf-host:focus-visible { outline: 2px solid var(--cae-anchor); outline-offset: 3px; border-radius: 2px; }
     /* neofetch imprime el filete del largo EXACTO de usuario@host. Se mide con
        Range sobre el texto, no con la caja del elemento. */
     .nf-rule { height: 1px; background: var(--cae-outline); margin: 0.7rem 0 1.2rem; width: 0; }
@@ -375,7 +392,7 @@
       <div>
         <div data-g><p class="nf-name" data-nombre>${C.name}</p></div>
         <div data-g class="nf-id">
-          <p class="nf-host">aoshi@caelestia</p>
+          <a class="nf-host" href="mailto:${C.email}">${C.email}</a>
           <span class="nf-badge" data-badge><i class="nf-dot"></i>${C.availability}</span>
         </div>
         <div class="nf-rule" data-rule></div>
