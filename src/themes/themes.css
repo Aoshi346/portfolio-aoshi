@@ -3637,6 +3637,76 @@
   font-variation-settings: var(--cae-display-axes-cartel);
 }
 
+:root[data-theme="caelestia"] .cae-kicker {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  margin: 0 0 14px;
+}
+
+:root[data-theme="caelestia"] .cae-firma {
+  font-family: var(--font-display);
+  /* Los ejes del SHELL, no los del cartel: aqui se lee a 30px. Y `nowrap`
+     porque esta linea es el destino del trazo de la entrada — si partiera en
+     dos, el aterrizaje no cuadraria. */
+  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+:root[data-theme="caelestia"] .cae-regla {
+  display: block;
+  width: 46px;
+  height: 1px;
+  background: var(--cae-outline);
+  transform-origin: left center;
+}
+
+:root[data-theme="caelestia"] .cae-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface-variant);
+  white-space: nowrap;
+}
+
+:root[data-theme="caelestia"] .cae-statcol {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: 14px;
+  text-align: right;
+}
+
+:root[data-theme="caelestia"] .cae-statcol > div {
+  border-top: 1px solid var(--cae-outline);
+  padding-top: 7px;
+  min-width: 168px;
+}
+
+:root[data-theme="caelestia"] .cae-v2 {
+  display: block;
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-size: 26px;
+  line-height: 1;
+  font-feature-settings: "tnum";
+}
+
+:root[data-theme="caelestia"] .cae-k {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface-variant);
+}
+
 :root[data-theme="caelestia"] .chip {
   background: var(--cae-primary-container);
   border-color: transparent;

@@ -190,6 +190,38 @@ def titular(pg, base: str) -> None:
     assert_que(m["libre"] >= -1, f"aire bajo el pie {m['libre']:.0f} px (no pisa el dock)")
 
 
+def firma_y_cifras(pg, base: str) -> None:
+    print("\n[firma] literal de content.ts y cifras al canto derecho")
+    abrir(pg, base, "13:00")
+    m = pg.evaluate(
+        "() => {"
+        " const q = (s) => document.querySelector(s);"
+        " const col = q('#hero .cae-statcol');"
+        " const head = q('#hero .cae-head');"
+        " return {"
+        "  firma: q('#hero .cae-firma')?.textContent ?? '',"
+        "  meta: q('#hero .cae-meta')?.textContent ?? '',"
+        "  nowrap: q('#hero .cae-firma') ? getComputedStyle(q('#hero .cae-firma')).whiteSpace : '',"
+        "  cifras: Array.from(document.querySelectorAll('#hero .cae-statcol > div'))"
+        "    .map((d) => d.textContent.trim()),"
+        "  colDer: col ? col.getBoundingClientRect().right : 0,"
+        "  headDer: head ? head.getBoundingClientRect().right : 0"
+        " }; }"
+    )
+    assert_que(m["firma"] == "Aoshi Blanco Sanz", f"la firma es identity.name literal ({m['firma']!r})")
+    assert_que(
+        m["meta"] == "Caracas. Full stack. Desde 2021.",
+        f"la meta es identity.subheadline literal, con sus puntos ({m['meta']!r})",
+    )
+    # Si la firma parte en dos lineas, el aterrizaje de la tarea 6 no cuadra.
+    assert_que(m["nowrap"] == "nowrap", f"la firma no parte de linea ({m['nowrap']!r})")
+    assert_que(len(m["cifras"]) == 4, f"hay cuatro cifras ({len(m['cifras'])})")
+    assert_que(
+        abs(m["colDer"] - m["headDer"]) <= 2,
+        f"la columna de cifras pega al canto derecho ({m['colDer']:.0f} vs {m['headDer']:.0f})",
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -205,6 +237,7 @@ def main() -> int:
         optica(pg, args.base)
         fondo(pg, args.base)
         titular(pg, args.base)
+        firma_y_cifras(pg, args.base)
 
         print("\n[consola] la pagina no tira errores")
         assert_que(not errores, f"cero errores de consola ({errores[:2]})")

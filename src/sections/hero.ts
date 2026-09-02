@@ -1,4 +1,4 @@
-import { identity } from "../data/content";
+import { identity, stats } from "../data/content";
 import { el } from "../utils/dom";
 
 /**
@@ -107,7 +107,23 @@ export function createHero(): HTMLElement {
   const titular = el("p", "cae-tit", lineas);
   titular.setAttribute("data-cae-titular", "");
 
-  const caeHead = el("div", "cae-head", [titular]);
+  const firma = el("span", "cae-firma", [identity.name]);
+  const regla = el("span", "cae-regla");
+  regla.setAttribute("aria-hidden", "true");
+  const meta = el("span", "cae-meta", [identity.subheadline]);
+  const kicker = el("p", "cae-kicker", [firma, regla, meta]);
+
+  const statcol = el(
+    "div",
+    "cae-statcol",
+    stats.map((s) => {
+      const valor = el("span", "cae-v2", [s.value]);
+      valor.setAttribute("data-n", s.value);
+      return el("div", "", [valor, el("span", "cae-k", [s.label])]);
+    }),
+  );
+
+  const caeHead = el("div", "cae-head", [kicker, titular, statcol]);
 
   const section = el(
     "section",
