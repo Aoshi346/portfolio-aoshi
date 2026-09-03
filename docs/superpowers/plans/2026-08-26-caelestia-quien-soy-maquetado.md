@@ -6,6 +6,7 @@
 > planificar trabajo sin diseñar es lo que dejó en este repo planes con 86 y 57 casillas sin marcar.
 
 Fecha: 2026-08-26
+Spec que lo reclama: `docs/superpowers/specs/2026-09-02-caelestia-quien-soy-design.md` — ejecutado entero en la sesion de diseno previa a esa spec.
 Fase: **B2** de seis. La anterior, **B1 (Título)**, está especificada y planificada:
 `docs/superpowers/specs/2026-08-26-caelestia-titulo-design.md` ·
 `docs/superpowers/plans/2026-08-26-caelestia-titulo.md`
@@ -73,11 +74,11 @@ De `src/data/content.ts`, lo que esta escena puede pintar y nada más:
 Cada punto es una pantalla del companion, construida con `/frontend-design:frontend-design`, con la
 piel real de Caelestia y **capturada y mirada antes de enseñarla**.
 
-- [ ] **M1 · Diagnóstico.** La escena actual dentro de la ventana, con las medidas encima: los 443 px
+- [x] **M1 · Diagnóstico.** La escena actual dentro de la ventana, con las medidas encima: los 443 px
       de contenido, los 189 arriba y 116 abajo sin usar, y el nombre partido en tres líneas. Es el
       punto de partida contra el que se juzga todo lo demás.
 
-- [ ] **M2 · Tres composiciones de la ficha del sistema.** No tres tallas de la misma: tres maneras
+- [x] **M2 · Tres composiciones de la ficha del sistema.** No tres tallas de la misma: tres maneras
       distintas de repartir. Punto de partida sugerido, a discutir con Aoshi:
       - una ficha a la izquierda y especificaciones en filas clave/valor a la derecha (lo que ya se
         esbozó y él vio);
@@ -86,23 +87,23 @@ piel real de Caelestia y **capturada y mirada antes de enseñarla**.
       - un panel de ajustes con secciones plegables, donde formación, experiencia y enfoque son
         entradas de una lista de sistema.
 
-- [ ] **M3 · El retrato.** `identity.githubAvatar` es la única imagen real que tiene el proyecto
+- [x] **M3 · El retrato.** `identity.githubAvatar` es la única imagen real que tiene el proyecto
       —las nueve de obra siguen siendo marcadores—. Decidir tamaño, recorte y si lleva forma de
       Material 3 (la biblioteca que ya se usa en el fondo) en vez de círculo. **Es la única pieza de
       B2 que puede tener un gesto propio.**
 
-- [ ] **M4 · Composiciones del pie.** Dónde van las dos áreas de `focusAreas` y si las cuatro cifras
+- [x] **M4 · Composiciones del pie.** Dónde van las dos áreas de `focusAreas` y si las cuatro cifras
       de `stats` se repiten aquí o se dejan solo en Título. Tres repartos.
 
-- [ ] **M5 · La entrada de escena.** Coherente con B1 sin copiarla: allí la terminal pregunta
+- [x] **M5 · La entrada de escena.** Coherente con B1 sin copiarla: allí la terminal pregunta
       `whoami` y el nombre se traza. Aquí el comando natural sería otro —`neofetch`, `uname -a`, o
       la ficha que se rellena campo a campo—. Tres opciones, todas con el shell ya montado antes de
       que pase nada.
 
-- [ ] **M6 · Micro-interacciones propias**, si las necesita. N4 es la del tema; lo que se decida
+- [x] **M6 · Micro-interacciones propias**, si las necesita. N4 es la del tema; lo que se decida
       aquí es qué responde al roce **dentro** de la ficha.
 
-- [ ] **M7 · Movimiento reducido** de lo que se elija, y la escena a las 03:00 en esquema oscuro.
+- [x] **M7 · Movimiento reducido** de lo que se elija, y la escena a las 03:00 en esquema oscuro.
       La lección de B1: **el croma no es el mismo en los dos esquemas** — croma alto con claridad
       baja da barro en OkLCH.
 
