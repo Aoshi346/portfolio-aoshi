@@ -156,6 +156,17 @@ if (theme.id === "hyprland") {
   });
 }
 
+// La Editorial de Obra en Caelestia: fila de cinco tarjetas + cajon. Import
+// diferido, igual que el resto de modulos de tema.
+let caeObraHandle: { destroy: () => void } | null = null;
+if (theme.id === "caelestia") {
+  void import("./components/caelestiaObraEditorial").then(
+    async ({ mountCaelestiaObraEditorial }) => {
+      caeObraHandle = await mountCaelestiaObraEditorial(app);
+    },
+  );
+}
+
 // Navegacion de escenas, comun a los tres temas: vive fuera del cromo de
 // cine (aria-hidden) para que quede en el arbol de accesibilidad.
 const sceneNavHandle = mountSceneNav(app);
@@ -274,6 +285,7 @@ window.addEventListener(
     cartelHandle?.destroy();
     caeColorHandle?.destroy();
     caeShellHandle?.destroy();
+    caeObraHandle?.destroy();
     sceneNavHandle.destroy();
   },
   { once: true },
