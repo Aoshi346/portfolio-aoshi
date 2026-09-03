@@ -219,6 +219,7 @@ def check_capturas_no_cortadas(page, viewport: dict) -> None:
         }
         """
     )
+    assert_true(len(datos) == 6, f"Capturas: se esperaban 6 miniaturas (5 tarjetas + 1 preview), hay {len(datos)}")
     for d in datos:
         r = d["rect"]
         en_viewport = (
