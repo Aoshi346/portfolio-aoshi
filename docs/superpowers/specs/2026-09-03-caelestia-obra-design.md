@@ -1,6 +1,6 @@
 # Spec de Caelestia — Obra: el gestor de archivos deja de tener scroll interno
 
-Estado: pendiente de plan
+Estado: en ejecucion
 Fecha: 2026-09-03
 Alcance: la **fase B3** de las seis del rediseño de Caelestia — la escena `#obra` dentro del
 workspace. Toca `src/sections/obra/projectScene.ts` (comparte los tres temas — cualquier cambio se
