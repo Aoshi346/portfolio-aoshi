@@ -3607,6 +3607,293 @@
 }
 
 /*
+ * Fase B3 — Obra deja de ser cinco escenas apiladas y pasa a ser la
+ * Editorial: una fila fija de tarjetas + un cajon. El DOM generico que
+ * `projectScene.ts` construye para los tres temas (titulo a pantalla
+ * completa, columnas Problema/Solucion, `.obra-meta`) no sirve aqui — se
+ * oculta entero y `caelestiaObraEditorial.ts` construye su propio arbol
+ * leyendo `caseStudies` directamente, no el DOM oculto.
+ */
+:root[data-theme="caelestia"] [data-obra-track] {
+  display: none;
+}
+
+:root[data-theme="caelestia"] .obra-rail {
+  overflow: visible;
+  height: auto;
+}
+
+:root[data-theme="caelestia"] .cae-obra-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px;
+  padding: 15px 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--cae-surface-container-high);
+  padding: 8px 8px 12px;
+  border-radius: 3px;
+  box-shadow: 0 10px 22px -8px rgb(0 0 0 / 0.4);
+  cursor: pointer;
+  position: relative;
+  border: 0;
+  text-align: inherit;
+  font: inherit;
+  color: inherit;
+}
+
+:root[data-theme="caelestia"] .cae-obra-card.is-sel {
+  box-shadow:
+    0 0 0 2px var(--cae-primary),
+    0 14px 26px -8px rgb(0 0 0 / 0.45);
+}
+
+:root[data-theme="caelestia"] .cae-obra-caption {
+  font-family: "Fraunces", serif;
+  font-style: italic;
+  font-variation-settings: "opsz" 30, "wght" 520;
+  font-size: 14px;
+  text-align: center;
+  color: var(--cae-on-surface);
+  line-height: 1.25;
+  margin-top: 9px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-tag {
+  display: block;
+  font-family: "Martian Mono", monospace;
+  font-style: normal;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cae-on-surface-variant);
+  text-align: center;
+  margin-top: 2px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-thumb {
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--cae-outline);
+  position: relative;
+  overflow: hidden;
+}
+
+:root[data-theme="caelestia"] .cae-obra-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.52);
+  transition:
+    filter 0.3s ease,
+    transform 0.3s ease;
+}
+
+:root[data-theme="caelestia"] .cae-obra-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--cae-surface-container-high);
+  mix-blend-mode: multiply;
+  opacity: 0.16;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb img,
+:root[data-theme="caelestia"] .cae-obra-thumb.is-sel img {
+  filter: saturate(1);
+}
+
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb,
+:root[data-theme="caelestia"] .cae-obra-thumb.is-sel {
+  outline: 2px solid var(--cae-primary);
+  outline-offset: 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb::after,
+:root[data-theme="caelestia"] .cae-obra-thumb.is-sel::after {
+  opacity: 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer {
+  margin-top: 14px;
+  padding: 20px 24px;
+  border-radius: 18px;
+  border: 1px solid var(--cae-outline);
+  background: var(--cae-surface-container);
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-title {
+  flex: 0 0 230px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-kick {
+  font-family: "Martian Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-title h3 {
+  font-family: "Fraunces", serif;
+  font-variation-settings: "opsz" 60, "wght" 640;
+  font-size: 34px;
+  margin: 4px 0 8px;
+  line-height: 1.04;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-lead {
+  font-size: 13.5px;
+  color: var(--cae-on-surface-variant);
+  line-height: 1.4;
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-preview {
+  flex: 0 0 200px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-meta {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-meta dt {
+  font-family: "Martian Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-meta dd {
+  font-size: 13px;
+  color: var(--cae-on-surface);
+  margin: 3px 0 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-stack {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-stack .obra-marca {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--cae-surface-container-high);
+  color: var(--cae-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:root[data-theme="caelestia"] .cae-obra-stack .obra-marca svg {
+  width: 14px;
+  height: 14px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-stack-text {
+  font-family: "Martian Mono", monospace;
+  font-size: 10.5px;
+  padding: 0 7px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  border-radius: 7px;
+  background: var(--cae-surface-container-high);
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-obra-prose {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 22px;
+  min-width: 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-prose h4 {
+  font-family: "Martian Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface-variant);
+  margin: 0 0 5px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-prose p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cae-on-surface);
+  margin: 0;
+}
+
+/*
+ * M7 — los dos estados de pie. El enlace es la unica parada de tabulador
+ * de la ficha; la nota de privado lleva un testigo apagado, nunca el color
+ * activo, para no leerse como algo pulsable.
+ */
+:root[data-theme="caelestia"] .cae-obra-foot {
+  margin-top: 10px;
+  font-family: "Martian Mono", monospace;
+}
+
+:root[data-theme="caelestia"] .cae-obra-foot a {
+  color: var(--cae-primary);
+  text-decoration: none;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 5px;
+  padding: 2px 3px;
+  margin: -2px -3px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-foot a:hover {
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-obra-foot a:focus-visible {
+  outline: 2px solid var(--cae-primary);
+  outline-offset: 3px;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-obra-foot-private {
+  color: var(--cae-on-surface-variant);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-foot-private i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cae-outline);
+  display: inline-block;
+}
+
+/*
  * Caelestia esconde el hero de los otros temas: aqui manda .cae-head. La
  * tarjeta Material de `.hero-surface` (arriba, `.scene-surface`) y la
  * compensacion de posicion de `.hero-kick` que vivian aqui quedaron muertas

@@ -1,11 +1,14 @@
 # Spec de Caelestia — Obra: el gestor de archivos deja de tener scroll interno
 
-Estado: pendiente de plan
+Estado: en ejecucion
 Fecha: 2026-09-03
+Plan: `docs/superpowers/plans/2026-09-03-caelestia-obra.md`
 Alcance: la **fase B3** de las seis del rediseño de Caelestia — la escena `#obra` dentro del
-workspace. Toca `src/sections/obra/projectScene.ts` (comparte los tres temas — cualquier cambio se
-verifica en Vice y Hyprland), el bloque `:root[data-theme="caelestia"]` de `src/themes/themes.css`
-y un gesto nuevo en `src/themes/caelestia.choreography.ts`.
+workspace. Toca `src/components/caelestiaObraEditorial.ts` (nuevo), el bloque
+`:root[data-theme="caelestia"]` de `src/themes/themes.css` y el cableado en `src/main.ts`.
+**`src/sections/obra/projectScene.ts` se deja explícitamente sin tocar** — mejor que lo previsto en
+el plan original: ese DOM sigue existiendo para Vice/Hyprland tal cual, y bajo Caelestia
+`themes.css` lo oculta entero en vez de reescribirlo.
 
 **Vice no se toca** (cerrado el 2026-08-05). **Hyprland no se toca**: su cartel de obra
 (`2026-08-10-hyprland-obra-cartel-design.md`) es un dispositivo distinto y **su gesto queda vetado
@@ -257,11 +260,16 @@ El arnés nuevo, `scripts/measure-caelestia-obra.py`, hereda de B1/B2 y tiene qu
    `Periodo` está ausente exactamente en TesisFar y presente en las otras cuatro.
 5. **Aguanta los dos extremos**: EchoPlan (texto más largo, 2 capturas) y TesisFar (sin `period`).
 6. **Contraste** de los pares reales —título/cajón sobre `surface-container`, rótulos sobre
-   `on-surface-variant`, enlace en `primary`— barriendo las 24 horas, ≥ 4,5:1.
+   `on-surface-variant`, enlace en `primary`— ≥ 4,5:1 (GAP CONOCIDO: el arnés solo muestrea la hora
+   real del sistema en el instante en que corre, no barre las 24 horas; el patrón para un barrido de
+   verdad —sobreescribir el reloj antes de cargar la página— ya existe en
+   `scripts/measure-caelestia-hora.py` y habría que reusarlo aquí si el contraste se vuelve un
+   requisito real).
 7. **Movimiento reducido**: escena montada, primer proyecto seleccionado, sin recorrido,
    `animation-name: none`.
-8. **El foco visible funciona**: el enlace del pie es alcanzable por teclado y es la única parada
-   de tabulador de la ficha; la nota de privado no lo es.
+8. **El foco visible funciona**: el enlace del pie es alcanzable por teclado (GAP CONOCIDO: el
+   arnés prueba alcanzabilidad dentro de un bucle acotado de pulsaciones de Tab; no prueba que sea
+   la ÚNICA parada de tabulador de la ficha — un elemento focusable añadido después no lo cazaría).
 9. **Los ejes del shell no se han movido**, y **Vice y Hyprland siguen intactos** —
    `projectScene.ts` es compartido por los tres temas.
 

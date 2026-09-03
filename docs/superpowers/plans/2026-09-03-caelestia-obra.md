@@ -1,5 +1,15 @@
 # Caelestia — Obra (fase B3) Implementation Plan
 
+> **Tracking: historico.** Las 9 tareas de este plan (46 casillas) estan hechas y commiteadas en
+> `main` — el trabajo se siguio en vivo con el ledger de SDD de la sesion, no ticando las casillas
+> de este fichero, y no se marcan ahora en bloque: ticar 46 pasos que nadie siguio uno a uno
+> falsificaria el registro en vez de completarlo. El registro real vive en el historial de git y en
+> `docs/superpowers/specs/2026-09-03-caelestia-obra-design.md`.
+>
+> Esta marca existe para que `scripts/verify.py::check_spec_plan_consistency` sepa distinguir "no
+> se siguio aqui" de "esta a medias". En los planes nuevos se marca al completar cada paso, como
+> pide `.claude/rules/speckit-progress-tracking.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the scene-per-project stacked layout Caelestia currently inherits for `#obra`

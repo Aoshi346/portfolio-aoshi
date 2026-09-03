@@ -1,5 +1,14 @@
 # Caelestia B3 — Obra: plan de maquetado
 
+> **Tracking: historico.** Las casillas M1-M8 de esta agenda se aprobaron una a una en el companion
+> de brainstorming durante la sesión de maquetado, pero no se ticaron en el momento — y no se marcan
+> ahora tampoco: ticarlas en bloque falsificaria el registro en vez de completarlo, igual que
+> ticar cualquier otra casilla que nadie siguio una a una. El registro real de esa aprobación vive en
+> el propio `docs/superpowers/specs/2026-09-03-caelestia-obra-design.md` (que cita y resume cada
+> decisión de maqueta) y en el plan de implementación que le siguió,
+> `docs/superpowers/plans/2026-09-03-caelestia-obra.md`. Esta agenda queda como el registro de diseño,
+> no como plan activo.
+>
 > **Esto NO es un plan de implementación.** Es la agenda de diseño de la fase B3: qué maquetas hay
 > que construir en el companion, en qué orden y contra qué medirlas, para poder escribir después el
 > spec y el plan. B3 **no tiene spec todavía**, y por eso no puede tener plan de implementación:
