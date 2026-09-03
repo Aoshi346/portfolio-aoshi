@@ -2,6 +2,7 @@
 
 Estado: en ejecucion
 Fecha: 2026-09-03
+Plan: `docs/superpowers/plans/2026-09-03-caelestia-obra.md`
 Alcance: la **fase B3** de las seis del rediseño de Caelestia — la escena `#obra` dentro del
 workspace. Toca `src/sections/obra/projectScene.ts` (comparte los tres temas — cualquier cambio se
 verifica en Vice y Hyprland), el bloque `:root[data-theme="caelestia"]` de `src/themes/themes.css`
