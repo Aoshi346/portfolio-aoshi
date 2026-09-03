@@ -1,0 +1,458 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Hanken+Grotesk:wght@400;500;600;700&family=Martian+Mono:wght@400;500;600&display=swap');
+  *{ box-sizing:border-box; }
+  body{ background:#0b0b0c; }
+  .m3{ font-family:'Hanken Grotesk',sans-serif; color:#e7e5e2; padding:40px 40px 90px; max-width:1560px; margin:0 auto; }
+  .m3-eyebrow{ font-family:'Martian Mono',monospace; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:#ff9d5c; }
+  .m3-title{ font-family:'Fraunces',serif; font-variation-settings:"opsz" 60,"wght" 620; font-size:32px; margin:6px 0 10px; }
+  .m3-sub{ color:#9d9a95; font-size:14.5px; max-width:86ch; line-height:1.55; }
+
+  .controls{ display:flex; align-items:center; gap:14px; margin:26px 0 8px; padding:14px 18px; border:1px solid #2a2926; border-radius:10px; background:#141412; flex-wrap:wrap; }
+  .tab{ font-family:'Martian Mono',monospace; font-size:12px; padding:9px 14px; border-radius:8px; border:1px solid #2a2926; background:transparent; color:#9d9a95; cursor:pointer; line-height:1.5; text-align:left; }
+  .tab .name{ display:block; font-weight:600; }
+  .tab .why{ display:block; font-weight:400; opacity:.8; font-size:10px; margin-top:1px; }
+  .tab.active{ background:#ff9d5c; border-color:#ff9d5c; color:#1a1005; }
+  .preset{ font-family:'Martian Mono',monospace; font-size:12px; padding:9px 14px; border-radius:8px; border:1px solid #2a2926; background:transparent; color:#9d9a95; cursor:pointer; }
+  .preset:hover{ border-color:#ff9d5c; color:#ff9d5c; }
+  .hourwrap{ display:flex; align-items:center; gap:10px; margin-left:14px; }
+  .hourwrap label{ font-family:'Martian Mono',monospace; font-size:11px; color:#9d9a95; white-space:nowrap; }
+  .hourwrap input{ width:140px; }
+  .hourval{ font-family:'Martian Mono',monospace; font-size:12.5px; color:#e7e5e2; width:44px; display:inline-block; }
+
+  .reading{ display:flex; gap:14px; align-items:center; margin:4px 0 18px; flex-wrap:wrap; }
+  .pill{ font-family:'Martian Mono',monospace; font-size:12px; padding:7px 12px; border-radius:7px; border:1px solid #2a2926; background:#141412; color:#9d9a95; }
+  .pill b{ color:#e7e5e2; }
+  .pill.warn{ border-color:#e0553f; color:#ff9d80; }
+  .pill.ok{ border-color:#5c9c6b; color:#a4e0b3; }
+
+  .stagebox{ width:1440px; padding:28px; border-radius:16px; background:radial-gradient(120% 140% at 30% -10%, #23211f, #0c0b0a); border:1px solid #201f1d; }
+  .win-outer{ width:1412px; height:748px; position:relative; border-radius:20px; overflow:hidden; box-shadow:0 40px 90px rgba(0,0,0,.55); }
+  .cae-win{ position:absolute; inset:0; background:var(--cae-surface); color:var(--cae-on-surface); font-family:'Hanken Grotesk',sans-serif; overflow:hidden; }
+  .cae-bg{ position:absolute; inset:0; }
+  .cae-bg .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.55; }
+  .cae-bar{ position:relative; z-index:2; display:flex; align-items:center; gap:18px; height:44px; margin:12px 14px 0; padding:8px 10px 8px 16px; border-radius:999px; background:var(--cae-surface-container-high); font-family:'Martian Mono',monospace; font-size:12px; }
+  .cae-mark{ font-weight:600; }
+  .cae-ws-list{ display:flex; gap:4px; }
+  .cae-ws{ display:flex; align-items:center; gap:6px; padding:5px 15px; border-radius:999px; color:var(--cae-on-surface-variant); background:none; border:0; font:inherit; cursor:default; }
+  .cae-ws.active{ background:var(--cae-primary); color:var(--cae-on-primary); }
+  .cae-ws-n{ font-style:normal; opacity:.6; }
+  .cae-tray{ margin-left:auto; display:flex; align-items:center; gap:12px; color:var(--cae-on-surface-variant); }
+  .cae-avail{ display:flex; align-items:center; gap:5px; }
+  .cae-dot{ width:6px; height:6px; border-radius:50%; background:var(--cae-anchor); display:inline-block; }
+  .cae-window{ position:relative; z-index:2; margin:14px 14px 0; height:748px; border-radius:18px; background:var(--cae-surface-container); border:1px solid var(--cae-outline); overflow:hidden; display:flex; flex-direction:column; }
+  .cae-dock{ position:absolute; left:50%; transform:translateX(-50%); bottom:12px; z-index:3; display:flex; gap:6px; padding:7px; border-radius:22px; background:var(--cae-surface-container-high); box-shadow:0 14px 34px -22px rgba(0,0,0,.55); }
+  .cae-dock-item{ width:21px; height:21px; display:flex; align-items:center; justify-content:center; color:var(--cae-on-surface-variant); }
+  .cae-dock-item svg{ width:21px; height:21px; display:block; }
+
+  .obra-path{ display:flex; align-items:center; gap:8px; padding:14px 22px; font-family:'Martian Mono',monospace; font-size:12.5px; color:var(--cae-on-surface-variant); border-bottom:1px solid var(--cae-outline); flex:0 0 auto; }
+  .obra-path b{ color:var(--cae-on-surface); font-weight:600; }
+  .obra-path .count{ margin-left:auto; }
+  .obra-body{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; position:relative; overflow:hidden; }
+
+  .capbox{ border-radius:2px; position:relative; overflow:hidden;
+    background: repeating-linear-gradient(45deg, color-mix(in oklab, var(--cae-outline) 42%, transparent) 0 2px, transparent 2px 14px), var(--cae-surface-container-high);
+    border:1px solid var(--cae-outline); display:flex; align-items:center; justify-content:center; }
+  .capbox span{ font-family:'Martian Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--cae-on-surface-variant); }
+
+  .mag-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:18px; padding:15px 28px; flex:0 0 auto; }
+  .mag-card{ display:flex; flex-direction:column; background:var(--cae-surface-container-high); padding:8px 8px 12px; border-radius:3px; box-shadow:0 10px 22px -8px rgba(0,0,0,.4); cursor:pointer; position:relative; }
+
+  /* Variante "Carga por lotes": una capa de esqueleto tapa la captura real
+     hasta que la tween la retira — el shimmer es el propio gesto de "esto
+     esta generando una miniatura", no decoracion encima de algo ya listo. */
+  .skel{ position:absolute; inset:8px 8px auto 8px; aspect-ratio:16/10; border-radius:8px; overflow:hidden; background:var(--cae-surface-container); z-index:2; }
+  .skel::after{ content:""; position:absolute; inset:0; background:linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--cae-on-surface) 14%, transparent) 50%, transparent 70%); background-size:200% 100%; animation:shimmer 1.1s linear infinite; }
+  @keyframes shimmer{ from{ background-position:150% 0; } to{ background-position:-50% 0; } }
+  .skel-line{ position:absolute; left:8px; right:40px; height:8px; border-radius:4px; background:color-mix(in oklab, var(--cae-on-surface) 10%, transparent); }
+
+  /* Variante "Indexado": la barra de luz que recorre el grid una vez. */
+  .scanbar{ position:absolute; top:0; bottom:0; width:3px; background:var(--cae-primary); box-shadow:0 0 16px 2px var(--cae-primary); z-index:3; opacity:0; pointer-events:none; }
+  .mag-card .capbox{ aspect-ratio:16/10; margin-bottom:9px; }
+  .mag-card figcaption{ font-family:'Fraunces',serif; font-style:italic; font-variation-settings:"opsz" 30,"wght" 520; font-size:14px; text-align:center; color:var(--cae-on-surface); line-height:1.25; }
+  .mag-card .mtag{ display:block; font-family:'Martian Mono',monospace; font-style:normal; font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--cae-on-surface-variant); text-align:center; margin-top:2px; }
+  .mag-card.sel{ box-shadow:0 0 0 2px var(--cae-primary), 0 14px 26px -8px rgba(0,0,0,.45); }
+  .mag-card.extremo::after{ content:"extremo de prueba"; position:absolute; top:4px; left:8px; font-family:'Martian Mono',monospace; font-size:8px; letter-spacing:.06em; text-transform:uppercase; color:var(--cae-primary); }
+
+  .drawer{ flex:1 1 auto; min-height:0; border-top:1px solid var(--cae-outline); background:var(--cae-surface-container); border-radius:18px 18px 0 0; margin:0 14px; padding:20px 28px; display:flex; align-items:center; gap:26px; overflow:hidden; }
+  .drawer-title{ flex:0 0 230px; }
+  .drawer-title .kick{ font-family:'Martian Mono',monospace; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--cae-primary); }
+  .drawer-title h2{ font-family:'Fraunces',serif; font-variation-settings:"opsz" 60,"wght" 640; font-size:38px; margin:4px 0 8px; line-height:1.04; }
+  .drawer-title .lead{ font-size:13.5px; color:var(--cae-on-surface-variant); line-height:1.4; }
+  .drawer-preview{ flex:0 0 216px; align-self:stretch; display:flex; align-items:center; }
+  .drawer-preview .capbox{ width:100%; aspect-ratio:16/10; }
+  .drawer-meta{ flex:0 0 200px; display:flex; flex-direction:column; gap:14px; }
+  .drawer-meta dt{ font-family:'Martian Mono',monospace; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--cae-on-surface-variant); }
+  .drawer-meta dd{ font-size:13px; color:var(--cae-on-surface); margin:3px 0 0; }
+  .drawer-stack{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:3px; }
+  .drawer-stack .stile{ width:24px; height:24px; border-radius:7px; background:var(--cae-surface-container-high); color:var(--cae-on-surface-variant); display:flex; align-items:center; justify-content:center; }
+  .drawer-stack .stile svg{ width:14px; height:14px; }
+  .drawer-stack .stext{ font-family:'Martian Mono',monospace; font-size:10.5px; padding:0 7px; height:24px; display:flex; align-items:center; border-radius:7px; background:var(--cae-surface-container-high); color:var(--cae-on-surface-variant); }
+  .drawer-prose{ flex:1 1 auto; display:grid; grid-template-columns:1fr 1fr; gap:14px 22px; min-width:0; align-self:stretch; align-content:center; }
+  .drawer-prose h4{ font-family:'Martian Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--cae-on-surface-variant); margin:0 0 5px; position:relative; }
+  .drawer-prose .linecount{ font-weight:400; text-transform:none; letter-spacing:0; color:var(--cae-primary); margin-left:6px; }
+  .drawer-prose p{ font-size:13px; line-height:1.5; color:var(--cae-on-surface); margin:0; }
+  .drawer-foot{ margin-top:10px; }
+  .drawer-foot a{ color:var(--cae-primary); font-family:'Martian Mono',monospace; font-size:12.5px; text-decoration:none; }
+  .drawer-foot .priv{ color:var(--cae-on-surface-variant); font-family:'Martian Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.1em; }
+
+  .sobra-hud{ position:absolute; left:14px; bottom:14px; z-index:5; font-family:'Martian Mono',monospace; font-size:11px; padding:6px 10px; border-radius:7px; background:rgba(0,0,0,.55); color:#e7e5e2; border:1px solid rgba(255,255,255,.15); }
+</style>
+
+<div class="m3">
+  <div class="m3-eyebrow">M6 · La entrada de escena (segunda pasada) — Caelestia, fase B3</div>
+  <h1 class="m3-title">El directorio poblándose — cuatro mecanismos distintos</h1>
+  <p class="m3-sub">
+    La primera pasada probó tres curvas del mismo mecanismo (revelar tarjeta a tarjeta). Estas cuatro
+    cambian el mecanismo: una carga real de miniaturas, un montaje de ventana de una sola pieza, una
+    caída física, y un escáner literal. El shell sigue montado antes de que pase nada; sigue sin haber
+    terminal.
+  </p>
+
+  <div class="controls">
+    <button class="tab active" data-variant="lotes"><span class="name">Carga por lotes</span><span class="why">shimmer de miniatura generándose → captura real</span></button>
+    <button class="tab" data-variant="montaje"><span class="name">Montaje</span><span class="why">todo el bloque entra de una pieza, sin secuencia</span></button>
+    <button class="tab" data-variant="caida"><span class="name">Caída</span><span class="why">las tarjetas caen y se asientan, con rotación</span></button>
+    <button class="tab" data-variant="indexado"><span class="name">Indexado</span><span class="why">una barra de luz escanea el grid una vez</span></button>
+    <button class="preset" id="btnRepeat">↻ Repetir</button>
+    <div class="hourwrap">
+      <label>Velocidad</label>
+      <input type="range" id="speedSlider" min="0.1" max="1" step="0.05" value="0.4" />
+      <span class="hourval" id="speedVal">×0.4</span>
+    </div>
+  </div>
+
+  <div class="reading" id="reading"></div>
+  <div class="stagebox"><div class="win-outer" id="stage"></div></div>
+</div>
+
+<script src="/files/gsap.min.js"></script>
+<script>
+(function(){
+  const CLARO = { "surface":[0.98,0.012],"surface-container":[0.955,0.02],"surface-container-high":[0.925,0.026],"on-surface":[0.245,0.035],"on-surface-variant":[0.47,0.032],"outline":[0.7,0.022],"primary":[0.45,0.13],"on-primary":[0.99,0.01],"primary-container":[0.895,0.062],"on-primary-container":[0.31,0.1] };
+  const AMANECE=7*60, ANOCHECE=20*60, MINUTOS_DIA=1440, ORIGEN=60;
+  const AZUFRE={l:0.855,c:0.152,h:96};
+  function ok(l,c,h){ return `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)})`; }
+  function hueAt(m){ return (((m/MINUTOS_DIA)*360+ORIGEN)%360+360)%360; }
+  function chromaScaleAt(h){ const d=Math.abs((((h-240)%360)+540)%360-180); if(d<=70) return 1; return Math.max(0.32,1-(d-70)/115); }
+  function tokensAt(m){
+    const hue=hueAt(m), escala=chromaScaleAt(hue);
+    const tokens={};
+    for (const [n,[l,c]] of Object.entries(CLARO)) tokens[`--cae-${n}`]=ok(l,c*escala,hue);
+    tokens["--cae-anchor"]=ok(AZUFRE.l,AZUFRE.c,AZUFRE.h);
+    tokens["--cae-wall-1"]=ok(0.93,0.09*escala,hue);
+    tokens["--cae-wall-2"]=ok(0.95,0.07*escala,(hue+42)%360);
+    tokens["--cae-wall-3"]=ok(0.96,0.06*escala,(hue+318)%360);
+    return tokens;
+  }
+
+  // Iconos monocromos reales de `simple-icons` (los mismos que ya usa
+  // `src/utils/icons.ts` en produccion) — nunca el color de marca, la misma
+  // regla que ya aplica el cartel de Obra en Hyprland. `Zustand` no tiene
+  // marca en `simple-icons` (`slugDeStack` devuelve null): se pinta como
+  // texto, no se inventa un logotipo.
+  const ICONPATHS = {
+    python:"M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z",
+    django:"M11.146 0h3.924v18.166c-2.013.382-3.491.535-5.096.535-4.791 0-7.288-2.166-7.288-6.32 0-4.002 2.65-6.6 6.753-6.6.637 0 1.121.05 1.707.203zm0 9.143a3.894 3.894 0 00-1.325-.204c-1.988 0-3.134 1.223-3.134 3.365 0 2.09 1.096 3.236 3.109 3.236.433 0 .79-.025 1.35-.102V9.142zM21.314 6.06v9.098c0 3.134-.229 4.638-.917 5.937-.637 1.249-1.478 2.039-3.211 2.905l-3.644-1.733c1.733-.815 2.574-1.53 3.109-2.625.561-1.121.739-2.421.739-5.835V6.059h3.924zM17.39.021h3.924v4.026H17.39z",
+    typescript:"M1.125 0C.502 0 0 .502 0 1.125v21.75C0 23.498.502 24 1.125 24h21.75c.623 0 1.125-.502 1.125-1.125V1.125C24 .502 23.498 0 22.875 0zm17.363 9.75c.612 0 1.154.037 1.627.111a6.38 6.38 0 0 1 1.306.34v2.458a3.95 3.95 0 0 0-.643-.361 5.093 5.093 0 0 0-.717-.26 5.453 5.453 0 0 0-1.426-.2c-.3 0-.573.028-.819.086a2.1 2.1 0 0 0-.623.242c-.17.104-.3.229-.393.374a.888.888 0 0 0-.14.49c0 .196.053.373.156.529.104.156.252.304.443.444s.423.276.696.41c.273.135.582.274.926.416.47.197.892.407 1.266.628.374.222.695.473.963.753.268.279.472.598.614.957.142.359.214.776.214 1.253 0 .657-.125 1.21-.373 1.656a3.033 3.033 0 0 1-1.012 1.085 4.38 4.38 0 0 1-1.487.596c-.566.12-1.163.18-1.79.18a9.916 9.916 0 0 1-1.84-.164 5.544 5.544 0 0 1-1.512-.493v-2.63a5.033 5.033 0 0 0 3.237 1.2c.333 0 .624-.03.872-.09.249-.06.456-.144.623-.25.166-.108.29-.234.373-.38a1.023 1.023 0 0 0-.074-1.089 2.12 2.12 0 0 0-.537-.5 5.597 5.597 0 0 0-.807-.444 27.72 27.72 0 0 0-1.007-.436c-.918-.383-1.602-.852-2.053-1.405-.45-.553-.676-1.222-.676-2.005 0-.614.123-1.141.369-1.582.246-.441.58-.804 1.004-1.089a4.494 4.494 0 0 1 1.47-.629 7.536 7.536 0 0 1 1.77-.201zm-15.113.188h9.563v2.166H9.506v9.646H6.789v-9.646H3.375z",
+    react:"M14.23 12.004a2.236 2.236 0 0 1-2.235 2.236 2.236 2.236 0 0 1-2.236-2.236 2.236 2.236 0 0 1 2.235-2.236 2.236 2.236 0 0 1 2.236 2.236zm2.648-10.69c-1.346 0-3.107.96-4.888 2.622-1.78-1.653-3.542-2.602-4.887-2.602-.41 0-.783.093-1.106.278-1.375.793-1.683 3.264-.973 6.365C1.98 8.917 0 10.42 0 12.004c0 1.59 1.99 3.097 5.043 4.03-.704 3.113-.39 5.588.988 6.38.32.187.69.275 1.102.275 1.345 0 3.107-.96 4.888-2.624 1.78 1.654 3.542 2.603 4.887 2.603.41 0 .783-.09 1.106-.275 1.374-.792 1.683-3.263.973-6.365C22.02 15.096 24 13.59 24 12.004c0-1.59-1.99-3.097-5.043-4.032.704-3.11.39-5.587-.988-6.38-.318-.184-.688-.277-1.092-.278zm-.005 1.09v.006c.225 0 .406.044.558.127.666.382.955 1.835.73 3.704-.054.46-.142.945-.25 1.44-.96-.236-2.006-.417-3.107-.534-.66-.905-1.345-1.727-2.035-2.447 1.592-1.48 3.087-2.292 4.105-2.295zm-9.77.02c1.012 0 2.514.808 4.11 2.28-.686.72-1.37 1.537-2.02 2.442-1.107.117-2.154.298-3.113.538-.112-.49-.195-.964-.254-1.42-.23-1.868.054-3.32.714-3.707.19-.09.4-.127.563-.132zm4.882 3.05c.455.468.91.992 1.36 1.564-.44-.02-.89-.034-1.345-.034-.46 0-.915.01-1.36.034.44-.572.895-1.096 1.345-1.565z",
+    vite:"M13.056 23.238a.57.57 0 0 1-1.02-.355v-5.202c0-.63-.512-1.143-1.144-1.143H5.148a.57.57 0 0 1-.464-.903l3.777-5.29c.54-.753 0-1.804-.93-1.804H.57a.574.574 0 0 1-.543-.746.6.6 0 0 1 .08-.157L5.008.78a.57.57 0 0 1 .467-.24h14.589a.57.57 0 0 1 .466.903l-3.778 5.29c-.54.755 0 1.806.93 1.806h5.745c.238 0 .424.138.513.322a.56.56 0 0 1-.063.603z",
+    nextdotjs:"M18.665 21.978C16.758 23.255 14.465 24 12 24 5.377 24 0 18.623 0 12S5.377 0 12 0s12 5.377 12 12c0 3.583-1.574 6.801-4.067 9.001L9.219 7.2H7.2v9.596h1.615V9.251l9.85 12.727Zm-3.332-8.533 1.6 2.061V7.2h-1.6v6.245Z",
+    rxdb:"M11.096 3.452h1.15v-1.15h1.151v1.15h6.411v4.932H4.192V1.15h1.15V2.3h1.151V0h1.15v1.15h1.152v2.302h1.15V1.151h1.151v2.301zM4.192 14.466h15.616V9.534H4.192v4.932zm15.616 1.15H4.192v4.932h6.41v1.15h1.151v-1.15h1.151v2.301h1.15v-2.301h1.152v2.301h1.15V24h1.151v-2.301h1.15v1.15h1.151v-7.233z",
+    gsap:"M9.83,7.59C10.647,7.595 11.267,7.828 11.672,8.282C12.055,8.713 12.239,9.336 12.219,10.132L12.205,10.193C12.197,10.211 12.185,10.229 12.17,10.243C12.14,10.272 12.099,10.288 12.057,10.288L10.398,10.288C10.29,10.288 10.199,10.2 10.199,10.093C10.199,9.669 10.071,9.435 9.809,9.383L9.689,9.372C9.347,9.372 9.125,9.583 9.119,9.951C9.112,10.361 9.344,10.734 10.004,11.374C10.872,12.19 11.221,12.913 11.204,13.867C11.177,15.411 10.127,16.41 8.531,16.41C7.716,16.41 7.093,16.191 6.678,15.761C6.258,15.324 6.066,14.683 6.106,13.855C6.108,13.813 6.125,13.772 6.155,13.743C6.185,13.714 6.226,13.698 6.267,13.698L7.983,13.698C8.007,13.699 8.03,13.705 8.052,13.715C8.073,13.726 8.092,13.741 8.107,13.76C8.12,13.775 8.129,13.793 8.135,13.813C8.14,13.832 8.141,13.853 8.137,13.873C8.118,14.171 8.171,14.394 8.288,14.518C8.363,14.598 8.469,14.639 8.599,14.639C8.916,14.639 9.102,14.414 9.109,14.024C9.115,13.687 9.007,13.39 8.427,12.792C7.676,12.058 7.003,11.3 7.024,10.108C7.037,9.416 7.311,8.784 7.798,8.327C8.312,7.845 9.014,7.59 9.83,7.59Z",
+    javascript:"M0 0h24v24H0V0zm22.034 18.276c-.175-1.095-.888-2.015-3.003-2.873-.736-.345-1.554-.585-1.797-1.14-.091-.33-.105-.51-.046-.705.15-.646.915-.84 1.515-.66.39.12.75.42.976.9 1.034-.676 1.034-.676 1.755-1.125-.27-.42-.404-.601-.586-.78-.63-.705-1.469-1.065-2.834-1.034l-.705.089c-.676.165-1.32.525-1.71 1.005-1.14 1.291-.811 3.541.569 4.471 1.365 1.02 3.361 1.244 3.616 2.205.24 1.17-.87 1.545-1.966 1.41-.811-.18-1.26-.586-1.755-1.336l-1.83 1.051c.21.48.45.689.81 1.109 1.74 1.756 6.09 1.666 6.871-1.004.029-.09.24-.705.074-1.65l.046.067zm-8.983-7.245h-2.248c0 1.938-.009 3.864-.009 5.805 0 1.232.063 2.363-.138 2.711-.33.689-1.18.601-1.566.48-.396-.196-.597-.466-.83-.855-.063-.105-.11-.196-.127-.196l-1.825 1.125c.305.63.75 1.172 1.324 1.517.855.51 2.004.675 3.207.405.783-.226 1.458-.691 1.811-1.411.51-.93.402-2.07.397-3.346.012-2.054 0-4.109 0-6.179l.004-.056z",
+    electron:"M12.0111 0c-.85 0-1.5392.6891-1.5392 1.5392 0 .8501.6891 1.5393 1.5392 1.5393.595 0 1.11-.338 1.3662-.832 2.2208 1.2675 3.847 5.4728 3.847 10.3623 0 2.0715-.2891 4.056-.825 5.7685a.3215.3215 0 0 0 .2107.403.322.322 0 0 0 .4033-.2111c.5558-1.7763.8542-3.8251.8542-5.9604 0-5.1927-1.7717-9.686-4.3206-11.0027.001-.0223.0035-.0443.0035-.0669 0-.85-.6891-1.5392-1.5393-1.5392z",
+    c:"M16.5921 9.1962s-.354-3.298-3.627-3.39c-3.2741-.09-4.9552 2.474-4.9552 6.14 0 3.6651 1.858 6.5972 5.0451 6.5972 3.184 0 3.5381-3.665 3.5381-3.665l6.1041.365s.36 3.31-2.196 5.836c-2.552 2.5241-5.6901 2.9371-7.8762 2.9201-2.19-.017-5.2261.034-8.1602-2.97-2.938-3.0101-3.436-5.9302-3.436-8.8002 0-2.8701.556-6.6702 4.047-9.5502C7.444.72 9.849 0 12.254 0c10.0422 0 10.7172 9.2602 10.7172 9.2602z",
+    gtk:"M9.01 23.773V14.45l-7.584 2.245Zm0-13.87L.91 3.828l.502 12.526 7.597-2.249ZM9.57 24l12.353-5.146-8.285-5.775-4.068 1.204ZM23.09 5.815l-9.257 2.849v4.148l8.237 5.741ZM9.57 9.975v3.964l3.932-1.164v-4.01Zm-.228-.52 4.16-1.28V0L1.231 3.37ZM22.715 5.34 13.833.052v8.021Z",
+  };
+  const STACK_SLUG = { Python:"python", Django:"django", TypeScript:"typescript", JavaScript:"javascript", React:"react", Vite:"vite", "Next.js":"nextdotjs", RxDB:"rxdb", GSAP:"gsap", Electron:"electron", C:"c", GTK4:"gtk" };
+  function iconSvg(slug){ const d = ICONPATHS[slug]; return d ? `<svg viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>` : ''; }
+  function stackRow(stack){
+    return `<div class="drawer-stack">${stack.map(name => {
+      const slug = STACK_SLUG[name];
+      return slug
+        ? `<span class="stile" title="${name}">${iconSvg(slug)}</span>`
+        : `<span class="stext">${name}</span>`;
+    }).join('')}</div>`;
+  }
+
+  // Literal de src/data/content.ts, caseStudies — las cinco entradas
+  // completas (M5 permite seleccionar cualquiera, no solo los dos extremos
+  // de M3). TesisFar es el unico sin `period` (el campo no existe en el
+  // objeto real); "Editor de texto" SI lo tiene ("2024") — un borrador
+  // anterior de esta maqueta lo usaba como el caso "sin period" por error.
+  const PROJECTS = [
+    { title:"EchoPlan", tag:"Gestión de campañas", lead:"Todas las campañas, un solo tablero.", role:"Desarrollo full stack", period:"Ago 2025 — May 2026", status:"Sistema interno · Telefónica Venezuela", stack:["Python","Django","TypeScript","React","Vite"], problem:"Las campañas pasaban por varias áreas antes de salir, cada una con sus aprobaciones, y el seguimiento vivía repartido entre correos y hojas de cálculo. Nadie podía responder de un vistazo en qué punto estaba cada una.", solution:"Un sistema interno que reúne el recorrido completo de la campaña en un mismo sitio: quién la creó, qué aprobaciones lleva, si ya se configuró y cuándo salió. Con permisos por rol y tableros que muestran cómo va todo sin tener que preguntar.", gallery:2, private:true },
+    { title:"TesisFar", tag:"Gestión académica", lead:"El ciclo completo del TEG, en un mismo lugar.", role:"Diseño y desarrollo", period:null, status:"Repositorio público", stack:["TypeScript","Next.js"], problem:"Coordinar el Trabajo Especial de Grado entre estudiantes, tutores y jurados es, en la mayoría de universidades, un proceso manual y fragmentado por correo y hojas de cálculo.", solution:"Construí una plataforma que gestiona el ciclo completo del TEG: entregas de avances, coordinación estudiantes–tutores y evaluación por jurados, todo en un mismo lugar.", gallery:2, link:"Ver repositorio" },
+    { title:"HyprFinance", tag:"Finanzas personales", lead:"Tus cuentas, solo en tu equipo.", role:"Diseño y desarrollo", period:"Jun 2026 — hoy", status:"Repositorio privado", stack:["TypeScript","React","RxDB","GSAP","Zustand"], problem:"Llevar las cuentas cuando manejas varias monedas termina en hojas de cálculo que nunca cuadran, porque el cambio de ayer no es el de hoy. Y las aplicaciones que lo resuelven te piden subir todo tu historial financiero a un servidor de otro.", solution:"Una aplicación donde tus datos se quedan en tu propio equipo, cifrados, y la nube solo sirve para sincronizar entre tus dispositivos. Guarda cada movimiento con el cambio del día en que ocurrió, así el total nunca miente, y reparte solo las compras a cuotas para que sepas qué te queda por pagar.", gallery:2, private:true },
+    { title:"WatchDog", tag:"Ciberseguridad", lead:"Las herramientas de seguridad, en una sola aplicación.", role:"Desarrollo principal", period:"Sep — Oct 2025", status:"Repositorio público", stack:["JavaScript","Electron","Python"], problem:"Revisar la seguridad de un equipo obliga a saltar entre herramientas sueltas, cada una con su propia forma de usarse, y casi todas pensadas para quien ya sabe de seguridad.", solution:"Una aplicación de escritorio que reúne en un mismo sitio el análisis de vulnerabilidades, la gestión de contraseñas, el monitor de red y las herramientas de análisis forense, con una interfaz que no exige ser experto para entenderla.", gallery:2, link:"Ver repositorio" },
+    { title:"Editor de texto", tag:"Programación de sistemas", lead:"Un editor de texto escrito desde cero, en C.", role:"Proyecto académico individual", period:"2024", status:"Repositorio público", stack:["C","GTK4"], problem:"Un ejercicio de fin de curso con una lista cerrada de requisitos: corrector ortográfico, varias páginas, cifrado y descifrado del contenido, guardado en archivo y una interfaz gráfica de verdad.", solution:"Un editor completo en C con interfaz en GTK4, donde el bloque de texto crece según se escribe, el corrector señala las palabras y el contenido puede cifrarse antes de guardarlo.", gallery:1, link:"Ver repositorio" },
+  ];
+
+  let sel = 0, minutes = 540, speed = 0.4, lastDrawerTween = null, variant = 'lotes';
+  const stage = document.getElementById('stage');
+  const reading = document.getElementById('reading');
+
+  function footer(p){
+    if (p.link) return `<div class="drawer-foot"><a href="#">${p.link} →</a></div>`;
+    if (p.private) return `<div class="drawer-foot"><span class="priv">Proyecto privado de empresa</span></div>`;
+    return '';
+  }
+  // Marcado calcado del DOM real (`document.querySelector('.cae-bar'/'.cae-dock').outerHTML`
+  // contra el build servido en :4373), no una aproximacion: mismas clases,
+  // mismos enlaces, mismos SVG de contacto — solo el reloj queda dinamico
+  // aqui via fmtHour().
+  function shellChrome(){
+    return `<div class="cae-bg" id="bgblobs"></div>
+      <header class="cae-bar" data-cae-bar=""><span class="cae-mark">caelestia</span>
+        <nav class="cae-ws-list" aria-label="Escenas">
+          <button class="cae-ws" type="button" data-cae-ws="hero" aria-current="false"><i class="cae-ws-n">1</i>Título</button>
+          <button class="cae-ws" type="button" data-cae-ws="quien-es" aria-current="false"><i class="cae-ws-n">2</i>Quién soy</button>
+          <button class="cae-ws active" type="button" data-cae-ws="obra" aria-current="true"><i class="cae-ws-n">3</i>Obra</button>
+          <button class="cae-ws" type="button" data-cae-ws="creditos" aria-current="false"><i class="cae-ws-n">4</i>Créditos</button>
+          <button class="cae-ws" type="button" data-cae-ws="contacto" aria-current="false"><i class="cae-ws-n">5</i>Fundido</button>
+        </nav>
+        <span class="cae-tray"><span class="cae-avail"><i class="cae-dot"></i>Disponible</span><span class="cae-clock" id="clockLabel">09:00</span></span>
+      </header>`;
+  }
+
+  function dockChrome(){
+    return `<div class="cae-dock" data-cae-dock="">
+      <a class="cae-dock-item" href="mailto:a.blanco1501@gmail.com" aria-label="Correo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="m3.5 7.5 8.5 6 8.5-6"></path></svg></a>
+      <a class="cae-dock-item" href="#" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path></svg></a>
+      <a class="cae-dock-item" href="#" aria-label="Teléfono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.25 1z"></path></svg></a>
+      <a class="cae-dock-item" href="#" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></a>
+    </div>`;
+  }
+
+  function render(){
+    const p = PROJECTS[sel];
+    const cards = PROJECTS.map((pp,i)=>`
+      <div class="mag-card ${i===sel?'sel':''}" data-row="${i}">
+        <div class="capbox" style="aspect-ratio:16/10; margin-bottom:9px;"><span>${pp.gallery} cap.</span></div>
+        <figcaption>${pp.title}<span class="mtag">${pp.tag}</span></figcaption>
+        <div class="skel" data-skel>
+          <span class="skel-line" style="top:8px"></span>
+          <span class="skel-line" style="top:24px; right:80px"></span>
+        </div>
+      </div>`).join('');
+    return `
+      <div class="obra-path"><b id="pathLabel" style="clip-path:inset(0 100% 0 0)">~/obra</b><span id="pathRest" style="opacity:0">&nbsp;▸ vista editorial</span> <span class="count">${sel+1} / 5</span></div>
+      <div class="obra-body">
+        <div class="mag-grid" id="magGrid" style="position:relative;">${cards}<div class="scanbar" id="scanbar"></div></div>
+        <div class="drawer" id="drawer">
+          <div class="drawer-title" data-dtitle>
+            <div class="kick" data-dkick>${p.tag}</div>
+            <h2 data-dh2>${p.title}</h2>
+            <div class="lead" data-dlead>${p.lead}</div>
+            <div data-dfoot>${footer(p)}</div>
+          </div>
+          <div class="drawer-preview" data-dpreview><div class="capbox"><span>${p.gallery} captura${p.gallery>1?'s':''}</span></div></div>
+          <dl class="drawer-meta" data-dmeta>
+            <div data-drow><dt>Rol</dt><dd>${p.role}</dd></div>
+            ${p.period ? `<div data-drow><dt>Periodo</dt><dd>${p.period}</dd></div>` : ''}
+            <div data-drow><dt>Stack</dt>${stackRow(p.stack)}</div>
+            <div data-drow><dt>Estado</dt><dd>${p.status}</dd></div>
+          </dl>
+          <div class="drawer-prose" data-dprose>
+            <div data-dblock><h4>Problema<span class="linecount" id="lc-problem"></span></h4><p id="txt-problem">${p.problem}</p></div>
+            <div data-dblock><h4>Solución<span class="linecount" id="lc-solution"></span></h4><p id="txt-solution">${p.solution}</p></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function countLines(el){
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const rects = range.getClientRects();
+    const tops = [];
+    for (const r of rects) { if (!tops.some(t => Math.abs(t - r.top) < 1)) tops.push(r.top); }
+    return tops.length;
+  }
+
+  function paint(mode){
+    mode = mode || 'switch';
+    const tokens = tokensAt(minutes);
+    stage.innerHTML = `<div class="cae-win" id="caewin">
+      ${shellChrome()}
+      <div class="cae-window" id="caewindow">${render()}</div>
+      ${dockChrome()}
+      <div class="sobra-hud" id="hud"></div>
+    </div>`;
+    const win = document.getElementById('caewin');
+    for (const [k,v] of Object.entries(tokens)) win.style.setProperty(k, v);
+    const bg = document.getElementById('bgblobs');
+    bg.innerHTML = `
+      <div class="blob" style="width:340px;height:340px;top:-80px;left:20%;background:var(--cae-wall-1)"></div>
+      <div class="blob" style="width:260px;height:260px;bottom:-60px;right:8%;background:var(--cae-wall-2)"></div>
+      <div class="blob" style="width:200px;height:200px;top:40%;right:30%;background:var(--cae-wall-3)"></div>`;
+
+    if (mode === 'switch') {
+      const cards = gsap.utils.toArray('#caewin .mag-card');
+      const pathLabel = document.getElementById('pathLabel');
+      const pathRest = document.getElementById('pathRest');
+      const tl = gsap.timeline({ onComplete: () => {} });
+
+      const commonPath = () => {
+        tl.fromTo(pathLabel, { clipPath:'inset(0 100% 0 0)' }, { clipPath:'inset(0 0% 0 0)', duration:.28, ease:'power2.out' })
+          .fromTo(pathRest, { opacity:0 }, { opacity:1, duration:.18 }, '-=.08');
+      };
+
+      if (variant === 'lotes') {
+        // Todas las tarjetas ya estan en su sitio (no hay stagger de
+        // posicion): lo que carga es SU CONTENIDO. El esqueleto con shimmer
+        // tapa la captura hasta que "termina de generarse" — el gesto real
+        // de un gestor de archivos indexando miniaturas, no una cortina
+        // decorativa.
+        const skels = gsap.utils.toArray('#caewin [data-skel]');
+        gsap.set(cards, { opacity:1, y:0 });
+        gsap.set(skels, { opacity:1 });
+        commonPath();
+        tl.to({}, { duration:.35 }) // el shimmer se ve un instante antes de resolver
+          .to(skels, { opacity:0, duration:.4, ease:'power2.out', stagger:.06 }, '+=0')
+          .fromTo('#drawer', { opacity:0, y:18 }, { opacity:1, y:0, duration:.4, ease:'cubic-bezier(0.16,0.84,0.28,1)' }, '-=.2');
+      } else if (variant === 'montaje') {
+        // Nada se revela por partes: el bloque entero (grid + cajon) es UN
+        // objeto que entra de una vez, como una ventana que se abre. Sin
+        // stagger — es la contraparte minimal de las otras tres.
+        gsap.set('#caewin [data-skel]', { opacity:0 });
+        commonPath();
+        tl.fromTo('.obra-body', { opacity:0, scale:.97 }, { opacity:1, scale:1, duration:.42, ease:'cubic-bezier(0.16,0.84,0.28,1)', transformOrigin:'50% 20%' }, '-=.05');
+      } else if (variant === 'caida') {
+        // Fisico: cada tarjeta cae desde arriba con una rotacion que se
+        // asienta a 0, como un archivo que se suelta dentro de una carpeta.
+        // El cajon NO entra como un bloque plano: el titulo lo barre un
+        // recorte (el mismo gesto de tinta que ya firma B1/B2), y el resto
+        // de la ficha —cifras, stack, prosa— entra en tres capas propias,
+        // no una sola.
+        gsap.set('#caewin [data-skel]', { opacity:0 });
+        gsap.set('#drawer', { opacity:0 });
+        const tilts = [-5, 4, -3, 5, -4];
+        cards.forEach((c,i) => gsap.set(c, { transformOrigin:'50% 0%' }));
+        const dh2 = document.querySelector('#caewin [data-dh2]');
+        const dkick = document.querySelector('#caewin [data-dkick]');
+        const dlead = document.querySelector('#caewin [data-dlead]');
+        const dfoot = document.querySelector('#caewin [data-dfoot]');
+        const dpreview = document.querySelector('#caewin [data-dpreview]');
+        const drows = gsap.utils.toArray('#caewin [data-drow]');
+        const dblocks = gsap.utils.toArray('#caewin [data-dblock]');
+        gsap.set(dh2, { clipPath:'inset(0 100% 0 0)' });
+        gsap.set([dkick, dlead, dfoot], { opacity:0, y:6 });
+        gsap.set(dpreview, { opacity:0, scale:.94 });
+        gsap.set(drows, { opacity:0, y:8 });
+        gsap.set(dblocks, { opacity:0, y:8 });
+
+        commonPath();
+        tl.fromTo(cards, { opacity:0, y:-46, rotate: (i) => tilts[i] },
+                          { opacity:1, y:0, rotate:0, duration:.5, ease:'bounce.out', stagger:.08 }, '-=.05')
+          .to('#drawer', { opacity:1, duration:.01 }, '-=.1')
+          .to(dkick, { opacity:1, y:0, duration:.2, ease:'power2.out' }, '-=.05')
+          .to(dh2, { clipPath:'inset(0 0% 0 0)', duration:.42, ease:'power2.inOut' }, '-=.05')
+          .to(dpreview, { opacity:1, scale:1, duration:.32, ease:'power2.out' }, '-=.3')
+          .to([dlead, dfoot], { opacity:1, y:0, duration:.22, ease:'power2.out', stagger:.06 }, '-=.18')
+          .to(drows, { opacity:1, y:0, duration:.24, ease:'power2.out', stagger:.06 }, '-=.1')
+          .to(dblocks, { opacity:1, y:0, duration:.26, ease:'power2.out', stagger:.08 }, '-=.12');
+      } else if (variant === 'indexado') {
+        // Una barra de luz — el propio dispositivo visual del escaneo, no
+        // un recorte invisible — recorre el grid una vez. Las tarjetas
+        // pasan de atenuadas a plenas cuando la barra las toca.
+        gsap.set('#caewin [data-skel]', { opacity:0 });
+        const grid = document.getElementById('magGrid');
+        const scanbar = document.getElementById('scanbar');
+        const gw = grid.getBoundingClientRect().width;
+        gsap.set(cards, { opacity:.28, y:0 });
+        gsap.set(scanbar, { x:-4, opacity:0 });
+        commonPath();
+        tl.set(scanbar, { opacity:1 })
+          .to(scanbar, { x: gw, duration:.7, ease:'power1.inOut' }, '-=.02')
+          .to(cards, { opacity:1, duration:.22, ease:'none', stagger:{ each:.7/6, from:'start' } }, '<')
+          .to(scanbar, { opacity:0, duration:.15 }, '-=.1')
+          .fromTo('#drawer', { opacity:0, y:18 }, { opacity:1, y:0, duration:.4, ease:'cubic-bezier(0.16,0.84,0.28,1)' }, '-=.1');
+      }
+      tl.timeScale(speed);
+    } else {
+      // El eje compartido de Material 3 en esta composicion es Y, no X: la
+      // lista (el grid de tarjetas) no se mueve, y el cajon es lo que entra
+      // — entra por donde vive, debajo del grid.
+      lastDrawerTween = gsap.fromTo('#drawer', { opacity:0, y:14 }, { opacity:1, y:0, duration:.3, ease:"cubic-bezier(0.7,0,0.2,1)" }).timeScale(speed);
+    }
+    document.querySelectorAll('#caewin .mag-card').forEach(card => {
+      card.addEventListener('click', () => { const n=parseInt(card.dataset.row,10); if(n===sel) return; sel=n; paint('select'); });
+      card.addEventListener('pointerenter', () => {
+        const hs = document.getElementById('hoverState');
+        if (hs) hs.textContent = PROJECTS[parseInt(card.dataset.row,10)].title;
+      });
+      card.addEventListener('pointerleave', () => {
+        const hs = document.getElementById('hoverState');
+        if (hs) hs.textContent = '—';
+      });
+    });
+
+    // No es una carrera de fuentes (se descartó: `fonts.ready` + un rAF
+    // seguían midiendo 18px de más). Es la propia entrada GSAP: `.mag-card`
+    // y `#drawer` arrancan en `translateY` y ese transform desplaza
+    // `getBoundingClientRect()` mientras la tween corre — la lectura pillaba
+    // el fotograma a mitad de camino. Se espera a que la entrada más larga
+    // (stagger de 5 tarjetas + duración + delay del cajón) termine de verdad
+    // antes de medir.
+    const settleDelay = (mode === 'switch' ? 2300 : 350) / Math.max(speed, 0.15);
+    setTimeout(() => {
+      const box = document.getElementById('caewindow');
+      const clientH = box.clientHeight;
+      let maxBottom = 0;
+      box.querySelectorAll('*').forEach(el => {
+        const r = el.getBoundingClientRect(), boxR = box.getBoundingClientRect();
+        maxBottom = Math.max(maxBottom, r.bottom - boxR.top);
+      });
+      const scrollH = Math.round(maxBottom);
+      const overflow = scrollH - clientH;
+
+      const lcProblem = countLines(document.getElementById('txt-problem'));
+      const lcSolution = countLines(document.getElementById('txt-solution'));
+      document.getElementById('lc-problem').textContent = `${lcProblem} línea${lcProblem===1?'':'s'}`;
+      document.getElementById('lc-solution').textContent = `${lcSolution} línea${lcSolution===1?'':'s'}`;
+
+      const hud = document.getElementById('hud');
+      hud.textContent = `contenido ${scrollH}px / ventana ${clientH}px` + (overflow>0?` — desborda ${overflow}px`:` — sobran ${Math.abs(overflow)}px`);
+      reading.innerHTML = `
+        <span class="pill ${overflow>0?'warn':'ok'}"><b>${overflow>0?'Desborda':'Cabe'}</b> — contenido ${scrollH}px, ventana 748px</span>
+        <span class="pill">Problema: <b>${lcProblem} líneas</b></span>
+        <span class="pill">Solución: <b>${lcSolution} líneas</b></span>
+        <span class="pill">period: <b>${PROJECTS[sel].period ? 'presente' : 'ausente — fila oculta'}</b></span>`;
+    }, settleDelay);
+  }
+
+  const speedSlider = document.getElementById('speedSlider');
+  const speedVal = document.getElementById('speedVal');
+  speedSlider.addEventListener('input', () => {
+    speed = parseFloat(speedSlider.value);
+    speedVal.textContent = `×${speed.toFixed(2).replace(/0$/, '').replace(/\.$/, '')}`;
+  });
+  document.getElementById('btnRepeat').addEventListener('click', () => {
+    // En M6 Repetir vuelve a montar el directorio entero (mode 'switch'),
+    // que es el gesto que esta pantalla juzga — no solo el cajon.
+    sel = 0;
+    paint('switch');
+  });
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      variant = btn.dataset.variant;
+      sel = 0;
+      paint('switch');
+    });
+  });
+
+  // Medir antes de que las webfonts (Fraunces/Hanken/Martian Mono) terminen
+  // de cargar da un ancho de glifo provisional y el recuento de lineas
+  // miente una sola vez, en la primera pintura — igual que el font-loading
+  // race ya documentado para este proyecto. `document.fonts.ready` evita la
+  // carrera sin tocar la logica de paint().
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => paint('switch'));
+  } else {
+    paint('switch');
+  }
+})();
+</script>
