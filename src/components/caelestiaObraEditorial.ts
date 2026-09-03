@@ -44,20 +44,20 @@ export async function mountCaelestiaObraEditorial(
 
   function poblarCajon(index: number): void {
     const project = caseStudies[index];
-    drawer.replaceChildren(
-      el("div", "cae-obra-drawer-title", [
-        el("div", "cae-obra-drawer-kick", [project.tag]),
-        el("h3", "", [project.title]),
-        el("p", "cae-obra-drawer-lead", [project.lead]),
-        buildFoot(project),
-      ]),
-      buildPreview(project),
-      buildMeta(project),
-      el("div", "cae-obra-prose", [
-        el("div", "", [el("h4", "", ["Problema"]), el("p", "", [project.problem])]),
-        el("div", "", [el("h4", "", ["Solución"]), el("p", "", [project.solution])]),
-      ]),
-    );
+    const titleBlock = el("div", "cae-obra-drawer-title", [
+      el("div", "cae-obra-drawer-kick", [project.tag]),
+      el("h3", "", [project.title]),
+      el("p", "cae-obra-drawer-lead", [project.lead]),
+      buildFoot(project),
+    ]);
+    titleBlock.querySelector("h3")?.setAttribute("data-cae-obra-h3", "");
+    const preview = buildPreview(project);
+    const meta = buildMeta(project);
+    const prose = el("div", "cae-obra-prose", [
+      el("div", "", [el("h4", "", ["Problema"]), el("p", "", [project.problem])]),
+      el("div", "", [el("h4", "", ["Solución"]), el("p", "", [project.solution])]),
+    ]);
+    drawer.replaceChildren(titleBlock, preview, meta, prose);
   }
 
   function abrir(index: number): void {
@@ -77,7 +77,6 @@ export async function mountCaelestiaObraEditorial(
   cards.forEach((card, index) => {
     card.addEventListener("click", () => abrir(index));
     if (reduce) return;
-    const tilt = TILTS[index] ?? 0;
     card.addEventListener("pointerenter", () => {
       gsap.to(card, {
         y: -6,
@@ -90,7 +89,7 @@ export async function mountCaelestiaObraEditorial(
     card.addEventListener("pointerleave", () => {
       gsap.to(card, {
         y: 0,
-        rotate: tilt,
+        rotate: 0,
         boxShadow: "0 10px 22px -8px rgba(0,0,0,.4)",
         duration: 0.22,
         ease: "power2.out",
@@ -98,7 +97,51 @@ export async function mountCaelestiaObraEditorial(
     });
   });
 
-  abrir(0);
+  if (reduce) {
+    abrir(0);
+  } else {
+    entrarConCaida();
+  }
+
+  function entrarConCaida(): void {
+    cards.forEach((card, index) => {
+      const tilt = TILTS[index] ?? 0;
+      gsap.set(card, { opacity: 0, y: -46, rotate: tilt, transformOrigin: "50% 0%" });
+    });
+
+    seleccionado = 0;
+    cards[0]?.classList.add("is-sel");
+    poblarCajon(0);
+
+    const h3 = drawer.querySelector<HTMLElement>("[data-cae-obra-h3]");
+    const kick = drawer.querySelector<HTMLElement>(".cae-obra-drawer-kick");
+    const lead = drawer.querySelector<HTMLElement>(".cae-obra-drawer-lead");
+    const foot = drawer.querySelector<HTMLElement>(".cae-obra-foot");
+    const preview = drawer.querySelector<HTMLElement>(".cae-obra-drawer-preview");
+    const rows = Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-drawer-meta > div"));
+    const blocks = Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-prose > div"));
+
+    gsap.set(drawer, { opacity: 0 });
+    if (h3) gsap.set(h3, { clipPath: "inset(0 100% 0 0)" });
+    gsap.set([kick, lead, foot].filter(Boolean), { opacity: 0, y: 6 });
+    if (preview) gsap.set(preview, { opacity: 0, scale: 0.94 });
+    gsap.set(rows, { opacity: 0, y: 8 });
+    gsap.set(blocks, { opacity: 0, y: 8 });
+
+    const tl = gsap.timeline();
+    tl.fromTo(
+      cards,
+      { opacity: 0, y: -46, rotate: (i: number) => TILTS[i] ?? 0 },
+      { opacity: 1, y: 0, rotate: 0, duration: 0.5, ease: "bounce.out", stagger: 0.08 },
+    )
+      .to(drawer, { opacity: 1, duration: 0.01 }, "-=.1")
+      .to(kick, { opacity: 1, y: 0, duration: 0.2, ease: "power2.out" }, "-=.05")
+      .to(h3, { clipPath: "inset(0 0% 0 0)", duration: 0.42, ease: "power2.inOut" }, "-=.05")
+      .to(preview, { opacity: 1, scale: 1, duration: 0.32, ease: "power2.out" }, "-=.3")
+      .to([lead, foot], { opacity: 1, y: 0, duration: 0.22, ease: "power2.out", stagger: 0.06 }, "-=.18")
+      .to(rows, { opacity: 1, y: 0, duration: 0.24, ease: "power2.out", stagger: 0.06 }, "-=.1")
+      .to(blocks, { opacity: 1, y: 0, duration: 0.26, ease: "power2.out", stagger: 0.08 }, "-=.12");
+  }
 
   return {
     destroy: () => {
@@ -191,7 +234,6 @@ function buildCard(title: string, tag: string, index: number): HTMLButtonElement
   card.type = "button";
   card.dataset.obraCard = String(index);
   card.setAttribute("aria-label", `Ver ${title}`);
-  card.style.setProperty("--cae-obra-tilt", `${TILTS[index % TILTS.length]}deg`);
 
   return card;
 }
