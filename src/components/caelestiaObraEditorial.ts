@@ -24,6 +24,9 @@ export async function mountCaelestiaObraEditorial(
   const rail = root.querySelector<HTMLElement>("[data-obra-rail]");
   if (!rail) throw new Error("La Editorial de Obra necesita [data-obra-rail]");
 
+  const { default: gsap } = await import("gsap");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   const row = el(
     "div",
     "cae-obra-row",
@@ -63,10 +66,36 @@ export async function mountCaelestiaObraEditorial(
     seleccionado = index;
     cards[seleccionado]?.classList.add("is-sel");
     poblarCajon(index);
+    if (reduce) return;
+    gsap.fromTo(
+      drawer,
+      { opacity: 0, y: 14 },
+      { opacity: 1, y: 0, duration: 0.3, ease: "cubic-bezier(0.7,0,0.2,1)" },
+    );
   }
 
   cards.forEach((card, index) => {
     card.addEventListener("click", () => abrir(index));
+    if (reduce) return;
+    const tilt = TILTS[index] ?? 0;
+    card.addEventListener("pointerenter", () => {
+      gsap.to(card, {
+        y: -6,
+        rotate: 0,
+        boxShadow: "0 18px 34px -8px rgba(0,0,0,.5)",
+        duration: 0.22,
+        ease: "power2.out",
+      });
+    });
+    card.addEventListener("pointerleave", () => {
+      gsap.to(card, {
+        y: 0,
+        rotate: tilt,
+        boxShadow: "0 10px 22px -8px rgba(0,0,0,.4)",
+        duration: 0.22,
+        ease: "power2.out",
+      });
+    });
   });
 
   abrir(0);
