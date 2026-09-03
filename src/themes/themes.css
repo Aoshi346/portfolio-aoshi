@@ -3676,15 +3676,7 @@
    `visibility: hidden`: los dos lo sacan del arbol, que es justo el fallo.
    Lo vigila el gate 9 de `scripts/measure-caelestia-quien-soy.py`. */
 :root[data-theme="caelestia"] [data-scene="about"] .hero-kick {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
+  @apply sr-only;
 }
 
 /* La seccion trae `px-6 py-24` y `min-h-screen` del marcado compartido. Sin

@@ -501,10 +501,13 @@ def main() -> int:
             return {
                 ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
                 texto: bTexto, fondo: bFondo,
-                // El ">" entra con `opacity` de 0 a 1. Medir su color mientras
-                // sigue a medio camino da un numero que no se pinta: se exige
-                // opacidad 1 (o sea, la transicion ya aterrizada) antes de
-                // creerse el ratio.
+                // `getComputedStyle(...).color` es independiente de `opacity`
+                // (medido: con opacity 0 -literalmente invisible- el ratio ya
+                // sale bien formado). O sea que esta lectura de opacidad NO
+                // protege el ratio de un fotograma a medio fundido. Lo que SI
+                // demuestra, y para lo que se usa aqui, es que el roce llego y
+                // aterrizo: `.ficha-k::before` pasa de 0 a 1 con la transicion,
+                // y solo en 1 esta en su estado final.
                 opacidad: parseFloat(csEl.opacity),
                 color: csEl.color,
             };
@@ -549,8 +552,17 @@ def main() -> int:
             #    `getComputedStyle`.
             # Que `querySelector('.ficha-fila:hover ...')` devuelva algo es la
             # prueba de que el roce llego: si no, la medida sale None y cae.
+            # 600ms de espera contra una transicion de 140ms (~4x de margen):
+            # deliberado, no un umbral apretado contra el ruido del instrumento
+            # — ver la nota de umbrales en rules/verification.md.
             pg3.locator("[data-ficha-fila]").first.hover()
             pg3.wait_for_timeout(600)
+            # Solo `.ficha-k::before` (el ">") anima su opacidad — es la unica
+            # de las dos mitades del par donde la asercion de "aterrizado" es
+            # falsificable. Nada anima la opacidad de `.ficha-k` en si (siempre
+            # en 1, medido en el instante 0 del roce y durante toda la entrada
+            # de 1.4s): una asercion que no puede fallar es un defecto en este
+            # proyecto, no una formalidad, y se ha quitado.
             PARES_ROCE = [
                 (".ficha-fila:hover .ficha-k", None, "la clave rozada"),
                 (".ficha-fila:hover .ficha-k", "::before", "el > de la clave rozada"),
@@ -561,9 +573,10 @@ def main() -> int:
                           f"el roce llego y se pudo medir {etiqueta} en esquema {esquema}")
                 if medida_par is None:
                     continue
-                comprobar(medida_par["opacidad"] == 1,
-                          f"{etiqueta} esta aterrizado (opacidad {medida_par['opacidad']}) "
-                          f"en esquema {esquema}")
+                if pseudo == "::before":
+                    comprobar(medida_par["opacidad"] == 1,
+                              f"{etiqueta} esta aterrizado (opacidad {medida_par['opacidad']}) "
+                              f"en esquema {esquema}")
                 print(f"       {etiqueta}: {medida_par['ratio']:.2f}:1 "
                       f"({medida_par['color']} sobre rgb{tuple(medida_par['fondo'])})")
                 if medida_par["ratio"] < peor:
