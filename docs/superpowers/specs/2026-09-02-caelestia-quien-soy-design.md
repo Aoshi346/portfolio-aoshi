@@ -1,6 +1,6 @@
 # Spec de Caelestia — Quién soy: la ficha del sistema es la salida de `neofetch`
 
-Estado: pendiente de plan
+Estado: implementado
 Fecha: 2026-09-02
 Alcance: la **fase B2** de las seis del rediseño de Caelestia — la escena `#about` dentro del
 workspace. Toca `src/sections/about.ts` (un bloque aditivo nuevo), el bloque

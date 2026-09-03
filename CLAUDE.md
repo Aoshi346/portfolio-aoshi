@@ -84,6 +84,22 @@
   the warning it was measuring (`page.screenshot()` forces its own `ReadPixels`). The spec's numbers
   all held. **Never accept a gate you have not seen go red against the failure it claims to catch.**
 
+- **Caelestia's phase B2 (Quién soy) is DONE** (`2026-09-02-caelestia-quien-soy`, second of the five
+  inside-window phases, on branch `design/caelestia-quien-soy` — **not yet merged, and this branch
+  does not include B1**: the background here is still `caelestiaBlobs.ts`, not B1's
+  `caelestiaFiguras.ts`). The `#about` scene stops being a cramped card and becomes **the desktop's
+  own `neofetch` output**: a typed `~ $ neofetch` entry, a name/email/status header with a filete
+  measured by `Range` (not the `<span>`'s block box, which reports the container's width), a
+  `key: value` field list sourced entirely from `content.ts`, and a portrait clipped to a
+  `clip-path: polygon(...)` that morphs between two Material 3 figures on hover.
+  `scripts/measure-caelestia-quien-soy.py` gates it with 8 assertion families (38 checks); the shell
+  harness `scripts/measure-caelestia-hora.py` (16 assertions) stays green, confirming phase A is
+  untouched. **The trap not to repeat:** a `clip-path: polygon()` only interpolates against another
+  polygon with the **same vertex count** — mismatched point counts (240 vs a lower count) silently
+  fall back to a hard cut, no error, no warning. And `*` in a `prefers-reduced-motion` CSS guard does
+  **not** reach pseudo-elements — `.ficha-k::before` needed its own explicit rule to stop animating
+  under reduced motion; the generic wildcard guard missed it.
+
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**
 - Three themes over one DOM, switched by `data-theme` (vice / hyprland / caelestia). The skin is decided by CSS, never by the markup. The theme is picked at random per visit: to verify, always use `?theme=vice`

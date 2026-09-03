@@ -93,7 +93,7 @@ CSS: no hay generación en tiempo de ejecución.
   `[data-ficha-frase]`, `[data-ficha-fila]`, `[data-ficha-tira]`, `[data-ficha-prompt]`,
   `[data-ficha-grupo]` (los nodos que la entrada escalona).
 
-- [ ] **Paso 1: escribir la aserción que falla**
+- [x] **Paso 1: escribir la aserción que falla**
 
 En `scripts/measure-caelestia-quien-soy.py`, crea el arnés con **solo este gate** por ahora:
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 2: verla dar rojo**
+- [x] **Paso 2: verla dar rojo**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -179,7 +179,7 @@ python3 scripts/measure-caelestia-quien-soy.py --base http://localhost:4173
 
 Esperado: `FALLO  la ficha [data-ficha=neofetch] existe en el DOM`, salida 1.
 
-- [ ] **Paso 3: escribir `createFicha()`**
+- [x] **Paso 3: escribir `createFicha()`**
 
 En `src/sections/about.ts`, justo antes de `export function createAbout()`:
 
@@ -348,7 +348,7 @@ Y en `createAbout()`, añade `createFicha()` al array de `body`, después de `cr
   ]);
 ```
 
-- [ ] **Paso 4: ocultarla por defecto**
+- [x] **Paso 4: ocultarla por defecto**
 
 En `src/themes/themes.css`, junto a la regla base que ya oculta la placa de Hyprland:
 
@@ -360,7 +360,7 @@ En `src/themes/themes.css`, junto a la regla base que ya oculta la placa de Hypr
 }
 ```
 
-- [ ] **Paso 5: verla dar verde**
+- [x] **Paso 5: verla dar verde**
 
 ```bash
 npm run build && npx vite preview --port 4173 &
@@ -369,7 +369,7 @@ python3 scripts/measure-caelestia-quien-soy.py --base http://localhost:4173
 ```
 Esperado: `OK   la ficha [data-ficha=neofetch] existe en el DOM`, salida 0.
 
-- [ ] **Paso 6: comprobar que Vice e Hyprland no cambian**
+- [x] **Paso 6: comprobar que Vice e Hyprland no cambian**
 
 ```bash
 python3 - <<'EOF'
@@ -395,7 +395,7 @@ EOF
 ```
 Mira las dos capturas antes de seguir. Un selector mal cerrado no lo caza ni `tsc` ni `eslint`.
 
-- [ ] **Paso 7: commit**
+- [x] **Paso 7: commit**
 
 ```bash
 git add src/sections/about.ts src/themes/themes.css scripts/measure-caelestia-quien-soy.py
@@ -416,7 +416,7 @@ git commit -m "feat(caelestia): el DOM de la ficha de Quien soy, oculta por defe
   `--cae-display-axes-cartel` (ver «Dependencia de B1» arriba).
 - Produce: la escena maquetada. Alto esperado ≈638 px, aire ≈55/56, nombre en 1 línea.
 
-- [ ] **Paso 1: escribir los dos gates que fallan**
+- [x] **Paso 1: escribir los dos gates que fallan**
 
 Sustituye el bloque `print("\n[1] ...")` del arnés por:
 
@@ -463,13 +463,13 @@ Sustituye el bloque `print("\n[1] ...")` del arnés por:
         comprobar(lineas == 1, f"el nombre cabe en 1 linea ({lineas})")
 ```
 
-- [ ] **Paso 2: verlos dar rojo**
+- [x] **Paso 2: verlos dar rojo**
 
 Corre el arnés. Esperado: **el gate 2 falla** — con la ficha aún sin estilo, el nombre hereda el
 cuerpo y parte. Anota el número de líneas que sale: **es el defecto que esta fase viene a arreglar y
 tienes que haberlo visto**.
 
-- [ ] **Paso 3: escribir el bloque CSS**
+- [x] **Paso 3: escribir el bloque CSS**
 
 En `src/themes/themes.css`, antes de `:root[data-theme="caelestia"] .cae-bar`:
 
@@ -798,13 +798,13 @@ Si `--cae-display-axes-cartel` no existía (ver «Dependencia de B1»), añádel
   --cae-display-axes-cartel: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
 ```
 
-- [ ] **Paso 4: verlos dar verde**
+- [x] **Paso 4: verlos dar verde**
 
 Corre el arnés. Esperado: los cuatro `OK`, y el nombre en **1 línea**. Si el alto se dispara por
 encima de 748 o el aire de abajo sale negativo, el culpable suele ser `.ficha-cuerpo` sin
 `max-width`: compruébalo antes de tocar tamaños de fuente.
 
-- [ ] **Paso 5: mirar la captura**
+- [x] **Paso 5: mirar la captura**
 
 ```bash
 python3 - <<'EOF'
@@ -827,7 +827,7 @@ EOF
 ```
 Ábrela. Compárala con `docs/superpowers/specs/2026-09-02-caelestia-quien-soy-final.png`.
 
-- [ ] **Paso 6: commit**
+- [x] **Paso 6: commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-caelestia-quien-soy.py
@@ -846,7 +846,7 @@ git commit -m "feat(caelestia): la piel de la ficha de Quien soy"
 - Consume: `[data-ficha-retrato]` (el `<span class="ficha-anillo">`) y su `<img class="ficha-foto">`.
 - Produce: nada que otras tareas consuman.
 
-- [ ] **Paso 1: generar los dos polígonos**
+- [x] **Paso 1: generar los dos polígonos**
 
 El generador rescatado (`…-figuras.py`) escribe la maqueta entera; para sacar solo los dos
 literales que necesita el CSS, usa sus mismas funciones:
@@ -881,7 +881,7 @@ EOF
 **Los dos tienen que salir con 240 puntos.** Un `polygon()` solo interpola con otro si cuentan
 igual; con distinto número el navegador **no morfa, corta**.
 
-- [ ] **Paso 2: escribir el gate que falla**
+- [x] **Paso 2: escribir el gate que falla**
 
 Añade al arnés:
 
@@ -905,12 +905,12 @@ Añade al arnés:
         comprobar(estados >= 4, f"el clip-path recorre estados intermedios ({estados})")
 ```
 
-- [ ] **Paso 3: verlo dar rojo**
+- [x] **Paso 3: verlo dar rojo**
 
 Corre el arnés. Esperado: **2 estados** (solo los extremos), porque aún no hay morfado. Ese 2 es la
 prueba de que el gate distingue un corte de un recorrido: anótalo.
 
-- [ ] **Paso 4: escribir el CSS del retrato**
+- [x] **Paso 4: escribir el CSS del retrato**
 
 Pega los dos polígonos donde dice `POLIGONO_*`:
 
@@ -968,16 +968,16 @@ Pega los dos polígonos donde dice `POLIGONO_*`:
 }
 ```
 
-- [ ] **Paso 5: verlo dar verde**
+- [x] **Paso 5: verlo dar verde**
 
 Corre el arnés. Esperado: **≥ 4 estados** (medido en la maqueta: 9).
 
-- [ ] **Paso 6: volver a verlo en rojo, a propósito**
+- [x] **Paso 6: volver a verlo en rojo, a propósito**
 
 Comenta las dos líneas `transition:` del retrato, corre el arnés, confirma que vuelve a **2**, y
 descoméntalas. **Un gate que no has visto fallar no vale.**
 
-- [ ] **Paso 7: commit**
+- [x] **Paso 7: commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-caelestia-quien-soy.py
@@ -999,7 +999,7 @@ git commit -m "feat(caelestia): el retrato de la ficha morfa entre figuras de Ma
   (devuelve `null` si la ficha no esta en el DOM, que es el caso en Vice y en Hyprland), con
   `interface FichaHandle { destroy: () => void; reproducir: () => void }`.
 
-- [ ] **Paso 1: escribir los dos gates que fallan**
+- [x] **Paso 1: escribir los dos gates que fallan**
 
 ```python
         print("\n[3] El filete mide el largo del correo")
@@ -1044,12 +1044,12 @@ git commit -m "feat(caelestia): el retrato de la ficha morfa entre figuras de Ma
         contexto.close()
 ```
 
-- [ ] **Paso 2: verlos dar rojo**
+- [x] **Paso 2: verlos dar rojo**
 
 Corre el arnés. Esperado: el filete mide **0** (el CSS lo deja a cero y nadie lo ha medido todavía) y
 el comando sale **vacío**.
 
-- [ ] **Paso 3: escribir el módulo**
+- [x] **Paso 3: escribir el módulo**
 
 Crea `src/themes/caelestia.ficha.ts`:
 
@@ -1211,7 +1211,7 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
 }
 ```
 
-- [ ] **Paso 4: engancharlo a la coreografía**
+- [x] **Paso 4: engancharlo a la coreografía**
 
 En `src/themes/caelestia.choreography.ts`, importa el módulo y llama a `reproducir()` cuando la
 escena que contiene la ficha se activa. Dentro de `caelestiaChoreography`, después de
@@ -1240,7 +1240,7 @@ Con el import arriba:
 import { montarFicha } from "./caelestia.ficha";
 ```
 
-- [ ] **Paso 5: verlos dar verde**
+- [x] **Paso 5: verlos dar verde**
 
 ```bash
 npm run build && npm run lint
@@ -1251,7 +1251,7 @@ python3 scripts/measure-caelestia-quien-soy.py --base http://localhost:4173
 Esperado: gates 3 y 6 en verde. **Ábrelo también en un navegador de verdad**: el `gsap` mal
 destructurado compila, pasa el linter y solo revienta en la consola del navegador.
 
-- [ ] **Paso 6: commit**
+- [x] **Paso 6: commit**
 
 ```bash
 git add src/themes/caelestia.ficha.ts src/themes/caelestia.choreography.ts scripts/measure-caelestia-quien-soy.py
@@ -1269,7 +1269,7 @@ git commit -m "feat(caelestia): la entrada de la ficha y el filete medido con Ra
 - Consume: la escena ya montada de las tareas 1–4.
 - Produce: el arnés completo, con los ocho gates del spec.
 
-- [ ] **Paso 1: escribir los tres gates**
+- [x] **Paso 1: escribir los tres gates**
 
 ```python
         print("\n[7] Anti-mock: todo texto visible existe en content.ts")
@@ -1371,17 +1371,17 @@ git commit -m "feat(caelestia): la entrada de la ficha y el filete medido con Ra
 > un reloj congelado.
 
 
-- [ ] **Paso 2: correrlos y arreglar lo que salga**
+- [x] **Paso 2: correrlos y arreglar lo que salga**
 
 Si el gate 7 saca huérfanos, **la respuesta no es relajar el gate**: es quitar de la ficha el texto
 que no está en `content.ts`.
 
-- [ ] **Paso 3: verlo dar rojo a propósito**
+- [x] **Paso 3: verlo dar rojo a propósito**
 
 Cambia en `about.ts` un texto de la ficha por una cadena inventada («Repositorios públicos · 2», que
 es el fallo real que cometió B1), corre el arnés, confirma que el gate 7 lo caza, y deshaz el cambio.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add scripts/measure-caelestia-quien-soy.py
@@ -1396,14 +1396,14 @@ git commit -m "test(caelestia): los ocho gates de la ficha de Quien soy"
 - Modificar: `docs/superpowers/specs/2026-09-02-caelestia-quien-soy-design.md` (`Estado:`)
 - Modificar: `.claude/CLAUDE.md` y `CLAUDE.md` (estado de los temas)
 
-- [ ] **Paso 1: build y linter**
+- [x] **Paso 1: build y linter**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
 npm run build && npm run lint
 ```
 
-- [ ] **Paso 2: el arnés completo, en verde**
+- [x] **Paso 2: el arnés completo, en verde**
 
 ```bash
 npx vite preview --port 4173 &
@@ -1412,14 +1412,14 @@ python3 scripts/measure-caelestia-quien-soy.py --base http://localhost:4173
 ```
 Los ocho gates en verde y salida 0.
 
-- [ ] **Paso 3: el arnés del shell, sin regresiones**
+- [x] **Paso 3: el arnés del shell, sin regresiones**
 
 ```bash
 python3 scripts/measure-caelestia-hora.py --base http://localhost:4173
 ```
 Sus 16 aserciones siguen verdes: esta fase no debe haber tocado el shell.
 
-- [ ] **Paso 4: la línea base general**
+- [x] **Paso 4: la línea base general**
 
 ```bash
 python3 scripts/verify.py
@@ -1427,7 +1427,7 @@ python3 scripts/verify.py
 Sale 0 si coincide con `scripts/verify-baseline.json`. Si arreglaste algo que estaba en la base,
 `python3 scripts/verify.py --update-baseline` y **revisa el diff antes de commitear**.
 
-- [ ] **Paso 5: capturas de los tres temas, y mirarlas**
+- [x] **Paso 5: capturas de los tres temas, y mirarlas**
 
 ```bash
 python3 - <<'EOF'
@@ -1451,13 +1451,13 @@ EOF
 ```
 **Ábrelas las seis.** Vice e Hyprland tienen que estar exactamente como antes.
 
-- [ ] **Paso 6: cerrar el estado**
+- [x] **Paso 6: cerrar el estado**
 
 En el spec, `Estado: pendiente de plan` → `Estado: implementado`. Y en los dos `CLAUDE.md`, añade B2
 al estado de los temas, con el mismo tono que las entradas de Vice y del shell: qué es, qué lo
 vigila, y la trampa que no hay que repetir (las figuras a 240 puntos y el filete medido con `Range`).
 
-- [ ] **Paso 7: commit**
+- [x] **Paso 7: commit**
 
 ```bash
 git add -A
