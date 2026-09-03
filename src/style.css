@@ -858,6 +858,12 @@ body {
   display: none;
 }
 
+/* La ficha de Caelestia viaja en los tres temas y se envia oculta: solo la
+   pinta `:root[data-theme="caelestia"]`. Patron aditivo estricto. */
+[data-ficha="neofetch"] {
+  display: none;
+}
+
 /*
  * "Obra" — fila de metadatos (Rol / Periodo / Stack / Estado). Vive dentro de
  * `.scene-surface` (ver `projectScene.ts`), asi que en Caelestia hereda la

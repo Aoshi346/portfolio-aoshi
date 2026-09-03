@@ -3531,9 +3531,10 @@
 
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
   --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
-
   /*
-   * La optica del CARTEL, solo para el titular de la escena Titulo.
+   * La optica del CARTEL: el titular de la escena Titulo (B1) y el nombre de la
+   * ficha de «Quien soy» (B2). Token propio, nunca se reutiliza
+   * `--cae-display-axes` ampliado.
    *
    * `opsz` en Fraunces no es estilo: la fuente trae DIBUJOS DISTINTOS segun el
    * tamano al que se vaya a leer. `opsz 9` engorda las finas para que
@@ -3854,6 +3855,413 @@
 :root[data-theme="caelestia"] :focus-visible {
   outline: 2px solid var(--cae-anchor);
   outline-offset: 3px;
+}
+
+/*
+  LA FICHA DEL SISTEMA — el dispositivo de «Quien soy» en Caelestia.
+
+  La escena es la salida de `neofetch`: el comando que un escritorio ejecuta
+  para decir que maquina es esta. B1 abre con `whoami`, que pregunta quien
+  eres; este pregunta que maquina eres.
+
+  La desviacion deliberada: el NOMBRE ocupa el sitio donde neofetch imprime el
+  titulo de la distribucion y es lo unico que NO va en monoespaciada. Sin el,
+  la convencion de terminal deja todas las lineas pesando igual y la escena no
+  tiene un primero.
+*/
+:root[data-theme="caelestia"] [data-ficha="neofetch"] {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 3.25rem 3.5rem;
+  font-family: "Martian Mono", ui-monospace, monospace;
+  color: var(--cae-on-surface);
+}
+
+/* La escena vieja se retira entera bajo Caelestia: la ficha dice todo esto y
+   mejor. No se borran del DOM — Vice e Hyprland las siguen usando. */
+:root[data-theme="caelestia"] .about-card,
+:root[data-theme="caelestia"] .about-stats,
+:root[data-theme="caelestia"] .about-track,
+:root[data-theme="caelestia"] .about-pairs,
+:root[data-theme="caelestia"] .about-body > [data-line] {
+  display: none;
+}
+
+/* El `<h2>Quién soy</h2>` NO entra en la regla de arriba, y no es un descuido.
+   Es el UNICO encabezado de la escena, y con `display: none` sale tambien del
+   arbol de accesibilidad: «Quien soy» se quedaba como la unica escena del tema
+   sin nombre accesible (el hero tiene su `h1`; obra, creditos y contacto tienen
+   su `h2`). El nombre de la ficha es un `<p>`, asi que no lo suple.
+   Se oculta con el patron VISUALMENTE OCULTO — el mismo de `.sr-only` en
+   `style.css`, copiado y no reutilizado porque la clase la pone el marcado y
+   `.hero-kick` es compartida por los tres temas: darsela en el DOM la
+   escondería tambien en Vice e Hyprland. Ni `display: none` ni
+   `visibility: hidden`: los dos lo sacan del arbol, que es justo el fallo.
+   Lo vigila el gate 9 de `scripts/measure-caelestia-quien-soy.py`. */
+:root[data-theme="caelestia"] [data-scene="about"] .hero-kick {
+  @apply sr-only;
+}
+
+/* La seccion trae `px-6 py-24` y `min-h-screen` del marcado compartido. Sin
+   neutralizarlo, el aire que se mide no es el de la ficha: es el de la
+   maquetacion que esta fase viene a sustituir (medido: 96 px de relleno). */
+:root[data-theme="caelestia"] [data-scene="about"] {
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  display: block;
+}
+
+:root[data-theme="caelestia"] [data-scene="about"] .about-grid,
+:root[data-theme="caelestia"] [data-scene="about"] .about-body {
+  display: contents;
+}
+
+/* La linea de comando se queda: la terminal no desaparece cuando imprime. */
+:root[data-theme="caelestia"] .ficha-cmd-linea {
+  margin: 0 0 2.1rem;
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .ficha-cmd-fin {
+  margin: 2.1rem 0 0;
+}
+
+:root[data-theme="caelestia"] .ficha-prompt {
+  color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .ficha-cmd {
+  font-weight: 400;
+}
+
+:root[data-theme="caelestia"] .ficha-cursor {
+  font-style: normal;
+}
+
+:root[data-theme="caelestia"] .ficha-cuerpo {
+  display: grid;
+  grid-template-columns: 312px 1fr;
+  gap: 4.25rem;
+  align-items: center;
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+:root[data-theme="caelestia"] .ficha-arte {
+  display: flex;
+  justify-content: center;
+}
+
+/*
+  EL RETRATO ES EL LOGOTIPO DE LA DISTRIBUCION: ocupa el sitio donde neofetch
+  pone el logo de la distro.
+
+  El anillo del roce es un ENVOLTORIO con el mismo recorte, 6 px mayor: un
+  `outline` no obedece a un `clip-path` y saldria rectangular.
+
+  Y morfa. Caelestia se define a si misma como «a fluid, morphing shell» y su
+  configuracion expone un `deformScale`: morfar es su identidad, asi que al
+  rozar el retrato la figura se convierte en OTRA figura con nombre de Material
+  3 — squircle -> «12-sided cookie» — en vez de limitarse a encenderse.
+
+  Las dos figuras van a 240 puntos EXACTOS. Con distinto numero de puntos el
+  navegador no interpola: corta de golpe. Se generan con
+  `docs/superpowers/specs/2026-09-02-caelestia-quien-soy-figuras.py`.
+*/
+:root[data-theme="caelestia"] .ficha-anillo {
+  display: block;
+  padding: 6px;
+  line-height: 0;
+  background: transparent;
+  clip-path: polygon(100.00% 50.00%, 99.99% 58.09%, 99.97% 61.44%, 99.92% 64.01%, 99.86% 66.17%, 99.79% 68.06%, 99.69% 69.78%, 99.58% 71.34%, 99.45% 72.80%, 99.30% 74.16%, 99.14% 75.44%, 98.96% 76.65%, 98.76% 77.79%, 98.54% 78.89%, 98.31% 79.93%, 98.06% 80.93%, 97.79% 81.89%, 97.50% 82.81%, 97.20% 83.69%, 96.87% 84.54%, 96.53% 85.36%, 96.17% 86.14%, 95.79% 86.90%, 95.39% 87.63%, 94.97% 88.33%, 94.54% 89.01%, 94.08% 89.66%, 93.60% 90.29%, 93.10% 90.90%, 92.58% 91.48%, 92.04% 92.04%, 91.48% 92.58%, 90.90% 93.10%, 90.29% 93.60%, 89.66% 94.08%, 89.01% 94.54%, 88.33% 94.97%, 87.63% 95.39%, 86.90% 95.79%, 86.14% 96.17%, 85.36% 96.53%, 84.54% 96.87%, 83.69% 97.20%, 82.81% 97.50%, 81.89% 97.79%, 80.93% 98.06%, 79.93% 98.31%, 78.89% 98.54%, 77.79% 98.76%, 76.65% 98.96%, 75.44% 99.14%, 74.16% 99.30%, 72.80% 99.45%, 71.34% 99.58%, 69.78% 99.69%, 68.06% 99.79%, 66.17% 99.86%, 64.01% 99.92%, 61.44% 99.97%, 58.09% 99.99%, 50.00% 100.00%, 41.91% 99.99%, 38.56% 99.97%, 35.99% 99.92%, 33.83% 99.86%, 31.94% 99.79%, 30.22% 99.69%, 28.66% 99.58%, 27.20% 99.45%, 25.84% 99.30%, 24.56% 99.14%, 23.35% 98.96%, 22.21% 98.76%, 21.11% 98.54%, 20.07% 98.31%, 19.07% 98.06%, 18.11% 97.79%, 17.19% 97.50%, 16.31% 97.20%, 15.46% 96.87%, 14.64% 96.53%, 13.86% 96.17%, 13.10% 95.79%, 12.37% 95.39%, 11.67% 94.97%, 10.99% 94.54%, 10.34% 94.08%, 9.71% 93.60%, 9.10% 93.10%, 8.52% 92.58%, 7.96% 92.04%, 7.42% 91.48%, 6.90% 90.90%, 6.40% 90.29%, 5.92% 89.66%, 5.46% 89.01%, 5.03% 88.33%, 4.61% 87.63%, 4.21% 86.90%, 3.83% 86.14%, 3.47% 85.36%, 3.13% 84.54%, 2.80% 83.69%, 2.50% 82.81%, 2.21% 81.89%, 1.94% 80.93%, 1.69% 79.93%, 1.46% 78.89%, 1.24% 77.79%, 1.04% 76.65%, 0.86% 75.44%, 0.70% 74.16%, 0.55% 72.80%, 0.42% 71.34%, 0.31% 69.78%, 0.21% 68.06%, 0.14% 66.17%, 0.08% 64.01%, 0.03% 61.44%, 0.01% 58.09%, 0.00% 50.00%, 0.01% 41.91%, 0.03% 38.56%, 0.08% 35.99%, 0.14% 33.83%, 0.21% 31.94%, 0.31% 30.22%, 0.42% 28.66%, 0.55% 27.20%, 0.70% 25.84%, 0.86% 24.56%, 1.04% 23.35%, 1.24% 22.21%, 1.46% 21.11%, 1.69% 20.07%, 1.94% 19.07%, 2.21% 18.11%, 2.50% 17.19%, 2.80% 16.31%, 3.13% 15.46%, 3.47% 14.64%, 3.83% 13.86%, 4.21% 13.10%, 4.61% 12.37%, 5.03% 11.67%, 5.46% 10.99%, 5.92% 10.34%, 6.40% 9.71%, 6.90% 9.10%, 7.42% 8.52%, 7.96% 7.96%, 8.52% 7.42%, 9.10% 6.90%, 9.71% 6.40%, 10.34% 5.92%, 10.99% 5.46%, 11.67% 5.03%, 12.37% 4.61%, 13.10% 4.21%, 13.86% 3.83%, 14.64% 3.47%, 15.46% 3.13%, 16.31% 2.80%, 17.19% 2.50%, 18.11% 2.21%, 19.07% 1.94%, 20.07% 1.69%, 21.11% 1.46%, 22.21% 1.24%, 23.35% 1.04%, 24.56% 0.86%, 25.84% 0.70%, 27.20% 0.55%, 28.66% 0.42%, 30.22% 0.31%, 31.94% 0.21%, 33.83% 0.14%, 35.99% 0.08%, 38.56% 0.03%, 41.91% 0.01%, 50.00% 0.00%, 58.09% 0.01%, 61.44% 0.03%, 64.01% 0.08%, 66.17% 0.14%, 68.06% 0.21%, 69.78% 0.31%, 71.34% 0.42%, 72.80% 0.55%, 74.16% 0.70%, 75.44% 0.86%, 76.65% 1.04%, 77.79% 1.24%, 78.89% 1.46%, 79.93% 1.69%, 80.93% 1.94%, 81.89% 2.21%, 82.81% 2.50%, 83.69% 2.80%, 84.54% 3.13%, 85.36% 3.47%, 86.14% 3.83%, 86.90% 4.21%, 87.63% 4.61%, 88.33% 5.03%, 89.01% 5.46%, 89.66% 5.92%, 90.29% 6.40%, 90.90% 6.90%, 91.48% 7.42%, 92.04% 7.96%, 92.58% 8.52%, 93.10% 9.10%, 93.60% 9.71%, 94.08% 10.34%, 94.54% 10.99%, 94.97% 11.67%, 95.39% 12.37%, 95.79% 13.10%, 96.17% 13.86%, 96.53% 14.64%, 96.87% 15.46%, 97.20% 16.31%, 97.50% 17.19%, 97.79% 18.11%, 98.06% 19.07%, 98.31% 20.07%, 98.54% 21.11%, 98.76% 22.21%, 98.96% 23.35%, 99.14% 24.56%, 99.30% 25.84%, 99.45% 27.20%, 99.58% 28.66%, 99.69% 30.22%, 99.79% 31.94%, 99.86% 33.83%, 99.92% 35.99%, 99.97% 38.56%, 99.99% 41.91%);
+  transition:
+    background 0.5s cubic-bezier(0.2, 0, 0, 1),
+    clip-path 0.62s cubic-bezier(0.34, 0.02, 0.16, 1);
+}
+
+:root[data-theme="caelestia"] .ficha-foto {
+  display: block;
+  width: 288px;
+  height: 288px;
+  object-fit: cover;
+  clip-path: polygon(100.00% 50.00%, 99.99% 58.09%, 99.97% 61.44%, 99.92% 64.01%, 99.86% 66.17%, 99.79% 68.06%, 99.69% 69.78%, 99.58% 71.34%, 99.45% 72.80%, 99.30% 74.16%, 99.14% 75.44%, 98.96% 76.65%, 98.76% 77.79%, 98.54% 78.89%, 98.31% 79.93%, 98.06% 80.93%, 97.79% 81.89%, 97.50% 82.81%, 97.20% 83.69%, 96.87% 84.54%, 96.53% 85.36%, 96.17% 86.14%, 95.79% 86.90%, 95.39% 87.63%, 94.97% 88.33%, 94.54% 89.01%, 94.08% 89.66%, 93.60% 90.29%, 93.10% 90.90%, 92.58% 91.48%, 92.04% 92.04%, 91.48% 92.58%, 90.90% 93.10%, 90.29% 93.60%, 89.66% 94.08%, 89.01% 94.54%, 88.33% 94.97%, 87.63% 95.39%, 86.90% 95.79%, 86.14% 96.17%, 85.36% 96.53%, 84.54% 96.87%, 83.69% 97.20%, 82.81% 97.50%, 81.89% 97.79%, 80.93% 98.06%, 79.93% 98.31%, 78.89% 98.54%, 77.79% 98.76%, 76.65% 98.96%, 75.44% 99.14%, 74.16% 99.30%, 72.80% 99.45%, 71.34% 99.58%, 69.78% 99.69%, 68.06% 99.79%, 66.17% 99.86%, 64.01% 99.92%, 61.44% 99.97%, 58.09% 99.99%, 50.00% 100.00%, 41.91% 99.99%, 38.56% 99.97%, 35.99% 99.92%, 33.83% 99.86%, 31.94% 99.79%, 30.22% 99.69%, 28.66% 99.58%, 27.20% 99.45%, 25.84% 99.30%, 24.56% 99.14%, 23.35% 98.96%, 22.21% 98.76%, 21.11% 98.54%, 20.07% 98.31%, 19.07% 98.06%, 18.11% 97.79%, 17.19% 97.50%, 16.31% 97.20%, 15.46% 96.87%, 14.64% 96.53%, 13.86% 96.17%, 13.10% 95.79%, 12.37% 95.39%, 11.67% 94.97%, 10.99% 94.54%, 10.34% 94.08%, 9.71% 93.60%, 9.10% 93.10%, 8.52% 92.58%, 7.96% 92.04%, 7.42% 91.48%, 6.90% 90.90%, 6.40% 90.29%, 5.92% 89.66%, 5.46% 89.01%, 5.03% 88.33%, 4.61% 87.63%, 4.21% 86.90%, 3.83% 86.14%, 3.47% 85.36%, 3.13% 84.54%, 2.80% 83.69%, 2.50% 82.81%, 2.21% 81.89%, 1.94% 80.93%, 1.69% 79.93%, 1.46% 78.89%, 1.24% 77.79%, 1.04% 76.65%, 0.86% 75.44%, 0.70% 74.16%, 0.55% 72.80%, 0.42% 71.34%, 0.31% 69.78%, 0.21% 68.06%, 0.14% 66.17%, 0.08% 64.01%, 0.03% 61.44%, 0.01% 58.09%, 0.00% 50.00%, 0.01% 41.91%, 0.03% 38.56%, 0.08% 35.99%, 0.14% 33.83%, 0.21% 31.94%, 0.31% 30.22%, 0.42% 28.66%, 0.55% 27.20%, 0.70% 25.84%, 0.86% 24.56%, 1.04% 23.35%, 1.24% 22.21%, 1.46% 21.11%, 1.69% 20.07%, 1.94% 19.07%, 2.21% 18.11%, 2.50% 17.19%, 2.80% 16.31%, 3.13% 15.46%, 3.47% 14.64%, 3.83% 13.86%, 4.21% 13.10%, 4.61% 12.37%, 5.03% 11.67%, 5.46% 10.99%, 5.92% 10.34%, 6.40% 9.71%, 6.90% 9.10%, 7.42% 8.52%, 7.96% 7.96%, 8.52% 7.42%, 9.10% 6.90%, 9.71% 6.40%, 10.34% 5.92%, 10.99% 5.46%, 11.67% 5.03%, 12.37% 4.61%, 13.10% 4.21%, 13.86% 3.83%, 14.64% 3.47%, 15.46% 3.13%, 16.31% 2.80%, 17.19% 2.50%, 18.11% 2.21%, 19.07% 1.94%, 20.07% 1.69%, 21.11% 1.46%, 22.21% 1.24%, 23.35% 1.04%, 24.56% 0.86%, 25.84% 0.70%, 27.20% 0.55%, 28.66% 0.42%, 30.22% 0.31%, 31.94% 0.21%, 33.83% 0.14%, 35.99% 0.08%, 38.56% 0.03%, 41.91% 0.01%, 50.00% 0.00%, 58.09% 0.01%, 61.44% 0.03%, 64.01% 0.08%, 66.17% 0.14%, 68.06% 0.21%, 69.78% 0.31%, 71.34% 0.42%, 72.80% 0.55%, 74.16% 0.70%, 75.44% 0.86%, 76.65% 1.04%, 77.79% 1.24%, 78.89% 1.46%, 79.93% 1.69%, 80.93% 1.94%, 81.89% 2.21%, 82.81% 2.50%, 83.69% 2.80%, 84.54% 3.13%, 85.36% 3.47%, 86.14% 3.83%, 86.90% 4.21%, 87.63% 4.61%, 88.33% 5.03%, 89.01% 5.46%, 89.66% 5.92%, 90.29% 6.40%, 90.90% 6.90%, 91.48% 7.42%, 92.04% 7.96%, 92.58% 8.52%, 93.10% 9.10%, 93.60% 9.71%, 94.08% 10.34%, 94.54% 10.99%, 94.97% 11.67%, 95.39% 12.37%, 95.79% 13.10%, 96.17% 13.86%, 96.53% 14.64%, 96.87% 15.46%, 97.20% 16.31%, 97.50% 17.19%, 97.79% 18.11%, 98.06% 19.07%, 98.31% 20.07%, 98.54% 21.11%, 98.76% 22.21%, 98.96% 23.35%, 99.14% 24.56%, 99.30% 25.84%, 99.45% 27.20%, 99.58% 28.66%, 99.69% 30.22%, 99.79% 31.94%, 99.86% 33.83%, 99.92% 35.99%, 99.97% 38.56%, 99.99% 41.91%);
+  transition: clip-path 0.62s cubic-bezier(0.34, 0.02, 0.16, 1);
+}
+
+:root[data-theme="caelestia"] .ficha-arte:hover .ficha-anillo {
+  background: var(--cae-anchor);
+  clip-path: polygon(94.58% 50.00%, 94.59% 51.17%, 94.65% 52.34%, 94.82% 53.53%, 95.19% 54.75%, 95.77% 56.03%, 96.53% 57.37%, 97.34% 58.77%, 98.02% 60.21%, 98.39% 61.62%, 98.30% 62.94%, 97.71% 64.13%, 96.69% 65.17%, 95.39% 66.07%, 93.98% 66.88%, 92.65% 67.67%, 91.51% 68.48%, 90.58% 69.36%, 89.84% 70.30%, 89.20% 71.28%, 88.61% 72.29%, 88.03% 73.31%, 87.50% 74.35%, 87.05% 75.47%, 86.76% 76.71%, 86.63% 78.11%, 86.61% 79.65%, 86.61% 81.27%, 86.48% 82.85%, 86.09% 84.25%, 85.36% 85.36%, 84.25% 86.09%, 82.85% 86.48%, 81.27% 86.61%, 79.65% 86.61%, 78.11% 86.63%, 76.71% 86.76%, 75.47% 87.05%, 74.35% 87.50%, 73.31% 88.03%, 72.29% 88.61%, 71.28% 89.20%, 70.30% 89.84%, 69.36% 90.58%, 68.48% 91.51%, 67.67% 92.65%, 66.88% 93.98%, 66.07% 95.39%, 65.17% 96.69%, 64.13% 97.71%, 62.94% 98.30%, 61.62% 98.39%, 60.21% 98.02%, 58.77% 97.34%, 57.37% 96.53%, 56.03% 95.77%, 54.75% 95.19%, 53.53% 94.82%, 52.34% 94.65%, 51.17% 94.59%, 50.00% 94.58%, 48.83% 94.59%, 47.66% 94.65%, 46.47% 94.82%, 45.25% 95.19%, 43.97% 95.77%, 42.63% 96.53%, 41.23% 97.34%, 39.79% 98.02%, 38.38% 98.39%, 37.06% 98.30%, 35.87% 97.71%, 34.83% 96.69%, 33.93% 95.39%, 33.12% 93.98%, 32.33% 92.65%, 31.52% 91.51%, 30.64% 90.58%, 29.70% 89.84%, 28.72% 89.20%, 27.71% 88.61%, 26.69% 88.03%, 25.65% 87.50%, 24.53% 87.05%, 23.29% 86.76%, 21.89% 86.63%, 20.35% 86.61%, 18.73% 86.61%, 17.15% 86.48%, 15.75% 86.09%, 14.64% 85.36%, 13.91% 84.25%, 13.52% 82.85%, 13.39% 81.27%, 13.39% 79.65%, 13.37% 78.11%, 13.24% 76.71%, 12.95% 75.47%, 12.50% 74.35%, 11.97% 73.31%, 11.39% 72.29%, 10.80% 71.28%, 10.16% 70.30%, 9.42% 69.36%, 8.49% 68.48%, 7.35% 67.67%, 6.02% 66.88%, 4.61% 66.07%, 3.31% 65.17%, 2.29% 64.13%, 1.70% 62.94%, 1.61% 61.62%, 1.98% 60.21%, 2.66% 58.77%, 3.47% 57.37%, 4.23% 56.03%, 4.81% 54.75%, 5.18% 53.53%, 5.35% 52.34%, 5.41% 51.17%, 5.42% 50.00%, 5.41% 48.83%, 5.35% 47.66%, 5.18% 46.47%, 4.81% 45.25%, 4.23% 43.97%, 3.47% 42.63%, 2.66% 41.23%, 1.98% 39.79%, 1.61% 38.38%, 1.70% 37.06%, 2.29% 35.87%, 3.31% 34.83%, 4.61% 33.93%, 6.02% 33.12%, 7.35% 32.33%, 8.49% 31.52%, 9.42% 30.64%, 10.16% 29.70%, 10.80% 28.72%, 11.39% 27.71%, 11.97% 26.69%, 12.50% 25.65%, 12.95% 24.53%, 13.24% 23.29%, 13.37% 21.89%, 13.39% 20.35%, 13.39% 18.73%, 13.52% 17.15%, 13.91% 15.75%, 14.64% 14.64%, 15.75% 13.91%, 17.15% 13.52%, 18.73% 13.39%, 20.35% 13.39%, 21.89% 13.37%, 23.29% 13.24%, 24.53% 12.95%, 25.65% 12.50%, 26.69% 11.97%, 27.71% 11.39%, 28.72% 10.80%, 29.70% 10.16%, 30.64% 9.42%, 31.52% 8.49%, 32.33% 7.35%, 33.12% 6.02%, 33.93% 4.61%, 34.83% 3.31%, 35.87% 2.29%, 37.06% 1.70%, 38.38% 1.61%, 39.79% 1.98%, 41.23% 2.66%, 42.63% 3.47%, 43.97% 4.23%, 45.25% 4.81%, 46.47% 5.18%, 47.66% 5.35%, 48.83% 5.41%, 50.00% 5.42%, 51.17% 5.41%, 52.34% 5.35%, 53.53% 5.18%, 54.75% 4.81%, 56.03% 4.23%, 57.37% 3.47%, 58.77% 2.66%, 60.21% 1.98%, 61.62% 1.61%, 62.94% 1.70%, 64.13% 2.29%, 65.17% 3.31%, 66.07% 4.61%, 66.88% 6.02%, 67.67% 7.35%, 68.48% 8.49%, 69.36% 9.42%, 70.30% 10.16%, 71.28% 10.80%, 72.29% 11.39%, 73.31% 11.97%, 74.35% 12.50%, 75.47% 12.95%, 76.71% 13.24%, 78.11% 13.37%, 79.65% 13.39%, 81.27% 13.39%, 82.85% 13.52%, 84.25% 13.91%, 85.36% 14.64%, 86.09% 15.75%, 86.48% 17.15%, 86.61% 18.73%, 86.61% 20.35%, 86.63% 21.89%, 86.76% 23.29%, 87.05% 24.53%, 87.50% 25.65%, 88.03% 26.69%, 88.61% 27.71%, 89.20% 28.72%, 89.84% 29.70%, 90.58% 30.64%, 91.51% 31.52%, 92.65% 32.33%, 93.98% 33.12%, 95.39% 33.93%, 96.69% 34.83%, 97.71% 35.87%, 98.30% 37.06%, 98.39% 38.38%, 98.02% 39.79%, 97.34% 41.23%, 96.53% 42.63%, 95.77% 43.97%, 95.19% 45.25%, 94.82% 46.47%, 94.65% 47.66%, 94.59% 48.83%);
+}
+
+:root[data-theme="caelestia"] .ficha-arte:hover .ficha-foto {
+  clip-path: polygon(94.58% 50.00%, 94.59% 51.17%, 94.65% 52.34%, 94.82% 53.53%, 95.19% 54.75%, 95.77% 56.03%, 96.53% 57.37%, 97.34% 58.77%, 98.02% 60.21%, 98.39% 61.62%, 98.30% 62.94%, 97.71% 64.13%, 96.69% 65.17%, 95.39% 66.07%, 93.98% 66.88%, 92.65% 67.67%, 91.51% 68.48%, 90.58% 69.36%, 89.84% 70.30%, 89.20% 71.28%, 88.61% 72.29%, 88.03% 73.31%, 87.50% 74.35%, 87.05% 75.47%, 86.76% 76.71%, 86.63% 78.11%, 86.61% 79.65%, 86.61% 81.27%, 86.48% 82.85%, 86.09% 84.25%, 85.36% 85.36%, 84.25% 86.09%, 82.85% 86.48%, 81.27% 86.61%, 79.65% 86.61%, 78.11% 86.63%, 76.71% 86.76%, 75.47% 87.05%, 74.35% 87.50%, 73.31% 88.03%, 72.29% 88.61%, 71.28% 89.20%, 70.30% 89.84%, 69.36% 90.58%, 68.48% 91.51%, 67.67% 92.65%, 66.88% 93.98%, 66.07% 95.39%, 65.17% 96.69%, 64.13% 97.71%, 62.94% 98.30%, 61.62% 98.39%, 60.21% 98.02%, 58.77% 97.34%, 57.37% 96.53%, 56.03% 95.77%, 54.75% 95.19%, 53.53% 94.82%, 52.34% 94.65%, 51.17% 94.59%, 50.00% 94.58%, 48.83% 94.59%, 47.66% 94.65%, 46.47% 94.82%, 45.25% 95.19%, 43.97% 95.77%, 42.63% 96.53%, 41.23% 97.34%, 39.79% 98.02%, 38.38% 98.39%, 37.06% 98.30%, 35.87% 97.71%, 34.83% 96.69%, 33.93% 95.39%, 33.12% 93.98%, 32.33% 92.65%, 31.52% 91.51%, 30.64% 90.58%, 29.70% 89.84%, 28.72% 89.20%, 27.71% 88.61%, 26.69% 88.03%, 25.65% 87.50%, 24.53% 87.05%, 23.29% 86.76%, 21.89% 86.63%, 20.35% 86.61%, 18.73% 86.61%, 17.15% 86.48%, 15.75% 86.09%, 14.64% 85.36%, 13.91% 84.25%, 13.52% 82.85%, 13.39% 81.27%, 13.39% 79.65%, 13.37% 78.11%, 13.24% 76.71%, 12.95% 75.47%, 12.50% 74.35%, 11.97% 73.31%, 11.39% 72.29%, 10.80% 71.28%, 10.16% 70.30%, 9.42% 69.36%, 8.49% 68.48%, 7.35% 67.67%, 6.02% 66.88%, 4.61% 66.07%, 3.31% 65.17%, 2.29% 64.13%, 1.70% 62.94%, 1.61% 61.62%, 1.98% 60.21%, 2.66% 58.77%, 3.47% 57.37%, 4.23% 56.03%, 4.81% 54.75%, 5.18% 53.53%, 5.35% 52.34%, 5.41% 51.17%, 5.42% 50.00%, 5.41% 48.83%, 5.35% 47.66%, 5.18% 46.47%, 4.81% 45.25%, 4.23% 43.97%, 3.47% 42.63%, 2.66% 41.23%, 1.98% 39.79%, 1.61% 38.38%, 1.70% 37.06%, 2.29% 35.87%, 3.31% 34.83%, 4.61% 33.93%, 6.02% 33.12%, 7.35% 32.33%, 8.49% 31.52%, 9.42% 30.64%, 10.16% 29.70%, 10.80% 28.72%, 11.39% 27.71%, 11.97% 26.69%, 12.50% 25.65%, 12.95% 24.53%, 13.24% 23.29%, 13.37% 21.89%, 13.39% 20.35%, 13.39% 18.73%, 13.52% 17.15%, 13.91% 15.75%, 14.64% 14.64%, 15.75% 13.91%, 17.15% 13.52%, 18.73% 13.39%, 20.35% 13.39%, 21.89% 13.37%, 23.29% 13.24%, 24.53% 12.95%, 25.65% 12.50%, 26.69% 11.97%, 27.71% 11.39%, 28.72% 10.80%, 29.70% 10.16%, 30.64% 9.42%, 31.52% 8.49%, 32.33% 7.35%, 33.12% 6.02%, 33.93% 4.61%, 34.83% 3.31%, 35.87% 2.29%, 37.06% 1.70%, 38.38% 1.61%, 39.79% 1.98%, 41.23% 2.66%, 42.63% 3.47%, 43.97% 4.23%, 45.25% 4.81%, 46.47% 5.18%, 47.66% 5.35%, 48.83% 5.41%, 50.00% 5.42%, 51.17% 5.41%, 52.34% 5.35%, 53.53% 5.18%, 54.75% 4.81%, 56.03% 4.23%, 57.37% 3.47%, 58.77% 2.66%, 60.21% 1.98%, 61.62% 1.61%, 62.94% 1.70%, 64.13% 2.29%, 65.17% 3.31%, 66.07% 4.61%, 66.88% 6.02%, 67.67% 7.35%, 68.48% 8.49%, 69.36% 9.42%, 70.30% 10.16%, 71.28% 10.80%, 72.29% 11.39%, 73.31% 11.97%, 74.35% 12.50%, 75.47% 12.95%, 76.71% 13.24%, 78.11% 13.37%, 79.65% 13.39%, 81.27% 13.39%, 82.85% 13.52%, 84.25% 13.91%, 85.36% 14.64%, 86.09% 15.75%, 86.48% 17.15%, 86.61% 18.73%, 86.61% 20.35%, 86.63% 21.89%, 86.76% 23.29%, 87.05% 24.53%, 87.50% 25.65%, 88.03% 26.69%, 88.61% 27.71%, 89.20% 28.72%, 89.84% 29.70%, 90.58% 30.64%, 91.51% 31.52%, 92.65% 32.33%, 93.98% 33.12%, 95.39% 33.93%, 96.69% 34.83%, 97.71% 35.87%, 98.30% 37.06%, 98.39% 38.38%, 98.02% 39.79%, 97.34% 41.23%, 96.53% 42.63%, 95.77% 43.97%, 95.19% 45.25%, 94.82% 46.47%, 94.65% 47.66%, 94.59% 48.83%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .ficha-anillo,
+  :root[data-theme="caelestia"] .ficha-foto {
+    transition: none;
+  }
+}
+
+/* El nombre, a `opsz 144`. `opsz` en Fraunces NO es estilo: la fuente trae
+   dibujos distintos segun el tamano al que se lea, y `opsz 9` — el del shell —
+   ampliado sale romo. Es la leccion de B1. */
+:root[data-theme="caelestia"] .ficha-nombre {
+  margin: 0 0 0.5rem;
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: 3.35rem;
+  line-height: 0.95;
+  letter-spacing: -0.018em;
+  white-space: nowrap;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .ficha-id {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+/* La cabecera del comando es el correo, y es pulsable: la via de contacto
+   principal y la unica parada de tabulador legitima de la escena. */
+:root[data-theme="caelestia"] .ficha-host {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: var(--cae-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.18s ease;
+}
+
+:root[data-theme="caelestia"] .ficha-host:hover {
+  border-bottom-color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .ficha-host:focus-visible {
+  outline: 2px solid var(--cae-anchor);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* La disponibilidad se dice como la dice el sistema: punto de azufre y texto,
+   igual que `.cae-avail` / `.cae-dot` en la barra. Una pastilla rellena es un
+   dialecto distinto para la misma frase, y le pelea el primer plano al nombre.
+   Lo que la hace segunda parada de lectura es el SITIO, no el color. */
+:root[data-theme="caelestia"] .ficha-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding-left: 0.9rem;
+  margin-left: 0.15rem;
+  border-left: 1px solid var(--cae-outline);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--cae-on-surface-variant);
+  transition: color 0.2s ease;
+}
+
+:root[data-theme="caelestia"] .ficha-estado:hover {
+  color: var(--cae-on-surface);
+}
+
+/* El ancla no gira con la hora: una senal de estado tiene que decir lo mismo a
+   las 09:00 y a las 03:00. */
+:root[data-theme="caelestia"] .ficha-punto {
+  display: block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--cae-anchor);
+  animation: ficha-latir 2.4s ease-in-out infinite;
+}
+
+@keyframes ficha-latir {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* El ancho lo pone `caelestia.ficha.ts` midiendo el texto del correo con
+   `Range`: neofetch imprime el filete del largo EXACTO de usuario@host. */
+:root[data-theme="caelestia"] .ficha-regla {
+  width: 0;
+  height: 1px;
+  margin: 0.7rem 0 1.2rem;
+  background: var(--cae-outline);
+}
+
+/* La unica frase humana del contenido, y lo unico en la fuente de texto: entre
+   el nombre en Fraunces y los campos en monoespaciada, marca que esto lo dice
+   una persona y no el sistema. */
+:root[data-theme="caelestia"] .ficha-frase {
+  margin: 0 0 1.45rem;
+  max-width: 44rem;
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  font-size: 1.06rem;
+  line-height: 1.5;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .ficha-filas {
+  display: grid;
+  gap: 0.62rem;
+  margin: 0;
+}
+
+:root[data-theme="caelestia"] .ficha-fila {
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  gap: 1.1rem;
+  padding: 0.2rem 0.55rem;
+  margin-left: -0.55rem;
+  border-radius: 0.4rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  transition: background 0.18s ease;
+}
+
+:root[data-theme="caelestia"] .ficha-k {
+  position: relative;
+  font-weight: 600;
+  color: var(--cae-on-surface-variant);
+  transition: color 0.16s ease;
+}
+
+/* El prompt marca la linea que miras, y ENTRA DESLIZANDO: aparecer de golpe se
+   lee como un fallo de pintado. */
+:root[data-theme="caelestia"] .ficha-k::before {
+  content: ">";
+  position: absolute;
+  left: -0.9ch;
+  opacity: 0;
+  transform: translateX(-5px);
+  /* `--cae-primary`, NO `--cae-anchor`: ver el porque en la regla de roce de
+     `.ficha-k` mas abajo. El ">" solo se pinta rozando, asi que comparte
+     literalmente el problema (y el arreglo) de la clave que acompana. */
+  color: var(--cae-primary);
+  transition: opacity 0.14s ease, transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .ficha-fila:hover {
+  background: var(--cae-surface);
+}
+
+/* El ancla NO vale aqui, aunque sea la senal de estado del tema: nunca se
+   calibro como color de TEXTO sobre superficie clara. Donde funciona es como
+   punto de 7 px (`.ficha-punto`, que se queda en el ancla), y ahi no es texto.
+   Como texto sobre el fondo de la fila rozada (`--cae-surface`) medía 1.47:1
+   en esquema dia — trece horas al dia el roce EMPEORABA la legibilidad de lo
+   que roza. `--cae-primary` si esta calibrado para esto: la fase A le bajo la
+   claridad de 0.505 a 0.450 precisamente para aguantar AA sobre las
+   superficies elevadas (ver `caelestia.color.ts`). Lo vigila el gate 5 de
+   `scripts/measure-caelestia-quien-soy.py`, que mide el ROCE ademas del
+   reposo, y en los dos esquemas. */
+:root[data-theme="caelestia"] .ficha-fila:hover .ficha-k {
+  color: var(--cae-primary);
+}
+
+:root[data-theme="caelestia"] .ficha-fila:hover .ficha-k::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* El valor NO se mueve al roce: lo que responde es la pregunta, no el dato. */
+:root[data-theme="caelestia"] .ficha-v {
+  margin: 0;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .ficha-s {
+  display: block;
+  margin-top: 0.16rem;
+  font-size: 0.92em;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .ficha-s + .ficha-s {
+  margin-top: 0.05rem;
+}
+
+/* La tira con la que neofetch cierra siempre. Aqui son los tokens de la hora,
+   asi que el color lo pone `var()` y se actualiza solo con el reloj. */
+:root[data-theme="caelestia"] .ficha-tira {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+}
+
+:root[data-theme="caelestia"] .ficha-tono {
+  display: block;
+  width: 38px;
+  height: 18px;
+  border-radius: 0.3rem;
+  border: 1px solid rgb(0 0 0 / 0.09);
+  transform-origin: center bottom;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme="caelestia"] .ficha-tono:hover {
+  transform: scaleY(1.7);
+}
+
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-surface"] { background: var(--cae-surface); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-surface-container"] { background: var(--cae-surface-container); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-surface-container-high"] { background: var(--cae-surface-container-high); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-primary"] { background: var(--cae-primary); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-primary-container"] { background: var(--cae-primary-container); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-anchor"] { background: var(--cae-anchor); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-wall-1"] { background: var(--cae-wall-1); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-wall-2"] { background: var(--cae-wall-2); }
+:root[data-theme="caelestia"] .ficha-tono[data-ficha-tono="--cae-wall-3"] { background: var(--cae-wall-3); }
+
+/* La tira no se explica en reposo: solo habla cuando la rozas. */
+:root[data-theme="caelestia"] .ficha-rotulo {
+  margin-left: 0.7rem;
+  font-size: 0.72rem;
+  opacity: 0;
+  color: var(--cae-on-surface-variant);
+  transition: opacity 0.15s ease;
+}
+
+:root[data-theme="caelestia"] .ficha-tira:hover .ficha-rotulo {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] [data-ficha="neofetch"],
+  :root[data-theme="caelestia"] [data-ficha="neofetch"] * {
+    transition: none;
+  }
+
+  /* El selector universal `*` de arriba NO alcanza a los pseudo-elementos —
+     no son nodos del DOM, asi que `* ::before/::after` no los recoge y hace
+     falta nombrarlos aparte. Sin esta regla, `.ficha-k::before` (la flecha
+     ">" que entra deslizando 5px al rozar una fila) se queda animando bajo
+     movimiento reducido: medido, `transition-duration` seguia en
+     `0.14s, 0.18s` con el guard de arriba puesto. Es el UNICO pseudo-elemento
+     con transicion en este bloque (comprobado); si se añade otro
+     ::before/::after con transition o animation, hay que sumarlo aqui. */
+  :root[data-theme="caelestia"] .ficha-k::before {
+    transition: none;
+  }
+
+  :root[data-theme="caelestia"] .ficha-punto {
+    animation: none;
+  }
 }
 
 /*

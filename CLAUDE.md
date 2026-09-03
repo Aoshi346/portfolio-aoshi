@@ -113,6 +113,19 @@
   to Vice/Hyprland). Three polish findings remain accepted as known debt (a typography-scale gap
   recurring for the 5th time project-wide, widget spacing off the 4/8px grid, one repeated font-axis
   literal) — full detail in the B1 spec's implementation record and "Gates de crítica" section.
+- **Caelestia's phase B2 (Quién soy) is DONE and merged** (`2026-09-02-caelestia-quien-soy`, second
+  of the five inside-window phases). The `#about` scene stops being a cramped card and becomes **the desktop's
+  own `neofetch` output**: a typed `~ $ neofetch` entry, a name/email/status header with a filete
+  measured by `Range` (not the `<span>`'s block box, which reports the container's width), a
+  `key: value` field list sourced entirely from `content.ts`, and a portrait clipped to a
+  `clip-path: polygon(...)` that morphs between two Material 3 figures on hover.
+  `scripts/measure-caelestia-quien-soy.py` gates it with 8 assertion families (38 checks); the shell
+  harness `scripts/measure-caelestia-hora.py` (16 assertions) stays green, confirming phase A is
+  untouched. **The trap not to repeat:** a `clip-path: polygon()` only interpolates against another
+  polygon with the **same vertex count** — mismatched point counts (240 vs a lower count) silently
+  fall back to a hard cut, no error, no warning. And `*` in a `prefers-reduced-motion` CSS guard does
+  **not** reach pseudo-elements — `.ficha-k::before` needed its own explicit rule to stop animating
+  under reduced motion; the generic wildcard guard missed it.
 
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**

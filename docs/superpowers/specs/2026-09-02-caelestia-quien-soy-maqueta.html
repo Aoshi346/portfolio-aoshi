@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>B2 · Quién soy — neofetch, sobre el sitio real</title>
+<style>
+  :root {
+    --shop-bg: #121016; --shop-panel: #18151f; --shop-line: #2a2733;
+    --shop-ink: #eef0f6; --shop-dim: #9096ab; --shop-flag: #ff5470; --shop-ok: #6fe3b4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--shop-bg); color: var(--shop-ink);
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    padding: 1.75rem clamp(1rem, 3vw, 2rem) 4rem;
+  }
+  .mono, .k, .v, button, .state, .lbl { font-family: ui-monospace, 'Martian Mono', monospace; }
+
+  header { max-width: 90rem; margin: 0 auto 1.25rem; }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--shop-flag); margin: 0 0 0.6rem; font-family: ui-monospace, monospace; }
+  h1 { font-size: clamp(1.4rem, 2.4vw, 1.95rem); margin: 0 0 0.6rem; line-height: 1.15; }
+  header p { color: var(--shop-dim); max-width: 60rem; line-height: 1.55; margin: 0; font-size: 0.95rem; }
+
+  .bar {
+    position: sticky; top: 0; z-index: 30; max-width: 90rem; margin: 0 auto 1.25rem;
+    background: var(--shop-panel); border: 1px solid var(--shop-line); border-radius: 0.8rem;
+    padding: 0.85rem 1.1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+  }
+  .group { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+  .lbl { font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--shop-dim); margin-right: 0.15rem; }
+  button {
+    font-size: 0.74rem; background: transparent; color: var(--shop-ink);
+    border: 1px solid var(--shop-line); border-radius: 999px; padding: 0.4rem 0.8rem; cursor: pointer;
+  }
+  button:hover { border-color: var(--shop-flag); color: var(--shop-flag); }
+  button[aria-pressed="true"] { background: var(--shop-flag); border-color: var(--shop-flag);
+    color: #1a0a10; font-weight: 700; }
+  button:focus-visible { outline: 2px solid var(--shop-flag); outline-offset: 2px; }
+  input[type="range"] { accent-color: var(--shop-flag); width: 8rem; vertical-align: middle; }
+  .state { font-size: 0.72rem; color: var(--shop-dim); margin-left: auto; line-height: 1.6; }
+  .state b { color: var(--shop-ink); }
+
+  .wrap { max-width: 90rem; margin: 0 auto; overflow: hidden; }
+  .stage { width: 1440px; height: 900px; transform-origin: top left; position: relative; }
+  .stage iframe { width: 1440px; height: 900px; border: 0; display: block; background: #0b0a0e; }
+
+  .readout {
+    max-width: 90rem; margin: 1rem auto 0; display: grid;
+    grid-template-columns: repeat(5, 1fr); gap: 1px;
+    background: var(--shop-line); border: 1px solid var(--shop-line);
+    border-radius: 0.7rem; overflow: hidden;
+  }
+  .cell { background: var(--shop-panel); padding: 0.8rem 0.95rem; }
+  .cell .k { font-size: 0.6rem; letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--shop-dim); margin: 0 0 0.28rem; }
+  .cell .v { font-size: 1rem; font-weight: 700; margin: 0; }
+  .cell .v.ok { color: var(--shop-ok); } .cell .v.bad { color: var(--shop-flag); }
+
+  footer { max-width: 90rem; margin: 1.25rem auto 0; color: var(--shop-dim);
+    font-size: 0.72rem; line-height: 1.65; font-family: ui-monospace, monospace; }
+  footer code { color: var(--shop-ink); }
+</style>
+</head>
+<body>
+<header>
+  <p class="eyebrow">B2 · Caelestia — «Quién soy» es la salida de neofetch</p>
+  <h1>La ficha del sistema, pulida.</h1>
+  <p>
+    Montada dentro del sitio real: su barra, su dock, su carril de workspaces y su fondo generativo,
+    con los tokens que el motor de color da a <b id="realtime">esta hora</b>. Pasa el ratón por las
+    filas, por el retrato y por la tira de color. <b>Repetir</b> vuelve a lanzar la entrada; bájala
+    a ×0,3 para juzgar el gesto.
+  </p>
+</header>
+
+<div class="bar">
+  <span class="group">
+    <span class="lbl">Entrada</span>
+    <button type="button" id="replay">Repetir</button>
+    <label class="lbl" for="speed">velocidad</label>
+    <input type="range" id="speed" min="0.2" max="1" step="0.1" value="1" />
+    <span class="state" id="speedout" style="margin-left:0">×1.0</span>
+  </span>
+  <span class="group">
+    <span class="lbl">Retrato</span>
+    <button type="button" data-forma="squircle" aria-pressed="true">squircle</button>
+    <button type="button" data-forma="cookie" aria-pressed="false">festón 12</button>
+    <button type="button" data-forma="circulo" aria-pressed="false">círculo</button>
+  </span>
+  <span class="group">
+    <span class="lbl">Hora</span>
+    <button type="button" data-hora="" aria-pressed="true">real</button>
+    <button type="button" data-hora="540" aria-pressed="false">09:00</button>
+    <button type="button" data-hora="1195" aria-pressed="false">19:55</button>
+    <button type="button" data-hora="180" aria-pressed="false">03:00</button>
+  </span>
+  <span class="group">
+    <span class="lbl">Fondo</span>
+    <button type="button" data-fondo="actual" aria-pressed="true">actual (provisional)</button>
+    <button type="button" data-fondo="b1" aria-pressed="false">el de B1</button>
+  </span>
+  <span class="group">
+    <span class="lbl">Comparar</span>
+    <button type="button" id="hoy" aria-pressed="false">Escena de hoy</button>
+  </span>
+  <span class="state" id="state">cargando el sitio…</span>
+</div>
+
+<div class="wrap" id="wrap">
+  <div class="stage" id="stage">
+    <iframe id="site" src="/?theme=caelestia" title="Sitio real, tema Caelestia"></iframe>
+  </div>
+</div>
+
+<div class="readout">
+  <div class="cell"><p class="k">Alto del contenido</p><p class="v" id="r-h">—</p></div>
+  <div class="cell"><p class="k">Aire arriba</p><p class="v" id="r-top">—</p></div>
+  <div class="cell"><p class="k">Aire abajo</p><p class="v" id="r-bot">—</p></div>
+  <div class="cell"><p class="k">Líneas del nombre</p><p class="v" id="r-lines">—</p></div>
+  <div class="cell"><p class="k">Desborde de la ventana</p><p class="v" id="r-of">—</p></div>
+</div>
+
+<footer>
+  El marco carga <code>/?theme=caelestia</code> del build de producción de este worktree. Contenido
+  literal de <code>src/data/content.ts</code>: ni un dato inventado. El filete bajo la cabecera se
+  mide con <code>document.createRange()</code> sobre el texto real, como hace neofetch, que lo
+  imprime del largo exacto de <code>usuario@host</code>.
+</footer>
+
+<script src="/gsap.min.js"></script>
+<script>
+(() => {
+  const frame = document.getElementById('site');
+  const state = document.getElementById('state');
+  const wrap = document.getElementById('wrap');
+  const stage = document.getElementById('stage');
+  const speed = document.getElementById('speed');
+  const speedOut = document.getElementById('speedout');
+  let escala = 1, doc = null, win = null, horaForzada = null, tl = null, forma = 'squircle';
+  let mostrandoHoy = false, originalHTML = null, latido = null;
+
+  const TOKENS_TIRA = ['--cae-surface','--cae-surface-container','--cae-surface-container-high',
+    '--cae-primary','--cae-primary-container','--cae-anchor','--cae-wall-1','--cae-wall-2','--cae-wall-3'];
+
+  const ajustar = () => {
+    escala = Math.min(1, wrap.clientWidth / 1440);
+    stage.style.transform = `scale(${escala})`;
+    wrap.style.height = `${900 * escala}px`;
+  };
+  new ResizeObserver(ajustar).observe(document.body);
+  ajustar();
+
+  // ---------------------------------- motor de color (copia de caelestia.color.ts)
+  const CLARO = { "surface":[0.98,0.012],"surface-container":[0.955,0.02],"surface-container-high":[0.925,0.026],
+    "on-surface":[0.245,0.035],"on-surface-variant":[0.47,0.032],"outline":[0.7,0.022],"primary":[0.45,0.13],
+    "on-primary":[0.99,0.01],"primary-container":[0.895,0.062],"on-primary-container":[0.31,0.1] };
+  const OSCURO = { "surface":[0.185,0.016],"surface-container":[0.265,0.022],"surface-container-high":[0.345,0.026],
+    "on-surface":[0.925,0.016],"on-surface-variant":[0.795,0.024],"outline":[0.42,0.02],"primary":[0.815,0.115],
+    "on-primary":[0.27,0.095],"primary-container":[0.395,0.105],"on-primary-container":[0.9,0.062] };
+  const AZUFRE = { l:0.855, lOscuro:0.905, c:0.152, h:96 };
+  const ok = (l,c,h) => `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)})`;
+  const hueAt = (m) => ((((m/1440)*360 + 60) % 360) + 360) % 360;
+  const chromaScaleAt = (hue) => { const d = Math.abs(((((hue-240)%360)+540)%360)-180); return d<=70?1:Math.max(0.32,1-(d-70)/115); };
+  const isDarkAt = (m) => m < 420 || m >= 1200;
+  const tokensAt = (m) => {
+    const hue = hueAt(m), esc = chromaScaleAt(hue), osc = isDarkAt(m), roles = osc ? OSCURO : CLARO, t = {};
+    for (const [n,[l,c]] of Object.entries(roles)) t[`--cae-${n}`] = ok(l, c*esc, hue);
+    t["--cae-anchor"] = ok(osc?AZUFRE.lOscuro:AZUFRE.l, AZUFRE.c, AZUFRE.h);
+    t["--cae-on-anchor"] = ok(0.215,0.05,AZUFRE.h);
+    t["--cae-wall-1"] = ok(osc?0.24:0.93, 0.09*esc, hue);
+    t["--cae-wall-2"] = ok(osc?0.21:0.95, 0.07*esc, (hue+42)%360);
+    t["--cae-wall-3"] = ok(osc?0.2:0.96, 0.06*esc, (hue+318)%360);
+    return { tokens: t, oscuro: osc, hue };
+  };
+
+  // ---------------------------------------------------- contenido, leido del DOM
+  // NO se copia a mano: se lee de la escena que el sitio ya pinto con
+  // `src/data/content.ts`. Asi la maqueta no puede desviarse del contenido real
+  // — el fallo de B1 fue justo ese, un dato inventado que no existia en ningun
+  // sitio. Si manana cambia content.ts, esta maqueta cambia con el.
+  function leerContenido(sc) {
+    const t = (sel, raiz) => {
+      const el = (raiz || sc).querySelector(sel);
+      return el ? el.textContent.trim().replace(/\s+/g, ' ') : '';
+    };
+    const dd = (clave) => {
+      const el = sc.querySelector('dd[data-fact="' + clave + '"]');
+      return el ? el.textContent.trim().replace(/\s+/g, ' ') : '';
+    };
+    const par = (nodo) => ({
+      titulo: t('b', nodo),
+      detalle: t('span', nodo),
+    });
+    const exp = sc.querySelector('[data-item="experience"]');
+    const edu = sc.querySelector('[data-item="education"]');
+    const enfoque = Array.from(
+      sc.querySelectorAll('[data-track-col="focus"] .about-item')
+    ).map(par);
+    const img = sc.querySelector('.about-avatar');
+    // El correo sale del dock, que lo pinta desde `contactChannels` — y ese, de
+    // `identity.email`. Asi la cabecera del comando deja de ser lo unico
+    // inventado de la escena: `usuario@host` pasa a ser un dato real.
+    const correoNodo = doc.querySelector('.cae-dock-item[href^="mailto:"]');
+    const correo = correoNodo
+      ? (correoNodo.dataset.caeLabel || correoNodo.getAttribute('href').replace('mailto:', ''))
+      : '';
+    // El «Desde 2021» sale de la franja de cifras por su ROTULO, no por su
+    // indice: `stats` es un array de este mismo repo y atarlo a stats[0] deja
+    // una rotura silenciosa la proxima vez que alguien lo reordene. Es la misma
+    // precaucion que ya toma `statValue()` en about.ts.
+    const cifra = (rotulo) => {
+      const nodo = Array.from(sc.querySelectorAll('.about-stats > div'))
+        .find((d) => (d.querySelector('span')?.textContent || '').trim() === rotulo);
+      return nodo ? (nodo.querySelector('b')?.textContent || '').trim() : '';
+    };
+    return {
+      name: t('.about-name'),
+      role: dd('rol'),
+      location: dd('base'),
+      now: dd('ahora'),
+      since: cifra('Desde'),
+      availability: t('.about-status'),
+      // aboutCopy[0]: la unica frase humana del contenido. Sin ella la escena
+      // solo dice DATOS, y quien recluta necesita una linea que se lea.
+      lead: t('[data-line="lead"]'),
+      avatar: img ? img.src : '',
+      email: correo,
+      exp: exp ? par(exp) : { titulo: '', detalle: '' },
+      edu: edu ? par(edu) : { titulo: '', detalle: '' },
+      enfoque,
+    };
+  }
+  let C = null;
+
+  const CSS = `
+    [data-b2] {
+      height: 100%; padding: 3.25rem 3.5rem; display: flex; flex-direction: column;
+      justify-content: center; color: var(--cae-on-surface);
+      font-family: 'Martian Mono', ui-monospace, monospace;
+    }
+    /* La linea de comando se queda: la terminal no desaparece cuando imprime. */
+    .nf-cmd { font-size: 0.95rem; color: var(--cae-on-surface-variant); margin: 0 0 2.1rem;
+      max-width: 1180px; margin-inline: auto; width: 100%; letter-spacing: 0.01em; }
+    .nf-cmd .p { color: var(--cae-primary); }
+    /* La terminal devuelve el prompt cuando el comando termina. No es relleno:
+       es lo que hace una terminal de verdad, y cierra la escena por abajo. */
+    .nf-cmd-fin { margin: 2.1rem 0 0; }
+    .nf-cmd i { font-style: normal; }
+
+    .nf-body { display: grid; grid-template-columns: 312px 1fr; gap: 4.25rem;
+      align-items: center; max-width: 1180px; margin-inline: auto; width: 100%; }
+
+    /* El retrato hace de logotipo de la distribucion: es lo que neofetch pone a
+       la izquierda. El anillo es un envoltorio con la MISMA figura, 5 px mas
+       grande — un outline no sigue un clip-path. */
+    .nf-art { display: flex; justify-content: center; }
+    .nf-ring {
+      padding: 6px; background: transparent; line-height: 0; display: block;
+      transition: background 0.5s cubic-bezier(0.2, 0, 0, 1),
+                  clip-path 0.62s cubic-bezier(0.34, 0.02, 0.16, 1);
+    }
+    .nf-ring img {
+      width: 288px; height: 288px; object-fit: cover; display: block;
+      transition: clip-path 0.62s cubic-bezier(0.34, 0.02, 0.16, 1);
+    }
+    /* EL MORFADO. Caelestia se define a si misma como «a fluid, morphing shell»
+       y expone un parametro deformScale: morfar es su identidad, asi que al
+       rozar el retrato la figura MORFA a otra figura con nombre de Material 3
+       en vez de limitarse a encenderse.
+       Funciona porque las dos figuras se generan con el MISMO numero de puntos
+       (240): un polygon() solo interpola con otro si cuentan igual. Con
+       distinto numero, el navegador no interpola — corta de golpe. */
+    .forma-circulo, .forma-circulo img { clip-path: __CIRCULO__; }
+    .forma-cookie, .forma-cookie img { clip-path: __COOKIE__; }
+    .forma-squircle, .forma-squircle img { clip-path: __SQUIRCLE__; }
+    .nf-art:hover .forma-squircle, .nf-art:hover .forma-squircle img { clip-path: __COOKIE__; }
+    .nf-art:hover .forma-cookie, .nf-art:hover .forma-cookie img { clip-path: __TREBOL__; }
+    .nf-art:hover .forma-circulo, .nf-art:hover .forma-circulo img { clip-path: __SQUIRCLE__; }
+    .nf-art:hover .nf-ring { background: var(--cae-anchor); }
+
+    /* El nombre ocupa el sitio donde neofetch imprime el titulo de la distro, y
+       es lo unico que NO va en monoespaciada: Fraunces a opsz 144, el dibujo
+       para tamano grande. Esa colision es lo que hace propia esta salida. */
+    .nf-name {
+      font-family: 'Fraunces', Georgia, serif;
+      font-variation-settings: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
+      font-size: 3.35rem; line-height: 0.95; letter-spacing: -0.018em;
+      margin: 0 0 0.5rem; white-space: nowrap; color: var(--cae-on-surface);
+    }
+    /* La cabecera del comando es el correo, y es pulsable: es la via de contacto
+       principal y la unica parada de tabulador legitima de la escena — el resto
+       no navega a ninguna parte y su contenido esta entero a la vista. */
+    .nf-host {
+      font-size: 0.95rem; color: var(--cae-primary); margin: 0; letter-spacing: 0.02em;
+      text-decoration: none; border-bottom: 1px solid transparent;
+      transition: border-color 0.18s ease;
+    }
+    .nf-host:hover { border-bottom-color: var(--cae-primary); }
+    .nf-host:focus-visible { outline: 2px solid var(--cae-anchor); outline-offset: 3px; border-radius: 2px; }
+    /* neofetch imprime el filete del largo EXACTO de usuario@host. Se mide con
+       Range sobre el texto, no con la caja del elemento. */
+    .nf-rule { height: 1px; background: var(--cae-outline); margin: 0.7rem 0 1.2rem; width: 0; }
+
+    .nf-rows { display: grid; gap: 0.62rem; margin: 0; }
+    .nf-row { display: grid; grid-template-columns: 148px 1fr; gap: 1.1rem;
+      font-size: 0.92rem; line-height: 1.45; padding: 0.2rem 0.55rem; margin-left: -0.55rem;
+      border-radius: 0.4rem; transition: background 0.18s ease; }
+    .nf-row dt { color: var(--cae-on-surface-variant); font-weight: 600; position: relative;
+      transition: color 0.16s ease; }
+    .nf-row dt::before { content: '>'; position: absolute; left: -0.9ch; opacity: 0;
+      color: var(--cae-anchor); transform: translateX(-5px);
+      transition: opacity 0.14s ease, transform 0.18s cubic-bezier(0.2, 0, 0, 1); }
+    .nf-row:hover { background: var(--cae-surface); }
+    .nf-row:hover dt { color: var(--cae-anchor); }
+    .nf-row:hover dt::before { opacity: 1; transform: translateX(0); }
+    .nf-row dd { margin: 0; color: var(--cae-on-surface); }
+    .nf-row dd small { display: block; color: var(--cae-on-surface-variant);
+      font-size: 0.92em; margin-top: 0.16rem; }
+    .nf-row dd small + small { margin-top: 0.05rem; }
+
+    /* La insignia de disponibilidad sube a la linea de identidad: es la SEGUNDA
+       parada de lectura, justo despues del nombre, y ya no una fila mas del
+       listado. Va en el ancla (azufre), el unico color del tema que no gira con
+       la hora — la senal de estado tiene que decir lo mismo a las 09:00 y a las
+       03:00. */
+    .nf-id { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+    /* Sin caja. La barra del shell ya dice esto mismo con un punto de azufre y
+       texto en on-surface-variant (.cae-avail / .cae-dot en themes.css): una
+       pastilla rellena aqui es un dialecto distinto para la misma frase, y de
+       paso pelea con el nombre por el primer plano. Se dice igual en los dos
+       sitios; lo que la hace segunda parada es el SITIO, no el relleno. */
+    .nf-badge {
+      display: inline-flex; align-items: center; gap: 0.42rem;
+      color: var(--cae-on-surface-variant);
+      font-size: 0.78rem; letter-spacing: 0.06em; white-space: nowrap;
+      padding-left: 0.9rem; margin-left: 0.15rem;
+      border-left: 1px solid var(--cae-outline);
+      transition: color 0.2s ease;
+    }
+    .nf-badge:hover { color: var(--cae-on-surface); }
+    .nf-dot {
+      width: 7px; height: 7px; border-radius: 999px; background: var(--cae-anchor);
+      display: block; flex: none;
+      /* Late como un indicador de estado de escritorio: dice «esto esta vivo»,
+         que es justo lo que la palabra «disponible» afirma. Lento (2,4 s) para
+         que no compita con nada. */
+      animation: nf-latir 2.4s ease-in-out infinite;
+    }
+    @keyframes nf-latir {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.45; }
+    }
+    /* La frase humana. Es lo unico en la fuente de texto: entre el nombre en
+       Fraunces y los campos en monoespaciada, marca que esto lo dice una
+       persona y no el sistema. */
+    .nf-lead {
+      font-family: 'Hanken Grotesk', system-ui, sans-serif;
+      font-size: 1.06rem; line-height: 1.5; margin: 0 0 1.45rem;
+      max-width: 44rem; color: var(--cae-on-surface);
+    }
+
+    /* La tira de color con la que neofetch cierra siempre. Aqui son los tokens
+       de la hora, y al rozarlos dicen su nombre: informa, no decora. */
+    .nf-pal { display: flex; gap: 0.4rem; margin-top: 1.5rem; align-items: center; }
+    .nf-pal i { width: 38px; height: 18px; border-radius: 0.3rem; display: block;
+      border: 1px solid #00000018; transform-origin: center bottom;
+      transition: transform 0.18s cubic-bezier(0.2,0,0,1); }
+    .nf-pal i:hover { transform: scaleY(1.7); }
+    /* La tira no se explica en reposo: solo habla cuando la rozas. */
+    .nf-tok { font-size: 0.72rem; color: var(--cae-on-surface-variant);
+      margin-left: 0.7rem; opacity: 0; transition: opacity 0.15s ease; }
+    .nf-pal:hover .nf-tok { opacity: 1; }
+
+    @media (prefers-reduced-motion: reduce) {
+      [data-b2], [data-b2] * { transition: none !important; }
+      .nf-dot { animation: none; }
+    }
+  `;
+
+  const fila = (k, v, s) =>
+    `<div data-g><div class="nf-row"><dt>${k}</dt><dd>${v}${s ? `<small>${s}</small>` : ''}</dd></div></div>`;
+
+  const MARCA = () => `<div data-b2>
+    <p class="nf-cmd"><span class="p">~ $</span> <b data-cmd style="font-weight:400"></b><i data-cur>▌</i></p>
+    <div class="nf-body">
+      <div class="nf-art" data-g>
+        <span class="nf-ring forma-${forma}"><img src="${C.avatar}" alt="${C.name}" width="288" height="288" /></span>
+      </div>
+      <div>
+        <div data-g><p class="nf-name" data-nombre>${C.name}</p></div>
+        <div data-g class="nf-id">
+          <a class="nf-host" href="mailto:${C.email}">${C.email}</a>
+          <span class="nf-badge" data-badge><i class="nf-dot"></i>${C.availability}</span>
+        </div>
+        <div class="nf-rule" data-rule></div>
+        <div data-g><p class="nf-lead">${C.lead}</p></div>
+        <dl class="nf-rows">
+          ${fila('Rol', C.role, '')}
+          ${fila('Base', C.location, '')}
+          ${fila('Ahora', C.now, C.since ? 'Desde ' + C.since : '')}
+          ${fila('Enfoque', C.enfoque.map((e) => e.titulo).join('  ·  '),
+                 C.enfoque.map((e) => e.detalle).join('</small><small>'))}
+          ${fila('Último puesto', C.exp.titulo, C.exp.detalle)}
+          ${fila('Estudia', C.edu.titulo, C.edu.detalle)}
+        </dl>
+        <div class="nf-pal" data-g data-pal><span class="nf-tok" data-tok-out></span></div>
+      </div>
+    </div>
+    <p class="nf-cmd nf-cmd-fin" data-g><span class="p">~ $</span> <i data-cur-fin>▌</i></p>
+  </div>`;
+
+  const escena = () => doc.querySelector('[data-scene="about"]');
+
+  // ------------------------------------------- el fondo que B1 ya especifica
+  // APROXIMACION. El fondo definitivo es un shader; esto lo dibuja en SVG con
+  // los MISMOS numeros del spec de B1 — la misma composicion en diagonal, las
+  // mismas figuras con nombre por tramo horario y los mismos tres tonos de
+  // pared — para poder juzgar el margen antes de implementarlo. Lo que corre
+  // hoy en el sitio es `caelestiaBlobs.ts`, marcado PROVISIONAL en su propio
+  // comentario.
+  const COMPOSICION = [
+    { x: -0.68, y: 0.26, r: 0.44, de: 1, a: 2 },
+    { x: -0.02, y: -0.02, r: 0.31, de: 2, a: 3 },
+    { x: 0.58, y: -0.30, r: 0.21, de: 3, a: 1 },
+    { x: 0.12, y: 0.42, r: 0.085, de: 3, a: 2 },
+    { x: 0.93, y: 0.05, r: 0.075, de: 2, a: 1 },
+    { x: -0.89, y: 0.47, r: 0.055, de: 1, a: 3 },
+    { x: 0.40, y: -0.46, r: 0.050, de: 3, a: 1 },
+  ];
+  // tramo horario -> figura con nombre (n, a, s), tal cual la tabla del spec
+  const TRAMOS = [
+    { hasta: 288, n: 4, a: 0.150, s: 0.020, nombre: 'puffy' },
+    { hasta: 576, n: 9, a: 0.105, s: 0.030, nombre: 'sunny' },
+    { hasta: 864, n: 12, a: -0.058, s: 0.012, nombre: '12-sided cookie' },
+    { hasta: 1152, n: 4, a: 0.265, s: -0.045, nombre: '4-leaf clover' },
+    { hasta: 1440, n: 10, a: 0.175, s: 0.070, nombre: 'soft burst' },
+  ];
+  const figuraDe = (m) => TRAMOS.find((t) => m < t.hasta) || TRAMOS[TRAMOS.length - 1];
+
+  function contorno(fig, cx, cy, radio) {
+    const N = 160;
+    let rmax = 0;
+    for (let i = 0; i < 400; i++) {
+      const t = (i / 400) * Math.PI * 2;
+      rmax = Math.max(rmax, 1 + fig.a * Math.cos(fig.n * t) + fig.s * Math.cos(2 * fig.n * t));
+    }
+    const p = [];
+    for (let i = 0; i < N; i++) {
+      const t = (i / N) * Math.PI * 2;
+      const r = (1 + fig.a * Math.cos(fig.n * t) + fig.s * Math.cos(2 * fig.n * t)) / rmax * radio;
+      p.push(`${(cx + r * Math.cos(t)).toFixed(1)},${(cy + r * Math.sin(t)).toFixed(1)}`);
+    }
+    return 'M' + p.join(' L') + ' Z';
+  }
+
+  function pintarFondoB1(minutos) {
+    quitarFondoB1();
+    const fig = figuraDe(minutos);
+    const cs = win.getComputedStyle(doc.documentElement);
+    const pared = (n) => cs.getPropertyValue('--cae-wall-' + n).trim();
+    const W = win.innerWidth, H = win.innerHeight;
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = doc.createElementNS(NS, 'svg');
+    svg.setAttribute('width', W); svg.setAttribute('height', H);
+    svg.dataset.fondoB1 = fig.nombre;
+    svg.style.cssText = 'position:fixed;inset:0;z-index:-3;pointer-events:none';
+    const defs = doc.createElementNS(NS, 'defs');
+    svg.appendChild(defs);
+    // Fondo base: la superficie, para tapar el shader provisional de debajo.
+    const base = doc.createElementNS(NS, 'rect');
+    base.setAttribute('width', W); base.setAttribute('height', H);
+    base.setAttribute('fill', cs.getPropertyValue('--cae-surface').trim());
+    svg.appendChild(base);
+    COMPOSICION.forEach((pieza, i) => {
+      // Degradado interno entre dos tonos de pared, en la direccion de la luz
+      // nominal del sistema (arriba-izquierda), como dice el spec.
+      const g = doc.createElementNS(NS, 'linearGradient');
+      g.setAttribute('id', 'gb1-' + i);
+      g.setAttribute('x1', '0'); g.setAttribute('y1', '0');
+      g.setAttribute('x2', '1'); g.setAttribute('y2', '1');
+      const p1 = doc.createElementNS(NS, 'stop');
+      p1.setAttribute('offset', '0'); p1.setAttribute('stop-color', pared(pieza.de));
+      const p2 = doc.createElementNS(NS, 'stop');
+      p2.setAttribute('offset', '1'); p2.setAttribute('stop-color', pared(pieza.a));
+      g.appendChild(p1); g.appendChild(p2); defs.appendChild(g);
+      const path = doc.createElementNS(NS, 'path');
+      const cx = (0.5 + pieza.x / 2) * W;
+      const cy = (0.5 - pieza.y / 2) * H;
+      path.setAttribute('d', contorno(fig, cx, cy, pieza.r * Math.min(W, H) * 1.15));
+      path.setAttribute('fill', 'url(#gb1-' + i + ')');
+      svg.appendChild(path);
+    });
+    doc.body.appendChild(svg);
+    return fig.nombre;
+  }
+
+  function quitarFondoB1() {
+    const viejo = doc && doc.querySelector('[data-fondo-b1]');
+    if (viejo) viejo.remove();
+  }
+  let fondo = 'actual';
+
+  function pintar() {
+    const sc = escena();
+    if (!sc) return;
+    if (originalHTML === null) originalHTML = sc.innerHTML;
+    // Se lee del DOM original una sola vez, antes de sustituirlo.
+    if (C === null) C = leerContenido(sc);
+    if (mostrandoHoy) { sc.innerHTML = originalHTML; sc.removeAttribute('style'); medir(); return; }
+    // La seccion trae `px-6 py-24` y `min-h-screen` del marcado compartido: sin
+    // neutralizarlo, el aire medido es el de la maquetacion que venimos a sustituir.
+    sc.style.cssText = 'padding:0;margin:0;display:block;height:100%;min-height:0';
+    sc.innerHTML = MARCA();
+    pintarTira();
+    entrar();
+  }
+
+  function pintarTira() {
+    const pal = doc.querySelector('[data-pal]');
+    if (!pal) return;
+    const cs = win.getComputedStyle(doc.documentElement);
+    const rotulo = pal.querySelector('[data-tok-out]');
+    TOKENS_TIRA.forEach((t) => {
+      const i = doc.createElement('i');
+      i.style.background = cs.getPropertyValue(t).trim();
+      i.dataset.tok = t;
+      // Al rozar dice el token Y su valor real a esta hora: la tira deja de ser
+      // adorno y pasa a explicar el motor de color.
+      i.addEventListener('mouseenter', () => {
+        if (!rotulo) return;
+        const v = win.getComputedStyle(doc.documentElement).getPropertyValue(t).trim();
+        rotulo.textContent = t + '  ' + v;
+      });
+      pal.insertBefore(i, rotulo);
+    });
+  }
+
+  // ------------------------------------------------------------- la entrada
+  function entrar() {
+    const sc = escena();
+    if (!sc || mostrandoHoy) { medir(); return; }
+    if (tl) { tl.kill(); tl = null; }
+    if (latido) { latido.kill(); latido = null; }
+    const grupos = Array.from(sc.querySelectorAll('[data-g]'));
+    const cmd = sc.querySelector('[data-cmd]');
+    const cur = sc.querySelector('[data-cur]');
+    const regla = sc.querySelector('[data-rule]');
+    const host = sc.querySelector('.nf-host');
+    const nombre = sc.querySelector('[data-nombre]');
+    const tonos = Array.from(sc.querySelectorAll('[data-pal] i'));
+    if (!grupos.length || !window.gsap) { medir(); return; }
+
+    // El filete, del largo exacto de `aoshi@caelestia`, medido con Range: la
+    // caja del <p> devolveria el ancho de la columna, no el del texto.
+    const rg = doc.createRange();
+    rg.selectNodeContents(host);
+    const anchoHost = rg.getBoundingClientRect().width;
+
+    if (win.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Escena montada, sin recorrido: la regla del repo.
+      gsap.set(grupos, { opacity: 1, x: 0, scale: 1, clearProps: 'transform' });
+      gsap.set(tonos, { opacity: 1, scaleX: 1 });
+      gsap.set(nombre, { clipPath: 'inset(0 0% 0 0)' });
+      cmd.textContent = 'neofetch';
+      cur.style.opacity = 0;
+      regla.style.width = anchoHost + 'px';
+      medir();
+      return;
+    }
+
+    const curFin = sc.querySelector('[data-cur-fin]');
+    const t = gsap.timeline({ onComplete: () => { parpadeo(curFin || cur); medir(); } });
+    gsap.set(nombre, { clipPath: 'inset(0 100% 0 0)' });
+    gsap.set(grupos, { opacity: 0 });
+    gsap.set(tonos, { opacity: 0, scaleX: 0.2 });
+
+    // 1 · el cursor espera, parpadeando dos veces
+    t.fromTo(cur, { opacity: 1 }, { opacity: 0, duration: 0.085, repeat: 3, yoyo: true, ease: 'none' }, 0);
+    // 2 · se teclea el comando: 8 caracteres en 0,44 s
+    t.to({ i: 0 }, { i: 8, duration: 0.44, ease: 'none',
+      onUpdate() { cmd.textContent = 'neofetch'.slice(0, Math.round(this.targets()[0].i)); } }, 0.34);
+    // 3 · Enter
+    t.fromTo(cur, { opacity: 1 }, { opacity: 0.2, duration: 0.04, yoyo: true, repeat: 1, ease: 'power1.inOut' }, 0.78);
+    // 4 · el retrato entra como el logotipo de la distribucion
+    t.fromTo(grupos[0], { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.55, ease: 'power2.out' }, 0.86);
+    // 5 · el nombre se descubre de izquierda a derecha: el barrido de tinta de B1
+    t.set(grupos[1], { opacity: 1 }, 1.05);
+    t.fromTo(nombre, { clipPath: 'inset(0 100% 0 0)' },
+      { clipPath: 'inset(0 0% 0 0)', duration: 0.72, ease: 'power2.inOut' }, 1.05);
+    t.to(cur, { opacity: 0, duration: 0.2 }, 1.05);
+    // 6 · usuario@host y su filete
+    t.fromTo(grupos[2], { opacity: 0, x: -6 }, { opacity: 1, x: 0, duration: 0.28, ease: 'power2.out' }, 1.45);
+    t.fromTo(regla, { width: 0 }, { width: anchoHost, duration: 0.42, ease: 'power2.inOut' }, 1.6);
+    // 7 · los campos, uno a uno, como una salida que se imprime
+    t.fromTo(grupos.slice(3), { opacity: 0, x: -6 },
+      { opacity: 1, x: 0, duration: 0.22, ease: 'power2.out', stagger: 0.07 }, 1.85);
+    // 8 · la tira de color cierra, como en el neofetch de verdad
+    t.to(tonos, { opacity: 1, scaleX: 1, duration: 0.18, ease: 'power2.out', stagger: 0.035 }, 2.45);
+
+    t.timeScale(Number(speed.value));
+    tl = t;
+    return t;
+  }
+
+  function parpadeo(cur) {
+    if (latido) latido.kill();
+    if (!cur || win.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // El cursor vuelve al terminar: la terminal sigue ahi, esperando.
+    latido = gsap.fromTo(cur, { opacity: 1 }, { opacity: 0, duration: 0.55, repeat: -1, yoyo: true, ease: 'none' });
+  }
+
+  // -------------------------------------------------------------- lecturas
+  function medir() {
+    const sc = escena();
+    if (!sc) return;
+    const ventana = sc.closest('main[data-cae-track] > *');
+    if (!ventana) return;
+    const wr = ventana.getBoundingClientRect();
+    let top = Infinity, bot = -Infinity;
+    const visitar = (el) => {
+      for (const h of el.children) {
+        if (h.children.length === 0) {
+          const r = h.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) { top = Math.min(top, r.top); bot = Math.max(bot, r.bottom); }
+        } else visitar(h);
+      }
+    };
+    visitar(sc);
+    if (top === Infinity) return;
+    const set = (id, txt, estado) => {
+      const el = document.getElementById(id);
+      el.textContent = txt;
+      el.classList.toggle('ok', estado === 'ok');
+      el.classList.toggle('bad', estado === 'bad');
+    };
+    const alto = Math.round(bot - top), aT = Math.round(top - wr.top), aB = Math.round(wr.bottom - bot);
+    set('r-h', alto + ' px', alto <= 748 ? 'ok' : 'bad');
+    set('r-top', aT + ' px');
+    set('r-bot', aB + ' px', aB >= 0 ? 'ok' : 'bad');
+    const desborde = ventana.scrollHeight - ventana.clientHeight;
+    set('r-of', desborde > 1 ? desborde + ' px' : 'ninguno', desborde > 1 ? 'bad' : 'ok');
+    const nombre = sc.querySelector('[data-nombre]') || sc.querySelector('.about-name');
+    if (nombre) {
+      const lh = parseFloat(win.getComputedStyle(nombre).lineHeight);
+      const n = Math.max(1, Math.round(nombre.getBoundingClientRect().height / lh));
+      set('r-lines', String(n), n === 1 ? 'ok' : 'bad');
+    }
+  }
+
+  // -------------------------------------------------------------- controles
+  document.getElementById('replay').addEventListener('click', entrar);
+  speed.addEventListener('input', () => {
+    speedOut.textContent = '×' + Number(speed.value).toFixed(1);
+    if (tl) tl.timeScale(Number(speed.value));
+  });
+  document.querySelectorAll('[data-forma]').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-forma]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+      forma = b.dataset.forma;
+      const anillo = doc && doc.querySelector('.nf-ring');
+      if (anillo) anillo.className = 'nf-ring forma-' + forma;
+    });
+  });
+  document.querySelectorAll('[data-hora]').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-hora]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+      horaForzada = b.dataset.hora === '' ? null : Number(b.dataset.hora);
+      aplicarHora();
+    });
+  });
+  document.querySelectorAll('[data-fondo]').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-fondo]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+      fondo = b.dataset.fondo;
+      aplicarHora();
+    });
+  });
+
+  const botonHoy = document.getElementById('hoy');
+  botonHoy.addEventListener('click', () => {
+    mostrandoHoy = !mostrandoHoy;
+    botonHoy.setAttribute('aria-pressed', String(mostrandoHoy));
+    botonHoy.textContent = mostrandoHoy ? 'Volver a neofetch' : 'Escena de hoy';
+    pintar();
+  });
+
+  function aplicarHora() {
+    if (!doc) return;
+    const ahora = new Date();
+    const m = horaForzada === null ? ahora.getHours() * 60 + ahora.getMinutes() : horaForzada;
+    const { tokens, oscuro, hue } = tokensAt(m);
+    for (const [k, v] of Object.entries(tokens)) doc.documentElement.style.setProperty(k, v);
+    doc.documentElement.dataset.caeEsquema = oscuro ? 'noche' : 'dia';
+    // La tira se repinta con la hora: si no, se queda con los tonos del esquema
+    // anterior y miente justo sobre lo que viene a ensenar.
+    const pal = doc.querySelector('[data-pal]');
+    if (pal) {
+      const cs = win.getComputedStyle(doc.documentElement);
+      pal.querySelectorAll('i[data-tok]').forEach((i) => {
+        i.style.background = cs.getPropertyValue(i.dataset.tok).trim();
+      });
+    }
+    // El fondo de B1 morfa por tramos de la hora: se repinta con el reloj.
+    let figura = '';
+    if (fondo === 'b1') figura = pintarFondoB1(m); else quitarFondoB1();
+    const hh = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+    state.innerHTML = `reloj <b>${hh}</b> · esquema <b>${oscuro ? 'oscuro' : 'claro'}</b> · matiz <b>${hue.toFixed(0)}°</b>`
+      + (figura ? ` · figura <b>${figura}</b>` : '');
+    if (horaForzada === null) document.getElementById('realtime').textContent = 'las ' + hh;
+    medir();
+  }
+
+  frame.addEventListener('load', () => {
+    doc = frame.contentDocument;
+    win = frame.contentWindow;
+    const s = doc.createElement('script');
+    s.src = '/gsap.min.js';
+    s.onload = () => { window.gsap = win.gsap; };
+    doc.head.appendChild(s);
+    const st = doc.createElement('style');
+    st.textContent = CSS;
+    doc.head.appendChild(st);
+
+    // El clic en la pastilla no siempre mueve el carril al primer intento. Se
+    // comprueba contra el rect REAL de la ventana, no contra el aria-current, y
+    // se reclica como mucho cada 2 s: reclicar seguido reinicia la tween en bucle.
+    let intentos = 0;
+    const esperar = setInterval(() => {
+      const pastilla = doc.querySelector('[data-cae-ws="quien-es"]');
+      const sc = doc.querySelector('[data-scene="about"]');
+      if (!pastilla || !sc) return;
+      const v = sc.closest('main[data-cae-track] > *');
+      // Dentro del marco la ventana aterriza en x=0, no en los 14 px de margen.
+      if (v && Math.abs(v.getBoundingClientRect().x) < 40) {
+        clearInterval(esperar);
+        aplicarHora();
+        pintar();
+        return;
+      }
+      if (intentos > 48) { clearInterval(esperar); aplicarHora(); pintar(); return; }
+      if (intentos % 8 === 0) pastilla.click();
+      intentos++;
+    }, 250);
+  });
+})();
+</script>
+</body>
+</html>
