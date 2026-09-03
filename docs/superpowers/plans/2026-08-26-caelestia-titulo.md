@@ -1,5 +1,21 @@
 # Caelestia B1 — Título Implementation Plan
 
+Tracking: historico
+
+> **Nota de cierre (2026-09-03).** Las 48 casillas de este plan nunca se marcaron durante la
+> ejecucion, y no se marcan ahora en bloque: ticar pasos que nadie siguio uno a uno seria falsificar
+> el registro, no completarlo — es la misma regla que ya aplicaron
+> `2026-07-28-vice-secciones.md` y `2026-08-10-hyprland-stack-catastro.md`.
+>
+> El trabajo **esta hecho y fusionado en `main`** (ver el estado de los temas en `CLAUDE.md` y el
+> `Registro de implementacion` del spec, que es donde viven los numeros finales). Esta cabecera lo
+> exime del cruce de `check_spec_plan_consistency()` en `scripts/verify.py`, que si no deja ese gate
+> en rojo para todo el mundo — y un gate que nunca se pone verde no lo lee nadie, que es justo el
+> fallo que ese arnes vino a evitar.
+>
+> Lo anota la sesion de la fase B2, no la que ejecuto B1: si quien la ejecuto si siguio los pasos
+> uno a uno, puede sustituir esta cabecera por las casillas marcadas.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Convertir la escena `#hero` de Caelestia en el escritorio desnudo del shell — fondo de figuras Material 3 gobernado por la hora, titular justificado a `opsz 144`, firma trazada desde una terminal, cifras en columna y widget «Ahora mismo».
