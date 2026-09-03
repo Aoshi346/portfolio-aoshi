@@ -3606,6 +3606,118 @@
 }
 
 /*
+ * Fase B3 — Obra deja de ser cinco escenas apiladas y pasa a ser la
+ * Editorial: una fila fija de tarjetas + un cajon. El DOM generico que
+ * `projectScene.ts` construye para los tres temas (titulo a pantalla
+ * completa, columnas Problema/Solucion, `.obra-meta`) no sirve aqui — se
+ * oculta entero y `caelestiaObraEditorial.ts` construye su propio arbol
+ * leyendo `caseStudies` directamente, no el DOM oculto.
+ */
+:root[data-theme="caelestia"] [data-obra-track] {
+  display: none;
+}
+
+:root[data-theme="caelestia"] .obra-rail {
+  overflow: visible;
+  height: auto;
+}
+
+:root[data-theme="caelestia"] .cae-obra-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px;
+  padding: 15px 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--cae-surface-container-high);
+  padding: 8px 8px 12px;
+  border-radius: 3px;
+  box-shadow: 0 10px 22px -8px rgb(0 0 0 / 0.4);
+  cursor: pointer;
+  position: relative;
+  border: 0;
+  text-align: inherit;
+  font: inherit;
+  color: inherit;
+}
+
+:root[data-theme="caelestia"] .cae-obra-card.is-sel {
+  box-shadow:
+    0 0 0 2px var(--cae-primary),
+    0 14px 26px -8px rgb(0 0 0 / 0.45);
+}
+
+:root[data-theme="caelestia"] .cae-obra-caption {
+  font-family: "Fraunces", serif;
+  font-style: italic;
+  font-variation-settings: "opsz" 30, "wght" 520;
+  font-size: 14px;
+  text-align: center;
+  color: var(--cae-on-surface);
+  line-height: 1.25;
+  margin-top: 9px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-tag {
+  display: block;
+  font-family: "Martian Mono", monospace;
+  font-style: normal;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cae-on-surface-variant);
+  text-align: center;
+  margin-top: 2px;
+}
+
+:root[data-theme="caelestia"] .cae-obra-thumb {
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--cae-outline);
+  position: relative;
+  overflow: hidden;
+}
+
+:root[data-theme="caelestia"] .cae-obra-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.52);
+  transition:
+    filter 0.3s ease,
+    transform 0.3s ease;
+}
+
+:root[data-theme="caelestia"] .cae-obra-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--cae-surface-container-high);
+  mix-blend-mode: multiply;
+  opacity: 0.16;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb img {
+  filter: saturate(1);
+}
+
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb {
+  outline: 2px solid var(--cae-primary);
+  outline-offset: 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb::after {
+  opacity: 0;
+}
+
+/*
  * Caelestia esconde el hero de los otros temas: aqui manda .cae-head. La
  * tarjeta Material de `.hero-surface` (arriba, `.scene-surface`) y la
  * compensacion de posicion de `.hero-kick` que vivian aqui quedaron muertas
