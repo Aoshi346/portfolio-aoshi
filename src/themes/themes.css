@@ -3660,9 +3660,31 @@
 :root[data-theme="caelestia"] .about-stats,
 :root[data-theme="caelestia"] .about-track,
 :root[data-theme="caelestia"] .about-pairs,
-:root[data-theme="caelestia"] .about-body > [data-line],
-:root[data-theme="caelestia"] [data-scene="about"] .hero-kick {
+:root[data-theme="caelestia"] .about-body > [data-line] {
   display: none;
+}
+
+/* El `<h2>Quién soy</h2>` NO entra en la regla de arriba, y no es un descuido.
+   Es el UNICO encabezado de la escena, y con `display: none` sale tambien del
+   arbol de accesibilidad: «Quien soy» se quedaba como la unica escena del tema
+   sin nombre accesible (el hero tiene su `h1`; obra, creditos y contacto tienen
+   su `h2`). El nombre de la ficha es un `<p>`, asi que no lo suple.
+   Se oculta con el patron VISUALMENTE OCULTO — el mismo de `.sr-only` en
+   `style.css`, copiado y no reutilizado porque la clase la pone el marcado y
+   `.hero-kick` es compartida por los tres temas: darsela en el DOM la
+   escondería tambien en Vice e Hyprland. Ni `display: none` ni
+   `visibility: hidden`: los dos lo sacan del arbol, que es justo el fallo.
+   Lo vigila el gate 9 de `scripts/measure-caelestia-quien-soy.py`. */
+:root[data-theme="caelestia"] [data-scene="about"] .hero-kick {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* La seccion trae `px-6 py-24` y `min-h-screen` del marcado compartido. Sin
@@ -3909,7 +3931,10 @@
   left: -0.9ch;
   opacity: 0;
   transform: translateX(-5px);
-  color: var(--cae-anchor);
+  /* `--cae-primary`, NO `--cae-anchor`: ver el porque en la regla de roce de
+     `.ficha-k` mas abajo. El ">" solo se pinta rozando, asi que comparte
+     literalmente el problema (y el arreglo) de la clave que acompana. */
+  color: var(--cae-primary);
   transition: opacity 0.14s ease, transform 0.18s cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -3917,8 +3942,18 @@
   background: var(--cae-surface);
 }
 
+/* El ancla NO vale aqui, aunque sea la senal de estado del tema: nunca se
+   calibro como color de TEXTO sobre superficie clara. Donde funciona es como
+   punto de 7 px (`.ficha-punto`, que se queda en el ancla), y ahi no es texto.
+   Como texto sobre el fondo de la fila rozada (`--cae-surface`) medía 1.47:1
+   en esquema dia — trece horas al dia el roce EMPEORABA la legibilidad de lo
+   que roza. `--cae-primary` si esta calibrado para esto: la fase A le bajo la
+   claridad de 0.505 a 0.450 precisamente para aguantar AA sobre las
+   superficies elevadas (ver `caelestia.color.ts`). Lo vigila el gate 5 de
+   `scripts/measure-caelestia-quien-soy.py`, que mide el ROCE ademas del
+   reposo, y en los dos esquemas. */
 :root[data-theme="caelestia"] .ficha-fila:hover .ficha-k {
-  color: var(--cae-anchor);
+  color: var(--cae-primary);
 }
 
 :root[data-theme="caelestia"] .ficha-fila:hover .ficha-k::before {

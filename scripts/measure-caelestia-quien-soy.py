@@ -354,6 +354,56 @@ def main() -> int:
         comprobar("Martian" in ejes["marcaFamilia"],
                   f"la marca de la barra sigue en la mono del shell ({ejes['marcaFamilia']})")
 
+        print("\n[9] La escena conserva nombre accesible sin aportar caja")
+        # La escena se rehace entera bajo Caelestia y su `<h2>Quién soy</h2>`
+        # sobra VISUALMENTE — pero ocultarlo con `display: none` lo saca
+        # tambien del arbol de accesibilidad, y era el unico encabezado de la
+        # escena: «Quien soy» quedaba como la unica de las cinco sin nombre
+        # accesible. El nombre de la ficha es un `<p>`, no lo suple.
+        #
+        # Se mide contra el ARBOL ARIA de verdad (`aria_snapshot`, que es lo
+        # que expone el navegador a un lector de pantalla), no contra la
+        # presencia del nodo en el DOM: el nodo sigue ahi con `display: none` y
+        # una asercion de DOM saldria verde con el fallo puesto. Esta fase ya
+        # pago una asercion titulada «y usa el ancla» que solo leia
+        # `outlineStyle` y no demostraba nada.
+        #
+        # `page.accessibility` NO existe en Playwright Python 1.59 (se retiro);
+        # `locator.aria_snapshot()` es la via vigente.
+        comprobar(pagina.locator('[data-scene="about"] .hero-kick').count() == 1,
+                  "la escena sigue teniendo su .hero-kick en el DOM")
+        arbol = pagina.locator('[data-scene="about"]').aria_snapshot()
+        print("       arbol ARIA de la escena:")
+        for linea in arbol.splitlines()[:6]:
+            print(f"         {linea}")
+        comprobar('heading "Quién soy"' in arbol,
+                  "el h2 sigue en el arbol ARIA de la escena como encabezado")
+        comprobar(pagina.locator('[data-scene="about"]')
+                  .get_by_role("heading", name="Quién soy").count() == 1,
+                  "y se puede alcanzar por rol+nombre (encabezado «Quién soy»)")
+        caja = pagina.evaluate("""() => {
+            const h = document.querySelector('[data-scene="about"] .hero-kick');
+            const sc = document.querySelector('[data-scene="about"]');
+            if (!h || !sc) return null;
+            const r = h.getBoundingClientRect(), cs = getComputedStyle(h);
+            return {
+                w: r.width, h: r.height, display: cs.display,
+                visibility: cs.visibility, position: cs.position,
+                desborde: sc.scrollHeight - sc.clientHeight,
+            };
+        }""")
+        print(f"       caja del h2 {caja['w']:.2f}x{caja['h']:.2f} · display {caja['display']} · "
+              f"visibility {caja['visibility']} · desborde de la escena {caja['desborde']}px")
+        # Visualmente oculto es EXACTAMENTE eso: sigue pintado (por eso no vale
+        # `display:none` ni `visibility:hidden`, que lo borrarian del arbol) y a
+        # la vez no ocupa ni una linea de texto.
+        comprobar(caja["display"] != "none" and caja["visibility"] != "hidden",
+                  f"no se oculta borrandolo del arbol ({caja['display']} / {caja['visibility']})")
+        comprobar(caja["w"] <= 1.5 and caja["h"] <= 1.5,
+                  f"el h2 no aporta caja visible ({caja['w']:.2f}x{caja['h']:.2f})")
+        comprobar(caja["desborde"] <= 1,
+                  f"la escena no desborda por el h2 ({caja['desborde']}px)")
+
         print("\n[5] Contraste de los pares que se pintan, en los dos esquemas")
         # NO se inventa una API para forzar la hora. El motor de color lee el
         # reloj del sistema (`new Date().getHours()`), asi que el esquema se
@@ -407,9 +457,14 @@ def main() -> int:
         # conversion funciona (dos colores distintos dan pixeles distintos):
         # si `fillStyle` rechazara la cadena, se quedaria con el valor anterior
         # y todos los pares saldrian identicos, o sea otra tautologia.
-        CONTRASTE_JS = """(sel) => {
+        #
+        # Toma `{sel, pseudo}` y no un selector suelto porque uno de los pares
+        # del roce es `.ficha-k::before` (el ">"), que NO es un nodo del DOM:
+        # la unica via de leer su color es `getComputedStyle(el, "::before")`.
+        CONTRASTE_JS = """({ sel, pseudo }) => {
             const el = document.querySelector(sel);
             if (!el) return null;
+            const csEl = getComputedStyle(el, pseudo || null);
             const cv = document.createElement("canvas");
             cv.width = cv.height = 1;
             const ctx = cv.getContext("2d", { willReadFrequently: true });
@@ -440,12 +495,18 @@ def main() -> int:
                 nodo = nodo.parentElement;
             }
             const bFondo = bytes(fondo || "rgb(255,255,255)", [255, 255, 255]);
-            const bTexto = bytes(getComputedStyle(el).color, bFondo);
+            const bTexto = bytes(csEl.color, bFondo);
             if (!bFondo || !bTexto) return null;
             const a = lum(bTexto), b = lum(bFondo);
             return {
                 ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
                 texto: bTexto, fondo: bFondo,
+                // El ">" entra con `opacity` de 0 a 1. Medir su color mientras
+                // sigue a medio camino da un numero que no se pinta: se exige
+                // opacidad 1 (o sea, la transicion ya aterrizada) antes de
+                // creerse el ratio.
+                opacidad: parseFloat(csEl.opacity),
+                color: csEl.color,
             };
         }"""
 
@@ -462,11 +523,49 @@ def main() -> int:
             esquemas_vistos.append(esquema)
             hora = pg3.evaluate("() => new Date().getHours() + ':' + new Date().getMinutes()")
             for selector, etiqueta in PARES:
-                medida_par = pg3.evaluate(CONTRASTE_JS, selector)
+                medida_par = pg3.evaluate(CONTRASTE_JS, {"sel": selector, "pseudo": None})
                 comprobar(medida_par is not None,
                           f"se pudo medir {etiqueta} en esquema {esquema} ({selector})")
                 if medida_par is None:
                     continue
+                print(f"       {etiqueta}: {medida_par['ratio']:.2f}:1")
+                if medida_par["ratio"] < peor:
+                    peor, peor_etiqueta = medida_par["ratio"], f"{etiqueta} en esquema {esquema}"
+
+            # --- El ROCE, no solo el reposo ---------------------------------
+            # Medir solo el estado en reposo dejaba pasar el fallo que cerro
+            # esta rama: `.ficha-fila:hover .ficha-k` pintaba la clave con el
+            # ancla sobre `--cae-surface` y daba 1.46:1 de dia (14.11:1 de
+            # noche, o sea que un solo esquema tampoco lo habria visto). El
+            # gesto que el spec vende como «el prompt marcando la linea que
+            # miras» EMPEORABA la legibilidad trece horas al dia.
+            #
+            # Dos avisos ya pagados en esta fase:
+            #  - un `MouseEvent` sintetico NO dispara `:hover` (el navegador no
+            #    mueve el puntero real), asi que las reglas de roce no se
+            #    aplican y se acaba midiendo el reposo creyendo medir el roce.
+            #    Hay que usar el hover de verdad de Playwright.
+            #  - el ">" es un `::before`: se lee con el segundo argumento de
+            #    `getComputedStyle`.
+            # Que `querySelector('.ficha-fila:hover ...')` devuelva algo es la
+            # prueba de que el roce llego: si no, la medida sale None y cae.
+            pg3.locator("[data-ficha-fila]").first.hover()
+            pg3.wait_for_timeout(600)
+            PARES_ROCE = [
+                (".ficha-fila:hover .ficha-k", None, "la clave rozada"),
+                (".ficha-fila:hover .ficha-k", "::before", "el > de la clave rozada"),
+            ]
+            for selector, pseudo, etiqueta in PARES_ROCE:
+                medida_par = pg3.evaluate(CONTRASTE_JS, {"sel": selector, "pseudo": pseudo})
+                comprobar(medida_par is not None,
+                          f"el roce llego y se pudo medir {etiqueta} en esquema {esquema}")
+                if medida_par is None:
+                    continue
+                comprobar(medida_par["opacidad"] == 1,
+                          f"{etiqueta} esta aterrizado (opacidad {medida_par['opacidad']}) "
+                          f"en esquema {esquema}")
+                print(f"       {etiqueta}: {medida_par['ratio']:.2f}:1 "
+                      f"({medida_par['color']} sobre rgb{tuple(medida_par['fondo'])})")
                 if medida_par["ratio"] < peor:
                     peor, peor_etiqueta = medida_par["ratio"], f"{etiqueta} en esquema {esquema}"
             print(f"       {zona} (hora local {hora}): esquema {esquema}")
