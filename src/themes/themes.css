@@ -3704,16 +3704,19 @@
   pointer-events: none;
 }
 
-:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb img {
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb img,
+:root[data-theme="caelestia"] .cae-obra-thumb.is-sel img {
   filter: saturate(1);
 }
 
-:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb {
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb,
+:root[data-theme="caelestia"] .cae-obra-thumb.is-sel {
   outline: 2px solid var(--cae-primary);
   outline-offset: 0;
 }
 
-:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb::after {
+:root[data-theme="caelestia"] .cae-obra-card.is-sel .cae-obra-thumb::after,
+:root[data-theme="caelestia"] .cae-obra-thumb.is-sel::after {
   opacity: 0;
 }
 

@@ -1,9 +1,10 @@
 # Caelestia B3 — Obra: plan de maquetado
 
 > **Tracking: historico.** Las casillas M1-M8 de esta agenda se aprobaron una a una en el companion
-> de brainstorming durante la sesión de maquetado, pero no se ticaron en el momento — se marcan ahora
-> en bloque, no porque nadie las siguiera, sino porque el registro real de esa aprobación vive en el
-> propio `docs/superpowers/specs/2026-09-03-caelestia-obra-design.md` (que cita y resume cada
+> de brainstorming durante la sesión de maquetado, pero no se ticaron en el momento — y no se marcan
+> ahora tampoco: ticarlas en bloque falsificaria el registro en vez de completarlo, igual que
+> ticar cualquier otra casilla que nadie siguio una a una. El registro real de esa aprobación vive en
+> el propio `docs/superpowers/specs/2026-09-03-caelestia-obra-design.md` (que cita y resume cada
 > decisión de maqueta) y en el plan de implementación que le siguió,
 > `docs/superpowers/plans/2026-09-03-caelestia-obra.md`. Esta agenda queda como el registro de diseño,
 > no como plan activo.

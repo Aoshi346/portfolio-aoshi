@@ -41,6 +41,27 @@ export async function mountCaelestiaObraEditorial(
   rail.append(drawer);
 
   let seleccionado = -1;
+  let tl: ReturnType<typeof gsap.timeline> | null = null;
+
+  function refsCajon(): {
+    h3: HTMLElement | null;
+    kick: HTMLElement | null;
+    lead: HTMLElement | null;
+    foot: HTMLElement | null;
+    preview: HTMLElement | null;
+    rows: HTMLElement[];
+    blocks: HTMLElement[];
+  } {
+    return {
+      h3: drawer.querySelector<HTMLElement>("[data-cae-obra-h3]"),
+      kick: drawer.querySelector<HTMLElement>(".cae-obra-drawer-kick"),
+      lead: drawer.querySelector<HTMLElement>(".cae-obra-drawer-lead"),
+      foot: drawer.querySelector<HTMLElement>(".cae-obra-foot"),
+      preview: drawer.querySelector<HTMLElement>(".cae-obra-drawer-preview"),
+      rows: Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-drawer-meta > div")),
+      blocks: Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-prose > div")),
+    };
+  }
 
   function poblarCajon(index: number): void {
     const project = caseStudies[index];
@@ -118,13 +139,7 @@ export async function mountCaelestiaObraEditorial(
     cards[0]?.classList.add("is-sel");
     poblarCajon(0);
 
-    const h3 = drawer.querySelector<HTMLElement>("[data-cae-obra-h3]");
-    const kick = drawer.querySelector<HTMLElement>(".cae-obra-drawer-kick");
-    const lead = drawer.querySelector<HTMLElement>(".cae-obra-drawer-lead");
-    const foot = drawer.querySelector<HTMLElement>(".cae-obra-foot");
-    const preview = drawer.querySelector<HTMLElement>(".cae-obra-drawer-preview");
-    const rows = Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-drawer-meta > div"));
-    const blocks = Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-prose > div"));
+    const { h3, kick, lead, foot, preview, rows, blocks } = refsCajon();
 
     gsap.set(drawer, { opacity: 0 });
     if (h3) gsap.set(h3, { clipPath: "inset(0 100% 0 0)" });
@@ -141,15 +156,9 @@ export async function mountCaelestiaObraEditorial(
    * montar — ver Task 7.
    */
   function jugarEntrada(): void {
-    const h3 = drawer.querySelector<HTMLElement>("[data-cae-obra-h3]");
-    const kick = drawer.querySelector<HTMLElement>(".cae-obra-drawer-kick");
-    const lead = drawer.querySelector<HTMLElement>(".cae-obra-drawer-lead");
-    const foot = drawer.querySelector<HTMLElement>(".cae-obra-foot");
-    const preview = drawer.querySelector<HTMLElement>(".cae-obra-drawer-preview");
-    const rows = Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-drawer-meta > div"));
-    const blocks = Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-prose > div"));
+    const { h3, kick, lead, foot, preview, rows, blocks } = refsCajon();
 
-    const tl = gsap.timeline();
+    tl = gsap.timeline();
     tl.fromTo(
       cards,
       { opacity: 0, y: -46, rotate: (i: number) => TILTS[i] ?? 0 },
@@ -179,11 +188,17 @@ export async function mountCaelestiaObraEditorial(
   } else {
     prepararEstadoInicial();
     document.documentElement.addEventListener("caelestia:workspace", alCambiarWorkspace);
+    if (document.querySelector('[data-cae-ws="obra"][aria-current="true"]')) {
+      entrado = true;
+      jugarEntrada();
+    }
   }
 
   return {
     destroy: () => {
       document.documentElement.removeEventListener("caelestia:workspace", alCambiarWorkspace);
+      tl?.kill();
+      gsap.killTweensOf([...cards, drawer]);
       row.remove();
       drawer.remove();
     },

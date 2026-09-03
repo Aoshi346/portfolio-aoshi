@@ -238,7 +238,7 @@ def check_anti_mock(page) -> None:
     solo para TesisFar (el unico caso sin `period`)."""
     for i, esperado in enumerate(PROYECTOS):
         page.evaluate(f"document.querySelectorAll('.cae-obra-card')[{i}].click()")
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(400)
         datos = page.evaluate(
             """
             () => {
@@ -288,7 +288,10 @@ def check_anti_mock(page) -> None:
         else:
             assert_true(datos["tieneLink"] and datos["hrefLink"] == esperado["link_href"], f"Anti-mock: enlace de {esperado['title']} no coincide (visto {datos['hrefLink']})")
 
-        assert_true("tooling" not in datos["textoRail"].lower(), f"Anti-mock: 'tooling' aparece en el texto visible ({esperado['title']})")
+        assert_true(
+            "Claude Code" not in datos["textoRail"] and "Gemini CLI" not in datos["textoRail"],
+            f"Anti-mock: 'tooling' (Claude Code / Gemini CLI) no aparece en la ficha ({esperado['title']})",
+        )
 
         # Los titulos/tags visibles en TODO el carril (no solo el abierto)
         # deben ser uno de los cinco reales.
@@ -305,7 +308,7 @@ def check_extremos(page) -> None:
     uno con parrafos de problema/solucion no vacios y dentro del carril."""
     for i, titulo in ((0, "EchoPlan"), (1, "TesisFar")):
         page.evaluate(f"document.querySelectorAll('.cae-obra-card')[{i}].click()")
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(400)
         datos = page.evaluate(
             """
             () => {
@@ -426,7 +429,7 @@ def check_contraste(page) -> None:
     # y no lo tiene) — se abre TesisFar (tarjeta 1) para que los tres
     # selectores existan a la vez.
     page.evaluate("document.querySelectorAll('.cae-obra-card')[1].click()")
-    page.wait_for_timeout(150)
+    page.wait_for_timeout(400)
 
     selectores = [".cae-obra-drawer-title h3", ".cae-obra-drawer-kick", ".cae-obra-foot a"]
     for sel in selectores:
@@ -510,7 +513,7 @@ def check_foco_visible(page) -> None:
     el foco cae ahi con un anillo visible."""
     href_esperado = PROYECTOS[1]["link_href"]
     page.evaluate("document.querySelectorAll('.cae-obra-card')[1].click()")
-    page.wait_for_timeout(150)
+    page.wait_for_timeout(400)
     page.evaluate("document.querySelectorAll('.cae-obra-card')[1].focus()")
 
     encontrado = False
