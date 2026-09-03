@@ -1037,11 +1037,21 @@ def check_heading_hierarchy(page) -> None:
          encabezado real (`h1`-`h6`) — no solo un `<p class="hero-kick">` que
          parezca titulo mirandolo, sino un nodo que un lector de pantalla
          cuenta como encabezado."""
+    # Solo los encabezados REALMENTE expuestos. El DOM es compartido por los
+    # tres temas y cada uno oculta el titular de los otros con `display: none`
+    # en un ancestro: ese nodo no esta en el arbol de accesibilidad, no lo lee
+    # un lector de pantalla y no lo indexa un crawler. Contarlo daba "2 h1"
+    # en Vice/Hyprland/Caelestia por igual — un fallo del instrumento, no del
+    # diseno: medido, en los tres temas se pinta exactamente uno.
+    # `getClientRects()` vacio distingue `display: none` de "fuera de pantalla"
+    # (un encabezado que hay que desplazar para ver SI tiene rects).
     headings = page.evaluate(
-        """() => Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6')).map((h) => ({
-          level: Number(h.tagName[1]),
-          text: (h.textContent || '').trim().slice(0, 40),
-        }))"""
+        """() => Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6'))
+          .filter((h) => h.getClientRects().length > 0)
+          .map((h) => ({
+            level: Number(h.tagName[1]),
+            text: (h.textContent || '').trim().slice(0, 40),
+          }))"""
     )
     check(len(headings) > 0, "hay encabezados en el documento")
 

@@ -752,7 +752,7 @@ en cada encuadre (canto visible dentro de la pantalla en móvil, no cubriendo to
 (comparación visual — no se tocó código de esos temas, así que es una confirmación, no se espera
 diferencia).
 
-- [ ] **Step 6: Parar el preview server**
+- [x] **Step 6: Parar el preview server** <!-- verificado 2026-09-03: no queda ningun `vite preview` de esta fase vivo -->
 
 ```bash
 kill %1 2>/dev/null || true
@@ -792,7 +792,7 @@ o `npm run dev` si el subagente lo prefiere — seguir su memoria en
 Invocar el subagente `vera-art-director` sobre el mismo sitio. Documentar el resultado (score,
 BLOCK/PASS) tal como se hizo para Vice en el spec de referencia.
 
-- [ ] **Step 3: Cerrar el spec**
+- [x] **Step 3: Cerrar el spec** <!-- verificado 2026-09-03: el spec dice `Estado: implementado` y lleva `## Registro de implementacion` -->
 
 En `docs/superpowers/specs/2026-08-19-hyprland-fondo-haz-design.md`:
 - Cambiar `Estado: pendiente de plan` a `Estado: implementado`.
@@ -800,12 +800,12 @@ En `docs/superpowers/specs/2026-08-19-hyprland-fondo-haz-design.md`:
   prototipo (si algo se desvió en Task 4), resultados de los 5 gates de `measure-fondo-haz.py`, y
   el resultado de los gates `lidia`/`vera`.
 
-- [ ] **Step 4: `PROGRESS.json` a `completed`**
+- [!] **Step 4: `PROGRESS.json` a `completed`** <!-- NO SE HIZO. Verificado 2026-09-03: no hay ni un commit de PROGRESS.json entre el 18 y el 22-ago. Ya no puede hacerse: el fichero es uno por sesion y lo han reutilizado las sesiones posteriores (hoy guarda la fase A de Caelestia); reescribirlo con esta fase corromperia el estado vigente. Se deja escrito en vez de ticado en falso. -->
 
 Marcar todos los items del checklist como `done: true`, `status: "completed"`,
 `completedAt` con timestamp ISO.
 
-- [ ] **Step 5: Commit final**
+- [x] **Step 5: Commit final** <!-- verificado 2026-09-03: el cierre del spec esta commiteado en main -->
 
 ```bash
 git add docs/superpowers/specs/2026-08-19-hyprland-fondo-haz-design.md PROGRESS.json
