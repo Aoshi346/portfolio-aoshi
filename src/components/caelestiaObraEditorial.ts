@@ -97,13 +97,18 @@ export async function mountCaelestiaObraEditorial(
     });
   });
 
-  if (reduce) {
-    abrir(0);
-  } else {
-    entrarConCaida();
-  }
+  let entrado = false;
 
-  function entrarConCaida(): void {
+  /**
+   * Deja la fila y el cajon en el estado de "listos pero ocultos" (tarjetas
+   * arriba, giradas, cajon invisible) y puebla la tarjeta 0 como
+   * seleccionada — igual que hacia `entrarConCaida()` antes de tocar el
+   * timeline. Se llama una vez al montar (Obra esta fuera de pantalla e
+   * `inert` en ese momento: la escena por defecto es Titulo) para que la
+   * caida tenga algo que animar la primera vez que el visitante navegue de
+   * verdad a Obra, en vez de jugarse y asentarse mientras nadie mira.
+   */
+  function prepararEstadoInicial(): void {
     cards.forEach((card, index) => {
       const tilt = TILTS[index] ?? 0;
       gsap.set(card, { opacity: 0, y: -46, rotate: tilt, transformOrigin: "50% 0%" });
@@ -127,6 +132,22 @@ export async function mountCaelestiaObraEditorial(
     if (preview) gsap.set(preview, { opacity: 0, scale: 0.94 });
     gsap.set(rows, { opacity: 0, y: 8 });
     gsap.set(blocks, { opacity: 0, y: 8 });
+  }
+
+  /**
+   * La animacion de la caida en si: cinco tarjetas cayendo con rotacion y
+   * rebote, luego el cajon en cuatro capas. Se dispara solo al llegar de
+   * verdad a la escena de Obra (evento `caelestia:workspace`), no al
+   * montar — ver Task 7.
+   */
+  function jugarEntrada(): void {
+    const h3 = drawer.querySelector<HTMLElement>("[data-cae-obra-h3]");
+    const kick = drawer.querySelector<HTMLElement>(".cae-obra-drawer-kick");
+    const lead = drawer.querySelector<HTMLElement>(".cae-obra-drawer-lead");
+    const foot = drawer.querySelector<HTMLElement>(".cae-obra-foot");
+    const preview = drawer.querySelector<HTMLElement>(".cae-obra-drawer-preview");
+    const rows = Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-drawer-meta > div"));
+    const blocks = Array.from(drawer.querySelectorAll<HTMLElement>(".cae-obra-prose > div"));
 
     const tl = gsap.timeline();
     tl.fromTo(
@@ -143,8 +164,26 @@ export async function mountCaelestiaObraEditorial(
       .to(blocks, { opacity: 1, y: 0, duration: 0.26, ease: "power2.out", stagger: 0.08 }, "-=.12");
   }
 
+  const alCambiarWorkspace = (evento: Event): void => {
+    if (entrado) return;
+    if (!(evento instanceof CustomEvent)) return;
+    const detalle: unknown = evento.detail;
+    if (typeof detalle !== "object" || detalle === null || !("id" in detalle)) return;
+    if ((detalle as { id: unknown }).id !== "obra") return;
+    entrado = true;
+    jugarEntrada();
+  };
+
+  if (reduce) {
+    abrir(0);
+  } else {
+    prepararEstadoInicial();
+    document.documentElement.addEventListener("caelestia:workspace", alCambiarWorkspace);
+  }
+
   return {
     destroy: () => {
+      document.documentElement.removeEventListener("caelestia:workspace", alCambiarWorkspace);
       row.remove();
       drawer.remove();
     },
