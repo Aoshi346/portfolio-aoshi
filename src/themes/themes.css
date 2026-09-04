@@ -4552,6 +4552,131 @@
 }
 
 /*
+ * Fase B4 — Creditos deja de ser el reparto de parcelas y pasa a ser la
+ * bandeja del gestor de paquetes. El DOM generico de `credits.ts` (parcelas,
+ * frisos, panel, rodillo) no sirve aqui: se oculta entero y
+ * `caelestiaCreditosBandeja.ts` construye su propio arbol leyendo
+ * `skillGroups` directamente, igual que hizo B3 con la Editorial. Ese fichero
+ * lo comparten los tres temas y NO se bifurca.
+ */
+:root[data-theme="caelestia"] .credits-grid {
+  display: none;
+}
+
+/* La seccion trae `px-6 py-24`, `min-h-screen` y `flex` del marcado
+   compartido (`src/sections/skills.ts`). Sin neutralizarlo, el aire que se
+   mide no es el de la bandeja: es el de la maquetacion que esta fase viene a
+   sustituir, y el gate 1 (sin scroll interno) no se puede cerrar — mismo
+   patron que resolvio B2 para `about`. */
+:root[data-theme="caelestia"] [data-scene="credits"] {
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  display: block;
+}
+
+/* El `<h2>Con que construyo</h2>` NO se retira del DOM: es el UNICO
+   encabezado accesible de la escena, y `scripts/verify.py` exige uno real por
+   `[data-scene]`. Se esconde con el patron VISUALMENTE OCULTO — ni
+   `display: none` ni `visibility: hidden`, que sacan el nodo del arbol de
+   accesibilidad. La clase la pone `themes.css`, nunca el marcado:
+   `.hero-kick` es compartida por los tres temas y darsela en el DOM la
+   esconderia tambien en Vice e Hyprland. Mismo patron que B2 uso para
+   `[data-scene="about"] .hero-kick`. */
+:root[data-theme="caelestia"] [data-scene="credits"] .hero-kick {
+  @apply sr-only;
+}
+
+:root[data-theme="caelestia"] .cae-cred-wrap {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+
+:root[data-theme="caelestia"] .cae-cred-cab {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 18px;
+  align-items: center;
+  height: 96px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--cae-outline);
+}
+
+/* Cuatro bandas de la MISMA altura. Con `space-between` sobre cajas de altura
+   distinta el aire salia desigual y la bandeja volvia a leerse suelta. */
+:root[data-theme="caelestia"] .cae-cred-grid {
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  min-height: 0;
+}
+
+:root[data-theme="caelestia"] .cae-cred-banda {
+  display: grid;
+  grid-template-columns: 158px 1fr;
+  gap: 0 22px;
+  align-items: center;
+  padding-bottom: 14px;
+}
+
+/* El rotulo va al centro vertical de SU banda y a bandera derecha contra el
+   canto de la calle, para que los cuatro caigan sobre el mismo eje. */
+:root[data-theme="caelestia"] .cae-cred-rot {
+  text-align: right;
+  align-self: center;
+}
+
+:root[data-theme="caelestia"] .cae-cred-tira {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(8, 142px);
+  align-items: end;
+  justify-items: center;
+  padding-top: 8px;
+}
+
+/* El filete llega solo hasta la ultima pieza de la banda. */
+:root[data-theme="caelestia"] .cae-cred-banda:not(:last-child) .cae-cred-tira::after {
+  content: "";
+  position: absolute;
+  bottom: -14px;
+  left: 0;
+  height: 1px;
+  width: calc(var(--piezas) * 142px);
+  background: var(--cae-outline);
+}
+
+:root[data-theme="caelestia"] .cae-cred-pieza {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 0;
+}
+
+:root[data-theme="caelestia"] .cae-cred-fig {
+  clip-path: var(--fig);
+  display: grid;
+  place-items: center;
+  /* Relleno en `--cae-outline`: `--cae-surface-container` es EXACTAMENTE
+     `--cae-elev-1`, el fondo de la ventana, asi que rellenar con el borra la
+     figura. Lo mismo vale para apagarla: se apaga la tinta, nunca el fondo. */
+  background: var(--cae-outline);
+}
+
+:root[data-theme="caelestia"] .cae-cred-pieza:focus-visible {
+  outline: 2px solid var(--cae-anchor);
+  outline-offset: 5px;
+  border-radius: 10px;
+}
+
+/*
  * La barra del shell: marca, pastillas de workspace y bandeja de estado.
  * `--cae-elev-1`/`--cae-elev-2` (Tarea 2) las pinta por primera vez de verdad.
  */
