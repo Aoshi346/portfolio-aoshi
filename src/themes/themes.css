@@ -3529,6 +3529,34 @@
      `font-mono` de Tailwind filtran `ui-monospace`. */
   --font-mono: "Martian Mono", ui-monospace, monospace;
 
+  /*
+   * La escala tipografica, los MISMOS diez pasos que Vice y Hyprland: cuarta,
+   * razon 1,333, base 16, suelo duro 12.
+   *
+   * NO estaba declarada para Caelestia, y esa es la razon de que el tema
+   * escribiera catorce tamanos a pelo en px: `var(--t-N)` no resolvia a nada,
+   * asi que usarla era imposible. El defecto se documento en la fase B5 como
+   * «14 de los 16 tamanos no salen de la escala»; esta es su causa.
+   *
+   * Comprobado al declararla: ninguna regla de Caelestia anterior a B5 consume
+   * `var(--t-N)`, asi que anadir los tokens no mueve un solo pixel de lo ya
+   * pintado — solo hace posible dejar de escribir literales.
+   *
+   * Las dos reglas de la escala valen aqui igual que en los otros dos temas:
+   *   1. Todo clamp() lleva LOS DOS extremos en pasos de esta escala.
+   *   2. Maximo cuatro tamanos por encuadre.
+   */
+  --t-1: 12px;
+  --t-2: 16px;
+  --t-3: 21.33px;
+  --t-4: 28.43px;
+  --t-5: 37.9px;
+  --t-6: 50.52px;
+  --t-7: 67.4px;
+  --t-8: 89.85px;
+  --t-9: 119.77px;
+  --t-10: 159.66px;
+
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
   --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
   /*
@@ -4564,6 +4592,290 @@
 
   :root[data-theme="caelestia"] .ficha-punto {
     animation: none;
+  }
+}
+
+/*
+ * ===================================================================
+ * FUNDIDO (fase B5) — la contraportada del escritorio
+ *
+ * Es la UNICA de las cinco escenas que invierte a un campo de color: las
+ * otras cuatro son ventanas de aplicacion sobre el escritorio, esta es una
+ * superficie `--cae-primary` a sangre. Eso es lo que la hace legible como
+ * final sin que nadie lo explique.
+ *
+ * La excepcion al panel opaco generico de la fase A es deliberada, igual que
+ * la de `[data-scene="hero"]`, y esta acotada a esta escena.
+ * ===================================================================
+ */
+:root[data-theme="caelestia"] main[data-cae-track] > [data-scene="contacto"] {
+  background: var(--cae-primary);
+  color: var(--cae-on-primary);
+}
+
+/*
+ * El atenuado del cierre. UN NUMERO CALIBRADO CONTRA UNA SUPERFICIE, no un
+ * porcentaje suelto: 0,82 sobre `--cae-primary` da 4,80:1 en el peor de los
+ * 288 pasos del dia. A 0,72 caia a 4,08:1 y no llegaba a AA; el suelo exacto
+ * esta en 0,78 (4,50:1, sin margen).
+ *
+ * SI ESTO SE REUTILIZA SOBRE OTRA SUPERFICIE, HAY QUE VOLVER A MEDIRLO. Una
+ * opacidad es un porcentaje de un fondo concreto: llevarse el numero es no
+ * llevarse nada. Misma regla que `--nav-dim`.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] {
+  --fundido-dim: 0.82;
+  display: flex;
+  flex-direction: column;
+  padding: 2.125rem 3.25rem 1.875rem;
+  min-height: 0;
+}
+
+/* El antetitulo y el estado se apagan: en la contraportada el rotulo de
+   seccion lo lleva la esquina, y el estado baja al pie. */
+:root[data-theme="caelestia"] [data-scene="contacto"] .hero-kick,
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado-label,
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado-sep {
+  display: none;
+}
+
+/*
+ * EL TITULAR DE CIERRE. `--t-10` no sale a ojo: la linea larga mide 530 px
+ * sobre un hueco libre de 858, asi que el techo no lo pone el troquel — lo
+ * decide la ocupacion. A `--t-8` la frase flota en el campo de color.
+ *
+ * Un PASO de la escala, nunca un `clamp()` ni un `vw`: una funcion continua
+ * devuelve cualquier real entre sus topes y se esconde justo en 390 y 1440,
+ * que es donde se mira.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-variation-settings: var(--cae-display-axes-cierre);
+  font-size: var(--t-10);
+  line-height: 0.88;
+  letter-spacing: -0.028em;
+  margin: 0;
+  max-width: 48.75rem;
+}
+
+/* «Hablemos» desaparece: el titular de la escena es la invitacion, y dos
+   titulares seguidos se estorban. El `h2` sigue en el arbol para los lectores
+   de pantalla — se oculta visualmente, no semanticamente. */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * `position: relative` NO es decorativo: el troquel de la tarea siguiente es
+ * absoluto y necesita un ancestro posicionado. Sin esto se colocaria contra la
+ * seccion, que lleva la clase `relative` de Tailwind desde `contacto.ts` —
+ * funcionaria por accidente y se romperia el dia que alguien quitase esa clase.
+ *
+ * Y `flex-direction: column` tampoco: sin ella la banda apila en FILA, que es
+ * el valor por defecto, y el titular y el estado quedan uno al lado del otro.
+ * A 1440 solo se ve raro; a 390 no hay sitio y «Disponible» se sale 37 px por
+ * la derecha. Lo cazo la comprobacion de desborde, que mide palabra a palabra.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+  min-height: 0;
+}
+
+/* ---------- el pie de imprenta ---------- */
+
+/*
+ * LOS CUATRO CANALES SE AGRUPAN CON `order`, NO CON ENVOLTORIOS. En el DOM
+ * siguen en el orden de `contactChannels` — correo, LinkedIn, telefono,
+ * GitHub — porque envolverlos reordenaria las barras tambien en Vice, que
+ * esta cerrado. Aqui los dos actos se van delante y los dos destinos detras
+ * sin que el arbol cambie: el orden de lectura de un lector de pantalla sigue
+ * siendo el del DOM, que es el orden en el que estan escritos los datos.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3.5rem;
+  border-top: 1px solid currentColor;
+  padding-top: 1.125rem;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+  order: 1;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+  order: 2;
+}
+
+/*
+ * El primer destino empuja la pareja al canto derecho. Es `:nth-child(2)`
+ * porque LinkedIn es el segundo canal de `contactChannels`; si algun dia se
+ * anade un canal antes que el, esta regla deja de ser cierta y el colofon se
+ * queda pegado a los actos — visible al instante, no silencioso.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"]:nth-child(2) {
+  margin-left: auto;
+}
+
+/* Entre los dos destinos el aire es menor que entre los actos: son una pareja,
+   no dos columnas. El `gap` general los separaria igual que a los grandes. */
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] + [data-canal="destino"] {
+  margin-left: -1.75rem;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar {
+  text-decoration: none;
+  color: inherit;
+  border-radius: 0.5rem;
+}
+
+/*
+ * EL ACTO VALE EL DOBLE QUE EL DESTINO, y se puede medir: 85 px de alto contra
+ * 42. `mailto:` y `tel:` disparan una aplicacion del aparato y siguen
+ * sirviendo sin red; los externos abren una pestana y la necesitan. Cuatro
+ * columnas iguales dirian que los cuatro son intercambiables, que es falso.
+ *
+ * El relleno con margen negativo agranda el blanco SIN mover el texto.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+  display: block;
+  padding: 0.625rem 0.875rem 0.75rem;
+  margin: -0.625rem -0.875rem -0.75rem;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] .contacto-bar-value {
+  display: block;
+  font-size: var(--t-4);
+  margin-top: 0.4375rem;
+  letter-spacing: -0.005em;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5625rem;
+  padding: 0.5625rem 0.75rem;
+  margin: -0.5625rem -0.75rem;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] .contacto-bar-value {
+  font-size: var(--t-2);
+  letter-spacing: -0.005em;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar-label {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: var(--fundido-dim);
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] .contacto-bar-label {
+  display: block;
+}
+
+/* La marca de la barra es de la carta de ajuste de Vice; aqui no pinta nada. */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar-mark {
+  display: none;
+}
+
+/*
+ * EL ESTADO VA BAJO EL COLOFON, y en el DOM compartido vive DENTRO de
+ * `.contacto-band`, encima de las barras. Quien lo mueve es
+ * `caelestia.fundido.ts` al montar (Task 5), no `contacto.ts`: moverlo en el
+ * marcado cambiaria el orden de lectura en los tres temas.
+ *
+ * Hasta que la Task 5 exista, este bloque lo pinta donde este. Es correcto que
+ * en la captura de la Task 4 aparezca todavia bajo el titular.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado {
+  margin: 1rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  font-family: var(--font-mono);
+  font-size: 0.59375rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: var(--fundido-dim);
+}
+
+/* ---------- 390 px ----------
+ * Un PASO distinto, no una funcion. El techo lo pone el ancho y esta medido
+ * con `Range`, palabra a palabra, sobre el build: a 89,85 px «Cuentame» mide
+ * 330 sobre una medida util de 322 y se sale 32 px; a 67,4 px mide 248 y
+ * sobran 50. La jerarquia de M4 se conserva; lo que cambia es que en vertical
+ * los actos son FILAS ENTERAS — a 390 el ancho es el recurso escaso, y un
+ * acto que ocupa todo el ancho es el blanco mas facil que hay.
+ */
+@media (max-width: 40rem) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] {
+    padding: 1.25rem 1.25rem 1.125rem;
+  }
+
+  /*
+   * `--t-7`, no `--t-8`. El paso lo decide el ANCHO y esta medido con `Range`
+   * sobre el build, palabra a palabra: a 89,85 px «Cuentame» mide 330 sobre una
+   * medida util de 322 y se sale 32 px; a 67,4 mide 248 y sobran 50. La maqueta
+   * de diseno dio 299 y se equivoco — copiar los tokens no es ser el build.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    font-size: var(--t-7);
+  }
+
+  /*
+   * En vertical los actos son FILAS ENTERAS y los destinos se reparten la
+   * ultima a mitades.
+   *
+   * REJILLA, NO FLEX. Con flex, `flex-basis: 100%` aqui se resuelve como si
+   * fuera `auto` —medido: el acto salia de 274 px, su contenido, en vez de los
+   * 322 del contenedor— asi que no ocupaba la fila y nada se apilaba.
+   * `grid-column: 1 / -1` dice «fila entera» y no depende de que un porcentaje
+   * se resuelva contra un ancho que el motor considera indefinido. La rejilla
+   * respeta `order`, asi que el agrupamiento sin envoltorios sigue en pie.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: 0.25rem 0.625rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] .contacto-bar-value {
+    font-size: var(--t-3);
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+    grid-column: span 1;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"]:nth-child(2) {
+    margin-left: 0;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] + [data-canal="destino"] {
+    margin-left: 0;
   }
 }
 
