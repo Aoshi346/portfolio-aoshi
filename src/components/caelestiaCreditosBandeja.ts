@@ -142,8 +142,67 @@ export async function mountCaelestiaCreditosBandeja(
 
   pintarFicha(piezas[0]);
 
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const botones = Array.from(
+    escena.querySelectorAll<HTMLButtonElement>(".cae-cred-pieza"),
+  );
+  const grid = escena.querySelector<HTMLElement>(".cae-cred-grid");
+  let elegida = piezas[0].name;
+
+  function elegir(nombrePieza: string): void {
+    if (elegida === nombrePieza) return;
+    const p = piezas.find((x) => x.name === nombrePieza);
+    if (!p) return;
+    elegida = nombrePieza;
+    pintarFicha(p);
+    for (const b of botones) {
+      b.setAttribute("aria-pressed", String(b.dataset.pieza === nombrePieza));
+    }
+    if (reduce) return;
+    // La cabecera se releva con barridos de clip-path: nada se desvanece, todo
+    // se recorta. Es la ley de seccion heredada del cartel.
+    gsap.fromTo(
+      [nombre, detalle, territorio, cruceLista],
+      { clipPath: "inset(0px 100% 0px 0px)" },
+      {
+        clipPath: "inset(0px 0% 0px 0px)",
+        duration: 0.22,
+        stagger: 0.03,
+        ease: "power2.out",
+      },
+    );
+    gsap.fromTo(
+      marca,
+      { clipPath: "circle(0% at 50% 50%)" },
+      { clipPath: figuraDe(p.slug), duration: 0.26, ease: "power2.out" },
+    );
+  }
+
+  // Rozar elige: no hace falta pulsar. Clic y foco hacen lo mismo, para que el
+  // teclado llegue adonde llega el raton.
+  const escuchas: Array<() => void> = [];
+  for (const b of botones) {
+    const nombrePieza = b.dataset.pieza ?? "";
+    const entrar = (): void => {
+      grid?.classList.add("is-tocando");
+      elegir(nombrePieza);
+    };
+    const salir = (): void => grid?.classList.remove("is-tocando");
+    b.addEventListener("mouseenter", entrar);
+    b.addEventListener("focus", entrar);
+    b.addEventListener("click", entrar);
+    b.addEventListener("blur", salir);
+    escuchas.push(() => {
+      b.removeEventListener("mouseenter", entrar);
+      b.removeEventListener("focus", entrar);
+      b.removeEventListener("click", entrar);
+      b.removeEventListener("blur", salir);
+    });
+  }
+
   return {
     destroy: () => {
+      for (const off of escuchas) off();
       gsap.killTweensOf(escena.querySelectorAll("*"));
       wrap.remove();
     },

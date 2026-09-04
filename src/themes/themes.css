@@ -4592,6 +4592,11 @@
   display: grid;
   grid-template-rows: auto 1fr;
   min-height: 0;
+  /* La seccion vive con `padding: 0` (neutraliza el `py-24 px-6` compartido);
+     el aire de la ventana lo reserva el envoltorio, no la escena. Medida de
+     la maqueta aprobada: `docs/superpowers/specs/2026-09-03-caelestia-
+     creditos-maqueta.html:101`, regla `.m5-scene`. */
+  padding: 48px;
 }
 
 :root[data-theme="caelestia"] .cae-cred-cab {
@@ -4790,6 +4795,33 @@
 :root[data-theme="caelestia"] .cae-cred-cruce-lista li.is-vacia {
   font-size: 21px;
   color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-fig {
+  clip-path: var(--fig-suave);
+  background: var(--cae-primary);
+  transform: scale(1.07);
+}
+
+:root[data-theme="caelestia"] .cae-cred-fig {
+  transition:
+    clip-path 0.22s ease,
+    transform 0.22s ease,
+    background 0.22s ease;
+}
+
+/* Las demas bajan su TINTA, nunca su fondo: `--cae-surface-container` es
+   exactamente `--cae-elev-1`, el fondo de la ventana, asi que apagar el relleno
+   borra las figuras en vez de atenuarlas. */
+:root[data-theme="caelestia"] .cae-cred-grid.is-tocando
+  .cae-cred-pieza:not([aria-pressed="true"]) figcaption {
+  color: var(--cae-on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-cred-fig {
+    transition: none;
+  }
 }
 
 /*

@@ -156,6 +156,30 @@ def gate_cruce(pagina) -> None:
     )
 
 
+def gate_seleccion(pagina) -> None:
+    """Rozar ELIGE, sin pulsar, y el teclado llega a lo mismo que el raton.
+
+    Se comprueba con `hover()` real de Playwright, NO con un MouseEvent
+    sintetico: un evento fabricado no dispara `:hover`, asi que un gate escrito
+    asi da verde con el hover roto. Ya paso en B2."""
+    print("[7] rozar elige, y el foco hace lo mismo")
+    antes = pagina.eval_on_selector(".cae-cred-nombre", "e=>e.textContent")
+    pagina.hover('.cae-cred-pieza[data-pieza="Git"]')
+    pagina.wait_for_timeout(700)
+    tras_rozar = pagina.eval_on_selector(".cae-cred-nombre", "e=>e.textContent")
+    check(tras_rozar == "Git" and antes != tras_rozar, f"rozar releva la ficha ({tras_rozar})")
+
+    marcadas = pagina.eval_on_selector_all(
+        '.cae-cred-pieza[aria-pressed="true"]', "es=>es.map(e=>e.dataset.pieza)"
+    )
+    check(marcadas == ["Git"], f"solo la elegida lleva aria-pressed ({marcadas})")
+
+    pagina.eval_on_selector('.cae-cred-pieza[data-pieza="Python"]', "e=>e.focus()")
+    pagina.wait_for_timeout(700)
+    tras_foco = pagina.eval_on_selector(".cae-cred-nombre", "e=>e.textContent")
+    check(tras_foco == "Python", f"el foco releva la ficha ({tras_foco})")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -178,6 +202,7 @@ def main() -> int:
         gate_rotulos(pagina)
         gate_piezas(pagina)
         gate_cruce(pagina)
+        gate_seleccion(pagina)
 
         print("[0] consola")
         check(not errores, f"cero errores de consola ({errores[:3]})")
