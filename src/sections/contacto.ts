@@ -24,6 +24,16 @@ function createBar(channel: ContactChannel): HTMLAnchorElement {
     bar.target = "_blank";
     bar.rel = "noopener noreferrer";
   }
+
+  /*
+   * Acto o destino. NO es una etiqueta nueva en `content.ts`: se deriva del
+   * esquema del `href` que ya existe. `mailto:` y `tel:` disparan una
+   * aplicacion del aparato y siguen sirviendo sin red; los externos abren una
+   * pestana y la necesitan. Caelestia dimensiona cada grupo distinto con esto
+   * (fase B5); Vice y Hyprland lo ignoran.
+   */
+  const esquema = channel.href.split(":")[0];
+  bar.dataset.canal = esquema === "mailto" || esquema === "tel" ? "acto" : "destino";
   return bar;
 }
 
@@ -36,10 +46,16 @@ export function createContacto(): HTMLElement {
     el("span", "contacto-estado-value", [identity.availability]),
   ]);
 
+  // El titular de cierre de Caelestia (B5) se parte en lineas para trazarlas
+  // una a una, y eso lo hace `caelestia.fundido.ts` en el navegador. Aqui solo
+  // queda el gancho: el texto sigue siendo el mismo literal de `content.ts`.
+  const lead = el("p", "contacto-lead", [identity.invitation]);
+  lead.setAttribute("data-fundido-lead", "");
+
   const band = el("div", "contacto-band", [
     el("p", "hero-kick", ["Contacto"]),
     el("h2", "contacto-title display-xl", ["Hablemos"]),
-    el("p", "contacto-lead", [identity.invitation]),
+    lead,
     estado,
   ]);
 
