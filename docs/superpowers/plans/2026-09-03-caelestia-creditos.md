@@ -84,7 +84,7 @@ estado actual**; un gate que nace verde no sirve para nada.
   algo falla, e imprime una línea `OK`/`FAIL` por aserción. Mismo contrato que
   `scripts/measure-caelestia-obra.py`.
 
-- [ ] **Paso 1: levantar el build servido y comprobar de quién es el puerto**
+- [x] **Paso 1: levantar el build servido y comprobar de quién es el puerto**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -96,7 +96,7 @@ ss -ltnp | grep ':4173'                      # anota el pid
 readlink /proc/<pid>/cwd                     # tiene que ser este repo, no un worktree borrado
 ```
 
-- [ ] **Paso 2: escribir el arnés con los gates 1 y 3**
+- [x] **Paso 2: escribir el arnés con los gates 1 y 3**
 
 Crea `scripts/measure-caelestia-creditos.py`:
 
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Paso 3: correrlo y ver que da ROJO**
+- [x] **Paso 3: correrlo y ver que da ROJO**
 
 ```bash
 python3 scripts/measure-caelestia-creditos.py --base http://localhost:4173
@@ -214,7 +214,7 @@ Salida con código 1.
 Si el gate 1 sale verde, algo va mal: o no estás en la escena de créditos, o estás midiendo un
 `vite preview` huérfano. Vuelve al paso 1.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add scripts/measure-caelestia-creditos.py
@@ -241,7 +241,7 @@ dividir por `rmax` **es redundante** si después se encaja normalizando el vano 
 desviación punto a punto entre hacerlo y no hacerlo es de `4.4e-16`, error de coma flotante. Así
 que al runtime le bastan `(tipo, n, a)` por figura: 23 filas, menos de 1 KB en el bundle.
 
-- [ ] **Paso 1: comprobar que la tabla del Paso 2 es la que sale del generador**
+- [x] **Paso 1: comprobar que la tabla del Paso 2 es la que sale del generador**
 
 La tabla ya está escrita abajo. Este paso no la produce: la **verifica**, porque una tabla copiada
 a mano se desincroniza en silencio. El despeje por bisección vive en el generador del repo:
@@ -269,7 +269,7 @@ abajo dejo de ser valida. Salida esperada del generador antes del JSON:
 OK · 23 figuras · encajan exactas en su caja (dos ejes) · area dispersion 0.00% · relieve minimo 9.2% · deformacion peor x1.126 · radio inscrito 0.68..0.91
 ```
 
-- [ ] **Paso 2: escribir `src/utils/figurasM3.ts`**
+- [x] **Paso 2: escribir `src/utils/figurasM3.ts`**
 
 ```ts
 /**
@@ -421,7 +421,7 @@ export function radioInscritoDe(slug: string): number {
 }
 ```
 
-- [ ] **Paso 3: comprobar que el TypeScript reproduce al generador punto a punto**
+- [x] **Paso 3: comprobar que el TypeScript reproduce al generador punto a punto**
 
 No basta con que compile: tiene que dar **las mismas coordenadas**.
 
@@ -460,12 +460,12 @@ Esperado: `OK · 23 figuras · 240 vertices · identicas al generador`.
 Si `npx tsx` no está disponible, instálalo como dependencia de desarrollo
 (`npm i -D tsx`) — es una dependencia de proyecto y no requiere permiso.
 
-- [ ] **Paso 4: verlo dar rojo**
+- [x] **Paso 4: verlo dar rojo**
 
 Cambia a mano una amplitud de `AMPLITUDES` (por ejemplo `react.a` a `0.9`) y vuelve a correr el
 paso 3. Esperado: `AssertionError: el TypeScript NO reproduce al generador`. Deshaz el cambio.
 
-- [ ] **Paso 5: build, lint y commit**
+- [x] **Paso 5: build, lint y commit**
 
 ```bash
 npm run build && npm run lint
@@ -495,7 +495,7 @@ CSS no se puede medir, y el CSS sin cableado no llega a la página.
     `.cae-cred-nombre`, `.cae-cred-detalle`, `.cae-cred-terr`, `.cae-cred-cruce`, `.cae-cred-grid`,
     `.cae-cred-banda`, `.cae-cred-rot`, `.cae-cred-tira`, `.cae-cred-pieza`, `.cae-cred-fig`.
 
-- [ ] **Paso 1: añadir al arnés el gate 2 (las 23 dentro de la caja)**
+- [x] **Paso 1: añadir al arnés el gate 2 (las 23 dentro de la caja)**
 
 Añade a `scripts/measure-caelestia-creditos.py`, y llámalo desde `main()` después de `gate_rotulos`:
 
@@ -531,7 +531,7 @@ def gate_piezas(pagina) -> None:
     check(len(m["lados"]) == 1, f"un solo lado en todo el DOM ({m['lados']})")
 ```
 
-- [ ] **Paso 2: correr el arnés y ver el gate 2 en rojo**
+- [x] **Paso 2: correr el arnés y ver el gate 2 en rojo**
 
 ```bash
 python3 scripts/measure-caelestia-creditos.py --base http://localhost:4173
@@ -539,7 +539,7 @@ python3 scripts/measure-caelestia-creditos.py --base http://localhost:4173
 
 Esperado: `FAIL 23 piezas pintadas (0)` — la clase todavía no existe.
 
-- [ ] **Paso 3: escribir el componente**
+- [x] **Paso 3: escribir el componente**
 
 Crea `src/components/caelestiaCreditosBandeja.ts`. La maqueta viva
 (`docs/superpowers/specs/2026-09-03-caelestia-creditos-maqueta.html`) tiene el árbol exacto; esto es
@@ -700,7 +700,7 @@ export async function mountCaelestiaCreditosBandeja(
 }
 ```
 
-- [ ] **Paso 4: el CSS**
+- [x] **Paso 4: el CSS**
 
 Añade al final del bloque `:root[data-theme="caelestia"]` de `src/themes/themes.css`. Copia los
 valores de la maqueta rescatada; esto es lo mínimo que cierran los gates 1–3:
@@ -808,7 +808,32 @@ valores de la maqueta rescatada; esto es lo mínimo que cierran los gates 1–3:
 }
 ```
 
-- [ ] **Paso 5: cablear en `src/main.ts`**
+**Corrección ejecutada, ausente de este snippet (documentada en `task-3-report.md`):** el CSS de
+arriba por sí solo no cierra el gate 1. La escena `[data-scene="credits"]` hereda de
+`src/sections/skills.ts` (compartido por los tres temas) `min-h-screen flex flex-col justify-center
+px-6 py-24 md:px-12`, que es el aire de la maquetación vieja que esta fase viene a sustituir. Sin
+neutralizarlo el gate 1 mide ese aire, no la bandeja — el mismo patrón que ya resolvió B2 en
+`[data-scene="about"]` (`themes.css:4197`). El implementador añadió, en el mismo bloque:
+
+```css
+:root[data-theme="caelestia"] [data-scene="credits"] {
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  display: block;
+}
+
+:root[data-theme="caelestia"] [data-scene="credits"] .hero-kick {
+  @apply sr-only;
+}
+```
+
+Nunca `display: none`/`visibility: hidden` en el `.hero-kick`: sacan el `<h2>` del árbol de
+accesibilidad y rompen la aserción de `scripts/verify.py` de que toda escena `[data-scene]` lleva un
+encabezado real. La clase se da desde `themes.css`, no desde el marcado, porque `.hero-kick` la
+comparten Vice e Hyprland.
+
+- [x] **Paso 5: cablear en `src/main.ts`**
 
 Junto al montaje de la Editorial (alrededor de la línea 161), con el mismo patrón:
 
@@ -831,7 +856,7 @@ Y en el `pagehide`, junto a `caeObraHandle?.destroy();`:
     caeCreditosHandle?.destroy();
 ```
 
-- [ ] **Paso 6: build y volver a medir — los tres gates en verde**
+- [x] **Paso 6: build y volver a medir — los tres gates en verde**
 
 ```bash
 npm run build && npm run lint
@@ -843,7 +868,7 @@ Esperado: OK en `sin scroll vertical (748 / 748)`, `cuatro rotulos pintados (4 d
 `23 piezas pintadas (23)`, `ninguna fuera de la caja (0)`, `un solo lado en todo el DOM (['88px'])`
 y `cero errores de consola`.
 
-- [ ] **Paso 7: captura real, no sólo números**
+- [x] **Paso 7: captura real, no sólo números**
 
 ```bash
 python3 -c "
@@ -863,7 +888,7 @@ with sync_playwright() as p:
 Ábrela. Los números pueden estar verdes con el resultado roto — ya pasó en esta fase. Compárala
 contra `docs/superpowers/specs/2026-09-03-caelestia-creditos-maqueta.html`.
 
-- [ ] **Paso 8: commit**
+- [x] **Paso 8: commit**
 
 ```bash
 git add src/components/caelestiaCreditosBandeja.ts src/themes/themes.css src/main.ts scripts/measure-caelestia-creditos.py
@@ -881,7 +906,7 @@ git commit -m "feat(creditos): la bandeja de paquetes sustituye al reparto de pa
 **Interfaces:**
 - Consume: `.cae-cred-cruce`, `.cae-cred-cruce-lista`, `.cae-cred-terr` de la Task 3.
 
-- [ ] **Paso 1: añadir el gate 6 al arnés**
+- [x] **Paso 1: añadir el gate 6 al arnés**
 
 ```python
 def gate_cruce(pagina) -> None:
@@ -938,12 +963,25 @@ def gate_cruce(pagina) -> None:
     )
 ```
 
-- [ ] **Paso 2: correrlo y verlo dar rojo**
+- [x] **Paso 2: correrlo y verlo dar rojo**
 
 Esperado: `FAIL el cruce se lee en las 23` — la Task 3 no puso estilo al cruce y hereda el color
 del contenedor, o `FAIL el cruce no se sale de la cabecera (15 px)` si lo pusiste en pila.
 
-- [ ] **Paso 3: el CSS del cruce y del territorio**
+**Lo que pasó de verdad (`task-4-report.md`): no salió rojo.** Salió `OK` en las dos aserciones,
+`peor 14.23:1 en «React»`. La razón: la Task 3 pinta la ficha inicial (`pintarFicha(piezas[0])`)
+pero no cablea ningún listener de hover — eso es la Task 5 — así que el `dispatchEvent(new
+MouseEvent('mouseenter'))` del gate no tiene quién lo recoja y las 23 iteraciones del bucle miden
+siempre la misma ficha (React), nunca las otras 22 ni el estado «Sin obra publicada». El gate
+estaba bien escrito para cuando la interactividad existiera; ese día no podía dar rojo por
+construcción — no era el fallo que decía cazar el que estaba ausente, era la pieza que lo hace
+observable. Se dejó documentado como hallazgo y se pasó la obligación explícita a la Task 5: volver
+a correr el gate tras cablear el hover y **verlo recorrer piezas distintas de verdad**. La Task 5 lo
+hizo — sabotaje `--cae-outline` en `.is-vacia`, rojo real en `peor 2.34:1 en «Tailwind CSS»`,
+revertido a verde en `peor 6.00:1` — con lo que el gate 6 quedó validado contra el fallo que dice
+cazar, sólo que una tarea más tarde de lo que este paso anticipaba.
+
+- [x] **Paso 3: el CSS del cruce y del territorio**
 
 ```css
 /* HILERA, no pila. Medido: con tres obras (TypeScript: EchoPlan, TesisFar,
@@ -1037,7 +1075,28 @@ del contenedor, o `FAIL el cruce no se sale de la cabecera (15 px)` si lo pusist
 }
 ```
 
-- [ ] **Paso 4: comprobar el estilo COMPUTADO del territorio, no la captura**
+**Dos correcciones ejecutadas fuera de este snippet, documentadas en `task-3-report.md` y
+`task-4-report.md`:**
+
+1. **`.cae-cred-marca`** (el logotipo de la cabecera) no tenía ninguna regla en ninguna tarea del
+   plan original — salía sin caja ni recorte. Se le dio `clip-path` a la misma figura de la pieza
+   elegida y tamaño fijo, en el mismo bloque `:root[data-theme="caelestia"]`.
+2. **El `fill` de los 23 iconos SVG** tampoco estaba especificado — sin regla, heredaban negro en
+   vez de la tinta del tema. Medido contra el build servido (pintando el color en un canvas 1x1 y
+   leyendo el píxel, nunca con regex sobre `oklch(...)`): `--cae-elev-1` y `--cae-surface` no
+   pasan AA contra `--cae-outline` (1,81:1 / 2,20:1 de noche, 2,34:1 / 2,51:1 de día). El token que
+   sí pasa es `--cae-on-surface` (6,78:1 de noche, 6,04:1 de día), y es el que se usó:
+
+   ```css
+   :root[data-theme="caelestia"] .cae-cred-icono svg {
+     fill: var(--cae-on-surface);
+   }
+   ```
+
+   Más tarde, la Task 7 encontró que la pieza **elegida** necesitaba su propia pareja
+   (`--cae-on-primary`) porque su fondo pasa a `--cae-primary` — ver la corrección de esa tarea.
+
+- [x] **Paso 4: comprobar el estilo COMPUTADO del territorio, no la captura**
 
 ```bash
 python3 -c "
@@ -1057,7 +1116,7 @@ with sync_playwright() as p:
 Esperado: `Martian Mono` primero, `fontStyle: normal`, `textTransform: none`. Si sale `Fraunces` o
 `italic`, la especificidad sigue perdiendo.
 
-- [ ] **Paso 5: build, medir en verde y commit**
+- [x] **Paso 5: build, medir en verde y commit**
 
 ```bash
 npm run build && npm run lint
@@ -1079,7 +1138,7 @@ git commit -m "fix(creditos): el cruce en hilera y el estado vacio legible — l
 **Interfaces:**
 - Consume: `pintarFicha(p: Pieza)` de la Task 3.
 
-- [ ] **Paso 1: el gate 7**
+- [x] **Paso 1: el gate 7**
 
 ```python
 def gate_seleccion(pagina) -> None:
@@ -1106,11 +1165,11 @@ def gate_seleccion(pagina) -> None:
     check(tras_foco == "Python", f"el foco releva la ficha ({tras_foco})")
 ```
 
-- [ ] **Paso 2: correrlo y verlo dar rojo**
+- [x] **Paso 2: correrlo y verlo dar rojo**
 
 Esperado: `FAIL rozar releva la ficha (React)` — la ficha sigue en la primera pieza.
 
-- [ ] **Paso 3: cablear la selección**
+- [x] **Paso 3: cablear la selección**
 
 En `mountCaelestiaCreditosBandeja`, después de `pintarFicha(piezas[0])`:
 
@@ -1179,7 +1238,7 @@ Y en `destroy()`, antes de `wrap.remove()`:
       for (const off of escuchas) off();
 ```
 
-- [ ] **Paso 4: el CSS del estado elegido**
+- [x] **Paso 4: el CSS del estado elegido**
 
 ```css
 :root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-fig {
@@ -1210,7 +1269,7 @@ Y en `destroy()`, antes de `wrap.remove()`:
 }
 ```
 
-- [ ] **Paso 5: build, medir en verde y commit**
+- [x] **Paso 5: build, medir en verde y commit**
 
 ```bash
 npm run build && npm run lint
@@ -1229,7 +1288,7 @@ git commit -m "feat(creditos): rozar elige la pieza, y el foco llega a lo mismo"
 - Modify: `src/themes/themes.css`
 - Modify: `scripts/measure-caelestia-creditos.py`
 
-- [ ] **Paso 1: el gate 8**
+- [x] **Paso 1: el gate 8**
 
 ```python
 def gate_entrada(pagina, base: str) -> None:
@@ -1262,12 +1321,12 @@ def gate_entrada(pagina, base: str) -> None:
     contexto.close()
 ```
 
-- [ ] **Paso 2: correrlo y verlo dar rojo**
+- [x] **Paso 2: correrlo y verlo dar rojo**
 
 Antes de implementar nada, sabotea: añade a mano `opacity: 0` a `.cae-cred-fig` en `themes.css`,
 recompila y corre. Esperado: `FAIL con mov. reducido las 23 estan opacas (0/23)`. Deshaz.
 
-- [ ] **Paso 3: la entrada, en CSS con GSAP decidiendo sólo el cuándo**
+- [x] **Paso 3: la entrada, en CSS con GSAP decidiendo sólo el cuándo**
 
 ```css
 /* «La instalacion»: las 23 llegan como CIRCULOS IDENTICOS —paquetes sin
@@ -1305,7 +1364,7 @@ recompila y corre. Esperado: `FAIL con mov. reducido las 23 estan opacas (0/23)`
 }
 ```
 
-- [ ] **Paso 4: dispararla, y soltar la animación al acabar**
+- [x] **Paso 4: dispararla, y soltar la animación al acabar**
 
 En el componente, antes del `return`:
 
@@ -1339,7 +1398,7 @@ En el componente, antes del `return`:
   }
 ```
 
-- [ ] **Paso 5: comprobar a mano que el roce sigue funcionando DESPUÉS de la entrada**
+- [x] **Paso 5: comprobar a mano que el roce sigue funcionando DESPUÉS de la entrada**
 
 Es el fallo exacto que provoca `fill: both`, y ningún gate de layout lo ve:
 
@@ -1364,7 +1423,7 @@ with sync_playwright() as p:
 Esperado: `animationName: none` y un `transform` con escala 1.07 (`matrix(1.07, 0, 0, 1.07, 0, 0)`).
 Si sale `matrix(1, 0, 0, 1, 0, 0)`, la animación sigue congelando el nodo.
 
-- [ ] **Paso 6: build, medir en verde y commit**
+- [x] **Paso 6: build, medir en verde y commit**
 
 ```bash
 npm run build && npm run lint
@@ -1381,7 +1440,7 @@ git commit -m "feat(creditos): la entrada de escena, la instalacion de paquetes"
 **Files:**
 - Modify: `scripts/measure-caelestia-creditos.py`
 
-- [ ] **Paso 1: el gate 5**
+- [x] **Paso 1: el gate 5**
 
 ```python
 def gate_horas(pagina) -> None:
@@ -1459,7 +1518,7 @@ _JS_CONTRASTE = r"""() => {
 }"""
 ```
 
-- [ ] **Paso 2: exponer el reloj para poder barrerlo**
+- [x] **Paso 2: exponer el reloj para poder barrerlo**
 
 `src/themes/caelestia.color.ts` gobierna el color por la hora. Si no expone ya una vía para fijar
 los minutos, añádele una **sonda de verificación** con el mismo patrón que `__CONTENT_SHAPE__` en
@@ -1467,23 +1526,41 @@ los minutos, añádele una **sonda de verificación** con el mismo patrón que `
 no es alcanzable y el gate sería tautológico — que es exactamente el fallo del reloj congelado de
 la fase A.
 
-- [ ] **Paso 3: verlo dar rojo**
+- [x] **Paso 3: verlo dar rojo**
+
+El sabotaje va **en un worktree propio**, nunca en el arbol principal: en esta fase un
+sabotaje de revision sin revertir se colo dentro de un commit.
 
 ```bash
-# Sabotaje: devuelve el territorio a --cae-outline
-sed -i 's|\(\.cae-cred-terr {[^}]*\)var(--cae-on-surface-variant)|\1var(--cae-outline)|' src/themes/themes.css
-grep -c "cae-cred-terr" src/themes/themes.css     # asegurate de que el sed toco algo
-npm run build && kill <pid> && npx vite preview --port 4173 & sleep 3
-python3 scripts/measure-caelestia-creditos.py --base http://localhost:4173
-git checkout src/themes/themes.css
+git worktree add /tmp/sab HEAD && cd /tmp/sab
+ln -s /home/aoshi/proyectos/portfolio-aoshi/node_modules node_modules
+
+# `sed -i 's|\(\.cae-cred-terr {[^}]*\)...|' NO FUNCIONA aqui, y es la trampa que
+# este mismo plan avisa: `sed` trabaja linea a linea, `[^}]*` no cruza el salto, y
+# el selector y su `color:` estan en lineas distintas. No da error — deja el
+# fichero intacto y te crees que has visto un rojo que nunca ocurrio.
+perl -0777 -pi -e 's/(\.cae-cred-terr \{[^}]*?)var\(--cae-on-surface-variant\)/$1var(--cae-outline)/s' src/themes/themes.css
+
+# El conteo ANTES y DESPUES es la unica prueba de que el sabotaje ocurrio.
+grep -c "var(--cae-outline)" src/themes/themes.css   # tiene que subir en 1
+
+npm run build && nohup npx vite preview --port 4174 >/dev/null 2>&1 & sleep 4
+nohup python3 scripts/measure-caelestia-creditos.py --base http://localhost:4174 > /tmp/sab.log 2>&1 &
+until ! pgrep -f measure-caelestia-creditos > /dev/null; do sleep 5; done
+tail -5 /tmp/sab.log
+
+cd - && git worktree remove /tmp/sab --force
 ```
+
+> El arnes tarda **mas de dos minutos** por el barrido de 24 horas. Lanzalo con `nohup`
+> y espera por condicion: quedarse esperando una notificacion colgo a dos agentes.
 
 Esperado: `FAIL ningun par baja de AA (peor 1.80:1 en «territorio» a las 03:00)`.
 
 **Un `sed` que no casa no da error: deja el fichero igual y el sabotaje no ocurre.** El `grep -c`
 está para eso.
 
-- [ ] **Paso 4: correr en verde y commit**
+- [x] **Paso 4: correr en verde y commit**
 
 Esperado: `OK ningun par baja de AA (peor 5.73:1 en «nombre Git» a las 08:00)`.
 
@@ -1501,7 +1578,7 @@ git commit -m "test(creditos): barrido de las 24 horas sobre los dos estados de 
 - Modify: `CLAUDE.md`, `.claude/CLAUDE.md`
 - Modify: `docs/superpowers/specs/2026-09-03-caelestia-creditos-design.md`
 
-- [ ] **Paso 1: la fila del arnés**
+- [x] **Paso 1: la fila del arnés**
 
 Añade a la tabla de arneses de `.claude/rules/verification.md`, después de la de
 `measure-caelestia-obra.py`:
@@ -1510,7 +1587,7 @@ Añade a la tabla de arneses de `.claude/rules/verification.md`, después de la 
 | `measure-caelestia-creditos.py` | La escena «Créditos» de Caelestia (fase B4, la bandeja de paquetes): 7 familias de aserciones — la octava, la de las 23 figuras, no necesita navegador y vive en `docs/superpowers/specs/2026-09-03-caelestia-creditos-figuras.py`, que compara la salida de `src/utils/figurasM3.ts` contra el generador punto a punto. Que la escena **no tiene scroll interno** (era 758/748); que los **cuatro rótulos de territorio se pintan** (existían los cuatro en el DOM y no se pintaba ninguno — contar nodos no es contar lo que se ve); que las 23 piezas están dentro de la caja y **todas al mismo lado** (el tamaño no codifica: las dos varas posibles mienten); que el cruce «Aparece en» cabe en los 96 px de cabecera en las 23 (con tres obras la pila medía 111 y se salía 15); que **«Sin obra publicada» se lee** (iba en `--cae-outline`: 1,80:1 de noche, en 7 de las 23 piezas); que rozar elige sin pulsar y el foco llega a lo mismo (con `hover()` real, **no** un `MouseEvent` sintético, que no dispara `:hover`); la entrada y su salto con movimiento reducido; y el contraste de los 55 pares en las **24 horas y en los dos estados de la ficha** — con un solo estado, el vacío no se mide nunca. | `npm run build && npx vite preview --port 4173 &`<br>`python3 scripts/measure-caelestia-creditos.py --base http://localhost:4173` |
 ```
 
-- [ ] **Paso 2: el estado de la fase en los dos CLAUDE.md**
+- [ ] **Paso 2: el estado de la fase en los dos CLAUDE.md**  <!-- pendiente: la norma prohibe editarlos a mitad de sesion, y ya tenian cambios sin commitear ajenos a esta fase. Lo hace Aoshi al inicio de una sesion. -->
 
 **Regla dura: no edites `CLAUDE.md` a mitad de sesión** — invalida el prompt cache. Haz este paso
 **al principio de una sesión**, o anótalo en `.ai/memory.md` y déjalo para la siguiente.
@@ -1520,7 +1597,7 @@ Añade el bloque de B4 después del de B3 en los dos ficheros (inglés en `CLAUD
 nuevo, qué NO se tocó (`credits.ts`, que comparten los tres temas), el arnés que la vigila, y que
 **móvil queda fuera de alcance a propósito**, igual que en B1 y B2.
 
-- [ ] **Paso 3: cerrar el estado del spec**
+- [x] **Paso 3: cerrar el estado del spec**
 
 ```bash
 sed -i 's/^Estado: pendiente de plan$/Estado: implementado/' docs/superpowers/specs/2026-09-03-caelestia-creditos-design.md
@@ -1532,7 +1609,7 @@ Y añade en el spec la sección `Plan:` apuntando a este fichero.
 `scripts/verify.py::check_spec_plan_consistency` **falla** si el spec dice `implementado` y este
 plan tiene pasos sin marcar. Así que este paso va el último, con todas las casillas ya en `[x]`.
 
-- [ ] **Paso 4: la verificación completa**
+- [x] **Paso 4: la verificación completa**
 
 ```bash
 npm run build && npm run lint
@@ -1567,7 +1644,7 @@ with sync_playwright() as p:
 "
 ```
 
-- [ ] **Paso 5: los gates de crítica**
+- [ ] **Paso 5: los gates de crítica**  <!-- pendiente: lidia-naive-tester y vera-art-director no se han lanzado. -->
 
 Lanza `lidia-naive-tester` y `vera-art-director` sobre la escena, como en B1, B2 y B3.
 **Prohíbeles explícitamente editar nada de `src/`** en el brief: ya han ensuciado `main` una vez.

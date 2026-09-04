@@ -1,6 +1,9 @@
 # Spec de Caelestia — Créditos: el gestor de paquetes
 
-Estado: pendiente de plan
+Estado: en ejecucion
+<!-- No «implementado»: quedan tres pasos del plan sin cumplir — los bloques de
+     estado en los dos CLAUDE.md (la norma prohibe editarlos a mitad de sesion) y
+     los dos gates de critica, lidia-naive-tester y vera-art-director. -->
 Fecha: 2026-09-04
 Plan: `docs/superpowers/plans/2026-09-03-caelestia-creditos.md`
 Agenda de maquetado: `docs/superpowers/plans/2026-09-03-caelestia-creditos-maquetado.md`
@@ -270,3 +273,57 @@ El arnés será `scripts/measure-caelestia-creditos.py`, y su fila va a la tabla
    decisión, no como deuda. Repartir las bandas de otra forma cuesta la alineación de columnas.
 2. **Móvil**, según `## Movil (M8)`: fuera de alcance en B4, fase transversal después de B5.
 3. Los gates 2, 7 y 8 aún no se han visto dar rojo. Antes de aceptarlos, sabotearlos.
+
+## Registro de implementación
+
+Las siete tareas del plan se ejecutaron y cerraron (commits `4a1b209`..`2449cf7`,
+`docs/superpowers/plans/2026-09-03-caelestia-creditos.md`). Lo que de verdad costó, sacado del
+ledger de ejecución (`.superpowers/sdd/2026-09-03-caelestia-creditos/progress.md`):
+
+1. **Un `circle()` de CSS no interpola con un `polygon()`.** El plan proponía `clip-path:
+   circle(50% at 50% 50%)` como fotograma de partida de la entrada. Son formas básicas distintas:
+   el navegador no morfa entre ellas, corta de golpe y sin error en consola. La entrada nunca
+   habría llegado a verse como un morfado. Se sustituyó por `FIGURA_CIRCULO`, un círculo dibujado
+   como `polygon()` de 240 vértices — el mismo conteo que `--fig`/`--fig-suave` — inyectado por
+   pieza como `--fig-circ`. Verificado punto a punto: a los 700ms el `clip-path` computado es un
+   polígono de 240 vértices distinto del círculo y de la figura final, no un salto binario.
+2. **Un gate escrito una tarea antes de que exista la interactividad que necesita no puede
+   fallar.** El gate 6 (Task 4) mide el cruce «Aparece en» disparando `mouseenter` sintético en
+   las 23 piezas, pero el hover no se cableaba hasta la Task 5. Sin listener que lo recoja, las 23
+   iteraciones medían siempre la misma ficha inicial (React): `peor 14.23:1`, verde, y las otras
+   22 —incluida la del estado «Sin obra publicada»— nunca se ejercitaban. No era el defecto que
+   el gate decía cazar el que faltaba: era la pieza que lo hacía observable. Se documentó como
+   hallazgo y se pasó la obligación de re-correrlo a la Task 5, que lo hizo: sabotaje real
+   (`--cae-outline` en `.is-vacia`) visto en rojo (`2.34:1`), revertido a verde (`6.00:1`), esta
+   vez recorriendo piezas de verdad.
+3. **El icono de la pieza elegida no tenía pareja de contraste propia.** Su figura pasa a
+   `background: var(--cae-primary)` al elegirse, pero el SVG seguía con la tinta general
+   `--cae-on-surface`. A las 06:00 (esquema oscuro) los dos tokens son claros (`L 0.815` / `L
+   0.925`): el icono desaparecía sobre su propio fondo, `1,38:1`. Sólo lo cazó el barrido de las
+   24 horas del gate 5 — una medida a una hora cualquiera lo habría dejado pasar. Arreglado dándole
+   al SVG de la pieza elegida su pareja `--cae-on-primary`; el peor par tras el arreglo subió a
+   `5,88:1` a las 07:00.
+4. **Un `sed` que no casa no da error: deja el fichero intacto y parece un rojo que nunca
+   ocurrió.** El comando de sabotaje que el plan proponía para el gate 5
+   (`sed -i 's|\(\.cae-cred-terr {[^}]*\)...|'`) no funciona: `sed` trabaja línea a línea,
+   `[^}]*` no cruza el salto de línea, y el selector y su `color:` están en líneas distintas —
+   16 apariciones antes, 16 después, fichero sin tocar. Es exactamente la trampa que el propio
+   plan advierte dos párrafos antes. Corregido con un `perl -0777` multilínea (`s///s`) que sí
+   sustituye, con el conteo `grep -c` antes/después como única prueba de que el sabotaje ocurrió
+   de verdad, ejecutado siempre en un worktree aislado.
+5. **Un umbral de espera más ajustado que la transición que mide produce fallos
+   intermitentes.** El gate 5 esperaba 260ms tras el `hover` antes de leer el contraste, contra una
+   transición CSS de fondo de 220ms sin `transition` en el `fill` del icono: a veces medía a mitad
+   de camino y fallaba con un par y una hora distintos en cada corrida. Subido a 500ms —más del
+   doble del margen de la transición— documentado en el propio docstring de `gate_horas`. Con eso
+   dejó de ser flaky: tres ejecuciones limpias seguidas, todas en verde.
+
+Dos correcciones más, menores pero fuera de cualquier snippet del plan y documentadas en los
+informes de tarea: `.cae-cred-marca` (el logotipo de la cabecera) no tenía ninguna regla y salía
+sin caja ni recorte; y el `fill` de los 23 iconos no estaba especificado en ningún sitio y heredaba
+negro por defecto. Las dos se cerraron con tokens medidos contra el build servido, nunca a ojo.
+
+**Pendiente de esta sesión de cierre, explícitamente:** `CLAUDE.md` y `.claude/CLAUDE.md` no se han
+editado — la norma del repo prohíbe tocarlos a mitad de sesión y `CLAUDE.md` además arrastra
+cambios sin commitear ajenos a este trabajo (de Aoshi). El bloque de estado de la fase B4 en los
+dos ficheros queda pendiente para el inicio de la próxima sesión.
