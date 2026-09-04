@@ -8753,17 +8753,19 @@
   cursor: text;
 }
 
-/* `.gallery-track` es PREVENTIVO: su `grab` (declarado en `style.css`, su
-   propia regla, que la herencia tampoco alcanza) es la unica pista de que
-   la galeria se arrastra, pero hoy el `projectScene.ts` que la contiene
-   esta oculto en Caelestia (B3), asi que esta linea no la vigila ningun
-   gate -- y no puede, sin volverse tautologico. El enlace externo
-   (`a[target="_blank"]`) NO entra aqui: el opt-in de arriba ya lo deja
-   fuera, y su `pointer` nativo (la hoja del navegador lo declara en el
-   propio `<a>`, no por herencia) no necesita rescate. */
-.caelestia-cursor-ready:root[data-theme="caelestia"] .gallery-track {
-  cursor: auto;
-}
+/* `.gallery-track` NO necesita regla aqui, y a proposito: `style.css:911`
+   le declara `cursor: grab` (y `.is-dragging` en `style.css:937`,
+   `grabbing`) en una regla PROPIA sobre el propio elemento, y esa
+   herencia del `cursor: none` de la raiz nunca la alcanza -- exactamente
+   el mismo mecanismo por el que `a[target="_blank"]` tampoco necesita
+   rescate mas arriba. Una regla "de rescate" aqui solo podria pisar lo
+   que el elemento ya declara bien: una version anterior de este bloque
+   tenia `.gallery-track { cursor: auto }` con especificidad (0,4,0),
+   mayor que la (0,1,0)/(0,2,0) de sus propias reglas en `style.css`, y le
+   devolvia la flecha del sistema en vez de `grab`/`grabbing`. Hoy
+   `.gallery-track` es invisible en Caelestia -- vive en el
+   `projectScene.ts` que B3 oculta -- asi que nada de esto lo mide ningun
+   gate, y no puede, sin volverse tautologico. */
 
 .cae-cursor {
   position: fixed;
