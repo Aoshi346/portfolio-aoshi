@@ -4707,6 +4707,15 @@
  */
 :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
   display: flex;
+  /*
+   * `row` EXPLICITO. La hoja base ya pone esta caja en `column` para que
+   * Hyprland y Caelestia apilen las cuatro barras en vertical —lo dice el
+   * docstring de `contacto.ts`— asi que declarar solo `display: flex` hereda
+   * esa direccion y el colofon sale apilado al canto derecho. Y ojo con
+   * `align-items: flex-end`: en fila alinea por abajo, que es lo que queremos,
+   * pero en columna alinea a la derecha.
+   */
+  flex-direction: row;
   align-items: flex-end;
   gap: 3.5rem;
   border-top: 1px solid currentColor;
@@ -4726,14 +4735,36 @@
  * porque LinkedIn es el segundo canal de `contactChannels`; si algun dia se
  * anade un canal antes que el, esta regla deja de ser cierta y el colofon se
  * queda pegado a los actos — visible al instante, no silencioso.
+ *
+ * Lleva `.contacto-bar` delante ADEMAS de `[data-canal="destino"]`: sin ese
+ * empujon de especificidad, esta regla y la de `.contacto-bar[data-canal=
+ * "destino"] { margin: ... }` de mas abajo empatan en especificidad (5 clases
+ * cada una), y como la del margin corto va DESPUES en la hoja, gana ella —
+ * medido: `margin-left` salia en `-12px` (el `-0.75rem` del shorthand), nunca
+ * `auto`, y los dos destinos se quedaban pegados a los actos con 252px de
+ * hueco libre a la derecha. Con la clase de mas, esta regla tiene mayor
+ * especificidad y gana sin depender del orden en el archivo.
  */
-:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"]:nth-child(2) {
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"]:nth-child(2) {
   margin-left: auto;
 }
 
-/* Entre los dos destinos el aire es menor que entre los actos: son una pareja,
-   no dos columnas. El `gap` general los separaria igual que a los grandes. */
-:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] + [data-canal="destino"] {
+/*
+ * Entre los dos destinos el aire es menor que entre los actos: son una
+ * pareja, no dos columnas. El `gap` general los separaria igual que a los
+ * grandes.
+ *
+ * NO es `[data-canal="destino"] + [data-canal="destino"]` (hermano
+ * adyacente): en el DOM los dos destinos NO son adyacentes — el orden es
+ * correo, LinkedIn, telefono, GitHub, asi que el telefono esta ENTRE ellos.
+ * `order` cambia donde se PINTA cada barra, no donde vive en el arbol, y el
+ * selector `+` mira el arbol. Ese selector no podia casar nunca — comprobado:
+ * cero coincidencias. GitHub es el cuarto canal de `contactChannels`, asi que
+ * `:nth-child(4)` SI casa, con la misma logica de especificidad que el
+ * destino anterior (lleva `.contacto-bar` delante para ganarle al shorthand
+ * de mas abajo).
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"]:nth-child(4) {
   margin-left: -1.75rem;
 }
 
