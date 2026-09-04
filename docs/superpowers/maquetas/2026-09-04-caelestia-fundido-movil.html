@@ -1,0 +1,320 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Martian+Mono:wght@300;400;500;600&display=swap');
+
+#mm {
+  --tinta: #e8efec; --tinta-2: #93a8a2; --tinta-3: #5e716c;
+  --fondo: #0e1513; --fondo-2: #16201d; --linea: #223029;
+  --marca: oklch(0.855 0.152 96); --rojo: oklch(0.68 0.19 25); --verde: oklch(0.78 0.15 155);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif; color: var(--tinta);
+  background: var(--fondo); margin: -28px -24px -40px; padding: 30px 34px 60px; line-height: 1.5;
+}
+#mm * { box-sizing: border-box; }
+#mm .rot { font-family: 'Martian Mono', monospace; font-size: 9.5px; letter-spacing: .17em; text-transform: uppercase; color: var(--tinta-3); display: block; margin-bottom: 7px; }
+#mm h1 { font-family: 'Fraunces', Georgia, serif; font-variation-settings: 'opsz' 144, 'wght' 900, 'SOFT' 0, 'WONK' 1; font-size: 44px; line-height: .95; margin: 0; letter-spacing: -.012em; }
+#mm h1 em { font-style: italic; font-variation-settings: 'opsz' 144, 'wght' 300, 'SOFT' 100, 'WONK' 1; color: var(--marca); }
+#mm .cabeza { border-bottom: 1px solid var(--linea); padding-bottom: 20px; margin-bottom: 24px; }
+#mm h3 { font-family: 'Martian Mono', monospace; font-size: 11px; letter-spacing: .13em; text-transform: uppercase; color: var(--marca); margin: 0 0 4px; }
+#mm h3 .n { color: var(--tinta-3); margin-right: 8px; }
+#mm .sub { font-size: 13.5px; color: var(--tinta-2); margin: 0 0 16px; max-width: 92ch; }
+#mm .sub b { color: var(--tinta); font-weight: 600; }
+#mm code { font-family: 'Martian Mono', monospace; font-size: 11.5px; color: var(--marca); }
+#mm section { margin-bottom: 40px; }
+
+#mm .par { display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; }
+#mm .tel { flex: 0 0 auto; }
+#mm .tel h5 { font-family: 'Martian Mono', monospace; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--tinta-3); margin: 0 0 9px; }
+#mm .tel h5 b { color: var(--marca); font-weight: 400; }
+/* El chasis. Sin el, dos rectangulos de 390 al lado de una tabla no se leen
+   como telefonos, y hay que decirle a la gente lo que esta mirando en vez de
+   que lo vea. El relleno de 11 px es el bisel; los 22 px extra entran en las
+   cuentas del zoom. */
+#mm .tel .cuerpo { position: relative; width: 412px; height: 866px; padding: 11px;
+  border-radius: 44px; background: linear-gradient(160deg, #2a3330, #12191700 60%), #171f1c;
+  box-shadow: 0 0 0 1px #2c3a35, 0 26px 60px -30px rgb(0 0 0 / .9); }
+#mm .tel .cristal { width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: #000; }
+#mm .tel .muesca { position: absolute; top: 17px; left: 50%; transform: translateX(-50%);
+  width: 92px; height: 22px; border-radius: 999px; background: #0c1211; z-index: 2; }
+#mm .tel iframe { width: 390px; height: 844px; border: 0; display: block; }
+#mm .tel img { width: 390px; height: 844px; display: block; object-fit: cover; object-position: top; }
+#mm .tel .rotulo { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; max-width: 412px; }
+#mm .tel .rotulo b { font-family: 'Martian Mono', monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--marca); font-weight: 400; }
+#mm .tel .rotulo span { font-size: 11.5px; color: var(--tinta-3); }
+#mm .tel .pie { font-size: 11.5px; color: var(--tinta-3); margin-top: 8px; max-width: 390px; }
+#mm .col { flex: 1 1 380px; min-width: 340px; }
+#mm .mandos { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+#mm .bt { font-family: 'Martian Mono', monospace; font-size: 10px; letter-spacing: .1em; padding: 8px 14px; border-radius: 999px; cursor: pointer; border: 1px solid var(--linea); background: transparent; color: var(--tinta-2); }
+#mm .bt[aria-pressed="true"] { background: var(--marca); border-color: var(--marca); color: #14180a; }
+#mm .bt:focus-visible { outline: 2px solid var(--marca); outline-offset: 3px; }
+#mm .vel { display: flex; align-items: center; gap: 8px; font-family: 'Martian Mono', monospace; font-size: 10px; letter-spacing: .1em; color: var(--tinta-3); }
+#mm .vel input { width: 170px; accent-color: var(--marca); }
+#mm .vel b { color: var(--marca); font-variant-numeric: tabular-nums; min-width: 44px; }
+#mm .pistita { font-family: 'Martian Mono', monospace; font-size: 10px; color: var(--tinta-3); }
+/* El zoom agranda el marco SIN tocar su viewport: la escala es una transformada
+   sobre el iframe, asi que dentro sigue midiendo 390 y las media queries no se
+   enteran. Agrandar poniendo `width` mas grande seria mentir. */
+#mm .tel .lupa { transform-origin: 0 0; }
+#mm .tel .hueco { overflow: hidden; }
+
+#mm .lectura { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+#mm .lec { border: 1px solid var(--linea); border-radius: 10px; background: var(--fondo-2); padding: 11px 14px; }
+#mm .lec b { display: block; font-family: 'Martian Mono', monospace; font-size: 21px; color: var(--tinta); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+#mm .lec span { display: block; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--tinta-3); margin-top: 4px; }
+#mm .lec.ok b { color: var(--verde); } #mm .lec.no b { color: var(--rojo); }
+
+#mm table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 16px; }
+#mm th { text-align: left; font-family: 'Martian Mono', monospace; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--tinta-3); font-weight: 400; padding: 0 12px 8px 0; border-bottom: 1px solid var(--linea); }
+#mm td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--linea); color: var(--tinta-2); }
+#mm td b { color: var(--tinta); font-weight: 600; }
+#mm td.mono { font-family: 'Martian Mono', monospace; font-size: 11px; font-variant-numeric: tabular-nums; }
+#mm td.ig { color: var(--rojo); } #mm td.bien { color: var(--verde); }
+
+#mm .rejilla2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+#mm .nota { border: 1px solid var(--linea); border-radius: 10px; padding: 16px 20px; background: var(--fondo-2); }
+#mm .nota h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-family: 'Martian Mono', monospace; color: var(--marca); }
+#mm .nota.no h4 { color: var(--rojo); }
+#mm .nota ul { margin: 0; padding-left: 17px; }
+#mm .nota li { font-size: 13.5px; color: var(--tinta-2); margin-bottom: 7px; }
+#mm .nota li b { color: var(--tinta); font-weight: 600; }
+#mm .aviso { border: 1px solid color-mix(in oklab, var(--marca) 45%, var(--linea)); border-radius: 10px; background: color-mix(in oklab, var(--marca) 7%, var(--fondo-2)); padding: 14px 18px; font-size: 13.5px; color: var(--tinta-2); margin-bottom: 18px; }
+#mm .aviso b { color: var(--tinta); font-weight: 600; }
+</style>
+
+<div id="mm">
+  <div class="cabeza">
+    <span class="rot">Caelestia · fase B5 · maqueta M8</span>
+    <h1>390 px,<br><em>que aquí sí entra en el alcance</em></h1>
+  </div>
+
+  <section>
+    <h3><span class="n">01</span>Hoy y la propuesta, los dos a 390</h3>
+    <p class="sub">El de la derecha es <b>una página de verdad dentro de un <code>iframe</code> de 390 px</b>, no un <code>div</code> estrecho: dentro del marco el viewport <em>es</em> 390, así que las media queries y los <code>vw</code> se comportan como en el teléfono. Las medidas de abajo se leen de dentro de ese marco.</p>
+    <div class="mandos">
+      <span class="vel">tamaño
+        <button class="bt" data-zoom="1" aria-pressed="true">1×</button>
+        <button class="bt" data-zoom="1.5">1,5×</button>
+        <button class="bt" data-zoom="2">2×</button>
+      </span>
+      <label class="vel">hora <input type="range" min="0" max="1439" step="5" data-hora> <b data-hora-n>—</b></label>
+      <span class="vel">figura del sello
+        <button class="bt" data-figura="cookie">galleta · 12</button>
+        <button class="bt" data-figura="sol" aria-pressed="true">sol · 8</button>
+        <button class="bt" data-figura="trebol">trébol · 4</button>
+        <b data-hondo>—</b>
+      </span>
+      <span class="pistita">el marco es un viewport de 390 de verdad; el zoom lo agranda sin cambiarlo</span>
+    </div>
+    <div class="par">
+      <div class="tel">
+        <h5><b>hoy</b> · el build, escritorio 5 activo</h5>
+        <div class="hueco" data-hueco><div class="lupa" data-lupa><div class="cuerpo"><span class="muesca"></span><div class="cristal"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="La escena de contacto de Caelestia hoy, a 390 px"></div></div></div></div>
+        <p class="pie">Captura del build en un viewport de 390×844. Cuatro barras iguales, el titular más pequeño que su lead, y mucho aire vertical sin usar.</p>
+      </div>
+      <div class="tel">
+        <h5><b>propuesta</b> · la contraportada a 390</h5>
+        <div class="hueco" data-hueco><div class="lupa" data-lupa><div class="cuerpo"><span class="muesca"></span><div class="cristal"><iframe data-marco title="La propuesta de Fundido a 390 px"></iframe></div></div></div></div>
+        <p class="pie">Vivo: el color y el reloj siguen la hora de arriba. El troquel deja de sangrar y pasa a ser <b style="color:var(--tinta-2)">un sello entero</b>, con la figura de ocho lóbulos en vez de la de doce.</p>
+      </div>
+      <div class="col">
+        <div class="lectura">
+          <span class="lec" data-lec-tit><b data-l-tit>—</b><span>titular, px</span></span>
+          <span class="lec" data-lec-raz><b data-l-raz>—</b><span>razón titular ÷ valor</span></span>
+          <span class="lec" data-lec-anc><b data-l-anc>—</b><span>línea más larga · medida útil</span></span>
+          <span class="lec" data-lec-min><b data-l-min>—</b><span>blanco más pequeño</span></span>
+          <span class="lec" data-lec-scroll><b data-l-scroll>—</b><span>desplazamiento interno</span></span>
+          <span class="lec" data-lec-g4><b data-l-g4>—</b><span>gate 4 · <code style="font-size:11px">tel:</code> y <code style="font-size:11px">rel</code></span></span>
+        </div>
+        <table>
+          <thead><tr><th>Elemento</th><th>Escritorio</th><th>390</th></tr></thead>
+          <tbody>
+            <tr><td><b>Titular</b></td><td class="mono">--t-10 · 159,66</td><td class="mono">--t-8 · 89,85</td></tr>
+            <tr><td><b>Valor del acto</b></td><td class="mono">--t-4 · 28,43</td><td class="mono">--t-3 · 21,33</td></tr>
+            <tr><td><b>Valor del destino</b></td><td class="mono">--t-2 · 16</td><td class="mono">--t-2 · 16</td></tr>
+            <tr><td><b>Los cuatro canales</b></td><td>2 actos + 2 destinos al canto</td><td>2 actos en fila entera + 2 destinos a mitades</td></tr>
+            <tr><td><b>Troquel</b></td><td class="mono">460 px, sangrando</td><td class="mono">196 px, sello entero</td></tr>
+            <tr><td><b>Figura del sello</b></td><td class="mono">galleta · 12 lóbulos</td><td class="mono">sol · 8 lóbulos</td></tr>
+            <tr><td><b>Profundidad del lóbulo</b></td><td class="mono">24,9 px</td><td class="mono">20,6 px</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h3><span class="n">02</span>La decisión de alcance, explícita</h3>
+    <p class="sub">B1, B2 y B3 dejaron el móvil <b>fuera de alcance a propósito</b>, y está escrito en sus specs. <b>B5 no puede.</b> Esta es la escena del contacto: <code>tel:</code> abre el marcador y <code>mailto:</code> abre el correo — <b>son gestos de teléfono</b>. Una escena de contacto que solo funciona en escritorio contradice lo único que la escena existe para hacer.</p>
+    <div class="aviso"><b>Lo que propongo dejar escrito en el spec:</b> B5 incluye 390 px en su alcance, y su arnés lo mide. No hereda la exención de B1–B3, y el spec tiene que decirlo con esas palabras — <b>si se deja implícito, el que venga detrás asume la exención</b>, que es lo que ha pasado tres veces.</p>
+  </section>
+  <section>
+    <h3><span class="n">03</span>Lo que hay hoy a 390, medido sobre el build</h3>
+    <p class="sub">Medido con <b>viewport de verdad</b> (390×844, táctil), no metiendo la página en una caja de 390: las media queries y las unidades <code>vw</code>/<code>dvh</code> leen el viewport, no la caja del padre. Y el extremo del texto, con <code>Range</code>.</p>
+    <table>
+      <thead><tr><th style="width:40%">Medida</th><th style="width:18%">390×844</th><th style="width:18%">1440×900</th><th>Qué dice</th></tr></thead>
+      <tbody>
+        <tr><td>Ventana</td><td class="mono">362 × 692</td><td class="mono">1412 × 748</td><td>El carril de la fase A ya se adapta.</td></tr>
+        <tr><td>¿Desplaza por dentro?</td><td class="bien mono">no · 692 = 692</td><td class="bien mono">no · 748 = 748</td><td>Cumple la ley de la fase A en los dos.</td></tr>
+        <tr><td>Ancho muerto al canto derecho</td><td class="mono">56 px · 15 %</td><td class="mono">1106 px · 78 %</td><td><b>A 390 la ocupación es buena.</b> El defecto grande del diagnóstico es de escritorio.</td></tr>
+        <tr><td>Área accionable por canal</td><td class="bien mono">362 × 98</td><td class="mono">1412 × 98</td><td><b>Lo mejor que tiene el diseño de hoy</b>, y es en móvil donde se justifica.</td></tr>
+        <tr><td>Titular «Hablemos»</td><td class="ig mono">16 px</td><td class="ig mono">16 px</td><td rowspan="4" style="vertical-align:middle"><b>Idénticos.</b> Esta escena no tiene tipografía adaptable: ni un solo tamaño cambia entre 390 y 1440. La jerarquía invertida del diagnóstico <b>es exactamente la misma en el teléfono</b>.</td></tr>
+        <tr><td>Lead «Cuéntame tu idea.»</td><td class="ig mono">20 px</td><td class="ig mono">20 px</td></tr>
+        <tr><td>Valor del canal</td><td class="ig mono">20 px</td><td class="ig mono">20 px</td></tr>
+        <tr><td>Rótulo</td><td class="ig mono">12 px</td><td class="ig mono">12 px</td></tr>
+      </tbody>
+    </table>
+  </section>
+  <section>
+    <h3><span class="n">04</span>Lo que decide</h3>
+    <div class="rejilla2">
+      <div class="nota">
+        <h4>Las reglas del salto a 390</h4>
+        <ul>
+          <li><b>Pasos discretos, no una función.</b> Es lo que quedó decidido en M3: el titular baja de <code>--t-10</code> a <code>--t-8</code> de golpe, en un <code>@media</code>. No hay ningún <code>clamp()</code> ni ningún <code>vw</code> en la escala — la regla dura del repo, y la que permite que el arnés exija un valor exacto en vez de un rango.</li>
+          <li><b>El techo lo pone el ancho, y está medido.</b> <code>--t-9</code> deja «Cuéntame» en 398 px sobre una medida útil de 322: se sale. <code>--t-8</code> la deja en 298. No es un tamaño elegido a ojo, es <b>el paso más grande que cabe</b>.</li>
+          <li><b>La jerarquía de M4 se conserva, la disposición no.</b> Siguen siendo dos actos y dos destinos, pero en vertical los actos son <b>filas enteras</b>: a 390 el ancho es el recurso escaso, y un acto que ocupa todo el ancho es el blanco más fácil que hay.</li>
+          <li><b>La figura pierde lóbulos al encoger.</b> No es capricho: un lóbulo se lee por su <b>profundidad en píxeles</b>, no por su nombre. El sello de móvil usa el mismo generador y la misma malla de 240 puntos, con ocho lóbulos en vez de doce — 20,6 px de relieve en vez de 12,5. Compáralas con el mando de arriba: el número se calcula del radio real del sello, no de una tabla.</li>
+          <li><b>Lo bueno de hoy no se tira.</b> Las cuatro barras de 98 px de alto son lo mejor del diseño actual y es en el teléfono donde se justifican. La propuesta no baja de 48 px en ningún canal — el suelo de Material, no el de 24 de WCAG.</li>
+        </ul>
+      </div>
+      <div class="nota no">
+        <h4>Lo que descarto</h4>
+        <ul>
+          <li><b>Meter la maqueta en un <code>div</code> de 390.</b> Un <code>div</code> estrecho no cambia el viewport: las media queries no disparan y los <code>vw</code> siguen midiendo la ventana entera. Una maqueta así enseña algo que no existe.</li>
+          <li><b>Un <code>clamp()</code> entre los dos tamaños.</b> Devuelve cualquier real entre sus topes y acierta justo en 390 y 1440, que es donde se mira. Ya recurre cinco veces en el repo.</li>
+          <li><b>Sangrar el troquel también en móvil.</b> Se probó y es lo que había: una figura de 208 px sangrando en una ventana de 362 se come más de la mitad, y lo que queda no deja completarla. <b>Se lee como una mancha, no como una forma recortada.</b> Aquí va entero.</li>
+          <li><b>Mantener la galleta de escritorio.</b> Su relieve cae de 24,9 px a 12,5 al bajar de 460 a 230, repartidos en doce lóbulos de 60 px de arco. A ese tamaño no es una figura, es un borde sucio.</li>
+          <li><b>Meter scroll interno para que quepa todo.</b> Prohibido por la ley de la fase A, y no hace falta: la propuesta cabe en 692 px de alto con aire de sobra.</li>
+          <li><b>Un dock de cuatro iconos como único acceso.</b> Ya está en la barra del shell; el colofón sigue dando el dato escrito, que es lo que <code>contacto.ts</code> exige.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const raiz = document.getElementById('mm');
+  if (!raiz) return;
+  const marco = raiz.querySelector('[data-marco]');
+
+  /* El fragmento va INCRUSTADO con `srcdoc`, no servido desde `el servidor del companion`: el
+     servidor del companion manda los ficheros sueltos como descarga y el marco
+     salia en negro. Con `srcdoc` el documento es del mismo origen, asi que se
+     puede medir por dentro — y dentro del marco el viewport ES 390. */
+  const FRAGMENTO = "\u003c!doctype html>\n\u003chtml lang=\"es\">\u003chead>\n\u003cmeta charset=\"utf-8\">\n\u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\u003ctitle>Fundido a 390\u003c/title>\n\u003cstyle>\n@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Martian+Mono:wght@300;400;500;600&display=swap');\n* { box-sizing: border-box; }\nhtml, body { margin: 0; height: 100%; overflow: hidden; }\nbody { font-family: 'Hanken Grotesk', system-ui, sans-serif; background: var(--cae-surface); }\n\n.muro { position: fixed; inset: 0; background: var(--cae-surface); overflow: hidden; }\n.muro i { position: absolute; display: block; opacity: .58; }\n.muro i:nth-child(1) { width: 300px; height: 300px; left: 140px; top: 90px; background: var(--cae-wall-1); }\n.muro i:nth-child(2) { width: 240px; height: 240px; left: -60px; top: 520px; background: var(--cae-wall-2); }\n\n/* La barra del shell tal como queda a 390: las pastillas se quedan en numero. */\n.cae-bar { position: fixed; top: 10px; left: 12px; right: 12px; height: 46px; z-index: 6;\n  display: flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 999px;\n  background: var(--cae-elev-2); opacity: .9; }\n.cae-ws-list { display: flex; gap: 4px; }\n.cae-ws { font-family: 'Martian Mono', monospace; font-size: 12px; width: 30px; height: 30px;\n  display: grid; place-items: center; border: 0; border-radius: 999px; background: transparent;\n  color: var(--cae-on-surface-variant); }\n.cae-ws[aria-current=\"true\"] { background: var(--cae-primary); color: var(--cae-on-primary); font-weight: 600; }\n.cae-clock { margin-left: auto; font-family: 'Martian Mono', monospace; font-size: 12px; color: var(--cae-primary); }\n\n/* La ventana: mismas cuentas del carril de la fase A, medidas a 390. */\n.ws { position: fixed; left: 14px; right: 14px; top: 68px; bottom: 84px;\n  border-radius: 20px; overflow: hidden; background: var(--cae-primary); color: var(--cae-on-primary);\n  --fundido-dim: 0.82; }\n\n/*\n * EL SELLO. En escritorio el troquel sangra por el canto; aqui no.\n *\n * Dos razones, las dos medidas:\n *   1. Sangrar una figura de 208 px en una ventana de 362 se come mas de la\n *      mitad, y lo que queda no deja completarla: se lee como una mancha, no\n *      como una forma recortada.\n *   2. La GALLETA (n=12) no aguanta este tamano. Su relieve cae de 24,9 px a\n *      460 hasta 12,5 a 230, repartidos en doce lobulos de 60 px de arco. Aqui\n *      va el SOL (n=8): mismo generador, misma malla de 240 puntos, menos\n *      lobulos y mas hondos \u2014 20,6 px a 196. La complejidad de la figura baja\n *      con el tamano, que es como funcionan las figuras de Material 3.\n */\n.f-troquel { position: relative; width: 196px; height: 196px; align-self: flex-end;\n  background: var(--cae-surface); overflow: hidden; }\n.f-troquel::before { content: ''; position: absolute; width: 150%; height: 150%; left: -25%; top: -30%;\n  background: radial-gradient(circle at 40% 45%, var(--cae-wall-1) 0%, transparent 62%),\n              radial-gradient(circle at 78% 76%, var(--cae-wall-2) 0%, transparent 58%); }\n/* Una sola nube: a este tamano la segunda era un pixel gris. Quitar un\n   accesorio antes de salir. */\n.k-nube { position: absolute; display: block; left: 13%; top: 15%; width: 58px; }\n.k-nube svg { display: block; width: 100%; height: auto; fill: var(--cae-outline); }\n.k-suelo { position: absolute; left: 6%; right: 6%; bottom: 26%; }\n.k-suelo svg { display: block; width: 100%; height: auto; fill: var(--cae-on-surface-variant); }\n.k-bicho { position: absolute; left: 50%; bottom: 26%; width: 92px; margin-left: -46px; }\n.k-bicho svg { display: block; width: 100%; height: auto; }\n.k-bicho .cuerpo { fill: var(--cae-on-surface); }\n.k-bicho .ojo { fill: var(--cae-surface); }\n\n.k-wrap { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; padding: 20px 20px 18px; }\n.k-corn { display: flex; align-items: baseline; gap: 12px; font-family: 'Martian Mono', monospace;\n  font-size: 8.5px; letter-spacing: .18em; text-transform: uppercase; opacity: var(--fundido-dim);\n  padding-bottom: 10px; margin: 0; border-bottom: 1px solid currentColor; }\n.k-corn .der { margin-left: auto; }\n/* El sello arriba a la derecha y la frase debajo, alineada a la izquierda.\n   No se solapan: solaparlos metia el titular por encima del bicho. */\n.k-centro { flex: 1; display: flex; flex-direction: column; justify-content: center;\n  gap: 28px; min-height: 0; }\n/* Un PASO de la escala, no una funcion continua. `--t-8`; el de arriba se sale. */\n.k-frase { font-family: 'Fraunces', Georgia, serif; font-style: italic;\n  font-variation-settings: 'opsz' 144, 'wght' 300, 'SOFT' 100, 'WONK' 1;\n  font-size: 89.85px; line-height: .88; letter-spacing: -.028em; margin: 0; }\n.k-frase span { display: block; }\n\n.k-pie-bloque { border-top: 1px solid currentColor; padding-top: 14px; }\n/* La jerarquia de M4 se conserva: dos actos y dos destinos. Lo que cambia es\n   que en vertical los actos son FILAS ENTERAS \u2014 a 390 el ancho es el recurso\n   escaso, y un acto que ocupa todo el ancho es el blanco mas facil que hay. */\n.k-col { text-decoration: none; color: inherit; display: block; border-radius: 10px; }\n.k-k { display: block; font-family: 'Martian Mono', monospace; font-size: 8.5px;\n  letter-spacing: .18em; text-transform: uppercase; opacity: var(--fundido-dim); }\n.k-v { display: block; margin-top: 3px; letter-spacing: -.005em; }\n.k-col.acto { padding: 9px 10px; margin: 0 -10px; }\n.k-col.acto + .k-col.acto { margin-top: 4px; }\n.k-col.acto .k-v { font-size: 21.33px; }\n.k-destinos { display: flex; gap: 10px; margin-top: 10px; }\n.k-col.destino { flex: 1; padding: 9px 10px; margin: 0 -2px; }\n.k-col.destino .k-v { font-size: 16px; }\n.k-estado { margin-top: 12px; display: flex; align-items: center; gap: 7px;\n  font-family: 'Martian Mono', monospace; font-size: 8.5px; letter-spacing: .16em;\n  text-transform: uppercase; opacity: var(--fundido-dim); }\n.k-estado i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }\n\n.cae-dock { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 6;\n  display: flex; gap: 5px; padding: 6px; border-radius: 20px; background: var(--cae-elev-2); opacity: .9; }\n.cae-dock-item { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center;\n  background: var(--cae-elev-1); color: var(--cae-on-surface-variant); }\n.cae-dock-item svg { width: 20px; height: 20px; display: block; }\n\u003c/style>\n\u003c/head>\n\u003cbody>\n\u003cdiv class=\"muro\">\u003ci data-fig=\"cookie\">\u003c/i>\u003ci data-fig=\"trebol\">\u003c/i>\u003c/div>\n\u003cheader class=\"cae-bar\">\n  \u003cnav class=\"cae-ws-list\">\n    \u003cbutton class=\"cae-ws\">1\u003c/button>\u003cbutton class=\"cae-ws\">2\u003c/button>\u003cbutton class=\"cae-ws\">3\u003c/button>\n    \u003cbutton class=\"cae-ws\">4\u003c/button>\u003cbutton class=\"cae-ws\" aria-current=\"true\">5\u003c/button>\n  \u003c/nav>\n  \u003cspan class=\"cae-clock\" data-reloj>\u2014\u003c/span>\n\u003c/header>\n\n\u003csection class=\"ws\" data-ventana>\n  \u003cdiv class=\"k-wrap\">\n    \u003cp class=\"k-corn\">\u003cspan>Fundido\u003c/span>\u003cspan class=\"der\">Aoshi Blanco Sanz\u003c/span>\u003c/p>\n    \u003cdiv class=\"k-centro\">\n      \u003cspan class=\"f-troquel\" data-troquel>\n        \u003cspan class=\"k-nube\" data-nube>\u003c/span>\n        \u003cspan class=\"k-suelo\" data-suelo>\u003c/span>\n        \u003cspan class=\"k-bicho\" data-bicho>\u003c/span>\n      \u003c/span>\n      \u003cp class=\"k-frase\" data-frase>\u003cspan data-ln>Cu\u00e9ntame\u003c/span>\u003cspan data-ln>tu idea.\u003c/span>\u003c/p>\n    \u003c/div>\n    \u003cdiv class=\"k-pie-bloque\">\n      \u003ca class=\"k-col acto\" data-acto href=\"mailto:a.blanco1501@gmail.com\">\u003cspan class=\"k-k\">Escr\u00edbeme\u003c/span>\u003cspan class=\"k-v\" data-valor>a.blanco1501@gmail.com\u003c/span>\u003c/a>\n      \u003ca class=\"k-col acto\" data-acto href=\"tel:+584242281033\">\u003cspan class=\"k-k\">Ll\u00e1mame\u003c/span>\u003cspan class=\"k-v\">+58 424 228 1033\u003c/span>\u003c/a>\n      \u003cspan class=\"k-destinos\">\n        \u003ca class=\"k-col destino\" data-destino href=\"https://www.linkedin.com/in/aoshi-blanco-sanz-14119b2b7\" target=\"_blank\" rel=\"noopener noreferrer\">\u003cspan class=\"k-k\">LinkedIn\u003c/span>\u003cspan class=\"k-v\">Aoshi Blanco Sanz\u003c/span>\u003c/a>\n        \u003ca class=\"k-col destino\" data-destino href=\"https://github.com/Aoshi346\" target=\"_blank\" rel=\"noopener noreferrer\">\u003cspan class=\"k-k\">GitHub\u003c/span>\u003cspan class=\"k-v\">Aoshi346\u003c/span>\u003c/a>\n      \u003c/span>\n      \u003cp class=\"k-estado\">\u003ci>\u003c/i>\u003cspan>Disponible para proyectos\u003c/span>\u003c/p>\n    \u003c/div>\n  \u003c/div>\n\u003c/section>\n\u003cdiv class=\"cae-dock\" data-dock>\u003c/div>\n\n\u003cscript>\n(() => {\n  const QUIETO = [\n    '......................################..',\n    '......................################..',\n    '....................####################',\n    '....................####################',\n    '....................####################',\n    '....................####################',\n    '....................####################',\n    '....................####################',\n    '....................####################',\n    '....................####################',\n    '....................####################',\n    '....................##########..........',\n    '....................##########..........',\n    '....................################....',\n    '....................################....',\n    '##................##########............',\n    '##................##########............',\n    '##.............#############............',\n    '##.............#############............',\n    '####........####################........',\n    '####........####################........',\n    '######....##################..##........',\n    '######....##################..##........',\n    '############################............',\n    '############################............',\n    '############################............',\n    '############################............',\n    '..##########################............',\n    '..########################..............',\n    '....######################..............',\n    '....######################..............',\n    '......##################................',\n    '......##################................',\n    '........##############..................',\n    '........##############..................',\n    '..........######..####..................',\n    '..........######..####..................',\n    '..........####......##..................',\n    '..........####......##..................',\n    '..........##........##..................',\n    '..........##........##..................',\n    '..........####......####................',\n    '..........####......####................',\n  ];\n  const NUBE = [\n    '.........................####.................',\n    '....................######..###...............',\n    '...................##.........##..............',\n    '.................###...........#..............',\n    '.................#.............####...........',\n    '.................#.............#..######......',\n    '..............####............#........#......',\n    '.............##........................####...',\n    '......########............................#...',\n    '.....##...................................###.',\n    '.....#......................................#.',\n    '.##.##...#...................................#',\n    '##........####################################',\n  ];\n  const HORIZONTE = [\n    '########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################',\n    '........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................',\n    '........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................',\n    '.......................................................###.............................................................................................####.......................................................................###............................................................................................................................####..........................................................................................................................................................................................................................####.....................',\n    '......####...........................................................................#................##..............................................................................##...............................#..............................#..........................................................................##.......................................#..................###......................................................###........................................................###.............................................#...##............###..................................',\n    '.......................................................................................................................................................................................................................................#...................................................................#..............................................................................................................##...............................................................................#.......................###..................................................................................',\n    '.........................................#............................##..................####...........................................##.......................................#.........###.......................................................................#...##..............###...................................................................................................................................................................................##..........................................................................................................#...........................',\n    '####..........##................................####......................................................................#....................................................................................................................................................................................................................###..............................................................................####........#...............................................................................................##..............................................................#...........',\n  ];\n  const OJO = [24, 3, 2, 2];\n  function tiras(mapa) {\n    const ancho = mapa[0].length; let r = '';\n    for (let y = 0; y \u003c mapa.length; y++) { let x = 0;\n      while (x \u003c ancho) { if (mapa[y][x] === '#') { let n = 1;\n          while (x + n \u003c ancho && mapa[y][x + n] === '#') n++;\n          r += `\u003crect x=\"${x}\" y=\"${y}\" width=\"${n}\" height=\"1\"/>`; x += n;\n        } else x++; } }\n    return r;\n  }\n  const svgDe = (m, d) => `\u003csvg viewBox=\"0 0 ${m[0].length} ${m.length}\" shape-rendering=\"crispEdges\" aria-hidden=\"true\">${d}\u003c/svg>`;\n  document.querySelector('[data-bicho]').innerHTML = svgDe(QUIETO,\n    `\u003cg class=\"cuerpo\">${tiras(QUIETO)}\u003c/g>\u003crect class=\"ojo\" x=\"${OJO[0]}\" y=\"${OJO[1]}\" width=\"${OJO[2]}\" height=\"${OJO[3]}\"/>`);\n  document.querySelectorAll('[data-nube]').forEach(e => { e.innerHTML = svgDe(NUBE, tiras(NUBE)); });\n  /* El horizonte del sprite mide 600 px de ancho. Metido entero en los 172 px\n     del sello queda a escala 0,29: la linea solida del suelo mide MENOS DE UN\n     PIXEL y no se pinta \u2014 el bicho parece flotar. Se ense\u00f1a un TRAMO de 200\n     columnas en vez de las 600, que es casi escala 1:1 y conserva el tama\u00f1o de\n     los guijarros. Estirarlo con `preserveAspectRatio` los deformaria. */\n  const TRAMO = 200, DESDE = Math.floor((HORIZONTE[0].length - TRAMO) / 2);\n  document.querySelector('[data-suelo]').innerHTML =\n    `\u003csvg viewBox=\"${DESDE} 0 ${TRAMO} ${HORIZONTE.length}\" shape-rendering=\"crispEdges\" aria-hidden=\"true\">${tiras(HORIZONTE)}\u003c/svg>`;\n\n  const N = 240;\n  function armonica(n, a, s) {\n    let rmax = 0;\n    for (let i = 0; i \u003c 2000; i++) { const t = i * 2 * Math.PI / 2000;\n      rmax = Math.max(rmax, 1 + a * Math.cos(n * t) + s * Math.cos(2 * n * t)); }\n    const p = [];\n    for (let i = 0; i \u003c N; i++) { const t = i * 2 * Math.PI / N;\n      const r = (1 + a * Math.cos(n * t) + s * Math.cos(2 * n * t)) / rmax;\n      p.push([50 + 50 * r * Math.cos(t), 50 + 50 * r * Math.sin(t)]); }\n    return p;\n  }\n  const PTS = { cookie: armonica(12, -0.058, 0.012), sol: armonica(8, 0.115, -0.02),\n                trebol: armonica(4, 0.265, -0.045) };\n  const cad = p => `polygon(${p.map(([x,y]) => `${x.toFixed(2)}% ${y.toFixed(2)}%`).join(', ')})`;\n  document.querySelectorAll('[data-fig]').forEach(e => { e.style.clipPath = cad(PTS[e.dataset.fig]); });\n  const sello = document.querySelector('[data-troquel]');\n  /* La profundidad del lobulo EN PIXELES, que es lo que decide si una figura se\n     lee: se calcula del propio radio, no se copia de una tabla. */\n  function hondo(nombre) {\n    const r = sello.getBoundingClientRect().width / 2;\n    const d = PTS[nombre].map(([x, y]) => Math.hypot(x - 50, y - 50));\n    return (Math.max(...d) - Math.min(...d)) / 50 * r;\n  }\n  window.__figura = (nombre) => {\n    if (!PTS[nombre]) return null;\n    sello.style.clipPath = cad(PTS[nombre]);\n    sello.dataset.figura = nombre;\n    return { figura: nombre, hondo: Math.round(hondo(nombre) * 10) / 10,\n             lobulos: { cookie: 12, sol: 8, trebol: 4 }[nombre] };\n  };\n  window.__figura('sol');\n\n  const CLARO = { 'surface':[0.98,0.012],'surface-container':[0.955,0.02],'surface-container-high':[0.925,0.026],\n    'on-surface':[0.245,0.035],'on-surface-variant':[0.47,0.032],'outline':[0.7,0.022],\n    'primary':[0.45,0.13],'on-primary':[0.99,0.01] };\n  const OSCURO = { 'surface':[0.185,0.016],'surface-container':[0.265,0.022],'surface-container-high':[0.345,0.026],\n    'on-surface':[0.925,0.016],'on-surface-variant':[0.795,0.024],'outline':[0.42,0.02],\n    'primary':[0.815,0.115],'on-primary':[0.27,0.095] };\n  const ORIGEN = 60, AZ = { l:0.855, lO:0.905, c:0.152, h:96 }, DIA = 1440, AMANECE = 420, ANOCHECE = 1200;\n  const ok = (l,c,h) => `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)})`;\n  const hueAt = m => ((((m/DIA)*360 + ORIGEN) % 360) + 360) % 360;\n  const chromaScaleAt = h => { const d = Math.abs(((((h-240)%360)+540)%360)-180); return d\u003c=70?1:Math.max(0.32,1-(d-70)/115); };\n  function pinta(min) {\n    const hue = hueAt(min), e = chromaScaleAt(hue), osc = min \u003c AMANECE || min >= ANOCHECE;\n    const roles = osc ? OSCURO : CLARO, r = document.documentElement;\n    for (const [n,[l,c]] of Object.entries(roles)) r.style.setProperty(`--cae-${n}`, ok(l, c*e, hue));\n    r.style.setProperty('--cae-anchor', ok(osc?AZ.lO:AZ.l, AZ.c, AZ.h));\n    r.style.setProperty('--cae-wall-1', ok(osc?0.24:0.93, 0.09*e, hue));\n    r.style.setProperty('--cae-wall-2', ok(osc?0.21:0.95, 0.07*e, (hue+42)%360));\n    r.style.setProperty('--cae-elev-1', ok(roles['surface-container'][0], roles['surface-container'][1]*e, hue));\n    r.style.setProperty('--cae-elev-2', ok(roles['surface-container-high'][0], roles['surface-container-high'][1]*e, hue));\n  }\n  const ICO = {\n    correo: '\u003csvg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\u003crect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"2.5\">\u003c/rect>\u003cpath d=\"m3.5 7.5 8.5 6 8.5-6\">\u003c/path>\u003c/svg>',\n    li: '\u003csvg viewBox=\"0 0 24 24\" fill=\"currentColor\">\u003cpath d=\"M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z\">\u003c/path>\u003c/svg>',\n    tel: '\u003csvg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\u003cpath d=\"M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.25 1z\">\u003c/path>\u003c/svg>',\n    gh: '\u003csvg viewBox=\"0 0 24 24\" fill=\"currentColor\">\u003cpath d=\"M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12\">\u003c/path>\u003c/svg>',\n  };\n  document.querySelector('[data-dock]').innerHTML =\n    ['correo','li','tel','gh'].map(k => `\u003cspan class=\"cae-dock-item\">${ICO[k]}\u003c/span>`).join('');\n\n  /* El reloj de la barra va CON el color: si solo se repinta el color, el\n     escritorio se pone de noche y la bandeja sigue marcando la hora vieja. */\n  function ponHora(min) {\n    const m = ((Math.round(min) % 1440) + 1440) % 1440;\n    pinta(m);\n    document.querySelector('[data-reloj]').textContent =\n      String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');\n  }\n  const ahora = new Date();\n  ponHora(ahora.getHours() * 60 + ahora.getMinutes());\n  /* Para que el padre pueda pedir la hora que quiera sin recargar el marco. */\n  window.__hora = ponHora;\n})();\n\u003c/script>\n\u003c/body>\u003c/html>\n";
+  marco.srcdoc = FRAGMENTO;
+
+  /* Las medidas se leen DE DENTRO DEL IFRAME. El marco es del mismo origen
+     (`el servidor del companion`), asi que su documento es accesible; y ahi dentro el viewport
+     es 390 de verdad, que es el unico sitio donde estas cifras significan algo. */
+  function mide() {
+    const d = marco.contentDocument;
+    if (!d || !d.querySelector('[data-frase]')) return false;
+    const w = marco.contentWindow;
+    const cs = e => w.getComputedStyle(e);
+
+    const frase = d.querySelector('[data-frase]');
+    const tit = parseFloat(cs(frase).fontSize);
+    const val = parseFloat(cs(d.querySelector('[data-valor]')).fontSize);
+
+    /* La linea mas larga, con Range: la caja del <span> devolveria el ancho
+       del contenedor. Y la medida util se DERIVA del relleno real, no se copia. */
+    let ancho = 0;
+    for (const ln of d.querySelectorAll('[data-ln]')) {
+      const r = d.createRange(); r.selectNodeContents(ln);
+      ancho = Math.max(ancho, r.getBoundingClientRect().width);
+    }
+    const wrap = d.querySelector('.k-wrap');
+    const pad = parseFloat(cs(wrap).paddingLeft) + parseFloat(cs(wrap).paddingRight);
+    const util = Math.round(wrap.getBoundingClientRect().width - pad);
+
+    const links = [...d.querySelectorAll('a[href]')];
+    const cajas = links.map(a => { const b = a.getBoundingClientRect();
+      return { w: Math.round(b.width), h: Math.round(b.height), href: a.getAttribute('href'),
+               rel: a.getAttribute('rel') || '', blanco: a.getAttribute('target') || '' }; });
+    const menor = cajas.reduce((m, c) => (c.w * c.h < m.w * m.h ? c : m), cajas[0]);
+
+    const ws = d.querySelector('[data-ventana]');
+    const sinScroll = ws.scrollHeight === ws.clientHeight &&
+                      d.documentElement.scrollHeight <= w.innerHeight + 1;
+
+    const g4 = cajas.every(c => {
+      if (c.href.startsWith('tel:')) return /^tel:\+?\d+$/.test(c.href);
+      if (c.href.startsWith('mailto:')) return /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.href);
+      return c.blanco === '_blank' && c.rel.includes('noopener') && c.rel.includes('noreferrer');
+    });
+
+    const p = (s, v) => { raiz.querySelector(s).textContent = v; };
+    const cl = (s, ok) => { raiz.querySelector(s).className = 'lec ' + (ok ? 'ok' : 'no'); };
+    p('[data-l-tit]', tit.toFixed(2));
+    cl('[data-lec-tit]', tit > val);
+    p('[data-l-raz]', (tit / val).toFixed(2) + '×');
+    cl('[data-lec-raz]', tit / val >= 3);
+    p('[data-l-anc]', `${Math.round(ancho)} / ${util}`);
+    cl('[data-lec-anc]', ancho <= util);
+    p('[data-l-min]', `${menor.w}×${menor.h}`);
+    /* Suelo de Material (48), no el de 24 de WCAG: en tactil manda el dedo. */
+    cl('[data-lec-min]', cajas.every(c => c.w >= 48 && c.h >= 48));
+    p('[data-l-scroll]', sinScroll ? 'ninguno' : 'HAY');
+    cl('[data-lec-scroll]', sinScroll);
+    p('[data-l-g4]', g4 ? 'pasa' : 'FALLA');
+    cl('[data-lec-g4]', g4);
+
+    /* Asidero para el arnes: que pueda leer lo mismo sin repetir el calculo. */
+    window.__mm = { tit, val, ancho: Math.round(ancho), util, menor, sinScroll, g4, cajas };
+    return true;
+  }
+
+  /* ---- zoom: escala el marco sin tocar su viewport ---- */
+  let zoom = 1;
+  function ponZoom(z) {
+    zoom = z;
+    raiz.querySelectorAll('[data-zoom]').forEach(b =>
+      b.setAttribute('aria-pressed', String(parseFloat(b.dataset.zoom) === z)));
+    raiz.querySelectorAll('[data-lupa]').forEach(l => { l.style.transform = `scale(${z})`; });
+    /* 412x866 = la pantalla mas los 11 px de bisel por lado. Si el hueco se
+       dimensionara con 390x844, a 2x el chasis sobresaldria y se solaparia con
+       lo de al lado. */
+    raiz.querySelectorAll('[data-hueco]').forEach(h => {
+      h.style.width = (412 * z) + 'px'; h.style.height = (866 * z) + 'px';
+    });
+  }
+  raiz.querySelectorAll('[data-zoom]').forEach(b =>
+    b.addEventListener('click', () => ponZoom(parseFloat(b.dataset.zoom))));
+
+  /* ---- la figura del sello, y su profundidad de lobulo ---- */
+  function ponFigura(nombre) {
+    const w = marco.contentWindow;
+    if (!w || !w.__figura) return;
+    const r = w.__figura(nombre);
+    if (!r) return;
+    raiz.querySelectorAll('[data-figura]').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.figura === nombre)));
+    /* El numero sale del marco, calculado sobre el radio REAL del sello. Una
+       tabla de profundidades escrita a mano se desincroniza al cambiar el
+       tamano del sello y entonces el mando miente. */
+    raiz.querySelector('[data-hondo]').textContent = r.hondo.toFixed(1).replace('.', ',') + ' px';
+  }
+  raiz.querySelectorAll('[data-figura]').forEach(b =>
+    b.addEventListener('click', () => ponFigura(b.dataset.figura)));
+
+  /* ---- la hora, en vivo, dentro del marco ---- */
+  const barra = raiz.querySelector('[data-hora]');
+  const ahora = new Date();
+  barra.value = String(ahora.getHours() * 60 + ahora.getMinutes());
+  function ponHora() {
+    const m = +barra.value;
+    raiz.querySelector('[data-hora-n]').textContent =
+      String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+    const w = marco.contentWindow;
+    if (w && w.__hora) w.__hora(m);
+  }
+  barra.addEventListener('input', ponHora);
+
+  let intentos = 0;
+  const reloj = setInterval(() => {
+    if (mide()) { ponHora(); ponFigura('sol'); clearInterval(reloj); }
+    else if (++intentos > 60) clearInterval(reloj);
+  }, 250);
+  ponZoom(1);
+  marco.addEventListener('load', () => setTimeout(mide, 400));
+  new ResizeObserver(() => mide()).observe(raiz);
+})();
+</script>
