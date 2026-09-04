@@ -1,5 +1,6 @@
 import type { Choreography } from "./choreography";
 import { montarFicha } from "./caelestia.ficha";
+import { montarFundido } from "./caelestia.fundido";
 import { montarEntrada, montarRoce, montarTitulo } from "./caelestia.titulo";
 
 /**
@@ -111,6 +112,16 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   const escenaFicha = escenas.find((escena) => escena.querySelector('[data-ficha="neofetch"]'));
   const ficha = escenaFicha ? montarFicha(gsap, escenaFicha) : null;
   const indiceFicha = escenaFicha ? escenas.indexOf(escenaFicha) : -1;
+
+  // El fundido de cierre (tarea 5, provisional): el troquel y el bicho
+  // montados sin animacion todavia. La tarea 6 lo deja definitivo, llamando
+  // a `reproducir`/`entrar` desde `irA`.
+  const indiceFundido = escenas.findIndex((escena) => escena.dataset.scene === "contacto");
+  const fundido =
+    indiceFundido >= 0 ? montarFundido(gsap, escenas[indiceFundido], indiceFundido) : null;
+  // Provisional (tarea 5): montado sin animacion todavia. La tarea 6 llama a
+  // `fundido.reproducir()`/`entrar()` desde `irA`, igual que hace `ficha`.
+  void fundido;
 
   const irA = (indice: number): void => {
     const destino = Math.max(0, Math.min(indice, escenas.length - 1));
