@@ -185,6 +185,51 @@ def gate_sin_inercia(pagina, base: str) -> None:
     )
 
 
+def gate_dos_momentos(pagina, base: str) -> None:
+    """Gate 3 -- los dos momentos del mismo gesto.
+
+    Es la tesis del dispositivo: la diana que YA elige al rozarla se moja al
+    entrar, la de clic espera al clic. Si las dos se comportan igual, el
+    cursor tiene un solo estado y el spec entero sobra.
+
+    `mancha()` devuelve el avance PINTADO, no el objetivo escrito: sin eso la
+    asercion mediria la intencion del modulo contra si misma.
+    """
+    print("[3] los dos momentos")
+
+    # Familia de roce: se moja SIN ningun clic.
+    abre(pagina, base, "creditos")
+    pagina.locator(".cae-cred-pieza").nth(2).hover()
+    pagina.wait_for_timeout(700)
+    check(estado(pagina) == "derrame", "[3] la pieza de Creditos se moja al ENTRAR, sin clic")
+    avance = pagina.evaluate("() => window.__caeCursor__.mancha()")
+    check(avance > 0.9, f"[3] el derrame llega a llenar la pieza ({avance:.2f})")
+    check(
+        pagina.evaluate("() => window.__caeCursor__.diana()?.className || ''").startswith(
+            "cae-cred-pieza"
+        ),
+        "[3] la diana mojada es la pieza",
+    )
+
+    # Familia de clic: perla al entrar, derrame solo al pulsar.
+    abre(pagina, base, "obra")
+    pagina.hover(".cae-obra-card", position={"x": 200, "y": 70})
+    pagina.wait_for_timeout(700)
+    check(estado(pagina) == "perla", "[3] la tarjeta de Obra NO se moja al entrar")
+    check(
+        pagina.evaluate("() => window.__caeCursor__.mancha()") == 0,
+        "[3] sin clic la tarjeta esta seca",
+    )
+    pagina.mouse.down()
+    pagina.wait_for_timeout(700)
+    check(estado(pagina) == "derrame", "[3] la tarjeta se moja al PULSAR")
+    avance = pagina.evaluate("() => window.__caeCursor__.mancha()")
+    check(avance > 0.9, f"[3] el derrame llega a llenar la tarjeta ({avance:.2f})")
+    pagina.mouse.up()
+    pagina.wait_for_timeout(500)
+    check(estado(pagina) == "perla", "[3] al soltar, la tarjeta se seca y vuelve la perla")
+
+
 ARGS = ["--no-sandbox", "--use-gl=swiftshader"]
 
 
@@ -207,6 +252,7 @@ def main() -> int:
         gate_presencia(navegador, args.base)
         gate_senales(pagina, args.base)
         gate_sin_inercia(pagina, args.base)
+        gate_dos_momentos(pagina, args.base)
 
         print("[8] consola")
         check(not errores, f"[8] cero errores de consola ({errores[:3]})")

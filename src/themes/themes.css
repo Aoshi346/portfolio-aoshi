@@ -8880,3 +8880,94 @@
     display: none;
   }
 }
+
+/* El derrame. Va ENCIMA de la diana, texto incluido: es pigmento sobre
+   papel, no luz por detras. `z-index: 65` lo pone sobre la barra (60) y
+   sobre el carril, y por debajo de la propia gota (72).
+
+   El modulo NUNCA escribe `display` aqui: el arnes lo apaga con
+   `display: none` para su A/B y necesita que el fotograma siguiente no se
+   lo pise. Ver el contrato en la cabecera del modulo. */
+.cae-cursor-mancha {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 65;
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor-mancha {
+  mix-blend-mode: screen;
+}
+
+/* El circulo que crece desde donde cayo la gota hasta llenar la caja. El
+   recorte a la forma de la diana lo hace el `overflow: hidden` del padre
+   con el `border-radius` que el modulo le copia: asi el liquido corre
+   hasta los cantos de lo que ha mojado, sea una tarjeta de 3px de radio o
+   una pastilla de 999px. */
+.cae-cursor-gota {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cae-primary);
+  opacity: 0.22;
+  transform: translate(-50%, -50%) scale(0);
+  transform-origin: 50% 50%;
+  transition: transform 0.42s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor-gota {
+  opacity: 0.3;
+}
+
+/* Recogerse tras el clic (180ms) va mas rapido que secarse al salir de la
+   diana (300ms), y las dos mas que llenar (420ms): llenar es el gesto,
+   recoger es su final, y secarse al marcharse no es ni una cosa ni la otra.
+   Los tres numeros son los del spec. */
+.cae-cursor[data-estado="perla"] ~ .cae-cursor-mancha .cae-cursor-gota {
+  transition-duration: 0.18s;
+}
+
+.cae-cursor[data-estado="reposo"] ~ .cae-cursor-mancha .cae-cursor-gota,
+.cae-cursor[data-estado="apagada"] ~ .cae-cursor-mancha .cae-cursor-gota {
+  transition-duration: 0.3s;
+}
+
+/* La caja mojada de una pieza de Creditos. Sin esto el derrame es un
+   rectangulo de esquina viva alrededor de una figura redonda. 10px es el
+   radio que la pieza YA declara para su anillo de foco
+   (`themes.css`, `.cae-cred-pieza:focus-visible`); se escribe aqui, en el
+   bloque del cursor y colgando de la clase `ready`, para no tocar B4:
+   sin el cursor esta regla no existe, y la pieza no tiene fondo ni borde
+   propios, asi que el radio no cambia nada de lo que se ve. */
+.caelestia-cursor-ready:root[data-theme="caelestia"] .cae-cred-pieza {
+  border-radius: 10px;
+}
+
+/* La perla derramada pasa a TINTA, no pigmento: sobre la pieza elegida el
+   pigmento es exactamente el color de la pieza (`--cae-primary` de fondo)
+   y la gota desaparece. Medido en el prototipo. */
+.cae-cursor[data-estado="derrame"] .cae-cursor-perla {
+  --s: 30px;
+  --al: 0.26;
+  --brillo: 0;
+  background: var(--cae-on-surface);
+  mix-blend-mode: normal;
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor[data-estado="derrame"] .cae-cursor-perla {
+  --al: 0.3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cae-cursor-mancha {
+    display: none;
+  }
+}

@@ -66,9 +66,6 @@ const NATIVE_ZONE = '.gallery-track, a[target="_blank"], p, li, dd, dt, figcapti
  * recibe `pointerover`), pero NADIE puede contar nodos para decidir nada.
  */
 const HOVER_SELECT = "button[aria-pressed]";
-// Task 2 no la usa todavia -- el derrame por roce llega en el Task 3.
-// `noUnusedLocals` exige esta referencia mientras tanto.
-void HOVER_SELECT;
 
 type Estado = "reposo" | "perla" | "derrame" | "apagada";
 
@@ -87,12 +84,27 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
   cursor.append(perla, nucleo);
 
   /*
+   * El derrame es un elemento APARTE, no un `background-image` en la diana
+   * como hace Hyprland. Aquel necesita quedar debajo del texto; este es
+   * pigmento sobre papel y va encima de todo. La ventaja no es menor: este
+   * modulo NO toca el DOM de ninguna diana, asi que no hay estado previo que
+   * guardar ni que restaurar, que es la clase de fallo que a Hyprland le
+   * costo una tarea entera.
+   */
+  const mancha = document.createElement("div");
+  mancha.className = "cae-cursor-mancha";
+  mancha.setAttribute("aria-hidden", "true");
+  const gota = document.createElement("i");
+  gota.className = "cae-cursor-gota";
+  mancha.append(gota);
+
+  /*
    * Se cuelga de `host` (`#app`) y NUNCA de `main`: `main` es el carril de
    * workspaces y lleva `transform`, y un `position: fixed` dentro de un
    * elemento transformado deja de ser relativo al viewport -- se colocaria
    * contra un carril desplazado 4320px. Medido: `#app` no tiene transform.
    */
-  host.append(cursor);
+  host.append(cursor, mancha);
 
   let x = 0;
   let y = 0;
@@ -101,6 +113,11 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
   let estadoActual: Estado = "reposo";
   let stale = false;
   let frame = 0;
+  let mojada: HTMLElement | null = null;
+  let objetivo = 0;
+  let cajaAncho = 0;
+  let cajaAlto = 0;
+  let pulsado = false;
 
   const setEstado = (siguiente: Estado): void => {
     if (estadoActual === siguiente) return;
@@ -125,10 +142,61 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
    * tienen que moverse juntas: si divergen, el glifo del sistema y el estado
    * de la gota se contradicen sobre el mismo pixel.
    */
+  // Radio en px del circulo base de `.cae-cursor-gota` (20px de lado).
+  const RADIO_GOTA = 10;
+
+  /** Escala a la que la gota cubre la caja entera desde donde cayo. */
+  const alcanceDe = (caja: DOMRect): number => {
+    const dx = Math.max(x - caja.left, caja.right - x);
+    const dy = Math.max(y - caja.top, caja.bottom - y);
+    return Math.hypot(dx, dy) / RADIO_GOTA + 0.2;
+  };
+
+  /** Coloca la caja de la mancha sobre la diana mojada. */
+  const colocarMancha = (caja: DOMRect): void => {
+    mancha.style.left = `${caja.left}px`;
+    mancha.style.top = `${caja.top}px`;
+    mancha.style.width = `${caja.width}px`;
+    mancha.style.height = `${caja.height}px`;
+  };
+
+  const mojar = (destino: HTMLElement): void => {
+    mojada = destino;
+    const caja = destino.getBoundingClientRect();
+    colocarMancha(caja);
+    cajaAncho = caja.width;
+    cajaAlto = caja.height;
+    // El radio se lee UNA vez por diana, no por fotograma: `getComputedStyle`
+    // es caro y el radio de una diana no cambia mientras la senalas.
+    mancha.style.borderRadius = getComputedStyle(destino).borderRadius;
+    // El centro del derrame es donde cayo la gota, en coordenadas de la caja,
+    // y se queda ahi: una mancha no persigue al raton.
+    gota.style.left = `${x - caja.left}px`;
+    gota.style.top = `${y - caja.top}px`;
+    /*
+     * Un fotograma a escala 0 antes de crecer. Sin esto el navegador no tiene
+     * dos valores que interpolar -- si la gota venia de estar seca ya estaba
+     * a 0, pero si venia de otra diana venia de su escala anterior, y el
+     * derrame arrancaria a medio camino.
+     */
+    gota.style.transform = "translate(-50%, -50%) scale(0)";
+    void gota.offsetWidth;
+    objetivo = alcanceDe(caja);
+    gota.style.transform = `translate(-50%, -50%) scale(${objetivo.toFixed(3)})`;
+  };
+
+  const secar = (): void => {
+    if (!mojada) return;
+    mojada = null;
+    objetivo = 0;
+    gota.style.transform = "translate(-50%, -50%) scale(0)";
+  };
+
   const resolver = (objetivo: Element | null): void => {
     const zona = objetivo?.closest<HTMLElement>(`${PRESSABLE}, ${NATIVE_ZONE}`) ?? null;
     if (!zona) {
       diana = null;
+      secar();
       setEstado(dentro ? "reposo" : "apagada");
       return;
     }
@@ -137,11 +205,21 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
       : (zona.parentElement?.closest<HTMLElement>(PRESSABLE) ?? null);
     if (!pulsable) {
       diana = null;
+      secar();
       setEstado("apagada");
       return;
     }
-    diana = pulsable;
-    setEstado("perla");
+    if (pulsable !== diana) {
+      diana = pulsable;
+      /*
+       * La familia se decide UNA vez por diana, no por fotograma. Los dos
+       * momentos del mismo gesto: la que ya elige al rozarla se moja al
+       * entrar, la de clic espera al clic.
+       */
+      if (diana.matches(HOVER_SELECT) || pulsado) mojar(diana);
+      else secar();
+    }
+    setEstado(mojada ? "derrame" : "perla");
   };
 
   /*
@@ -183,9 +261,26 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
     resolver(evento.target);
   };
 
+  const alPulsar = (evento: PointerEvent): void => {
+    if (evento.pointerType !== "mouse") return;
+    pulsado = true;
+    if (diana && !mojada) mojar(diana);
+    if (diana) setEstado("derrame");
+  };
+
+  const alSoltar = (evento: PointerEvent): void => {
+    if (evento.pointerType !== "mouse") return;
+    pulsado = false;
+    if (!diana) return;
+    // La familia de roce se queda mojada: ahi el derrame no lo trajo el clic.
+    if (!diana.matches(HOVER_SELECT)) secar();
+    setEstado(mojada ? "derrame" : "perla");
+  };
+
   const alSalirDelDocumento = (): void => {
     dentro = false;
     diana = null;
+    secar();
     setEstado("apagada");
   };
 
@@ -209,6 +304,8 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
 
   window.addEventListener("pointermove", alMover, { passive: true, signal });
   window.addEventListener("pointerover", alEntrar, { passive: true, signal });
+  window.addEventListener("pointerdown", alPulsar, { passive: true, signal });
+  window.addEventListener("pointerup", alSoltar, { passive: true, signal });
   window.addEventListener("resize", marcarRancio, { passive: true, signal });
   document.addEventListener("scroll", marcarRancio, { passive: true, capture: true, signal });
   document.addEventListener("pointerleave", alSalirDelDocumento, { passive: true, signal });
@@ -219,11 +316,37 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
 
   const tick = (): void => {
     frame = window.requestAnimationFrame(tick);
-    if (!stale) return;
-    stale = false;
-    if (!dentro) return;
-    // Fuera de la ventana devuelve null: ahi no hay zona que resolver.
-    resolver(document.elementFromPoint(x, y));
+    if (stale) {
+      stale = false;
+      // Fuera de la ventana devuelve null: ahi no hay zona que resolver.
+      if (dentro) resolver(document.elementFromPoint(x, y));
+    }
+    if (!mojada) return;
+    /*
+     * defensive: el carril de workspaces puede llevarse la diana del arbol
+     * mientras esta mojada. Sin esto la mancha se queda pintada sobre una
+     * caja que ya no existe.
+     */
+    if (!mojada.isConnected) {
+      secar();
+      diana = null;
+      setEstado(dentro ? "reposo" : "apagada");
+      return;
+    }
+    const caja = mojada.getBoundingClientRect();
+    colocarMancha(caja);
+    /*
+     * La escala objetivo solo se recalcula si la caja CAMBIA DE TAMANO -- la
+     * tarjeta de Obra se endereza al rozarla y crece unos pixeles. Reescribir
+     * la escala cada fotograma reiniciaria la transicion sesenta veces por
+     * segundo y el derrame no llegaria a crecer nunca.
+     */
+    if (Math.abs(caja.width - cajaAncho) > 1 || Math.abs(caja.height - cajaAlto) > 1) {
+      cajaAncho = caja.width;
+      cajaAlto = caja.height;
+      objetivo = alcanceDe(caja);
+      gota.style.transform = `translate(-50%, -50%) scale(${objetivo.toFixed(3)})`;
+    }
   };
   frame = window.requestAnimationFrame(tick);
 
@@ -237,6 +360,7 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
     controller.abort();
     document.documentElement.classList.remove("caelestia-cursor-ready");
     cursor.remove();
+    mancha.remove();
     delete (window as unknown as { __caeCursor__?: unknown }).__caeCursor__;
   };
 
@@ -245,8 +369,17 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
   Object.defineProperty(window, "__caeCursor__", {
     value: {
       estado: (): Estado => estadoActual,
-      diana: (): HTMLElement | null => null,
-      mancha: (): number => 0,
+      diana: (): HTMLElement | null => mojada,
+      /*
+       * El avance PINTADO, no el objetivo que este modulo acaba de escribir:
+       * un gate que leyera el objetivo mediria la intencion y no el
+       * resultado. Ver el contrato de la cabecera.
+       */
+      mancha: (): number => {
+        if (!mojada || objetivo <= 0) return 0;
+        const m = new DOMMatrixReadOnly(getComputedStyle(gota).transform);
+        return Math.min(m.a / objetivo, 1);
+      },
       destroy,
     },
     writable: false,
