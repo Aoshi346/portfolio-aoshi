@@ -3546,6 +3546,22 @@
    */
   --cae-display-axes-cartel: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
 
+  /*
+   * La voz de TEXTO. Es el literal que B1 y B2 ya escribian a mano en tres
+   * reglas — la firma, el widget «Ahora mismo» y la frase de la ficha — y que
+   * NO coincide con `--cae-display-axes`, que dice 900. Ponerle nombre no
+   * cambia un pixel: es el mismo valor, escrito una vez.
+   */
+  --cae-display-axes-texto: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+
+  /*
+   * La voz de CIERRE, y solo se usa en un sitio de todo el sitio: la frase de
+   * «Fundido» (B5). `SOFT` a 100 redondea los angulos de los remates — la
+   * misma familia hablando bajo. Si se usara en dos sitios deja de significar
+   * «esto se acaba».
+   */
+  --cae-display-axes-cierre: "opsz" 144, "wght" 300, "SOFT" 100, "WONK" 1;
+
   --radius-card: 22px;
   --display-tracking: -0.03em;
   --display-weight: 900;
@@ -3946,7 +3962,7 @@
   /* Los ejes del SHELL, no los del cartel: aqui se lee a 30px. Y `nowrap`
      porque esta linea es el destino del trazo de la entrada — si partiera en
      dos, el aterrizaje no cuadraria. */
-  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-variation-settings: var(--cae-display-axes-texto);
   font-size: 30px;
   line-height: 1;
   letter-spacing: -0.015em;
@@ -3988,7 +4004,7 @@
 :root[data-theme="caelestia"] .cae-v2 {
   display: block;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-variation-settings: var(--cae-display-axes-texto);
   font-size: 26px;
   line-height: 1;
   font-feature-settings: "tnum";
@@ -4101,7 +4117,7 @@
 :root[data-theme="caelestia"] .cae-wnow {
   margin: 12px 0 2px;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-variation-settings: var(--cae-display-axes-texto);
   font-size: 20px;
   line-height: 1.15;
 }
