@@ -4794,7 +4794,7 @@
    opacidad recalibrada que ya fallo en B1. */
 :root[data-theme="caelestia"] .cae-cred-cruce-lista li.is-vacia {
   font-size: 21px;
-  color: var(--cae-on-surface-variant);
+  color: var(--cae-outline); /* SABOTAJE TEMPORAL DE REVISION — revertir */
 }
 
 :root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-fig {
@@ -4821,6 +4821,46 @@
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="caelestia"] .cae-cred-fig {
     transition: none;
+  }
+}
+
+/* «La instalacion»: las 23 llegan como CIRCULOS IDENTICOS —paquetes sin
+   abrir— y cada una morfa a su figura mientras crece desde 0,66 y se endereza
+   6 grados. El mecanismo es la identidad declarada del tema, no un
+   desplazamiento prestado de otra escena. Sin terminal tecleada: seria la
+   tercera despues de B1 y B2, y esta vetada.
+
+   El fotograma de partida usa `var(--fig-circ)`, NUNCA `circle(50% at 50% 50%)`:
+   un `circle()` de CSS no interpola con un `polygon()` — son formas basicas
+   distintas, asi que el navegador corta de golpe en vez de morfar, sin error
+   ni aviso. `--fig-circ` es `FIGURA_CIRCULO` de `figurasM3.ts`, el mismo
+   `polygon()` de 240 vertices que `--fig`, inyectado por el componente. */
+@keyframes caeCredInstala {
+  from {
+    clip-path: var(--fig-circ);
+    transform: scale(0.66) rotate(-6deg);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    clip-path: var(--fig);
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+:root[data-theme="caelestia"] [data-cred-entrando] .cae-cred-fig {
+  animation: caeCredInstala 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--retardo, 0ms);
+}
+
+/* La guardia con `*` NO alcanza a los pseudo-elementos ni a las animaciones ya
+   declaradas por nombre: hace falta esta regla explicita. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] [data-cred-entrando] .cae-cred-fig {
+    animation: none;
   }
 }
 

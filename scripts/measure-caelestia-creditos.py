@@ -180,6 +180,36 @@ def gate_seleccion(pagina) -> None:
     check(tras_foco == "Python", f"el foco releva la ficha ({tras_foco})")
 
 
+def gate_entrada(pagina, base: str) -> None:
+    """La entrada existe, y `prefers-reduced-motion` la salta ENTERA — al estado
+    aterrizado, no a un fotograma intermedio.
+
+    Se mide el estado aterrizado, no un fotograma de la entrada: agrupar por
+    posicion mientras GSAP tiene desplazamientos por elemento da lineas fantasma
+    de un solo nombre. Con `reduced_motion='reduce'` la animacion se salta y los
+    numeros son los del layout."""
+    print("[8] la entrada, y el movimiento reducido la salta")
+    contexto = pagina.context.browser.new_context(
+        viewport={"width": 1440, "height": 900}, reduced_motion="reduce"
+    )
+    p2 = contexto.new_page()
+    abre(p2, base)
+    m = p2.evaluate(
+        """() => {
+             const f = [...document.querySelectorAll('.cae-cred-fig')];
+             return {opacos: f.filter(e => +getComputedStyle(e).opacity === 1).length,
+                     total: f.length,
+                     sinEscala: f.filter(e => {
+                       const t = getComputedStyle(e).transform;
+                       return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+                     }).length};
+           }"""
+    )
+    check(m["opacos"] == m["total"], f"con mov. reducido las 23 estan opacas ({m['opacos']}/{m['total']})")
+    check(m["sinEscala"] >= m["total"] - 1, f"y sin escala de entrada ({m['sinEscala']}/{m['total']})")
+    contexto.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -203,6 +233,7 @@ def main() -> int:
         gate_piezas(pagina)
         gate_cruce(pagina)
         gate_seleccion(pagina)
+        gate_entrada(pagina, args.base)
 
         print("[0] consola")
         check(not errores, f"cero errores de consola ({errores[:3]})")

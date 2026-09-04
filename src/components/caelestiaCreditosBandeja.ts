@@ -1,6 +1,11 @@
 import { caseStudies, skillGroups } from "../data/content";
 import { el, elFromMarkup } from "../utils/dom";
-import { figuraDe, figuraSuaveDe, radioInscritoDe } from "../utils/figurasM3";
+import {
+  FIGURA_CIRCULO,
+  figuraDe,
+  figuraSuaveDe,
+  radioInscritoDe,
+} from "../utils/figurasM3";
 import { getIconMarkup } from "../utils/icons";
 
 export interface CaelestiaCreditosHandle {
@@ -53,6 +58,7 @@ function construirPieza(p: Pieza): HTMLButtonElement {
   ]);
   fig.style.setProperty("--fig", figuraDe(p.slug));
   fig.style.setProperty("--fig-suave", figuraSuaveDe(p.slug));
+  fig.style.setProperty("--fig-circ", FIGURA_CIRCULO);
   fig.style.width = `${LADO}px`;
   fig.style.height = `${LADO}px`;
   const icono = fig.firstElementChild as HTMLElement;
@@ -200,9 +206,40 @@ export async function mountCaelestiaCreditosBandeja(
     });
   }
 
+  // «La instalacion»: las 23 llegan como circulos identicos —paquetes sin
+  // abrir— y cada una morfa a su figura mientras crece y se endereza. La
+  // onda va POR TERRITORIOS: cada familia arranca 190 ms detras de la
+  // anterior, y dentro de cada una las piezas se escalonan 34 ms.
+  const offEntrada: Array<() => void> = [];
+  if (!reduce) {
+    escena.setAttribute("data-cred-entrando", "");
+    let indice = 0;
+    skillGroups.forEach((g, gi) => {
+      g.items.forEach((_, i) => {
+        const fig = botones[indice]?.querySelector<HTMLElement>(".cae-cred-fig");
+        fig?.style.setProperty("--retardo", `${260 + gi * 190 + i * 34}ms`);
+        indice += 1;
+      });
+    });
+    // Cada nodo SUELTA su animacion al acabar. Con `both`, `transform` y
+    // `clip-path` se quedan congelados en el ultimo fotograma y le ganan al
+    // `:hover` y al estado elegido: el morfado al rozar no ocurria, sin error
+    // ninguno.
+    for (const b of botones) {
+      const fig = b.querySelector<HTMLElement>(".cae-cred-fig");
+      if (!fig) continue;
+      const soltar = (): void => {
+        fig.style.animation = "none";
+      };
+      fig.addEventListener("animationend", soltar, { once: true });
+      offEntrada.push(() => fig.removeEventListener("animationend", soltar));
+    }
+  }
+
   return {
     destroy: () => {
       for (const off of escuchas) off();
+      for (const off of offEntrada) off();
       gsap.killTweensOf(escena.querySelectorAll("*"));
       wrap.remove();
     },
