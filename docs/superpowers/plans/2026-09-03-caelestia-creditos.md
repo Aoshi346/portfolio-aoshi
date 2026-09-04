@@ -1587,7 +1587,7 @@ Añade a la tabla de arneses de `.claude/rules/verification.md`, después de la 
 | `measure-caelestia-creditos.py` | La escena «Créditos» de Caelestia (fase B4, la bandeja de paquetes): 7 familias de aserciones — la octava, la de las 23 figuras, no necesita navegador y vive en `docs/superpowers/specs/2026-09-03-caelestia-creditos-figuras.py`, que compara la salida de `src/utils/figurasM3.ts` contra el generador punto a punto. Que la escena **no tiene scroll interno** (era 758/748); que los **cuatro rótulos de territorio se pintan** (existían los cuatro en el DOM y no se pintaba ninguno — contar nodos no es contar lo que se ve); que las 23 piezas están dentro de la caja y **todas al mismo lado** (el tamaño no codifica: las dos varas posibles mienten); que el cruce «Aparece en» cabe en los 96 px de cabecera en las 23 (con tres obras la pila medía 111 y se salía 15); que **«Sin obra publicada» se lee** (iba en `--cae-outline`: 1,80:1 de noche, en 7 de las 23 piezas); que rozar elige sin pulsar y el foco llega a lo mismo (con `hover()` real, **no** un `MouseEvent` sintético, que no dispara `:hover`); la entrada y su salto con movimiento reducido; y el contraste de los 55 pares en las **24 horas y en los dos estados de la ficha** — con un solo estado, el vacío no se mide nunca. | `npm run build && npx vite preview --port 4173 &`<br>`python3 scripts/measure-caelestia-creditos.py --base http://localhost:4173` |
 ```
 
-- [ ] **Paso 2: el estado de la fase en los dos CLAUDE.md**  <!-- pendiente: la norma prohibe editarlos a mitad de sesion, y ya tenian cambios sin commitear ajenos a esta fase. Lo hace Aoshi al inicio de una sesion. -->
+- [x] **Paso 2: el estado de la fase en los dos CLAUDE.md**  <!-- hecho a peticion explicita de Aoshi, asumiendo el coste de cache de prompt. -->
 
 **Regla dura: no edites `CLAUDE.md` a mitad de sesión** — invalida el prompt cache. Haz este paso
 **al principio de una sesión**, o anótalo en `.ai/memory.md` y déjalo para la siguiente.
@@ -1644,12 +1644,12 @@ with sync_playwright() as p:
 "
 ```
 
-- [ ] **Paso 5: los gates de crítica**  <!-- pendiente: lidia-naive-tester y vera-art-director no se han lanzado. -->
+- [x] **Paso 5: los gates de crítica**  <!-- lidia 7,1/10 verde; vera BLOCK 5,3/10 aceptado con sus dos P0 arreglados antes (2b8db2c). -->
 
 Lanza `lidia-naive-tester` y `vera-art-director` sobre la escena, como en B1, B2 y B3.
 **Prohíbeles explícitamente editar nada de `src/`** en el brief: ya han ensuciado `main` una vez.
 
-- [ ] **Paso 6: commit final**
+- [x] **Paso 6: commit final**
 
 ```bash
 git add .claude/rules/verification.md CLAUDE.md .claude/CLAUDE.md docs/superpowers/

@@ -1,9 +1,6 @@
 # Spec de Caelestia — Créditos: el gestor de paquetes
 
-Estado: en ejecucion
-<!-- No «implementado»: quedan tres pasos del plan sin cumplir — los bloques de
-     estado en los dos CLAUDE.md (la norma prohibe editarlos a mitad de sesion) y
-     los dos gates de critica, lidia-naive-tester y vera-art-director. -->
+Estado: implementado
 Fecha: 2026-09-04
 Plan: `docs/superpowers/plans/2026-09-03-caelestia-creditos.md`
 Agenda de maquetado: `docs/superpowers/plans/2026-09-03-caelestia-creditos-maquetado.md`
