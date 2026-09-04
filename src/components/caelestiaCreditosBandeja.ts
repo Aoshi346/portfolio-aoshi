@@ -154,6 +154,12 @@ export async function mountCaelestiaCreditosBandeja(
   );
   const grid = escena.querySelector<HTMLElement>(".cae-cred-grid");
   let elegida = piezas[0].name;
+  // La cabecera ya muestra la primera pieza al montar: el estado accesible
+  // tiene que decir lo mismo desde el primer fotograma, no solo tras la
+  // primera interaccion.
+  for (const b of botones) {
+    b.setAttribute("aria-pressed", String(b.dataset.pieza === elegida));
+  }
 
   function elegir(nombrePieza: string): void {
     if (elegida === nombrePieza) return;
@@ -198,11 +204,13 @@ export async function mountCaelestiaCreditosBandeja(
     b.addEventListener("focus", entrar);
     b.addEventListener("click", entrar);
     b.addEventListener("blur", salir);
+    b.addEventListener("mouseleave", salir);
     escuchas.push(() => {
       b.removeEventListener("mouseenter", entrar);
       b.removeEventListener("focus", entrar);
       b.removeEventListener("click", entrar);
       b.removeEventListener("blur", salir);
+      b.removeEventListener("mouseleave", salir);
     });
   }
 
