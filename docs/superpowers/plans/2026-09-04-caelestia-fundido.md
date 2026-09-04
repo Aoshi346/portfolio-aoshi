@@ -464,9 +464,27 @@ for n in ("hero", "about"):
 PY
 ```
 
-Esperado: `NINGUNA` en las dos. **El color de Caelestia sigue el reloj**, así que las dos capturas
-tienen que tomarse con pocos minutos de diferencia; si el matiz se ha movido, la comparación dará
-diferencia por el fondo y no por la tipografía — repetir seguidas.
+Esperado: `NINGUNA` en las dos.
+
+**Dos cosas mueven píxeles en Caelestia sin que nadie toque el CSS, y las dos hay que neutralizarlas
+o esta comparación no puede dar verde jamás:**
+
+1. **El fondo generativo anima en cada fotograma** (`requestAnimationFrame`). Dos capturas del mismo
+   código, sin ningún cambio, ya difieren en el recuadro entero. Se congela pidiendo movimiento
+   reducido al abrir la página — `shaderBackground.ts` ya lo respeta:
+
+   ```python
+   ctx = b.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+   pg = ctx.new_page()
+   ```
+
+   Congelar el fondo **no invalida la comprobación**: lo que se compara son ejes de fuente, que son
+   CSS y no movimiento, y las dos capturas ven el mismo estado aterrizado.
+
+2. **El color sigue el reloj del visitante.** Si entre la captura de «antes» y la de «después» pasan
+   minutos, el matiz se habrá movido y la diferencia será del fondo, no de la tipografía. Tomarlas
+   lo más seguidas posible, y si aun así hay diferencia, repetir las dos seguidas antes de concluir
+   nada.
 
 - [ ] **Step 6: Commit**
 
