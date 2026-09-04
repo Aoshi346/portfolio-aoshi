@@ -154,10 +154,13 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
   // ventana deja el temporizador vivo y toca `root.classList` despues de
   // que el modulo ya se dio por desmontado.
   let corteTimeout = 0;
+  // Sonda de verificacion (ver mas abajo): null en produccion, asi que
+  // `aplicar()` siempre lee el reloj real salvo que el arnes la use.
+  let minutosForzados: number | null = null;
 
   const aplicar = (): void => {
     const ahora = new Date();
-    const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+    const minutos = minutosForzados !== null ? minutosForzados : ahora.getHours() * 60 + ahora.getMinutes();
     const oscuro = isDarkAt(minutos);
 
     if (oscuroActual !== null && oscuroActual !== oscuro) {
@@ -183,6 +186,23 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
   // Un minuto es la resolucion del reloj de la barra; el matiz avanza 0,25
   // grados por minuto, que es imperceptible entre pasos.
   temporizador = window.setInterval(aplicar, 60_000);
+
+  // Sonda de verificacion: la consume scripts/measure-caelestia-creditos.py
+  // (y cualquier otro arnes que necesite barrer las 24 horas del reloj) para
+  // fijar la hora sin esperar al reloj real. No afecta al render normal:
+  // `minutosForzados` nace en `null` y solo cambia si algo llama a esta
+  // funcion explicitamente — mismo patron que `__CONTENT_SHAPE__` en
+  // `src/main.ts`. Sin esta via, el barrido de 24 horas es inalcanzable por
+  // construccion y el gate que lo mide es tautologico (el fallo del "reloj
+  // congelado" ya pagado en la fase A).
+  Object.defineProperty(window, "__CAE_SET_MINUTOS__", {
+    value: (minutos: number) => {
+      minutosForzados = minutos;
+      aplicar();
+    },
+    writable: false,
+    configurable: true,
+  });
 
   return {
     destroy: () => {

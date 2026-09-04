@@ -167,6 +167,17 @@ if (theme.id === "caelestia") {
   );
 }
 
+// La bandeja de Creditos en Caelestia: cuatro bandas y 23 piezas siempre en
+// pantalla. Import diferido, igual que el resto de modulos de tema.
+let caeCreditosHandle: { destroy: () => void } | null = null;
+if (theme.id === "caelestia") {
+  void import("./components/caelestiaCreditosBandeja").then(
+    async ({ mountCaelestiaCreditosBandeja }) => {
+      caeCreditosHandle = await mountCaelestiaCreditosBandeja(app);
+    },
+  );
+}
+
 // Navegacion de escenas, comun a los tres temas: vive fuera del cromo de
 // cine (aria-hidden) para que quede en el arbol de accesibilidad.
 const sceneNavHandle = mountSceneNav(app);
@@ -286,6 +297,7 @@ window.addEventListener(
     caeColorHandle?.destroy();
     caeShellHandle?.destroy();
     caeObraHandle?.destroy();
+    caeCreditosHandle?.destroy();
     sceneNavHandle.destroy();
   },
   { once: true },

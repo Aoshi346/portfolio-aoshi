@@ -1,0 +1,792 @@
+<meta charset="utf-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Martian+Mono:wght@300;400;500;600&display=swap');
+
+.m5 {
+  --cae-elev-1: var(--cae-surface-container);
+  --cae-elev-2: var(--cae-surface-container-high);
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "Martian Mono", ui-monospace, monospace;
+  --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
+  --cae-display-axes-cartel: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
+
+  background: #12100f;
+  color: #e8e4e0;
+  font-family: var(--font-body);
+  min-height: 100vh;
+  padding: 34px 40px 70px;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+.m5 *, .m5 *::before, .m5 *::after { box-sizing: border-box; }
+
+.m5-kick { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .2em;
+  text-transform: uppercase; color: #b9a06a; margin: 0 0 12px; }
+.m5-h1 { font-family: var(--font-display); font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: 46px; line-height: .98; letter-spacing: -.015em; margin: 0 0 10px; max-width: 24ch; }
+.m5-lead { font-size: 14px; line-height: 1.55; color: #a49d97; max-width: 92ch; margin: 0 0 22px; }
+.m5-lead b { color: #e8e4e0; font-weight: 600; }
+
+/* ---------- controles ---------- */
+.m5-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; }
+.m5-tab { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+  color: #a49d97; background: transparent; border: 1px solid #3a3532; border-radius: 999px;
+  padding: 8px 15px; cursor: pointer; transition: .16s; }
+.m5-tab:hover { color: #e8e4e0; border-color: #6b625c; }
+.m5-tab[aria-pressed="true"] { background: #e8e4e0; border-color: #e8e4e0; color: #17140f; font-weight: 600; }
+.m5-tab:focus-visible { outline: 2px solid #d8c07a; outline-offset: 3px; }
+.m5-hour { display: flex; align-items: center; gap: 9px; margin-left: auto;
+  font-family: var(--font-mono); font-size: 11px; color: #a49d97; }
+.m5-hour input[type=range] { width: 240px; accent-color: #d8c07a; }
+.m5-hour b { color: #e8e4e0; font-weight: 500; min-width: 42px; display: inline-block; }
+.m5-scheme { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 4px; border: 1px solid #3a3532; color: #a49d97; }
+
+/* ---------- lecturas numericas ---------- */
+.m5-read { display: flex; gap: 1px; background: #2a2624; border: 1px solid #2a2624;
+  border-radius: 9px; overflow: hidden; margin-bottom: 14px; flex-wrap: wrap; }
+.m5-read > div { background: #1a1715; padding: 9px 15px; flex: 1 1 180px; }
+.m5-read dt { font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em;
+  text-transform: uppercase; color: #7d746e; margin: 0 0 5px; }
+.m5-read dd { margin: 0; font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: #e8e4e0; }
+.m5-read dd.ok { color: #7fd08a; } .m5-read dd.bad { color: #e3856b; }
+
+/* ---------- la ventana real ---------- */
+.m5-stage { width: 100%; overflow: hidden; }
+.m5-scaler { transform-origin: 0 0; }
+.m5-desk {
+  position: relative; width: 1440px; height: 900px; overflow: hidden;
+  border-radius: 14px; border: 1px solid #2a2624;
+  background:
+    linear-gradient(160deg, var(--cae-wall-1) 0%, var(--cae-wall-2) 50%, var(--cae-wall-3) 100%);
+}
+
+/* --- shell real (calcado de themes.css, atenuado) --- */
+.m5-desk .cae-bar {
+  position: absolute; top: .75rem; left: .875rem; right: .875rem; z-index: 60;
+  display: flex; align-items: center; gap: .625rem; flex-wrap: wrap;
+  padding: .5rem .625rem .5rem 1rem; border-radius: 999px;
+  background: var(--cae-elev-2); box-shadow: 0 10px 30px -18px rgb(0 0 0 / .5);
+  opacity: .62;
+}
+.m5-desk .cae-mark { font-family: var(--font-mono); font-size: .6875rem; letter-spacing: .06em; color: var(--cae-primary); }
+.m5-desk .cae-ws-list { display: flex; gap: .25rem; flex-wrap: wrap; }
+.m5-desk .cae-ws { font-family: var(--font-body); font-size: .75rem; padding: .3125rem .6875rem;
+  border: 0; border-radius: 999px; background: transparent; color: var(--cae-on-surface-variant); white-space: nowrap; }
+.m5-desk .cae-ws[aria-current="true"] { background: var(--cae-primary); color: var(--cae-on-primary);
+  font-weight: 600; padding-inline: .9375rem; }
+.m5-desk .cae-ws-n { font-style: normal; font-family: var(--font-mono); font-size: .625rem; opacity: .55; margin-right: .3125rem; }
+.m5-desk .cae-tray { margin-left: auto; display: flex; align-items: center; gap: .5625rem; }
+.m5-desk .cae-avail { display: flex; align-items: center; gap: .3125rem; font-size: .625rem; color: var(--cae-on-surface-variant); }
+.m5-desk .cae-dot { width: .375rem; height: .375rem; border-radius: 50%; background: var(--cae-anchor); }
+.m5-desk .cae-clock { font-family: var(--font-mono); font-size: .8125rem; color: var(--cae-primary); }
+.m5-desk .cae-dock {
+  position: absolute; bottom: .875rem; left: 50%; transform: translateX(-50%); z-index: 60;
+  display: flex; gap: .375rem; padding: .4375rem; border-radius: 1.375rem;
+  background: var(--cae-elev-2); box-shadow: 0 14px 34px -22px rgb(0 0 0 / .55); opacity: .62;
+}
+.m5-desk .cae-dock-item { position: relative; width: 2.875rem; height: 2.875rem; border-radius: .9375rem;
+  display: grid; place-items: center; background: var(--cae-elev-1); color: var(--cae-on-surface-variant); }
+.m5-desk .cae-dock-icon svg { width: 1.3125rem; height: 1.3125rem; display: block; }
+.m5-desk .cae-dock-item::after { content: none; }
+.m5-desk .cae-dock-item[data-cae-live]::before { content: ""; position: absolute; bottom: .25rem; left: 50%;
+  transform: translateX(-50%); width: .25rem; height: .25rem; border-radius: 50%; background: var(--cae-anchor); }
+
+/* --- la ventana del workspace: 1412 x 748 exactos --- */
+.m5-win {
+  position: absolute; left: 14px; top: 68px; width: 1412px; height: 748px;
+  border-radius: 1.25rem; background: var(--cae-elev-1); overflow: hidden;
+}
+.m5-scene { position: absolute; inset: 0; padding: 48px; overflow: hidden; }
+
+/* ---------- tipografia comun de la escena ---------- */
+.m5-title { font-family: var(--font-display); font-variation-settings: var(--cae-display-axes);
+  font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--cae-on-surface-variant); margin: 0 0 4px; }
+.m5-mark { width: 15px; height: 15px; display: block; fill: currentColor; flex: none; }
+
+.m5-sep2 { width: 1px; height: 22px; background: #3a3532; }
+
+/* ---------- banner: cambia al ROZAR, sin pulsar ---------- */
+.hd-banner { display: grid; grid-template-columns: 52px 1fr auto; gap: 18px; align-items: center;
+  height: 96px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--cae-outline); }
+.hd-banner .marca { width: 48px; height: 48px; display: grid; place-items: center;
+  background: var(--cae-primary); color: var(--cae-on-primary); }
+.hd-banner .marca svg { width: 24px; height: 24px; fill: currentColor; }
+.hd-banner h3 { font-family: var(--font-display); font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: 32px; line-height: 1; margin: 0 0 4px; color: var(--cae-on-surface); }
+.hd-banner p { margin: 0; font-family: var(--font-display); font-style: italic;
+  font-variation-settings: "opsz" 24, "wght" 400, "SOFT" 0, "WONK" 1;
+  font-size: 17px; color: var(--cae-on-surface-variant); }
+.hd-cruce { text-align: right; }
+.hd-cruce span { display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--cae-on-surface-variant); margin-bottom: 6px; }
+/* El territorio NO va en --cae-outline: es el mismo rol de bajisimo contraste
+   que fallaba en «Sin obra publicada» (1.80:1 de noche). Se paga una vez. */
+/* Sin versalitas ni tracking: a 9px, `letter-spacing: .14em` sobre una caja
+   alta separa las letras en vez de agruparlas — «H E R R A M I E N T A S» se
+   lee como once cosas, no como una palabra. El territorio se escribe tal cual,
+   que ya lo distingue la monoespaciada frente a la Fraunces del nombre. */
+/* `.hd-banner p` (0,1,1) le ganaba a `.hd-figname` (0,1,0): el territorio se
+   estaba pintando en Fraunces italica pese a pedir la monoespaciada, y hay que
+   apagar tambien el `font-style` y los ejes heredados, no solo la familia. */
+.hd-banner .hd-figname { font-family: var(--font-mono); font-size: 10px; letter-spacing: .01em;
+  font-style: normal; font-variation-settings: normal;
+  color: var(--cae-on-surface-variant); margin-top: 7px; }
+
+/* ---------- la bandeja ---------- */
+.b-wrap { height: 100%; display: grid; grid-template-rows: auto auto 1fr; min-height: 0; }
+/* Cuatro hileras, una por territorio. La familia de figuras sola no basta para
+   leer el agrupamiento —a 16px una galleta y un poligono redondeado se parecen—
+   asi que el territorio lo dice tambien la fila, con su rotulo al canto. */
+/* Cuatro bandas de la MISMA altura. Con `space-between` sobre cajas de alturas
+   distintas el aire entre hileras salia desigual y volvia a leerse suelto: aqui
+   el ritmo vertical es constante y lo unico que cambia dentro de cada banda es
+   el tamano de las figuras. */
+/*
+ * El hueco de las tres bandas de cinco medido: 3 modulos x 3 bandas = 426 x
+ * ~390 px, el 27,8% del area de la bandeja. Casi el defecto con el que empezo
+ * esta fase (424 px muertos al canto derecho). No se decora: se le da el mejor
+ * contenido que tiene la escena — el cruce «Aparece en», que es el unico dato
+ * que Creditos tiene y ninguna otra escena tiene, y lo que la ata con Obra.
+ */
+.b-grid { display: grid; grid-template-rows: repeat(4, 1fr); min-height: 0; position: relative; }
+/* El cruce va en la LINEA INICIAL de la escena, al canto derecho: comparte
+   renglon con el nombre de la pieza, que es lo que contesta. Debajo de la
+   primera banda no cabia — se montaba encima de GSAP, Electron y GTK4. */
+.hd-cruce { text-align: right; max-width: 420px; }
+/* Tracking corto: a .2em «APARECE EN» se leia como diez letras sueltas, el
+   mismo tic que el rotulo de territorio. Sigue en versalitas porque es un
+   epigrafe, no una palabra que se lea — pero sin separar las letras. */
+.hd-cruce span { display: block; font-family: var(--font-mono); font-size: 9.5px;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--cae-on-surface-variant);
+  margin-bottom: 9px; }
+/* HILERA, no pila. Medido: con tres obras (TypeScript: EchoPlan, TesisFar,
+   HyprFinance) la pila de <li> medía 111px dentro de una cabecera de 96 y se
+   salía 15px. En hilera con punto medio caben en uno: 51px, 400 de ancho en 420. */
+.hd-cruce ul { list-style: none; margin: 0; padding: 0; display: flex;
+  flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 0 2px; }
+.hd-cruce li { font-family: var(--font-display); font-style: italic;
+  font-variation-settings: "opsz" 48, "wght" 500, "SOFT" 0, "WONK" 1;
+  font-size: 26px; line-height: 1.16; color: var(--cae-on-surface); }
+.hd-cruce li + li::before { content: "·"; padding: 0 7px 0 5px;
+  color: var(--cae-on-surface-variant); font-style: normal; }
+/* «Sin obra publicada» NO se apaga con tinta: medido en --cae-outline daba
+   1.80:1 de noche y 2.34:1 a las 09:00, y son 7 de las 23 piezas (el 30%).
+   El estado lo dice la PALABRA, no la falta de contraste. */
+.hd-cruce li.none { font-size: 21px; color: var(--cae-on-surface-variant); }
+/* El filete de cada banda llega solo hasta su ultima pieza, asi que su LARGO
+   es la masa del territorio: 8 modulos en Interfaz, 5 en las otras tres. Dice
+   el recuento sin escribir el numero. */
+.b-fila { display: grid; grid-template-columns: 158px 1fr; gap: 0 22px; align-items: center;
+  padding-bottom: 14px; }
+.b-fila-t { position: relative; padding-top: 8px; }
+.b-fila:not(:last-child) .b-fila-t::after {
+  content: ""; position: absolute; left: 0; bottom: -14px; height: 1px;
+  width: calc(var(--piezas) * 142px); background: var(--cae-outline);
+}
+/* El rotulo se alinea al centro de su banda y a bandera derecha contra el canto
+   de la calle: asi los cuatro caen sobre el mismo eje vertical y a la altura de
+   las figuras que nombran, no colgando del pie. */
+.b-fila-rot { text-align: right; align-self: center; }
+.b-fila-rot h4 { font-family: var(--font-display); font-style: italic;
+  font-variation-settings: "opsz" 28, "wght" 600, "SOFT" 0, "WONK" 1;
+  font-size: 16px; margin: 0; color: var(--cae-on-surface); }
+/*
+ * REJILLA ESTRICTA de 8 columnas, la misma para las cuatro hileras. Repartir las
+ * piezas por el ancho (`space-between`) las dejaba flotando: con tamanos que van
+ * de 48 a 102 px y huecos distintos en cada hilera, el conjunto se lee disperso,
+ * no compuesto. Con la columna fija, lo unico que varia es el tamano de la
+ * figura — que es el dato — y el resto queda quieto.
+ *
+ * Las celdas vacias de las hileras de cinco NO se rellenan: el canto derecho
+ * escalonado dice cuanto pesa cada territorio, y al ir sobre la misma reticula
+ * se lee como estructura y no como sobra.
+ */
+/*
+ * MODULO DE COLUMNA FIJO: 8 columnas de 142px, las mismas para las cuatro
+ * bandas. Antes cada banda repartia su ancho entre sus propias piezas
+ * (`repeat(N, 1fr)`), asi que Interfaz iba en pasos de 142px y las otras tres
+ * en pasos de 227px: un salto del 60% en el modulo de una hilera a la
+ * siguiente, sin ninguna razon en el dato. Eso es lo que se leia como columnas
+ * descolocadas.
+ *
+ * Se descarto la alternativa de estirar las piezas de mas evidencia a `span 2`
+ * para cuadrar las bandas de cinco en 8 columnas: el ancho de celda pasaria a
+ * ser una SEGUNDA codificacion de la evidencia, y contradice a la primera. En
+ * Lenguajes (tope: 1 obra) las tres primeras se llevarian celdas de 284px,
+ * mas anchas que la de React en Interfaz, que tiene 2 obras. El ancho diria
+ * "esto pesa" justo donde el tamano de la figura dice lo contrario.
+ */
+.b-fila-t { display: grid; grid-template-columns: repeat(8, 142px);
+  align-items: end; justify-items: center; column-gap: 0; }
+.b-tile { background: none; border: 0; padding: 0 4px; cursor: pointer; display: flex;
+  flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; width: 100%; }
+.b-tile:focus-visible { outline: 2px solid var(--cae-anchor); outline-offset: 5px; border-radius: 10px; }
+.b-fig {
+  display: grid; place-items: center;
+  background: var(--cae-outline);
+  color: var(--cae-on-surface);
+  clip-path: var(--fig);
+  /* La curva del morfado es la misma que ya usa el retrato de B2: se reutiliza
+     la CURVA, no el gesto. */
+  transition: clip-path .40s cubic-bezier(0.34, 0.02, 0.16, 1),
+              background .24s cubic-bezier(0.2, 0, 0, 1),
+              color .24s, transform .28s cubic-bezier(0.2, 0, 0, 1);
+}
+/* Al rozar, la figura se ABLANDA hacia su propia version suave — no morfa a
+   otra figura: eso le borraria la identidad que acaba de ganar. */
+.b-tile:hover .b-fig, .b-tile:focus-visible .b-fig {
+  clip-path: var(--fig-suave);
+  background: var(--cae-primary);
+  color: var(--cae-on-primary);
+  transform: scale(1.07);
+}
+/* Relleno en `--cae-outline`, no en `--cae-surface-container-high`: ese estaba
+   a un solo escalon de claridad del fondo de la ventana (L .345 contra .265) y
+   a 58px no dibujaba nada — MySQL y Tailwind CSS se veian sin forma. */
+.b-fig svg { fill: currentColor; }
+.b-tile figcaption { font-family: var(--font-display);
+  font-variation-settings: "opsz" 14, "wght" 500, "SOFT" 0, "WONK" 1;
+  font-size: 12.5px; color: var(--cae-on-surface); white-space: nowrap;
+  transition: color .18s ease-out; }
+.b-tile:hover figcaption, .b-tile:focus-visible figcaption { color: var(--cae-primary); }
+/*
+ * «Sin obra publicada» NO se dice bajando la tinta del icono. Medido: con el
+ * icono en `--cae-on-surface-variant` sobre el relleno, el contraste cae a
+ * 4.47:1 de noche y a 2.53:1 a las 09:00 — o sea que de dia esos iconos
+ * desaparecian. El dato ya lo dice el tamano (son las piezas mas pequenas);
+ * aqui solo baja el pie. Un icono, una tinta, en las 1.440 posiciones del reloj.
+ */
+.b-tile.apagada figcaption { color: var(--cae-on-surface-variant); }
+/* Se realza quitando: al rozar una, las demas bajan. */
+/*
+ * Bajar, no apagar. Y la bajada NO puede tocar el fondo de la figura:
+ * `--cae-surface-container` es EXACTAMENTE `--cae-elev-1`, el fondo de la
+ * ventana, asi que atenuar por ahi no atenua — borra la figura y deja los
+ * iconos flotando. Se baja la tinta (icono y pie); el relieve se queda.
+ */
+.b-grid.tocando .b-tile:not(:hover):not(:focus-visible) figcaption { color: var(--cae-on-surface-variant); }
+.b-grid .b-fig, .b-grid figcaption { transition-property: clip-path, background, color, transform, opacity; }
+
+/* ============ entrada: «la instalacion» ============
+ * Las 23 llegan como paquetes iguales —circulos— y cada una MORFA a su propia
+ * figura mientras se asienta. El mecanismo de la escena es la identidad
+ * declarada del tema, no un desplazamiento prestado. La onda va por
+ * territorios: las cuatro familias aterrizan una tras otra.
+ */
+.m5-scene { --sp: 2.5; }
+@keyframes b5Instala {
+  from { clip-path: var(--fig-circ); transform: scale(.66) rotate(-6deg); opacity: 0; }
+  60%  { opacity: 1; }
+  to   { clip-path: var(--fig); transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes b5Rotulo { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes b5Nombre { from { clip-path: inset(0 0 100% 0); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+/* el anterior, para comparar */
+@keyframes b5Brote { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.m5-scene[data-corre="1"][data-entra="instalacion"] .b-fig {
+  animation: b5Instala calc(460ms * var(--sp)) cubic-bezier(0.34, 0.02, 0.16, 1) both;
+  animation-delay: calc((var(--gd) + var(--gi) * 34ms) * var(--sp));
+}
+.m5-scene[data-corre="1"][data-entra="instalacion"] .b-tile figcaption {
+  animation: b5Nombre calc(240ms * var(--sp)) cubic-bezier(0.2, 0, 0, 1) both;
+  animation-delay: calc((var(--gd) + var(--gi) * 34ms + 210ms) * var(--sp));
+}
+.m5-scene[data-corre="1"][data-entra="instalacion"] .b-fila-rot {
+  animation: b5Rotulo calc(240ms * var(--sp)) cubic-bezier(0.7, 0, 0.2, 1) both;
+  animation-delay: calc((var(--kd)) * var(--sp));
+}
+.m5-scene[data-corre="1"][data-entra="brote"] .b-tile {
+  animation: b5Brote calc(300ms * var(--sp)) cubic-bezier(0.34, 1.36, 0.64, 1) both;
+  animation-delay: calc((180ms + var(--i) * 28ms) * var(--sp));
+}
+.m5-scene[data-rm="1"] .b-fig, .m5-scene[data-rm="1"] .b-tile, .m5-scene[data-rm="1"] .b-fila-rot,
+.m5-scene[data-rm="1"] .b-tile figcaption {
+  animation-name: none !important; transform: none !important; opacity: 1 !important;
+}
+.m5-scene[data-rm="1"] * { transition: none !important; }
+/* `*` NO alcanza a los pseudo-elementos: si algo anima en un ::before necesita
+   su propia linea. Es la trampa que se pago en B2 con `.ficha-k::before`. */
+
+.m5-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 26px; }
+.m5-note { background: #1a1715; border-radius: 11px; padding: 16px 18px 18px; border-top: 2px solid #3a3532; }
+.m5-note h4 { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: #b9a06a; margin: 0 0 8px; }
+.m5-note p { margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: #a49d97; }
+.m5-note p b { color: #e8e4e0; font-weight: 600; }
+</style>
+
+<div class="m5" id="m5">
+  <p class="m5-kick">Caelestia · fase B4 · M4 — la bandeja, afinada</p>
+  <h1 class="m5-h1">Veintitres figuras, ninguna repetida.</h1>
+  <p class="m5-lead">
+    Tres cambios sobre lo que viste. <b>Cada tecnologia tiene su propia figura</b> —23 formas distintas, ni una
+    repetida, comprobado— pero <b>agrupadas por familia</b>: galleta para Interfaz, canto recto para Backend,
+    rayo para Lenguajes, trebol para Herramientas. La forma sigue diciendo el territorio, y ahora ademas
+    identifica la pieza. <b>El raton elige sin pulsar</b>: la cabecera cambia al rozar. Y la entrada ya no es
+    un rebote generico — <b>las 23 llegan como circulos iguales y morfan a su figura</b> mientras se asientan,
+    territorio a territorio.
+  </p>
+
+  <div class="m5-ctl">
+    <button class="m5-tab" id="m5-rep">Repetir la entrada</button>
+    <button class="m5-tab" data-entra="instalacion" aria-pressed="true">Entrada · la instalacion</button>
+    <button class="m5-tab" data-entra="brote" aria-pressed="false">Entrada · el brote (anterior)</button>
+    <span class="m5-hour" style="margin-left:0">
+      <label for="m5-v">velocidad</label>
+      <input id="m5-v" type="range" min="10" max="100" value="40" step="5" style="width:110px">
+      <b id="m5-vv">x0,4</b>
+    </span>
+    <label class="m5-hour" style="margin-left:0; cursor:pointer">
+      <input type="checkbox" id="m5-rm" style="accent-color:#d8c07a"> mov. reducido
+    </label>
+    <span class="m5-hour">
+      <label for="m5-h">hora</label>
+      <input id="m5-h" type="range" min="0" max="1439" value="1375" step="5">
+      <b id="m5-hv">22:55</b>
+      <span class="m5-scheme" id="m5-sch">oscuro</span>
+    </span>
+  </div>
+
+  <dl class="m5-read">
+    <div><dt>Ancho muerto al canto derecho</dt><dd id="v-dead">—</dd></div>
+    <div><dt>Scroll interno de la escena</dt><dd id="v-scroll">—</dd></div>
+    <div><dt>Rotulos de grupo pintados</dt><dd id="v-lab">—</dd></div>
+    <div><dt>Tecnologias en pantalla</dt><dd id="v-tec">—</dd></div>
+    <div><dt>Figuras distintas</dt><dd id="v-fig">—</dd></div>
+    <div><dt>Hueco al pie derecho</dt><dd id="v-hueco">—</dd></div>
+    <div><dt>Matiz de la hora</dt><dd id="v-hue">—</dd></div>
+  </dl>
+
+  <div class="m5-stage" id="m5-stage">
+    <div class="m5-scaler" id="m5-scaler">
+      <div class="m5-desk" id="m5-desk">
+        <header class="cae-bar"><span class="cae-mark">caelestia</span><nav class="cae-ws-list" aria-label="Escenas"><button class="cae-ws" type="button" tabindex="-1" aria-current="false"><i class="cae-ws-n">1</i>Título</button><button class="cae-ws" type="button" tabindex="-1" aria-current="false"><i class="cae-ws-n">2</i>Quién soy</button><button class="cae-ws" type="button" tabindex="-1" aria-current="false"><i class="cae-ws-n">3</i>Obra</button><button class="cae-ws" type="button" tabindex="-1" aria-current="true"><i class="cae-ws-n">4</i>Créditos</button><button class="cae-ws" type="button" tabindex="-1" aria-current="false"><i class="cae-ws-n">5</i>Fundido</button></nav><span class="cae-tray"><span class="cae-avail"><i class="cae-dot"></i>Disponible</span><span class="cae-clock" id="m5-clock">22:55</span></span></header>
+
+        <div class="m5-win"><div class="m5-scene" id="m5-scene"></div></div>
+
+        <div class="cae-dock" aria-hidden="true"><span class="cae-dock-item"><div class="cae-dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="m3.5 7.5 8.5 6 8.5-6"></path></svg></div></span><span class="cae-dock-item" data-cae-live=""><div class="cae-dock-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path></svg></div></span><span class="cae-dock-item"><div class="cae-dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.25 1z"></path></svg></div></span><span class="cae-dock-item" data-cae-live=""><div class="cae-dock-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></div></span></div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="m5-notes">
+    <div class="m5-note">
+      <h4>Las formas</h4>
+      <p>23 figuras generadas con la misma armonica de <code>caelestiaFiguras.ts</code>: galletas de 4 a 12
+        lados, poligonos redondeados, sunny/burst/boom, trebol/puffy/flor. <b>Las 23 a 240 vertices</b>,
+        igual que el circulo de partida y que la version suave de cada una — sin eso el
+        <code>polygon()</code> no interpola: corta de golpe, sin error ni aviso.</p>
+      <p>El nombre de la figura de cada pieza sale en la cabecera, bajo la frase. Es vocabulario de Material 3,
+        no inventado.</p>
+    </div>
+    <div class="m5-note">
+      <h4>El roce</h4>
+      <p>Rozar <b>elige</b>: la cabecera cambia de nombre, frase y cruce sin pulsar. La figura tocada
+        <b>se ablanda hacia su propia version suave</b> — no morfa a otra, que le borraria la identidad que
+        acaba de ganar — crece un 7 % y pasa a <code>--cae-primary</code>.</p>
+      <p>Y las demas bajan. <b>Se realza quitando</b>, que es la unica forma que funciona en esquema oscuro:
+        <code>primary</code> (L .815) y <code>on-surface</code> (L .925) casi no se separan.</p>
+    </div>
+    <div class="m5-note">
+      <h4>La entrada</h4>
+      <p><b>«La instalacion».</b> Las 23 entran como <b>circulos identicos</b> —paquetes sin abrir— y cada una
+        morfa a su figura mientras crece de 0,66 y se endereza 6°. El mecanismo de la escena es la identidad
+        declarada del tema, no un desplazamiento prestado de otra.</p>
+      <p>La onda va <b>por territorios</b>: los cuatro rotulos se descubren con barrido y cada familia aterriza
+        detras del suyo. El nombre de cada pieza entra despues de que su figura pare. Cierra en ~1,6 s.</p>
+    </div>
+  </div>
+</div>
+<script src="/files/icons.js"></script>
+<script src="/files/figuras23.js"></script>
+<script src="/files/gsap.min.js"></script>
+<script>
+(function () {
+  var root = document.getElementById('m5');
+/* ---------- motor de color, portado de src/themes/caelestia.color.ts ---------- */
+  var CLARO = { "surface":[0.98,0.012], "surface-container":[0.955,0.02], "surface-container-high":[0.925,0.026],
+    "on-surface":[0.245,0.035], "on-surface-variant":[0.47,0.032], "outline":[0.7,0.022],
+    "primary":[0.45,0.13], "on-primary":[0.99,0.01], "primary-container":[0.895,0.062], "on-primary-container":[0.31,0.1] };
+  var OSCURO = { "surface":[0.185,0.016], "surface-container":[0.265,0.022], "surface-container-high":[0.345,0.026],
+    "on-surface":[0.925,0.016], "on-surface-variant":[0.795,0.024], "outline":[0.42,0.02],
+    "primary":[0.815,0.115], "on-primary":[0.27,0.095], "primary-container":[0.395,0.105], "on-primary-container":[0.9,0.062] };
+  var ORIGEN = 60, AZUFRE = { l:0.855, lOscuro:0.905, c:0.152, h:96 };
+  var MIN = 1440, AMANECE = 7*60, ANOCHECE = 20*60;
+  function ok(l,c,h){ return 'oklch(' + l.toFixed(3) + ' ' + c.toFixed(3) + ' ' + h.toFixed(1) + ')'; }
+  function hueAt(m){ return ((((m/MIN)*360+ORIGEN)%360)+360)%360; }
+  function chromaScaleAt(h){ var d=Math.abs(((((h-240)%360)+540)%360)-180); if(d<=70) return 1; return Math.max(0.32, 1-(d-70)/115); }
+  function isDarkAt(m){ return m < AMANECE || m >= ANOCHECE; }
+  function tokens(m){
+    var hue=hueAt(m), esc=chromaScaleAt(hue), osc=isDarkAt(m), roles=osc?OSCURO:CLARO, t={};
+    for (var k in roles) t['--cae-'+k] = ok(roles[k][0], roles[k][1]*esc, hue);
+    t['--cae-anchor'] = ok(osc?AZUFRE.lOscuro:AZUFRE.l, AZUFRE.c, AZUFRE.h);
+    t['--cae-on-anchor'] = ok(0.215, 0.05, AZUFRE.h);
+    t['--cae-wall-1'] = ok(osc?0.24:0.93, 0.09*esc, hue);
+    t['--cae-wall-2'] = ok(osc?0.21:0.95, 0.07*esc, (hue+42)%360);
+    t['--cae-wall-3'] = ok(osc?0.20:0.96, 0.06*esc, (hue+318)%360);
+    return { t:t, hue:hue, osc:osc };
+  }
+
+  /* ---------- contenido literal de src/data/content.ts ---------- */
+  var GRUPOS = [
+    { label:"Interfaz", items:[
+      ["React","react","Interfaces con estado complejo."],
+      ["Next.js","nextdotjs","Para apps con rutas y render en servidor."],
+      ["TypeScript","typescript","Tipado en todo lo que escribo."],
+      ["Tailwind CSS","tailwindcss","Maquetación rápida y consistente."],
+      ["Vite","vite","Mi bundler por defecto."],
+      ["GSAP","gsap","Las animaciones y las transiciones."],
+      ["Electron","electron","Aplicaciones de escritorio con tecnología web."],
+      ["GTK4","gtk","Interfaces nativas en C."]]},
+    { label:"Backend y datos", items:[
+      ["Python","python","Automatización, datos y APIs."],
+      ["Django","django","Backend robusto: ORM, admin y auth."],
+      ["Node.js","nodedotjs","JavaScript fuera del navegador."],
+      ["MySQL","mysql","Donde persisto los datos."],
+      ["RxDB","rxdb","Datos locales en el navegador."]]},
+    { label:"Lenguajes base", items:[
+      ["JavaScript","javascript","Base de todo lo que corre en el navegador."],
+      ["HTML","html5","Estructura semántica antes que nada."],
+      ["CSS","css","Lo que no cubre Tailwind, lo escribo a mano."],
+      ["C","c","Donde aprendí a pensar en memoria y punteros."],
+      ["C++","cplusplus","Sistemas y aplicaciones nativas."]]},
+    { label:"Herramientas", items:[
+      ["Git","git","Control de versiones en todo lo que hago."],
+      ["GitHub","github","Donde publico y comparto el código."],
+      ["n8n","n8n","Automatizo tareas repetitivas entre servicios."],
+      ["Claude Code","claude","Asistente en terminal para escribir y revisar código."],
+      ["Gemini CLI","googlegemini","Consultas rápidas desde la terminal."]]}
+  ];
+  var OBRAS = [
+    { title:"EchoPlan", stack:["Python","Django","TypeScript","React","Vite"], tooling:["Git","GitHub","Claude Code","Gemini CLI"] },
+    { title:"TesisFar", stack:["TypeScript","Next.js"], tooling:["Git","GitHub","Claude Code","Gemini CLI"] },
+    { title:"HyprFinance", stack:["TypeScript","React","RxDB","GSAP","Zustand"], tooling:["Git","GitHub","Claude Code","Gemini CLI"] },
+    { title:"WatchDog", stack:["JavaScript","Electron","Python"], tooling:["Git","GitHub","Claude Code","Gemini CLI"] },
+    { title:"Editor de texto", stack:["C","GTK4"], tooling:["Git","GitHub"] }
+  ];
+  function usedIn(name){ return OBRAS.filter(function(o){ return o.stack.concat(o.tooling).indexOf(name) >= 0; }).map(function(o){ return o.title; }); }
+  /* mismo resumen que credits.ts::textoCruce */
+  function cruceTexto(u){
+    if (u.length === 0) return "Sin obra publicada";
+    if (u.length === 5) return "Los cinco proyectos";
+    if (u.length === 4) return "Cuatro de los cinco proyectos";
+    return u.join(" · ");
+  }
+  function svg(slug, cls){
+    var d = window.CAE_ICONS[slug];
+    return '<svg class="' + (cls||'m2-mark') + '" viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"></path></svg>';
+  }
+
+  var ENTRIES = [];
+  GRUPOS.forEach(function (g) { g.items.forEach(function (it) {
+    ENTRIES.push({ rol:g.label, name:it[0], slug:it[1], detail:it[2], used:usedIn(it[0]) });
+  }); });
+
+  var ENTRIES = [];
+  GRUPOS.forEach(function (g) { g.items.forEach(function (it) {
+    ENTRIES.push({ rol:g.label, name:it[0], slug:it[1], detail:it[2], used:usedIn(it[0]) });
+  }); });
+  /* Una FAMILIA de figuras por territorio. El representante de cada familia es
+     el que sale en la leyenda. */
+  var FAMILIA = [
+    { nombre: 'galleta',     rep: 'vite' },
+    { nombre: 'canto recto', rep: 'python' },
+    { nombre: 'rayo',        rep: 'css' },
+    { nombre: 'trebol',      rep: 'git' }
+  ];
+
+  var sel = ENTRIES[0];
+  var scene = document.getElementById('m5-scene');
+  /*
+   * TODAS LAS PIEZAS MIDEN LO MISMO. El tamano deja de codificar nada, y se
+   * quita despues de probar las dos varas posibles y de que las dos mientan:
+   *
+   *  · vara GLOBAL (contra las cinco obras): Herramientas aplastaba a las otras
+   *    tres bandas enteras. `tooling` existe precisamente porque Git, GitHub y
+   *    las dos CLI estan en TODOS los proyectos, asi que se llevaban el escalon
+   *    mayor por construccion y la banda se leia como "este territorio importa
+   *    mas", que no es el mensaje.
+   *  · vara POR TERRITORIO (la de `tiersDeGrupo` en `credits.ts`): peor. En
+   *    Lenguajes base el maximo del grupo es UNA obra, asi que JavaScript y C
+   *    se pintaban tan grandes como Git, que esta en cinco. Dos piezas con
+   *    evidencia opuesta, del mismo tamano, y una seccion entera inflada.
+   *
+   * No hay tercera vara: el dato va de 0 a 5 pero se reparte muy desigual entre
+   * los cuatro territorios, y cualquier escala o aplasta uno o infla otro.
+   *
+   * La evidencia se dice donde no puede mentir: ESCRITA, en el bloque «Aparece
+   * en», que cambia al rozar. La bandeja dice QUE hay instalado; el cruce dice
+   * DONDE se uso.
+   */
+  /* 88 y no 96: al rozar, la figura crece un 7% (unos 3 px por lado) y con 96
+     el canto superior llegaba a tocar el filete de la banda anterior. */
+  var LADO = 88;
+  /* Lado del icono: el cuadrado mayor que entra en la cintura de la figura
+     (r_in / raiz(2)), con un 12% de aire y tope al 30% de la caja. */
+  function iconoDe(lado, slug) {
+    var rin = window.FIG23R[slug] || 1;
+    var cabe = lado * rin * 0.88 / Math.SQRT2;
+    return Math.max(17, Math.round(Math.min(lado * 0.30, cabe)));
+  }
+
+
+
+  /* Mismo resumen que credits.ts::textoCruce: con 4 o 5 obras no se listan. */
+  function cruceHTML(u) {
+    if (!u.length) return '<li class="none">Sin obra publicada</li>';
+    if (u.length === 5) return '<li>Los cinco proyectos</li>';
+    if (u.length === 4) return '<li>Cuatro de los cinco<br>proyectos</li>';
+    return u.map(function (t) { return '<li>' + t + '</li>'; }).join('');
+  }
+
+  function pintar() {
+
+    var filas = GRUPOS.map(function (g, gi) {
+      /*
+       * Dentro de cada territorio, de mas evidencia a menos. Es lo que convierte
+       * la escalera de tamanos en jerarquia legible en vez de en ruido: cada
+       * hilera baja de forma monotona y el ojo lee el orden sin contarlo. El
+       * orden de `content.ts` se conserva como desempate, no se reordena el dato.
+       */
+      /* Sin escala de tamano no hay nada que ordenar: se respeta el orden de
+         `content.ts`, que es el que esta escrito en el dato. */
+      var tiles = g.items.map(function (it) {
+        var u = usedIn(it[0]), lado = LADO, slug = it[1];
+        return ('<button class="b-tile' + (u.length ? '' : ' apagada') + '"' +
+          ' data-name="' + it[0] + '" aria-pressed="' + (sel.name === it[0]) + '">' +
+          '<span class="b-fig" style="--fig:' + window.FIG23[slug] +
+            ';--fig-suave:' + window.FIG23S[slug] + ';--fig-circ:' + window.FIGCIRC +
+            ';width:' + lado + 'px;height:' + lado + 'px">' +
+            /* El icono se acota por el RADIO INSCRITO de su figura, no por la
+               caja: en una figura de lobulos profundos la cintura queda por
+               dentro del canto y el icono se salia por los brazos. */
+            '<svg viewBox="0 0 24 24" style="width:' + iconoDe(lado, slug) + 'px;height:' +
+              iconoDe(lado, slug) + 'px" aria-hidden="true"><path d="' + window.CAE_ICONS[slug] + '"></path></svg>' +
+          '</span><figcaption>' + it[0] + '</figcaption></button>');
+      }).join('');
+      return '<div class="b-fila"><div class="b-fila-rot"><h4>' + g.label + '</h4></div>' +
+        '<div class="b-fila-t" style="--piezas:' + g.items.length + '">' + tiles + '</div></div>';
+    }).join('');
+
+    scene.innerHTML = '<div class="b-wrap">' +
+      '<div class="hd-banner" data-anim="ruta">' +
+        '<span class="marca" style="clip-path:' + window.FIG23[sel.slug] + '">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + window.CAE_ICONS[sel.slug] + '"></path></svg></span>' +
+        '<div><h3>' + sel.name + '</h3><p>' + sel.detail + '</p>' +
+          '<p class="hd-figname">' + sel.rol + '</p></div>' +
+        '<div class="hd-cruce"><span>Aparece en</span><ul>' + cruceHTML(sel.used) + '</ul></div>' +
+
+      '</div>' +
+      '<div class="b-grid">' + filas + '</div></div>';
+
+    var grid = scene.querySelector('.b-grid');
+    scene.querySelectorAll('.b-tile').forEach(function (t) {
+      var nombre = t.getAttribute('data-name');
+      function elegir() {
+        if (sel.name === nombre) return;
+        sel = ENTRIES.filter(function (e) { return e.name === nombre; })[0];
+        actualizarCabecera();
+        scene.querySelectorAll('.b-tile').forEach(function (o) {
+          o.setAttribute('aria-pressed', String(o.getAttribute('data-name') === nombre));
+        });
+      }
+      /* Rozar ELIGE: no hace falta pulsar. El clic y el foco hacen lo mismo,
+         para que el teclado llegue a lo mismo que el raton. */
+      t.addEventListener('mouseenter', function () { grid.classList.add('tocando'); elegir(); });
+      t.addEventListener('focus', function () { grid.classList.add('tocando'); elegir(); });
+      t.addEventListener('click', elegir);
+      t.addEventListener('blur', function () { grid.classList.remove('tocando'); });
+    });
+    grid.addEventListener('mouseleave', function () { grid.classList.remove('tocando'); });
+    medir();
+  }
+
+  /* La cabecera se releva en el sitio: 96px fijos, nada mas se mueve. */
+  function actualizarCabecera() {
+    var b = scene.querySelector('.hd-banner');
+    var marca = b.querySelector('.marca'), svgEl = marca.querySelector('svg');
+    svgEl.innerHTML = '<path d="' + window.CAE_ICONS[sel.slug] + '"></path>';
+    marca.style.clipPath = window.FIG23[sel.slug];
+    b.querySelector('h3').textContent = sel.name;
+    b.querySelectorAll('p')[0].textContent = sel.detail;
+    b.querySelector('.hd-figname').textContent = sel.rol;
+    var hueco = scene.querySelector('.hd-cruce ul');
+    if (hueco) hueco.innerHTML = cruceHTML(sel.used);
+    if (rm) return;
+    gsap.fromTo(marca, { clipPath: 'circle(0% at 50% 50%)' },
+      { clipPath: window.FIG23[sel.slug], duration: 0.26, ease: 'power2.out' });
+    gsap.fromTo(b.querySelector('h3'), { clipPath: 'inset(0px 100% 0px 0px)' },
+      { clipPath: 'inset(0px 0% 0px 0px)', duration: 0.22, ease: 'power2.out' });
+    gsap.fromTo(b.querySelectorAll('p'), { clipPath: 'inset(0px 100% 0px 0px)' },
+      { clipPath: 'inset(0px 0% 0px 0px)', duration: 0.20, delay: 0.05, stagger: 0.03, ease: 'power2.out' });
+    if (hueco) gsap.fromTo(hueco, { clipPath: 'inset(0px 100% 0px 0px)' },
+      { clipPath: 'inset(0px 0% 0px 0px)', duration: 0.26, delay: 0.04, ease: 'power2.out' });
+  }
+
+  /* ---------- entrada ---------- */
+  var vel = 0.4, entra = 'instalacion', rm = false, tl = null;
+  function entrada() {
+    if (tl) { tl.kill(); tl = null; }
+    /* Repetir tiene que devolver la animacion a quien ya la solto. */
+    scene.querySelectorAll('.b-fig, .b-tile figcaption, .b-fila-rot, .b-tile').forEach(function (e) {
+      e.style.animation = '';
+    });
+    scene.setAttribute('data-entra', entra);
+    scene.setAttribute('data-rm', rm ? '1' : '0');
+    scene.style.setProperty('--sp', (1 / vel).toFixed(3));
+    /* La onda va por territorios: cada familia arranca 190ms detras de la anterior. */
+    var t = 0, kd = 0;
+    scene.querySelectorAll('.b-fila-rot').forEach(function (k, i) { k.style.setProperty('--kd', (i * 190) + 'ms'); });
+    var todas = [];
+    scene.querySelectorAll('.b-tile').forEach(function (e) { todas.push(e); });
+    var n = 0;
+    GRUPOS.forEach(function (g, gi) {
+      var base = 260 + gi * 190;
+      g.items.forEach(function (it, k) {
+        var e = todas[n++];
+        e.querySelector('.b-fig').style.setProperty('--gd', base + 'ms');
+        e.querySelector('.b-fig').style.setProperty('--gi', k);
+        e.querySelector('figcaption').style.setProperty('--gd', base + 'ms');
+        e.querySelector('figcaption').style.setProperty('--gi', k);
+        e.style.setProperty('--i', n - 1);
+      });
+    });
+    var b = scene.querySelector('.hd-banner');
+    if (rm) { scene.setAttribute('data-corre', '0'); gsap.set(b, { clearProps: 'clipPath' }); return; }
+    scene.setAttribute('data-corre', '0');
+    void scene.offsetWidth;
+    scene.setAttribute('data-corre', '1');
+    /*
+     * Una animacion CSS con `fill: both` CONGELA las propiedades de su fotograma
+     * final, y ahi gana a cualquier regla de `:hover`. Con la entrada puesta,
+     * `transform: scale(1.07)` y el morfado a `--fig-suave` del roce no llegaban
+     * a correr NUNCA: medido, la figura tocada devolvia `matrix(1,0,0,1,0,0)`.
+     * Es el primo hermano de la trampa ya escrita del repo (un transform inline
+     * de GSAP gana a uno de CSS), y no da error: el roce simplemente no pasa.
+     * Al terminar cada pieza se le quita la animacion y manda otra vez el CSS.
+     */
+    scene.querySelectorAll('.b-fig, .b-tile figcaption, .b-fila-rot, .b-tile').forEach(function (e) {
+      e.addEventListener('animationend', function suelta() {
+        e.style.animation = 'none';
+        e.removeEventListener('animationend', suelta);
+      });
+    });
+    tl = gsap.timeline();
+    tl.fromTo(b, { clipPath: 'inset(0px 100% 0px 0px)' },
+                 { clipPath: 'inset(0px 0% 0px 0px)', duration: 0.28, ease: 'power2.out' }, 0);
+    tl.timeScale(vel);
+  }
+
+  /* ---------- lecturas ---------- */
+  function medir() {
+    var win = scene.parentElement.getBoundingClientRect();
+    var vis = [];
+    scene.querySelectorAll('*').forEach(function (e) { if (e.getClientRects().length) vis.push(e); });
+    var maxR = vis.length ? Math.max.apply(null, vis.map(function (e) { return e.getBoundingClientRect().right; })) : win.left;
+    var k = win.width / 1412;
+    var dead = Math.round((win.right - maxR) / k);
+    var pct = Math.round((dead / 1412) * 1000) / 10;
+    var rd = document.getElementById('v-dead');
+    rd.textContent = dead + ' px · ' + pct + ' %';
+    rd.className = pct <= 8 ? 'ok' : (pct >= 20 ? 'bad' : '');
+    var rs = document.getElementById('v-scroll');
+    rs.textContent = scene.scrollHeight + ' / ' + scene.clientHeight;
+    rs.className = scene.scrollHeight <= scene.clientHeight ? 'ok' : 'bad';
+    var labs = 0;
+    scene.querySelectorAll('.b-fila-rot h4').forEach(function (e) { if (e.getClientRects().length) labs++; });
+    var rl = document.getElementById('v-lab');
+    rl.textContent = labs + ' de 4'; rl.className = labs === 4 ? 'ok' : 'bad';
+    var tec = 0;
+    scene.querySelectorAll('.b-tile').forEach(function (e) { if (e.getClientRects().length) tec++; });
+    var rt = document.getElementById('v-tec');
+    rt.textContent = tec + ' de 23'; rt.className = tec === 23 ? 'ok' : 'bad';
+    /* Cuenta las figuras REALMENTE distintas que se estan pintando, no las del
+       diccionario: si dos tecnologias compartieran forma, aqui saldria. */
+    var formas = {};
+    scene.querySelectorAll('.b-fig').forEach(function (e) {
+      if (e.getClientRects().length) formas[e.style.getPropertyValue('--fig')] = 1;
+    });
+    var nf = Object.keys(formas).length;
+    var rf = document.getElementById('v-fig');
+    rf.textContent = nf + ' de 23'; rf.className = nf === 23 ? 'ok' : 'bad';
+    /* El hueco que dejan las tres bandas de cinco al canto derecho, medido
+       contra el area de la bandeja — no a ojo. */
+    var bandas = [];
+    scene.querySelectorAll('.b-fila-t').forEach(function (e) { if (e.getClientRects().length) bandas.push(e); });
+    var hueco = 0, areaB = 0;
+    bandas.forEach(function (e) {
+      var r = e.getBoundingClientRect();
+      var piezas = [];
+      e.querySelectorAll('.b-tile').forEach(function (t) { if (t.getClientRects().length) piezas.push(t); });
+      var der = piezas.length ? Math.max.apply(null, piezas.map(function (t) { return t.getBoundingClientRect().right; })) : r.left;
+      /* El rectangulo vacio a la derecha de la ultima pieza, MENOS lo que de
+         verdad pinta el bloque del cruce. Antes se restaba la caja entera del
+         contenedor `.b-void`, que llega hasta el pie: la lectura daba 0% en
+         cualquier caso y no podia fallar. */
+      var libre = { l: der, r: r.right, t: r.top, b: r.bottom };
+      var vacio = Math.max(0, libre.r - libre.l) * Math.max(0, libre.b - libre.t);
+      var texto = null;
+      if (texto && texto.getClientRects().length) {
+        var q = texto.getBoundingClientRect();
+        var ix = Math.max(0, Math.min(libre.r, q.right) - Math.max(libre.l, q.left));
+        var iy = Math.max(0, Math.min(libre.b, q.bottom) - Math.max(libre.t, q.top));
+        vacio -= ix * iy;
+      }
+      hueco += Math.max(0, vacio) / (k * k);
+      areaB += (r.width / k) * (r.height / k);
+    });
+    var pc = areaB ? Math.round((hueco / areaB) * 1000) / 10 : 0;
+    var rh = document.getElementById('v-hueco');
+    rh.textContent = Math.round(hueco / 1000) + 'k px² · ' + pc + ' %';
+    rh.className = pc <= 12 ? 'ok' : (pc >= 28 ? 'bad' : '');
+  }
+
+  var slider = document.getElementById('m5-h');
+  function setHora(m) {
+    var r = tokens(m);
+    for (var k in r.t) root.style.setProperty(k, r.t[k]);
+    var hh = String(Math.floor(m / 60)).padStart(2, '0'), mm = String(m % 60).padStart(2, '0');
+    document.getElementById('m5-hv').textContent = hh + ':' + mm;
+    document.getElementById('m5-clock').textContent = hh + ':' + mm;
+    document.getElementById('m5-sch').textContent = r.osc ? 'oscuro' : 'claro';
+    document.getElementById('v-hue').textContent = r.hue.toFixed(1) + '°';
+    medir();
+  }
+  slider.addEventListener('input', function () { setHora(+slider.value); });
+
+  document.getElementById('m5-rep').addEventListener('click', function () { entrada(); });
+  root.querySelectorAll('[data-entra]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      entra = b.getAttribute('data-entra');
+      root.querySelectorAll('[data-entra]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+      entrada();
+    });
+  });
+  var vs = document.getElementById('m5-v');
+  vs.addEventListener('input', function () {
+    vel = +vs.value / 100;
+    document.getElementById('m5-vv').textContent = 'x' + vel.toFixed(1).replace('.', ',');
+    entrada();
+  });
+  document.getElementById('m5-rm').addEventListener('change', function () { rm = this.checked; entrada(); });
+
+  var stage = document.getElementById('m5-stage'), scaler = document.getElementById('m5-scaler');
+  function fit() {
+    var k = Math.min(1, stage.clientWidth / 1440);
+    scaler.style.transform = 'scale(' + k + ')';
+    stage.style.height = Math.round(900 * k) + 'px';
+    medir();
+  }
+  new ResizeObserver(fit).observe(stage);
+
+  setHora(1375);
+  pintar();
+  fit();
+  entrada();
+})();
+</script>

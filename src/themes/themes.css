@@ -4552,6 +4552,374 @@
 }
 
 /*
+ * Fase B4 — Creditos deja de ser el reparto de parcelas y pasa a ser la
+ * bandeja del gestor de paquetes. El DOM generico de `credits.ts` (parcelas,
+ * frisos, panel, rodillo) no sirve aqui: se oculta entero y
+ * `caelestiaCreditosBandeja.ts` construye su propio arbol leyendo
+ * `skillGroups` directamente, igual que hizo B3 con la Editorial. Ese fichero
+ * lo comparten los tres temas y NO se bifurca.
+ */
+:root[data-theme="caelestia"] .credits-grid {
+  display: none;
+}
+
+/* La seccion trae `px-6 py-24`, `min-h-screen` y `flex` del marcado
+   compartido (`src/sections/skills.ts`). Sin neutralizarlo, el aire que se
+   mide no es el de la bandeja: es el de la maquetacion que esta fase viene a
+   sustituir, y el gate 1 (sin scroll interno) no se puede cerrar — mismo
+   patron que resolvio B2 para `about`. */
+:root[data-theme="caelestia"] [data-scene="credits"] {
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  display: block;
+}
+
+/* El `<h2>Con que construyo</h2>` NO se retira del DOM: es el UNICO
+   encabezado accesible de la escena, y `scripts/verify.py` exige uno real por
+   `[data-scene]`. Se esconde con el patron VISUALMENTE OCULTO — ni
+   `display: none` ni `visibility: hidden`, que sacan el nodo del arbol de
+   accesibilidad. La clase la pone `themes.css`, nunca el marcado:
+   `.hero-kick` es compartida por los tres temas y darsela en el DOM la
+   esconderia tambien en Vice e Hyprland. Mismo patron que B2 uso para
+   `[data-scene="about"] .hero-kick`. */
+:root[data-theme="caelestia"] [data-scene="credits"] .hero-kick {
+  @apply sr-only;
+}
+
+:root[data-theme="caelestia"] .cae-cred-wrap {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  /* La seccion vive con `padding: 0` (neutraliza el `py-24 px-6` compartido);
+     el aire de la ventana lo reserva el envoltorio, no la escena. Medida de
+     la maqueta aprobada: `docs/superpowers/specs/2026-09-03-caelestia-
+     creditos-maqueta.html:101`, regla `.m5-scene`. */
+  padding: 48px;
+}
+
+:root[data-theme="caelestia"] .cae-cred-cab {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 18px;
+  align-items: center;
+  height: 96px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--cae-outline);
+}
+
+/* Cuatro bandas de la MISMA altura. Con `space-between` sobre cajas de altura
+   distinta el aire salia desigual y la bandeja volvia a leerse suelta. */
+:root[data-theme="caelestia"] .cae-cred-grid {
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  min-height: 0;
+}
+
+:root[data-theme="caelestia"] .cae-cred-banda {
+  display: grid;
+  grid-template-columns: 158px 1fr;
+  gap: 0 22px;
+  align-items: center;
+  padding-bottom: 14px;
+}
+
+/* El rotulo va al centro vertical de SU banda y a bandera derecha contra el
+   canto de la calle, para que los cuatro caigan sobre el mismo eje. */
+:root[data-theme="caelestia"] .cae-cred-rot {
+  text-align: right;
+  align-self: center;
+}
+
+/* Sin regla, `h4` heredaba el cuerpo por defecto (Hanken Grotesk 400, 16px) —
+   igual que `.cae-cred-nom` mas abajo, asi que «Interfaz» y «React» eran
+   tipograficamente indistinguibles: el eje que estructura la bandeja (4
+   territorios, 23 piezas) no tenia ninguna autoridad. Martian Mono, como la
+   cabecera de la fase y el resto del shell — es la gramatica declarada de
+   las etiquetas del tema, no el cuerpo itálico de Fraunces. 16px, el mayor de
+   los dos tamanos de esta pareja (tamanos ya en uso en la escena, ninguno
+   nuevo), para que el rotulo GANE en presencia a las piezas de su banda. */
+:root[data-theme="caelestia"] .cae-cred-rot h4 {
+  margin: 0;
+  font-family: "Martian Mono", ui-monospace, monospace;
+  font-size: 16px;
+  font-style: normal;
+  font-variation-settings: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-cred-tira {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(8, 142px);
+  align-items: end;
+  justify-items: center;
+  padding-top: 8px;
+}
+
+/* El filete llega solo hasta la ultima pieza de la banda. */
+:root[data-theme="caelestia"] .cae-cred-banda:not(:last-child) .cae-cred-tira::after {
+  content: "";
+  position: absolute;
+  bottom: -14px;
+  left: 0;
+  height: 1px;
+  width: calc(var(--piezas) * 142px);
+  background: var(--cae-outline);
+}
+
+:root[data-theme="caelestia"] .cae-cred-pieza {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 0;
+}
+
+/* Subordinada a `.cae-cred-rot h4`: mismo eje monoespaciado, 10px — el mismo
+   tamano que ya lleva `.cae-cred-cab .cae-cred-terr` para el mismo dato
+   (territorio) en la cabecera, asi que el par «rotulo grande / etiqueta
+   pequena» es coherente en las dos lecturas de la escena. Sin versalitas:
+   son nombres propios de marca ("TypeScript", "Django"), no un epigrafe. */
+:root[data-theme="caelestia"] .cae-cred-nom {
+  margin: 0;
+  font-family: "Martian Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-style: normal;
+  font-variation-settings: normal;
+  letter-spacing: 0.01em;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-cred-fig {
+  clip-path: var(--fig);
+  display: grid;
+  place-items: center;
+  /* Relleno en `--cae-outline`: `--cae-surface-container` es EXACTAMENTE
+     `--cae-elev-1`, el fondo de la ventana, asi que rellenar con el borra la
+     figura. Lo mismo vale para apagarla: se apaga la tinta, nunca el fondo. */
+  background: var(--cae-outline);
+}
+
+/* NO `--cae-anchor`: contra `--cae-elev-1` (el fondo de la escena) el ancla da
+   1,38:1 de dia — falla el 3:1 que exige WCAG 2.2 SC 1.4.11 para foco visible,
+   invisible 13 de las 24 horas. `--cae-on-surface` es el par `on-X` de esa
+   misma superficie por construccion del motor de color (Tarea 2), asi que el
+   3:1 no depende de la hora ni del matiz: medido 14,17:1 a las 09:00 y
+   12,26:1 a las 03:00, contra 11,53:1 de noche / 1,37:1 de dia con el ancla. */
+:root[data-theme="caelestia"] .cae-cred-pieza:focus-visible {
+  outline: 2px solid var(--cae-on-surface);
+  outline-offset: 5px;
+  border-radius: 10px;
+}
+
+/* El icono va en la tinta del tema, no en el negro que hereda por defecto:
+   sobre el relleno `--cae-outline` de la figura mide 6,78:1 de noche y
+   6,04:1 a las 09:00. Todos en UNA sola tinta — los 23 logotipos de marca
+   traen colores ajenos a la rueda OkLCH del tema y con ellos el peor caso
+   caia a 2,53:1 a las 09:00. */
+:root[data-theme="caelestia"] .cae-cred-fig svg {
+  fill: var(--cae-on-surface);
+}
+
+/* La marca de la cabecera: sin caja quedaba suelta, sin fondo propio, con el
+   clip-path de la pieza actual puesto por JS pero sin superficie que recortar. */
+:root[data-theme="caelestia"] .cae-cred-marca {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--cae-primary);
+  color: var(--cae-on-primary);
+}
+
+:root[data-theme="caelestia"] .cae-cred-marca svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+:root[data-theme="caelestia"] .cae-cred-nombre {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: 32px;
+  line-height: 1;
+  margin: 0 0 4px;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-cred-detalle {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-variation-settings: "opsz" 24, "wght" 400, "SOFT" 0, "WONK" 1;
+  font-size: 17px;
+  color: var(--cae-on-surface-variant);
+}
+
+/* Especificidad `.cae-cred-cab .cae-cred-terr` (0,2,0) y no `.cae-cred-terr`
+   (0,1,0): `.cae-cred-cab p` le ganaba y el territorio se pintaba en Fraunces
+   itálica pese a pedir la monoespaciada, obedeciendo solo el tracking. Y no
+   basta con repetir la familia: hay que apagar tambien `font-style` y los ejes
+   heredados. Sin versalitas ni tracking largo — a 10 px separaba las letras. */
+:root[data-theme="caelestia"] .cae-cred-cab .cae-cred-terr {
+  font-family: "Martian Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  font-style: normal;
+  font-variation-settings: normal;
+  color: var(--cae-on-surface-variant);
+  margin: 7px 0 0;
+}
+
+/* HILERA, no pila. Medido: con tres obras (TypeScript: EchoPlan, TesisFar,
+   HyprFinance) la pila de <li> medía 111 px dentro de una cabecera de 96 y se
+   salía 15. En hilera con punto medio caben en uno: 51 px, 400 de ancho en un
+   hueco de 420. Los tres títulos siguen escritos, ninguno se resume. */
+:root[data-theme="caelestia"] .cae-cred-cruce {
+  text-align: right;
+  max-width: 420px;
+}
+
+/* Tracking corto: a .2em «APARECE EN» se leía como diez letras sueltas. Sigue
+   en versalitas porque es un epígrafe, no una palabra que se lea. */
+:root[data-theme="caelestia"] .cae-cred-cruce > span {
+  display: block;
+  font-family: "Martian Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface-variant);
+  margin-bottom: 9px;
+}
+
+:root[data-theme="caelestia"] .cae-cred-cruce-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0 2px;
+}
+
+:root[data-theme="caelestia"] .cae-cred-cruce-lista li {
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-variation-settings: "opsz" 48, "wght" 500, "SOFT" 0, "WONK" 1;
+  font-size: 26px;
+  line-height: 1.16;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-cred-cruce-lista li + li::before {
+  content: "\00B7";
+  padding: 0 7px 0 5px;
+  color: var(--cae-on-surface-variant);
+  font-style: normal;
+}
+
+/* «Sin obra publicada» NO se apaga con tinta: en `--cae-outline` daba 1,80:1 de
+   noche y 2,34:1 a las 09:00, y son 7 de las 23 piezas (el 30 %). El estado lo
+   dice la PALABRA. Apagar la tinta para decir «esto pesa menos» es la misma
+   opacidad recalibrada que ya fallo en B1. */
+:root[data-theme="caelestia"] .cae-cred-cruce-lista li.is-vacia {
+  font-size: 21px;
+  color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-fig {
+  clip-path: var(--fig-suave);
+  background: var(--cae-primary);
+  transform: scale(1.07);
+}
+
+/* El icono de la pieza elegida va sobre `--cae-primary`, no sobre el relleno
+   normal de la figura, asi que le toca su pareja `--cae-on-primary`. Con la
+   tinta general (`--cae-on-surface`) se volvia ilegible en esquema oscuro:
+   1,38:1 a las 06:00, «icono Tailwind CSS». */
+:root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-fig svg {
+  fill: var(--cae-on-primary);
+}
+
+/* `.cae-cred-nom` ya baja el tono por defecto (Arreglo 3): la elegida sube a
+   la tinta plena para seguir distinguiendose del resto, con o sin
+   `is-tocando` — antes esa jerarquia la daba `color: inherit` sin querer. */
+:root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-nom {
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-cred-fig {
+  transition:
+    clip-path 0.22s ease,
+    transform 0.22s ease,
+    background 0.22s ease;
+}
+
+/* Las demas bajan su TINTA, nunca su fondo: `--cae-surface-container` es
+   exactamente `--cae-elev-1`, el fondo de la ventana, asi que apagar el relleno
+   borra las figuras en vez de atenuarlas. */
+:root[data-theme="caelestia"] .cae-cred-grid.is-tocando
+  .cae-cred-pieza:not([aria-pressed="true"]) figcaption {
+  color: var(--cae-on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-cred-fig {
+    transition: none;
+  }
+}
+
+/* «La instalacion»: las 23 llegan como CIRCULOS IDENTICOS —paquetes sin
+   abrir— y cada una morfa a su figura mientras crece desde 0,66 y se endereza
+   6 grados. El mecanismo es la identidad declarada del tema, no un
+   desplazamiento prestado de otra escena. Sin terminal tecleada: seria la
+   tercera despues de B1 y B2, y esta vetada.
+
+   El fotograma de partida usa `var(--fig-circ)`, NUNCA `circle(50% at 50% 50%)`:
+   un `circle()` de CSS no interpola con un `polygon()` — son formas basicas
+   distintas, asi que el navegador corta de golpe en vez de morfar, sin error
+   ni aviso. `--fig-circ` es `FIGURA_CIRCULO` de `figurasM3.ts`, el mismo
+   `polygon()` de 240 vertices que `--fig`, inyectado por el componente. */
+@keyframes caeCredInstala {
+  from {
+    clip-path: var(--fig-circ);
+    transform: scale(0.66) rotate(-6deg);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    clip-path: var(--fig);
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+:root[data-theme="caelestia"] [data-cred-entrando] .cae-cred-fig {
+  animation: caeCredInstala 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--retardo, 0ms);
+}
+
+/* La guardia con `*` NO alcanza a los pseudo-elementos ni a las animaciones ya
+   declaradas por nombre: hace falta esta regla explicita. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] [data-cred-entrando] .cae-cred-fig {
+    animation: none;
+  }
+}
+
+/*
  * La barra del shell: marca, pastillas de workspace y bandeja de estado.
  * `--cae-elev-1`/`--cae-elev-2` (Tarea 2) las pinta por primera vez de verdad.
  */

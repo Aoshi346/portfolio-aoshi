@@ -126,6 +126,58 @@
   fall back to a hard cut, no error, no warning. And `*` in a `prefers-reduced-motion` CSS guard does
   **not** reach pseudo-elements — `.ficha-k::before` needed its own explicit rule to stop animating
   under reduced motion; the generic wildcard guard missed it.
+- **Caelestia's phase B3 (Obra) is MERGED but still `en ejecucion`** (`2026-09-03-caelestia-obra`,
+  third of the five inside-window phases). The `#obra` scene stops being a 4964px rail inside a
+  748px window (4 of 5 projects unreachable, plus internal scroll — exactly what phase A's law
+  forbids) and becomes **the Editorial**: five always-visible cards (16:10 capture + Fraunces
+  italic caption, alternating ±3-5° tilt that straightens on hover) in a fixed row, with a
+  **drawer** opening below carrying the full project sheet. New module
+  `src/components/caelestiaObraEditorial.ts`. **`src/sections/obra/projectScene.ts` was NOT
+  touched** — better than the plan foresaw: that DOM stays as-is for Vice/Hyprland and under
+  Caelestia `themes.css` hides it whole instead of rewriting it. Entrance gesture is **Caída**
+  (cards fall with a per-card rotation and `bounce.out`; the drawer enters in four separate layers,
+  never as a flat block) — no typed terminal, that would have been the third one. Gated by
+  `scripts/measure-caelestia-obra.py`.
+  **Why it is not DONE:** the nine real captures in `public/media/obra/*.webp` do not exist — they
+  are "CAPTURA PENDIENTE" markers painted in **Vice's** palette (purple/amber), which inside
+  Caelestia read as a theme error. That is a commission for Aoshi, not design debt; the visual gate
+  stays blocked until they exist. Mobile out of scope, same as B1/B2.
+
+- **Caelestia's phase B4 (Créditos) is MERGED and `en ejecucion`** (`2026-09-03-caelestia-creditos`,
+  fourth of the five inside-window phases). The `#credits` scene stops being a plot-share layout
+  with 10px of internal scroll, 424 dead px at the right edge and **four group labels that existed
+  in the DOM and painted none**, and becomes **the package tray**: if each Caelestia scene is an
+  application, Credits is the package manager — what is installed on this machine. Four equal-height
+  bands (one per territory, label right-aligned in a 158px gutter), 23 fixed 142px modules, all 23
+  technologies always on screen. New module `src/components/caelestiaCreditosBandeja.ts`;
+  **`src/components/credits.ts` is NOT touched and NOT branched by theme** — its generic DOM is
+  hidden whole from `themes.css`, the same pattern B3 proved with `projectScene.ts`.
+  - **Size encodes nothing.** All 23 pieces are one size (88px, a single value in the whole DOM).
+    Both possible yardsticks lie: a global one inflates Herramientas because `tooling` is in all
+    five projects; a per-territory one makes JavaScript (one work) as big as Git (five).
+  - **23 unique Material 3 figures**, one harmonic family, **240 vertices each** — two `polygon()`s
+    only interpolate with the same vertex count. They are rebuilt at runtime from a 23-row table in
+    `src/utils/figurasM3.ts` (the generator emits 167KB of literals and they are not needed:
+    dividing by `rmax` is redundant once you box-fit by each axis' *span*, measured at 4.4e-16).
+  - **Hover selects without clicking**; focus reaches the same. Entrance is **"la instalación"**:
+    the 23 arrive as identical circles — unopened packages — and morph to their figure, in a wave by
+    territory. No typed terminal: that would have been the third after B1 and B2.
+  - Gated by `scripts/measure-caelestia-creditos.py` (9 assertion families). **It takes over two
+    minutes** because of the 24-hour sweep: launch it with `nohup` and wait on the PID.
+  **Why it is not DONE:** `vera-art-director` came back **BLOCK (5.3/10 against a 7.5 gate)`, accepted
+  as residual like Vice/shell/B1 — but its two product P0s were fixed first (`2b8db2c`).
+  `lidia-naive-tester` green (7.1/10, zero P0), with two open product P1s: the hover gesture is not
+  discoverable, and "Aparece en" does not link to the Obra scene, breaking the *"knows X → used it
+  in Y"* chain that is this scene's whole contribution. Mobile out of scope, same as B1/B2 — today
+  at 390px the scene already carries 154px of internal scroll, which B4 neither fixes nor worsens.
+  **The lesson that cost this phase most is about instruments, again:** the entrance ran *on mount*,
+  finishing 2803ms in with the scene **4334px outside the viewport** — the signature gesture of the
+  phase was never once seen. It was a regression against a pattern the same theme had documented one
+  phase earlier (`caelestiaObraEditorial.ts` listens for `caelestia:workspace`). And **its gate had
+  two assertions, both on the reduced-motion path**: titled "the entrance", it never checked that the
+  entrance happened. It is the ninth tautological instrument in this track and the only one not
+  caught by sabotage — it was caught by looking at the scene. **A gate that only measures the
+  degraded branch does not watch the path the visitor sees.**
 
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**

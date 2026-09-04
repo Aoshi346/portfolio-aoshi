@@ -1,0 +1,373 @@
+<meta charset="utf-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Martian+Mono:wght@300;400;500;600&display=swap');
+
+.m6 {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "Martian Mono", ui-monospace, monospace;
+  --cae-display-axes-cartel: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
+  background: #12100f; color: #e8e4e0; font-family: var(--font-body);
+  min-height: 100vh; padding: 34px 40px 70px; box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+.m6 *, .m6 *::before, .m6 *::after { box-sizing: border-box; }
+.m6-kick { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .2em;
+  text-transform: uppercase; color: #b9a06a; margin: 0 0 12px; }
+.m6-h1 { font-family: var(--font-display); font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: 46px; line-height: .98; letter-spacing: -.015em; margin: 0 0 10px; max-width: 24ch; }
+.m6-lead { font-size: 14px; line-height: 1.55; color: #a49d97; max-width: 96ch; margin: 0 0 20px; }
+.m6-lead b { color: #e8e4e0; font-weight: 600; }
+
+.m6-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
+.m6-tab { font-family: var(--font-mono); font-size: 11px; color: #a49d97; background: transparent;
+  border: 1px solid #3a3532; border-radius: 999px; padding: 8px 15px; cursor: pointer; transition: .16s; }
+.m6-tab:hover { color: #e8e4e0; border-color: #6b625c; }
+.m6-tab[aria-pressed="true"] { background: #e8e4e0; border-color: #e8e4e0; color: #17140f; font-weight: 600; }
+.m6-tab:focus-visible { outline: 2px solid #d8c07a; outline-offset: 3px; }
+.m6-hour { display: flex; align-items: center; gap: 9px; margin-left: auto;
+  font-family: var(--font-mono); font-size: 11px; color: #a49d97; }
+.m6-hour input[type=range] { width: 250px; accent-color: #d8c07a; }
+.m6-hour b { color: #e8e4e0; font-weight: 500; min-width: 42px; display: inline-block; }
+.m6-scheme { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; border: 1px solid #3a3532; color: #a49d97; }
+
+/* ---------- las fichas, a tamano real ---------- */
+.m6-caso { margin-bottom: 20px; }
+.m6-cab { display: flex; align-items: baseline; gap: 14px; margin-bottom: 7px; }
+.m6-n { font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+  color: #7d746e; }
+.m6-q { font-size: 13px; color: #a49d97; }
+.m6-q b { color: #e8e4e0; font-weight: 600; }
+
+/* La ficha se pinta con el MISMO marcado y las MISMAS reglas que el mockup
+   vivo (05-bandeja): si aqui se viera bien y alli mal, esta pantalla mentiria. */
+.m6-ficha { width: 1316px; padding: 0 0 14px; border-bottom: 1px solid var(--cae-outline);
+  background: var(--cae-surface-container); }
+.m6-marco { width: 1316px; max-width: 100%; overflow: hidden; border-radius: 12px;
+  border: 1px solid #2a2624; padding: 22px 26px 8px; background: var(--cae-surface-container); }
+
+/* CABECERA: copiada VERBATIM de 05-bandeja.html. Si aqui divergiera del
+   mockup vivo, esta pantalla no probaria nada de el. */
+.hd-banner { display: grid; grid-template-columns: 52px 1fr auto; gap: 18px; align-items: center;
+  height: 96px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--cae-outline); }
+.hd-banner .marca { width: 48px; height: 48px; display: grid; place-items: center;
+  background: var(--cae-primary); color: var(--cae-on-primary); }
+.hd-banner .marca svg { width: 24px; height: 24px; fill: currentColor; }
+.hd-banner h3 { font-family: var(--font-display); font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: 32px; line-height: 1; margin: 0 0 4px; color: var(--cae-on-surface); }
+.hd-banner p { margin: 0; font-family: var(--font-display); font-style: italic;
+  font-variation-settings: "opsz" 24, "wght" 400, "SOFT" 0, "WONK" 1;
+  font-size: 17px; color: var(--cae-on-surface-variant); }
+.hd-cruce { text-align: right; }
+.hd-cruce span { display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--cae-on-surface-variant); margin-bottom: 6px; }
+/* El territorio NO va en --cae-outline: es el mismo rol de bajisimo contraste
+   que fallaba en «Sin obra publicada» (1.80:1 de noche). Se paga una vez. */
+/* Sin versalitas ni tracking: a 9px, `letter-spacing: .14em` sobre una caja
+   alta separa las letras en vez de agruparlas — «H E R R A M I E N T A S» se
+   lee como once cosas, no como una palabra. El territorio se escribe tal cual,
+   que ya lo distingue la monoespaciada frente a la Fraunces del nombre. */
+/* `.hd-banner p` (0,1,1) le ganaba a `.hd-figname` (0,1,0): el territorio se
+   estaba pintando en Fraunces italica pese a pedir la monoespaciada, y hay que
+   apagar tambien el `font-style` y los ejes heredados, no solo la familia. */
+.hd-banner .hd-figname { font-family: var(--font-mono); font-size: 10px; letter-spacing: .01em;
+  font-style: normal; font-variation-settings: normal;
+  color: var(--cae-on-surface-variant); margin-top: 7px; }
+/* El cruce va en la LINEA INICIAL de la escena, al canto derecho: comparte
+   renglon con el nombre de la pieza, que es lo que contesta. Debajo de la
+   primera banda no cabia — se montaba encima de GSAP, Electron y GTK4. */
+.hd-cruce { text-align: right; max-width: 420px; }
+/* Tracking corto: a .2em «APARECE EN» se leia como diez letras sueltas, el
+   mismo tic que el rotulo de territorio. Sigue en versalitas porque es un
+   epigrafe, no una palabra que se lea — pero sin separar las letras. */
+.hd-cruce span { display: block; font-family: var(--font-mono); font-size: 9.5px;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--cae-on-surface-variant);
+  margin-bottom: 9px; }
+/* HILERA, no pila. Medido: con tres obras (TypeScript: EchoPlan, TesisFar,
+   HyprFinance) la pila de <li> medía 111px dentro de una cabecera de 96 y se
+   salía 15px. En hilera con punto medio caben en dos renglones: 81px. */
+.hd-cruce ul { list-style: none; margin: 0; padding: 0; display: flex;
+  flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 0 2px; }
+.hd-cruce li { font-family: var(--font-display); font-style: italic;
+  font-variation-settings: "opsz" 48, "wght" 500, "SOFT" 0, "WONK" 1;
+  font-size: 26px; line-height: 1.16; color: var(--cae-on-surface); }
+.hd-cruce li + li::before { content: "·"; padding: 0 7px 0 5px;
+  color: var(--cae-on-surface-variant); font-style: normal; }
+/* «Sin obra publicada» NO se apaga con tinta: medido en --cae-outline daba
+   1.80:1 de noche y 2.34:1 a las 09:00, y son 7 de las 23 piezas (el 30%).
+   El estado lo dice la PALABRA, no la falta de contraste. */
+.hd-cruce li.none { font-size: 21px; color: var(--cae-on-surface-variant); }
+
+/* ---------- lecturas por caso ---------- */
+.m6-lec { display: flex; gap: 1px; background: #2a2624; border: 1px solid #2a2624;
+  border-radius: 0 0 9px 9px; border-top: 0; overflow: hidden; width: 1316px; max-width: 100%; }
+.m6-lec > div { background: #1a1715; padding: 8px 14px; flex: 1 1 0; }
+.m6-lec dt { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .13em;
+  text-transform: uppercase; color: #7d746e; margin: 0 0 4px; }
+.m6-lec dd { margin: 0; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: #e8e4e0; }
+.m6-lec dd.ok { color: #7fd08a; } .m6-lec dd.bad { color: #e3856b; }
+
+.m6-notas { margin-top: 26px; border-top: 1px solid #2a2624; padding-top: 18px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 20px; }
+.m6-nota h4 { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: #b9a06a; margin: 0 0 8px; }
+.m6-nota p { font-size: 13px; line-height: 1.6; color: #a49d97; margin: 0 0 8px; }
+.m6-nota b { color: #e8e4e0; font-weight: 600; }
+.m6-nota .antes { color: #e3856b; font-family: var(--font-mono); font-size: 12px; }
+.m6-nota .desp { color: #7fd08a; font-family: var(--font-mono); font-size: 12px; }
+</style>
+
+<div class="m6" id="m6">
+  <p class="m6-kick">Caelestia · fase B4 · M4 — el detalle y el cruce</p>
+  <h1 class="m6-h1">La ficha contra sus cinco extremos</h1>
+  <p class="m6-lead">La bandeja dice <b>qué hay instalado</b>; el cruce dice <b>dónde se usó</b>. Es el único dato
+    que Créditos tiene y ninguna otra escena tiene. Aquí está la ficha en las <b>cinco cardinalidades que
+    existen de verdad</b> en <code>content.ts</code> —cinco obras, cuatro, tres, dos y ninguna— para comprobar
+    que ni se queda vacía ni miente. Las cinco se pintan con el mismo marcado y las mismas reglas que el
+    mockup vivo: si aquí saliera bien y allí mal, esta pantalla no serviría de nada.</p>
+
+  <div class="m6-ctl">
+    <button class="m6-tab" id="m6-antes" aria-pressed="false">Ver el estado anterior</button>
+    <span class="m6-hour">hora
+      <input id="m6-h" type="range" min="0" max="1439" value="540" step="5">
+      <b id="m6-hv">09:00</b><span class="m6-scheme" id="m6-sch">claro</span>
+    </span>
+  </div>
+
+  <div id="m6-casos"></div>
+
+  <div class="m6-notas">
+    <div class="m6-nota">
+      <h4>Lo que cazó M4 — 1: la pila se salía</h4>
+      <p>Con <b>tres</b> obras (TypeScript: EchoPlan, TesisFar, HyprFinance) el cruce se apilaba en tres
+        renglones y medía <span class="antes">111 px</span> dentro de una cabecera de <b>96</b>. Se salía
+        <b>15 px</b> por abajo, contra el filete de la primera banda. Una sola de las 23, y es justo el caso
+        más honesto: el único donde se listan títulos de verdad.</p>
+      <p>Arreglado pasando el cruce de <b>pila a hilera</b>, con punto medio entre títulos:
+        <span class="desp">51 px</span>, un solo renglón de 400 px dentro de un hueco de 420. Los tres
+        títulos siguen escritos, ninguno se resume. El caso más alto pasa a ser el de cuatro obras
+        («Cuatro de los cinco / proyectos», 81 px), que ya cabía.</p>
+    </div>
+    <div class="m6-nota">
+      <h4>Lo que cazó M4 — 2: «Sin obra publicada» no se leía</h4>
+      <p>El estado vacío iba en <code>--cae-outline</code>, el rol de menos contraste del sistema. Medido
+        pintando el color en un lienzo y leyendo el píxel —no con una regex sobre <code>oklch()</code>, que
+        es la trampa que ya costó una fase—: <span class="antes">1,80:1 de noche · 2,34:1 a las 09:00</span>.
+        Y no es un caso raro: son <b>7 de las 23</b> piezas, el 30 %.</p>
+      <p>El estado lo dice ahora <b>la palabra</b>, no la falta de contraste:
+        <span class="desp">8,05:1 de noche · 5,93:1 a las 09:00</span>. Apagar la tinta para decir «esto
+        pesa menos» es la misma opacidad recalibrada que ya falló en B1.</p>
+    </div>
+    <div class="m6-nota">
+      <h4>Por qué no se listan cuatro ni cinco</h4>
+      <p>Lo hereda <code>credits.ts::textoCruce</code>, que ya está escrito: con cuatro o cinco obras se
+        resume («Los cinco proyectos») porque listar los cinco no distingue nada —Git, GitHub y las dos CLI
+        están en todos— y descuadraba el pie. <b>No es una decisión nueva de B4</b>: la ficha nueva usa la
+        regla que el componente compartido ya tiene, sin bifurcar por tema.</p>
+    </div>
+    <div class="m6-nota">
+      <h4>El cruce no es un adorno del hueco</h4>
+      <p>En la línea inicial, al canto derecho, comparte renglón con el nombre de la pieza, que es lo que
+        contesta. Se probó debajo de la primera banda y <b>se montaba encima de GSAP, Electron y GTK4</b>:
+        esa banda ocupa los ocho módulos, ahí abajo no hay línea inicial libre.</p>
+      <p>Ensanchar el cruce hasta 420 px no aplasta la columna del medio: medido en las 23, el mínimo es
+        <b>808 px</b> y el detalle más largo mide 389. Solape: <b>0 px</b>.</p>
+    </div>
+  </div>
+</div>
+
+<script src="/files/icons.js"></script>
+<script src="/files/figuras23.js"></script>
+<script>
+(function () {
+  var root = document.getElementById('m6');
+/* ---------- motor de color, portado de src/themes/caelestia.color.ts ---------- */
+  var CLARO = { "surface":[0.98,0.012], "surface-container":[0.955,0.02], "surface-container-high":[0.925,0.026],
+    "on-surface":[0.245,0.035], "on-surface-variant":[0.47,0.032], "outline":[0.7,0.022],
+    "primary":[0.45,0.13], "on-primary":[0.99,0.01], "primary-container":[0.895,0.062], "on-primary-container":[0.31,0.1] };
+  var OSCURO = { "surface":[0.185,0.016], "surface-container":[0.265,0.022], "surface-container-high":[0.345,0.026],
+    "on-surface":[0.925,0.016], "on-surface-variant":[0.795,0.024], "outline":[0.42,0.02],
+    "primary":[0.815,0.115], "on-primary":[0.27,0.095], "primary-container":[0.395,0.105], "on-primary-container":[0.9,0.062] };
+  var ORIGEN = 60, AZUFRE = { l:0.855, lOscuro:0.905, c:0.152, h:96 };
+  var MIN = 1440, AMANECE = 7*60, ANOCHECE = 20*60;
+  function ok(l,c,h){ return 'oklch(' + l.toFixed(3) + ' ' + c.toFixed(3) + ' ' + h.toFixed(1) + ')'; }
+  function hueAt(m){ return ((((m/MIN)*360+ORIGEN)%360)+360)%360; }
+  function chromaScaleAt(h){ var d=Math.abs(((((h-240)%360)+540)%360)-180); if(d<=70) return 1; return Math.max(0.32, 1-(d-70)/115); }
+  function isDarkAt(m){ return m < AMANECE || m >= ANOCHECE; }
+  function tokens(m){
+    var hue=hueAt(m), esc=chromaScaleAt(hue), osc=isDarkAt(m), roles=osc?OSCURO:CLARO, t={};
+    for (var k in roles) t['--cae-'+k] = ok(roles[k][0], roles[k][1]*esc, hue);
+    t['--cae-anchor'] = ok(osc?AZUFRE.lOscuro:AZUFRE.l, AZUFRE.c, AZUFRE.h);
+    t['--cae-on-anchor'] = ok(0.215, 0.05, AZUFRE.h);
+    t['--cae-wall-1'] = ok(osc?0.24:0.93, 0.09*esc, hue);
+    t['--cae-wall-2'] = ok(osc?0.21:0.95, 0.07*esc, (hue+42)%360);
+    t['--cae-wall-3'] = ok(osc?0.20:0.96, 0.06*esc, (hue+318)%360);
+    return { t:t, hue:hue, osc:osc };
+  }
+
+  /* ---------- contenido literal de src/data/content.ts ---------- */
+  var GRUPOS = [
+    { label:"Interfaz", items:[
+      ["React","react","Interfaces con estado complejo."],
+      ["Next.js","nextdotjs","Para apps con rutas y render en servidor."],
+      ["TypeScript","typescript","Tipado en todo lo que escribo."],
+      ["Tailwind CSS","tailwindcss","Maquetación rápida y consistente."],
+      ["Vite","vite","Mi bundler por defecto."],
+      ["GSAP","gsap","Las animaciones y las transiciones."],
+      ["Electron","electron","Aplicaciones de escritorio con tecnología web."],
+      ["GTK4","gtk","Interfaces nativas en C."]]},
+    { label:"Backend y datos", items:[
+      ["Python","python","Automatización, datos y APIs."],
+      ["Django","django","Backend robusto: ORM, admin y auth."],
+      ["Node.js","nodedotjs","JavaScript fuera del navegador."],
+      ["MySQL","mysql","Donde persisto los datos."],
+      ["RxDB","rxdb","Datos locales en el navegador."]]},
+    { label:"Lenguajes base", items:[
+      ["JavaScript","javascript","Base de todo lo que corre en el navegador."],
+      ["HTML","html5","Estructura semántica antes que nada."],
+      ["CSS","css","Lo que no cubre Tailwind, lo escribo a mano."],
+      ["C","c","Donde aprendí a pensar en memoria y punteros."],
+      ["C++","cplusplus","Sistemas y aplicaciones nativas."]]},
+    { label:"Herramientas", items:[
+      ["Git","git","Control de versiones en todo lo que hago."],
+      ["GitHub","github","Donde publico y comparto el código."],
+      ["n8n","n8n","Automatizo tareas repetitivas entre servicios."],
+      ["Claude Code","claude","Asistente en terminal para escribir y revisar código."],
+      ["Gemini CLI","googlegemini","Consultas rápidas desde la terminal."]]}
+  ];
+  var OBRAS = [
+    { title:"EchoPlan", stack:["Python","Django","TypeScript","React","Vite"], tooling:["Git","GitHub","Claude Code","Gemini CLI"] },
+    { title:"TesisFar", stack:["TypeScript","Next.js"], tooling:["Git","GitHub","Claude Code","Gemini CLI"] },
+    { title:"HyprFinance", stack:["TypeScript","React","RxDB","GSAP","Zustand"], tooling:["Git","GitHub","Claude Code","Gemini CLI"] },
+    { title:"WatchDog", stack:["JavaScript","Electron","Python"], tooling:["Git","GitHub","Claude Code","Gemini CLI"] },
+    { title:"Editor de texto", stack:["C","GTK4"], tooling:["Git","GitHub"] }
+  ];
+
+
+  function usedIn(name){ return OBRAS.filter(function(o){ return o.stack.concat(o.tooling).indexOf(name) >= 0; }).map(function(o){ return o.title; }); }
+  var ENTRIES = [];
+  GRUPOS.forEach(function (g) { g.items.forEach(function (it) {
+    ENTRIES.push({ rol:g.label, name:it[0], slug:it[1], detail:it[2], used:usedIn(it[0]) }); }); });
+  function porNombre(n){ return ENTRIES.filter(function(e){ return e.name===n; })[0]; }
+
+  /* Los cinco extremos que EXISTEN en content.ts. No se inventa ninguno:
+     5 -> Git, 4 -> Claude Code, 3 -> TypeScript, 2 -> React, 0 -> Tailwind CSS.
+     No hay ninguna tecnologia con exactamente 1 obra. */
+  var CASOS = [
+    { n:"Git",          q:"Cinco obras. El máximo: no se listan, se resumen." },
+    { n:"Claude Code",  q:"Cuatro obras. Mismo resumen, misma regla de <code>credits.ts</code>." },
+    { n:"TypeScript",   q:"Tres obras. El caso que se salía de la cabecera." },
+    { n:"React",        q:"Dos obras. Títulos reales, en hilera." },
+    { n:"Tailwind CSS", q:"Ninguna. Siete de las 23 caen aquí — el estado que no se leía." }
+  ];
+
+  var antes = false;
+
+  function cruceHTML(u) {
+    if (!u.length) return '<li class="none">Sin obra publicada</li>';
+    if (u.length === 5) return '<li>Los cinco proyectos</li>';
+    if (u.length === 4) return '<li>Cuatro de los cinco<br>proyectos</li>';
+    return u.map(function (t) { return '<li>' + t + '</li>'; }).join('');
+  }
+
+  function pintar() {
+    document.getElementById('m6-casos').innerHTML = CASOS.map(function (c, i) {
+      var e = porNombre(c.n);
+      return '<div class="m6-caso" data-caso="' + c.n + '">' +
+        '<div class="m6-cab"><span class="m6-n">' + (i+1) + ' / 5 · ' + e.used.length + ' obra' +
+          (e.used.length === 1 ? '' : 's') + '</span><span class="m6-q">' + c.q + '</span></div>' +
+        '<div class="m6-marco"><div class="hd-banner">' +
+          '<span class="marca" style="clip-path:' + window.FIG23[e.slug] + '">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + window.CAE_ICONS[e.slug] + '"></path></svg></span>' +
+          '<div><h3>' + e.name + '</h3><p>' + e.detail + '</p><p class="hd-figname">' + e.rol + '</p></div>' +
+          '<div class="hd-cruce"><span>Aparece en</span><ul>' + cruceHTML(e.used) + '</ul></div>' +
+        '</div></div>' +
+        '<dl class="m6-lec">' +
+          '<div><dt>Alto del cruce</dt><dd data-r="alto">—</dd></div>' +
+          '<div><dt>Se sale de los 96 px</dt><dd data-r="sale">—</dd></div>' +
+          '<div><dt>Contraste del cruce</dt><dd data-r="ratio">—</dd></div>' +
+          '<div><dt>Renglones pintados</dt><dd data-r="lin">—</dd></div>' +
+          '<div><dt>Ancho del texto / hueco</dt><dd data-r="anc">—</dd></div>' +
+        '</dl></div>';
+    }).join('');
+    aplicarAntes();
+    medir();
+  }
+
+  /* El estado anterior se reproduce EXACTO, no de memoria: pila (sin flex) y
+     el vacio en --cae-outline. Sirve para ver el defecto, no para elegir. */
+  function aplicarAntes() {
+    root.querySelectorAll('.hd-cruce ul').forEach(function (u) {
+      u.style.display = antes ? 'block' : '';
+    });
+    root.querySelectorAll('.hd-cruce li.none').forEach(function (l) {
+      l.style.color = antes ? 'var(--cae-outline)' : '';
+      l.style.fontSize = antes ? '20px' : '';
+    });
+    var b = document.getElementById('m6-antes');
+    b.setAttribute('aria-pressed', String(antes));
+    b.textContent = antes ? 'Volviendo al estado anterior' : 'Ver el estado anterior';
+  }
+
+  /* Contraste PINTADO: el color se vuelca en un lienzo 1x1 y se lee el pixel.
+     Leer `oklch(...)` con una regex como bytes RGB da 1.00:1 en todo. */
+  function px(c){ var k=document.createElement('canvas'); k.width=k.height=1; var x=k.getContext('2d');
+    x.fillStyle='#000'; x.fillRect(0,0,1,1); x.fillStyle=c; x.fillRect(0,0,1,1);
+    var d=x.getImageData(0,0,1,1).data; return [d[0],d[1],d[2]]; }
+  function lum(rgb){ var f=rgb.map(function(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); });
+    return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2]; }
+  function ratio(a,b){ var la=lum(px(a)), lb=lum(px(b)); var hi=Math.max(la,lb), lo=Math.min(la,lb);
+    return (hi+0.05)/(lo+0.05); }
+
+  function medir() {
+    var fondo = getComputedStyle(root.querySelector('.m6-marco')).backgroundColor;
+    root.querySelectorAll('.m6-caso').forEach(function (caso) {
+      var ban = caso.querySelector('.hd-banner'), cru = caso.querySelector('.hd-cruce');
+      var rb = ban.getBoundingClientRect(), rc = cru.getBoundingClientRect();
+      /* Se filtra por getClientRects: contar nodos del DOM no es contar lo que
+         se pinta — el fallo central de esta fase. */
+      var li = Array.prototype.filter.call(cru.querySelectorAll('li'), function (l) {
+        return l.getClientRects().length > 0; });
+      var sale = Math.max(0, Math.round(rc.bottom - rb.bottom));
+      /* Renglones = cajas de linea reales, no numero de <li>: en hilera dos
+         titulos pueden compartir renglon y tres ocupar dos. */
+      var reng = 0, vistos = [];
+      li.forEach(function (l) { var r = document.createRange(); r.selectNodeContents(l);
+        Array.prototype.forEach.call(r.getClientRects(), function (q) {
+          var y = Math.round(q.top); if (vistos.indexOf(y) < 0) { vistos.push(y); reng++; } }); });
+      var col = li.length ? getComputedStyle(li[0]).color : fondo;
+      var rr = ratio(col, fondo);
+      var anchoTxt = 0;
+      li.forEach(function (l) { var r = document.createRange(); r.selectNodeContents(l);
+        anchoTxt = Math.max(anchoTxt, Math.round(r.getBoundingClientRect().width)); });
+
+      function set(k, v, cls) { var d = caso.querySelector('[data-r="'+k+'"]');
+        d.textContent = v; d.className = cls || ''; }
+      set('alto', Math.round(rc.height) + ' px');
+      set('sale', sale ? ('sí · ' + sale + ' px') : 'no', sale ? 'bad' : 'ok');
+      set('ratio', rr.toFixed(2) + ':1', rr >= 4.5 ? 'ok' : 'bad');
+      set('lin', String(reng));
+      set('anc', anchoTxt + ' / ' + Math.round(rc.width) + ' px');
+    });
+  }
+
+  /* ---------- hora ---------- */
+  var slider = document.getElementById('m6-h');
+  function hora(m) {
+    var r = tokens(m);
+    for (var k in r.t) root.style.setProperty(k, r.t[k]);
+    var hh = String(Math.floor(m/60)).padStart(2,'0'), mm = String(m%60).padStart(2,'0');
+    document.getElementById('m6-hv').textContent = hh + ':' + mm;
+    document.getElementById('m6-sch').textContent = r.osc ? 'oscuro' : 'claro';
+    medir();
+  }
+  slider.addEventListener('input', function () { hora(+slider.value); });
+  document.getElementById('m6-antes').addEventListener('click', function () {
+    antes = !antes; aplicarAntes(); medir(); });
+
+  pintar();
+  hora(+slider.value);
+  window.addEventListener('resize', medir);
+})();
+</script>
