@@ -47,7 +47,7 @@ Copiadas del spec y de los dos `CLAUDE.md`. **Los requisitos de cada tarea las i
 
 | Fichero | Responsabilidad |
 |---|---|
-| `src/sections/contacto.ts` (modificar) | **Solo ganchos.** Marcar cada canal como acto o destino, y envolver los cuatro en dos grupos. Ni una cadena nueva. |
+| `src/sections/contacto.ts` (modificar) | **Solo atributos.** Marcar cada canal como acto o destino y poner el gancho del titular. Ni una cadena nueva, ni un elemento nuevo, ni un cambio de orden. |
 | `src/themes/caelestia.fundido.ts` (crear) | Lo que el CSS no puede: partir el titular en líneas, montar el troquel, correr el fundido y la entrada. Devuelve un handle. |
 | `src/themes/caelestia.dino.ts` (crear) | **El sprite, aislado.** Mapas de bits del dino, la nube y el horizonte, y su conversión a SVG. Quitar el bicho = borrar este fichero y una llamada. |
 | `src/themes/caelestia.choreography.ts` (modificar) | Montar el módulo y dispararlo al entrar en el workspace, con la regla de B2. |
@@ -156,18 +156,24 @@ git commit -m "docs(fundido): rescata al repo las seis maquetas aprobadas de B5
 
 ## Task 2: Los ganchos en el DOM compartido
 
-`contacto.ts` lo comparten los tres temas. Esta tarea le añade **solo atributos**, ninguna cadena
-nueva y ningún elemento con contenido. El agrupamiento en dos `<div>` es lo único estructural, y va
-con clases que Vice y Hyprland no seleccionan.
+`contacto.ts` lo comparten los tres temas. Esta tarea le añade **solo atributos**: ni una cadena
+nueva, ni un elemento nuevo, ni un cambio en el orden de los hijos.
+
+**Por qué no hay envoltorios.** La versión anterior de esta tarea agrupaba los cuatro canales en un
+`<div>` de actos y otro de destinos. Eso **reordena el DOM** —de correo·LinkedIn·teléfono·GitHub a
+correo·teléfono·LinkedIn·GitHub— y con él el orden visible de las cuatro barras **en Vice, que es un
+diseño cerrado que no se toca**, y en Hyprland. El agrupamiento visual de Caelestia lo hace su CSS
+con `order` (Task 4), que no le cambia el DOM a nadie.
 
 **Files:**
 - Modify: `src/sections/contacto.ts`
 - Test: `scripts/measure-caelestia-fundido.py` (creado en la Task 8; aquí se verifica a mano)
 
 **Interfaces:**
-- Produces: en el DOM, `[data-canal="acto"]` y `[data-canal="destino"]` sobre cada `a.contacto-bar`;
-  `.contacto-actos` y `.contacto-destinos` como envoltorios; `[data-fundido-lead]` sobre el `<p>`
-  del titular de cierre. Las Tasks 3, 4 y 5 dependen de estos nombres exactos.
+- Produces: en el DOM, `[data-canal="acto"]` y `[data-canal="destino"]` sobre cada
+  `a.contacto-bar`, y `[data-fundido-lead]` sobre el `<p>` del titular de cierre. **El orden de los
+  hijos de `.contacto-bars` no cambia**: sigue siendo el de `contactChannels` — correo, LinkedIn,
+  teléfono, GitHub. Las Tasks 4, 5 y 6 dependen de estos nombres y de ese orden.
 
 - [ ] **Step 1: Verificar el punto de partida en el navegador**
 
@@ -182,14 +188,13 @@ with sync_playwright() as p:
     pg.wait_for_timeout(3000)
     print(pg.evaluate("""() => ({
         canales: document.querySelectorAll('[data-canal]').length,
-        actos: !!document.querySelector('.contacto-actos'),
         lead: !!document.querySelector('[data-fundido-lead]'),
     })"""))
     b.close()
 PY
 ```
 
-Esperado: `{'canales': 0, 'actos': False, 'lead': False}` — los ganchos no existen todavía.
+Esperado: `{'canales': 0, 'lead': False}` — los ganchos no existen todavía.
 
 - [ ] **Step 2: Añadir el tipo de canal, derivado del `href`**
 
@@ -207,32 +212,17 @@ En `src/sections/contacto.ts`, dentro de `createBar`, justo antes del `return ba
   bar.dataset.canal = esquema === "mailto" || esquema === "tel" ? "acto" : "destino";
 ```
 
-- [ ] **Step 3: Agrupar los cuatro canales en actos y destinos**
+- [ ] **Step 3: Dejar `.contacto-bars` exactamente como está**
 
-Sustituir en `createContacto`:
+No hay nada que hacer aquí, y es deliberado. La línea
 
 ```ts
   const bars = el("div", "contacto-bars", contactChannels.map(createBar));
 ```
 
-por:
-
-```ts
-  /*
-   * Los cuatro canales, en dos grupos. La lista sigue siendo la de
-   * `contactChannels` y en el mismo orden: `filter` no reordena. Los
-   * envoltorios existen para que Caelestia pueda darles pesos distintos sin
-   * ramificar por tema en el TS; Vice y Hyprland no seleccionan estas dos
-   * clases y siguen viendo `.contacto-bars` con las cuatro barras dentro.
-   */
-  const todas = contactChannels.map(createBar);
-  const actos = todas.filter((bar) => bar.dataset.canal === "acto");
-  const destinos = todas.filter((bar) => bar.dataset.canal === "destino");
-  const bars = el("div", "contacto-bars", [
-    el("div", "contacto-actos", actos),
-    el("div", "contacto-destinos", destinos),
-  ]);
-```
+**se queda tal cual**. Los cuatro canales siguen siendo hijos directos y en el orden de
+`contactChannels`. Añadir envoltorios reordenaría el DOM y con él el orden visible de las barras en
+Vice y en Hyprland; el agrupamiento visual de Caelestia lo hace su CSS con `order` en la Task 4.
 
 - [ ] **Step 4: Poner el gancho del titular de cierre**
 
@@ -324,35 +314,19 @@ PY
 ```
 
 Mirar `/tmp/b5-t2-vice.png` y `/tmp/b5-t2-hyprland.png`: **las cuatro barras tienen que seguir
-apiladas y en el mismo orden.** El agrupamiento en dos `<div>` mete dos cajas de bloque nuevas; si
-alguno de los dos temas usaba `.contacto-bars > *` o `:nth-child` en las barras, se romperá aquí.
+apiladas, en el mismo orden y con la misma pinta.** Esta tarea solo añade atributos, así que la
+única forma de romperlas sería que algún selector de esos temas usara `a.contacto-bar:not([data-*])`
+o similar — improbable, pero la captura es barata y el diseño de Vice está cerrado.
 
-- [ ] **Step 7: Si el paso 6 rompió Vice o Hyprland, arreglarlo con `display: contents`**
-
-Solo si hace falta. En `themes.css`, junto a las reglas de contacto de cada tema:
-
-```css
-/* Los dos envoltorios que B5 necesita para agrupar actos y destinos disuelven
-   su caja en Vice y Hyprland: aqui las cuatro barras siguen siendo hijas
-   directas de `.contacto-bars`, como antes de B5. */
-:root[data-theme="vice"] .contacto-actos,
-:root[data-theme="vice"] .contacto-destinos,
-:root[data-theme="hyprland"] .contacto-actos,
-:root[data-theme="hyprland"] .contacto-destinos {
-  display: contents;
-}
-```
-
-Volver a ejecutar el paso 6 y comparar las capturas.
-
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/sections/contacto.ts src/themes/themes.css
+git add src/sections/contacto.ts
 git commit -m "feat(contacto): ganchos de canal y de titular para la fase B5
 
-Acto o destino se deriva del esquema del href, sin campo nuevo en content.ts.
-Vice y Hyprland siguen viendo las cuatro barras apiladas igual."
+Acto o destino se deriva del esquema del href, sin campo nuevo en content.ts y
+sin tocar el orden de los hijos: envolverlos habria reordenado las barras en
+Vice, que esta cerrado."
 ```
 
 ---
@@ -478,8 +452,9 @@ Sin animación todavía y sin troquel: solo que la escena deje de estar rota.
   `/*\n * La barra del shell: marca, pastillas de workspace y bandeja de estado.` (≈ línea 4554)
 
 **Interfaces:**
-- Consumes: `[data-canal]`, `.contacto-actos`, `.contacto-destinos` (Task 2);
-  `--cae-display-axes-cierre` (Task 3).
+- Consumes: `[data-canal]` y `[data-fundido-lead]` (Task 2), con los cuatro canales como hijos
+  directos de `.contacto-bars` y en el orden de `contactChannels`; `--cae-display-axes-cierre`
+  (Task 3).
 - Produces: `--fundido-dim` sobre `[data-scene="contacto"]`. La Task 5 lo hereda.
 
 - [ ] **Step 1: Escribir el bloque de la escena**
@@ -563,7 +538,14 @@ Sin animación todavía y sin troquel: solo que la escena deje de estar rota.
   white-space: nowrap;
 }
 
+/*
+ * `position: relative` NO es decorativo: el troquel de la Task 5 es absoluto y
+ * necesita un ancestro posicionado. Sin esto se colocaria contra la seccion,
+ * que lleva la clase `relative` de Tailwind desde `contacto.ts` — funcionaria
+ * por accidente y se romperia el dia que alguien quitase esa clase.
+ */
 :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
@@ -572,25 +554,44 @@ Sin animación todavía y sin troquel: solo que la escena deje de estar rota.
 
 /* ---------- el pie de imprenta ---------- */
 
+/*
+ * LOS CUATRO CANALES SE AGRUPAN CON `order`, NO CON ENVOLTORIOS. En el DOM
+ * siguen en el orden de `contactChannels` — correo, LinkedIn, telefono,
+ * GitHub — porque envolverlos reordenaria las barras tambien en Vice, que
+ * esta cerrado. Aqui los dos actos se van delante y los dos destinos detras
+ * sin que el arbol cambie: el orden de lectura de un lector de pantalla sigue
+ * siendo el del DOM, que es el orden en el que estan escritos los datos.
+ */
 :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: end;
-  gap: 0 3.5rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 3.5rem;
   border-top: 1px solid currentColor;
   padding-top: 1.125rem;
 }
 
-:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-actos {
-  display: flex;
-  gap: 3.5rem;
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+  order: 1;
 }
 
-:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-destinos {
-  justify-self: end;
-  display: flex;
-  align-items: baseline;
-  gap: 1.75rem;
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+  order: 2;
+}
+
+/*
+ * El primer destino empuja la pareja al canto derecho. Es `:nth-child(2)`
+ * porque LinkedIn es el segundo canal de `contactChannels`; si algun dia se
+ * anade un canal antes que el, esta regla deja de ser cierta y el colofon se
+ * queda pegado a los actos — visible al instante, no silencioso.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"]:nth-child(2) {
+  margin-left: auto;
+}
+
+/* Entre los dos destinos el aire es menor que entre los actos: son una pareja,
+   no dos columnas. El `gap` general los separaria igual que a los grandes. */
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] + [data-canal="destino"] {
+  margin-left: -1.75rem;
 }
 
 :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar {
@@ -650,6 +651,15 @@ Sin animación todavía y sin troquel: solo que la escena deje de estar rota.
   display: none;
 }
 
+/*
+ * EL ESTADO VA BAJO EL COLOFON, y en el DOM compartido vive DENTRO de
+ * `.contacto-band`, encima de las barras. Quien lo mueve es
+ * `caelestia.fundido.ts` al montar (Task 5), no `contacto.ts`: moverlo en el
+ * marcado cambiaria el orden de lectura en los tres temas.
+ *
+ * Hasta que la Task 5 exista, este bloque lo pinta donde este. Es correcto que
+ * en la captura de la Task 4 aparezca todavia bajo el titular.
+ */
 :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado {
   margin: 1rem 0 0;
   display: flex;
@@ -678,26 +688,35 @@ Sin animación todavía y sin troquel: solo que la escena deje de estar rota.
     font-size: var(--t-8);
   }
 
+  /* En vertical los actos son FILAS ENTERAS y los destinos se reparten la
+     ultima a mitades. `wrap` con los actos al 100% fuerza el corte de linea
+     sin necesitar ningun envoltorio. */
   :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
-    display: block;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.625rem;
   }
 
-  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-actos {
-    display: block;
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+    flex: 0 0 100%;
   }
 
   :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] .contacto-bar-value {
     font-size: var(--t-3);
   }
 
-  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-destinos {
-    justify-self: auto;
-    margin-top: 0.625rem;
-    gap: 0.625rem;
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+    flex: 1;
+    margin-left: 0;
   }
 
-  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
-    flex: 1;
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"]:nth-child(2) {
+    margin-left: 0;
+    margin-top: 0.625rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] + [data-canal="destino"] {
+    margin-left: 0;
+    margin-top: 0.625rem;
   }
 }
 ```
@@ -1100,7 +1119,13 @@ function partirEnLineas(lead: HTMLElement): HTMLElement[] {
   return lineas;
 }
 
-export function montarFundido(gsap: Gsap, escena: HTMLElement): FundidoHandle | null {
+export function montarFundido(
+  gsap: Gsap,
+  escena: HTMLElement,
+  // Lo usa `entrar` en la Task 6, para saber de que lado vienes. Se recibe
+  // desde ya: cambiar la firma entre tareas es como se rompen los planes.
+  indiceEscena: number,
+): FundidoHandle | null {
   const lead = escena.querySelector<HTMLElement>("[data-fundido-lead]");
   const banda = escena.querySelector<HTMLElement>(".contacto-band");
   const barras = escena.querySelector<HTMLElement>(".contacto-bars");
@@ -1129,10 +1154,20 @@ export function montarFundido(gsap: Gsap, escena: HTMLElement): FundidoHandle | 
   troquel.append(nube, suelo, bicho);
   banda.append(troquel);
 
+  /*
+   * El estado baja bajo el colofon. En el DOM compartido vive dentro de
+   * `.contacto-band` —encima de las barras— y la contraportada lo quiere
+   * abajo, con el pie de imprenta. Se mueve AQUI y no en `contacto.ts`
+   * porque moverlo en el marcado le cambiaria el orden de lectura a Vice y a
+   * Hyprland, y Vice esta cerrado.
+   */
+  const estadoDom = escena.querySelector<HTMLElement>(".contacto-estado");
+  if (estadoDom) barras.after(estadoDom);
+
   const lineas = partirEnLineas(lead);
   const actos = Array.from(escena.querySelectorAll<HTMLElement>('[data-canal="acto"]'));
   const destinos = Array.from(escena.querySelectorAll<HTMLElement>('[data-canal="destino"]'));
-  const estado = escena.querySelector<HTMLElement>(".contacto-estado");
+  const estado = estadoDom;
   const ojo = bicho.querySelector<SVGRectElement>("[data-dino-ojo]");
   const svgBicho = bicho.querySelector<SVGSVGElement>("svg");
 
@@ -1265,8 +1300,9 @@ En `caelestia.choreography.ts`, junto a `montarFicha`, añadir de forma provisio
 deja definitivo):
 
 ```ts
-  const escenaFundido = escenas.find((escena) => escena.dataset.scene === "contacto");
-  const fundido = escenaFundido ? montarFundido(gsap, escenaFundido) : null;
+  const indiceFundido = escenas.findIndex((escena) => escena.dataset.scene === "contacto");
+  const fundido =
+    indiceFundido >= 0 ? montarFundido(gsap, escenas[indiceFundido], indiceFundido) : null;
 ```
 
 con su `import { montarFundido } from "./caelestia.fundido";`.
@@ -1587,7 +1623,7 @@ Ampliar el `import` de `caelestia.dino` con `dibujoDino` y el tipo `Fotograma`, 
   };
 ```
 
-`indiceEscena` se pasa como tercer parámetro de `montarFundido(gsap, escena, indiceEscena)`.
+`indiceEscena` ya llega como tercer parámetro desde la Task 5.
 
 Y el `reproducir` definitivo:
 
@@ -2001,8 +2037,8 @@ Task 7; los doce gates → Task 8; el rescate de las maquetas → Task 1.
 4. **Dónde vive el sprite.** Resuelto: `src/themes/caelestia.dino.ts`, como SVG generado.
 5. **`--cae-display-axes-texto`.** Entra en B5, en su propia tarea, con comparación de capturas.
 
-**Nombres, comprobados entre tareas.** `[data-canal="acto"|"destino"]`, `.contacto-actos`,
-`.contacto-destinos`, `[data-fundido-lead]` (Task 2) los consumen las Tasks 4, 5 y 6.
+**Nombres, comprobados entre tareas.** `[data-canal="acto"|"destino"]` y `[data-fundido-lead]`
+(Task 2) los consumen las Tasks 4, 5 y 6; **no hay envoltorios**, el agrupamiento es CSS.
 `[data-fundido-troquel]`, `[data-fundido-suelo]`, `[data-fundido-bicho]`, `[data-fundido-linea]`,
 `[data-dino-ojo]`, `[data-dino-cuerpo]`, `.cae-fundido-campo` (Task 5) los consumen las Tasks 6, 7 y
 8. `montarFundido(gsap, escena, indice)` y `FundidoHandle { destroy, reproducir, entrar }` (Task 5)
