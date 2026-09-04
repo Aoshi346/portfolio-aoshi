@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caelestia · tres cursores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Hanken+Grotesk:wght@400;600&family=Martian+Mono:wdth,wght@87.5,400&display=swap");
+
+:root { --k: 1; }
+html, body { margin: 0; background: #2a2a2c; color: #d9d9d6; font-family: "Hanken Grotesk", system-ui, sans-serif; }
+.page { max-width: 1480px; margin: 0 auto; padding: 18px 22px 40px; }
+.head { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; margin-bottom: 10px; }
+.head h1 { font-family: "Fraunces", serif; font-variation-settings: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1; font-size: 22px; margin: 0; color: #f2f2ee; letter-spacing: -0.02em; }
+.head p { margin: 0; font-size: 13px; color: #a9a9a4; max-width: 80ch; }
+.tabs { display: flex; gap: 8px; margin: 0 0 10px; }
+.tab { font-family: "Martian Mono", monospace; font-size: 11px; padding: 8px 14px; border-radius: 999px; border: 1px solid #55554f; background: #1f1f21; color: #d9d9d6; cursor: pointer; display: flex; gap: 10px; align-items: baseline; }
+.tab b { font-family: "Fraunces", serif; font-variation-settings: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1; font-size: 14px; }
+.tab[aria-selected="true"] { background: #f2f2ee; color: #1a1a1c; border-color: #f2f2ee; }
+.ctl { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; font-family: "Martian Mono", monospace; font-size: 11px; color: #bdbdb8; margin: 0 0 12px; }
+.ctl label { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { accent-color: #d9d9d6; width: 180px; }
+.ctl output { min-width: 5ch; color: #f2f2ee; }
+.ctl button { font: inherit; padding: 6px 12px; border-radius: 999px; border: 1px solid #55554f; background: #1f1f21; color: #f2f2ee; cursor: pointer; }
+.ctl button:hover { background: #333336; }
+.desc { font-size: 13px; color: #c9c9c4; margin: 0 0 10px; max-width: 110ch; line-height: 1.5; min-height: 2.6em; }
+.desc em { color: #f2f2ee; font-style: normal; }
+.note { font-size: 12px; color: #8f8f8a; margin-top: 12px; max-width: 100ch; line-height: 1.5; }
+.pick { display: flex; gap: 10px; margin-top: 14px; }
+.pick button { font-family: "Martian Mono", monospace; font-size: 11px; padding: 8px 14px; border-radius: 6px; border: 1px solid #55554f; background: #1f1f21; color: #d9d9d6; cursor: pointer; }
+.pick button.selected { background: #e8e5d3; color: #1a1a1c; }
+
+/* ---------- el escenario ---------- */
+.stage { position: relative; width: 100%; aspect-ratio: 1412 / 748; overflow: hidden; border-radius: 6px; }
+.win {
+  position: absolute; left: 0; top: 0; width: 1412px; height: 748px; transform-origin: 0 0;
+  font-family: var(--font-body); color: var(--cae-on-surface); background: var(--cae-surface);
+  overflow: hidden; cursor: none;
+  --font-display: "Fraunces", Georgia, serif; --font-body: "Hanken Grotesk", system-ui, sans-serif; --font-mono: "Martian Mono", ui-monospace, monospace;
+  --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
+  --cae-elev-1: var(--cae-surface-container); --cae-elev-2: var(--cae-surface-container-high); --cae-elev-3: var(--cae-primary-container);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  transition: background 0.7s var(--ease);
+}
+.wall { position: absolute; inset: 0; background: linear-gradient(160deg, var(--cae-wall-1) 0%, var(--cae-wall-2) 50%, var(--cae-wall-3) 100%); transition: background 0.7s var(--ease); }
+.win.corte, .win.corte * { transition: none !important; }
+
+.cae-bar { position: absolute; top: 12px; left: 14px; right: 14px; height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 16px; border-radius: 999px; background: var(--cae-elev-2); box-shadow: 0 10px 30px -18px rgb(0 0 0 / 0.5); transition: background 0.7s var(--ease); z-index: 5; }
+.cae-mark { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--cae-primary); }
+.cae-ws-list { display: flex; gap: 4px; }
+.cae-ws { font-family: var(--font-body); font-size: 12px; padding: 5px 11px; border: 0; border-radius: 999px; background: transparent; color: var(--cae-on-surface-variant); cursor: none; white-space: nowrap; transition: background 0.28s var(--ease), color 0.28s, padding 0.28s var(--ease); position: relative; }
+.cae-ws.is-hot { background: var(--cae-elev-1); }
+.cae-ws[aria-current="true"] { background: var(--cae-primary); color: var(--cae-on-primary); font-weight: 600; padding-inline: 15px; }
+.cae-ws-n { font-style: normal; font-family: var(--font-mono); font-size: 10px; opacity: 0.55; margin-right: 6px; }
+.cae-tray { margin-left: auto; display: flex; align-items: center; gap: 9px; }
+.cae-avail { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--cae-on-surface-variant); }
+.cae-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cae-anchor); }
+.cae-clock { font-family: var(--font-mono); font-size: 13px; color: var(--cae-primary); }
+
+.scene-surface { position: absolute; left: 14px; right: 14px; top: 68px; bottom: 14px; border-radius: 20px; background: var(--cae-elev-1); transition: background 0.7s var(--ease); display: grid; grid-template-columns: 420px 1fr; grid-template-rows: auto 1fr auto; align-items: start; gap: 0 40px; padding: 36px 44px 30px; box-sizing: border-box; }
+.scene-surface h2 { grid-column: 1 / -1; margin: 0 0 18px; font-family: var(--font-display); font-variation-settings: var(--cae-display-axes); font-size: 26px; letter-spacing: -0.03em; line-height: 0.98; }
+.texto p { font-size: 15px; line-height: 1.55; margin: 0 0 12px; max-width: 46ch; cursor: text; color: var(--cae-on-surface); }
+.texto p small { display: block; margin-top: 10px; font-family: var(--font-mono); font-size: 10px; color: var(--cae-on-surface-variant); letter-spacing: 0.04em; }
+
+.obra { display: flex; align-items: flex-start; gap: 26px; justify-self: start; }
+.cae-obra-card { display: flex; flex-direction: column; width: 268px; background: var(--cae-surface-container-high); padding: 8px 8px 12px; border-radius: 3px; box-shadow: 0 10px 22px -8px rgb(0 0 0 / 0.4); position: relative; border: 0; text-align: inherit; font: inherit; color: inherit; cursor: none; box-sizing: border-box; transform: rotate(-4deg); transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.7s var(--ease); }
+.cae-obra-card.is-hot { transform: rotate(0deg) translateY(-6px); box-shadow: 0 18px 34px -8px rgb(0 0 0 / 0.5); }
+.cae-obra-thumb { aspect-ratio: 16 / 10; width: 100%; border-radius: 16px; border: 1px solid var(--cae-outline); position: relative; overflow: hidden; background: linear-gradient(135deg, var(--cae-wall-2), var(--cae-wall-3)); display: grid; place-items: center; box-sizing: border-box; }
+.cae-obra-thumb i { display: block; width: 44%; aspect-ratio: 1; background: var(--cae-primary-container); clip-path: var(--fig-cookie); opacity: 0.9; }
+.cae-obra-caption { font-family: "Fraunces", serif; font-style: italic; font-variation-settings: "opsz" 30, "wght" 520; font-size: 14px; text-align: center; color: var(--cae-on-surface); line-height: 1.25; margin-top: 9px; }
+.cae-obra-tag { display: block; font-family: "Martian Mono", monospace; font-style: normal; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--cae-on-surface-variant); text-align: center; margin-top: 2px; }
+.obra-lead { font-family: "Fraunces", serif; font-variation-settings: "opsz" 30, "wght" 520; font-style: italic; font-size: 17px; max-width: 22ch; margin: 10px 0 0; color: var(--cae-on-surface-variant); cursor: text; }
+
+.cred { grid-column: 1 / -1; align-self: end; display: flex; align-items: end; gap: 40px; padding-top: 22px; }
+.cae-cred-rot { font-family: var(--font-mono); font-size: 10px; color: var(--cae-on-surface-variant); width: 120px; text-align: right; padding-bottom: 32px; letter-spacing: 0.04em; }
+.cae-cred-grid { display: flex; gap: 22px; }
+.cae-cred-pieza { border: 0; background: none; font: inherit; color: inherit; cursor: none; display: grid; justify-items: center; gap: 10px; padding: 0; width: 88px; position: relative; }
+.cae-cred-fig { width: 88px; height: 88px; clip-path: var(--fig); display: grid; place-items: center; background: var(--cae-outline); transition: clip-path 0.22s ease, transform 0.22s ease, background 0.22s ease; }
+.cae-cred-fig svg { width: 26px; height: 26px; fill: var(--cae-on-surface); }
+.cae-cred-nom { margin: 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.01em; color: var(--cae-on-surface-variant); }
+.cae-cred-pieza.is-hot .cae-cred-fig { clip-path: var(--fig-suave); background: var(--cae-primary); transform: scale(1.07); }
+.cae-cred-pieza.is-hot .cae-cred-fig svg { fill: var(--cae-on-primary); }
+.cae-cred-pieza.is-hot .cae-cred-nom { color: var(--cae-on-surface); }
+
+/* ---------- los tres cursores. Uno visible a la vez, todos leen el mismo estado ---------- */
+.cur { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 50; pointer-events: none; }
+.cur > * { display: none; }
+.cur[data-dir="gota"] .c-gota, .cur[data-dir="mano"] .c-mano, .cur[data-dir="borde"] .c-borde { display: block; }
+.cur[data-state="off"] > * { opacity: 0; }
+
+/* A · la gota: pigmento de la hora, translúcido, con tensión superficial */
+.c-gota { position: absolute; left: 0; top: 0; width: var(--s); height: var(--s); translate: -50% -50%; border-radius: 50%;
+  background: var(--cae-primary); opacity: var(--al); mix-blend-mode: multiply;
+  transition: width calc(0.3s / var(--k)) var(--ease), height calc(0.3s / var(--k)) var(--ease), opacity calc(0.2s / var(--k)) linear, border-radius calc(0.3s / var(--k)) var(--ease); }
+[data-cae-esquema="noche"] .c-gota { mix-blend-mode: screen; }
+.c-gota::before { content: ""; position: absolute; left: 22%; top: 18%; width: 30%; height: 22%; border-radius: 50%; background: var(--cae-surface); opacity: var(--brillo); filter: blur(0.5px); transition: opacity calc(0.2s / var(--k)) linear; }
+.c-gota-nucleo { position: absolute; left: 0; top: 0; width: 3px; height: 3px; translate: -50% -50%; border-radius: 50%; background: var(--cae-on-surface); }
+.cur[data-state="idle"] .c-gota { --s: 20px; --al: 0.42; --brillo: 0.55; }
+.cur[data-state="open"] .c-gota { --s: 15px; --al: 0.95; --brillo: 0.95; border-radius: 48% 52% 50% 50% / 55% 55% 45% 45%; }
+.cur[data-state="sunk"] .c-gota { --s: 56px; --al: 0.22; --brillo: 0; background: var(--cae-on-surface); mix-blend-mode: normal !important; }
+.cur[data-state="off"] .c-gota { --s: 20px; --al: 0; --brillo: 0; }
+
+/* B · el manículo: la mano de la imprenta, en tinta */
+.c-mano { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.c-mano-punto { position: absolute; left: 0; top: 0; width: 7px; height: 7px; translate: -50% -50%; border-radius: 50%; background: var(--cae-on-surface); transition: transform calc(0.18s / var(--k)) var(--ease), opacity calc(0.12s / var(--k)) linear; }
+.c-mano svg { position: absolute; left: 0; top: 0; width: 54px; height: 36px; translate: -6px -50%; transform-origin: 6px 50%; transform: rotate(var(--rot, 0deg)) scale(var(--msc, 0)); transition: transform calc(0.26s / var(--k)) var(--ease); overflow: visible; }
+.c-mano svg path { fill: var(--cae-on-surface); stroke: var(--cae-surface); stroke-width: 1.2; stroke-linejoin: round; paint-order: stroke fill; }
+.c-mano .m-dedo, .c-mano .m-puno { transition: opacity calc(0.14s / var(--k)) linear; }
+.c-mano .m-puno { opacity: 0; }
+.cur[data-state="idle"] .c-mano { --msc: 0; }
+.cur[data-state="open"] .c-mano { --msc: 1; }
+.cur[data-state="open"] .c-mano-punto, .cur[data-state="sunk"] .c-mano-punto { transform: scale(0.45); }
+.cur[data-state="sunk"] .c-mano { --msc: 0.92; }
+.cur[data-state="sunk"] .c-mano .m-dedo { opacity: 0; }
+.cur[data-state="sunk"] .c-mano .m-puno { opacity: 1; }
+
+/* C · el borde activo: la ventana con foco del compositor */
+.c-borde { position: absolute; left: 0; top: 0; width: 7px; height: 7px; translate: -50% -50%; border-radius: 50%; background: var(--cae-on-surface); transition: transform calc(0.18s / var(--k)) var(--ease), opacity calc(0.12s / var(--k)) linear; }
+.cur[data-state="open"] .c-borde, .cur[data-state="sunk"] .c-borde { transform: scale(0.5); }
+.foco { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 40; opacity: 0; }
+.foco rect { fill: var(--cae-primary); fill-opacity: 0; stroke: var(--cae-primary); stroke-width: 2; transition: fill-opacity calc(0.18s / var(--k)) var(--ease), stroke-width calc(0.18s / var(--k)) var(--ease); }
+.foco.is-sunk rect { fill-opacity: 0.14; stroke-width: 3; }
+.cur[data-dir="borde"] ~ .foco.is-on { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) { .cur *, .cae-cred-fig, .cae-obra-card, .foco rect { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <h1>Tres cursores</h1>
+    <p>Tres materiales distintos para el mismo par de momentos: sobre lo que se pulsa, algo espera; sobre lo que elige al rozar, ese algo ya ha pasado. Cambia de pestaña con la misma ventana debajo. Muévete con el ratón o pulsa Repetir.</p>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-dir="gota" aria-selected="true"><b>A</b> la gota</button>
+    <button class="tab" role="tab" data-dir="mano" aria-selected="false"><b>B</b> el manículo</button>
+    <button class="tab" role="tab" data-dir="borde" aria-selected="false"><b>C</b> el borde activo</button>
+  </div>
+  <p class="desc" id="desc"></p>
+
+  <div class="ctl">
+    <label>hora <input id="hora" type="range" min="0" max="1439" step="5"> <output id="horaOut">--:--</output></label>
+    <label>velocidad <input id="vel" type="range" min="0.2" max="1" step="0.05" value="1"> <output id="velOut">x1.0</output></label>
+    <button id="rep" type="button">Repetir</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="win" id="win" data-cae-esquema="dia">
+      <div class="wall"></div>
+      <header class="cae-bar">
+        <span class="cae-mark">caelestia</span>
+        <nav class="cae-ws-list" aria-label="Escenas">
+          <button class="cae-ws" type="button" data-press><i class="cae-ws-n">1</i>Título</button>
+          <button class="cae-ws" type="button" data-press><i class="cae-ws-n">2</i>Quién soy</button>
+          <button class="cae-ws" type="button" data-press aria-current="true"><i class="cae-ws-n">3</i>Obra</button>
+          <button class="cae-ws" type="button" data-press><i class="cae-ws-n">4</i>Créditos</button>
+          <button class="cae-ws" type="button" data-press><i class="cae-ws-n">5</i>Fundido</button>
+        </nav>
+        <span class="cae-tray"><span class="cae-avail"><i class="cae-dot"></i>Disponible</span><span class="cae-clock" id="clock">--:--</span></span>
+      </header>
+
+      <section class="scene-surface">
+        <h2>Tres dianas, dos momentos</h2>
+        <div class="texto" data-native>
+          <p>Llevo datos reales a interfaces que la gente usa todos los días.</p>
+          <p>La mayoría de mis repositorios son privados. Aquí están los públicos que mejor muestran cómo pienso y qué construyo.<small>texto corrido: el cursor propio se apaga y manda el I-beam del sistema</small></p>
+        </div>
+        <div class="obra">
+          <button class="cae-obra-card" type="button" data-press aria-label="Ver EchoPlan">
+            <span class="cae-obra-thumb"><i></i></span>
+            <span class="cae-obra-caption">EchoPlan<span class="cae-obra-tag">Gestión de campañas</span></span>
+          </button>
+          <p class="obra-lead" data-native>Todas las campañas, un solo tablero.</p>
+        </div>
+        <div class="cred">
+          <div class="cae-cred-rot">Backend y datos</div>
+          <div class="cae-cred-grid" id="grid"></div>
+        </div>
+      </section>
+
+      <div class="cur" id="cur" data-state="idle" data-dir="gota">
+        <div class="c-gota"><i class="c-gota-nucleo"></i></div>
+        <div class="c-mano">
+          <svg viewBox="0 0 48 32" aria-hidden="true">
+            <g class="m-dedo">
+              <path d="M0 9 h7 a2 2 0 0 1 2 2 v13 a2 2 0 0 1 -2 2 h-7 z"/>
+              <path d="M8 10 c0 -2 2 -3.5 4 -3.5 h12 c3 0 5 1.5 5 4 v11 c0 3 -2.5 5 -5.5 5 h-11 c-2.5 0 -4.5 -2 -4.5 -4.5 z"/>
+              <path d="M22 10.5 h21.5 a3.2 3.2 0 0 1 0 6.4 h-21.5 z"/>
+              <path d="M26 17.4 h7.5 a2.2 2.2 0 0 1 0 4.4 h-7.5 z"/>
+              <path d="M26 22 h7 a2.2 2.2 0 0 1 0 4.4 h-7 z"/>
+              <path d="M14 6.8 c0 -2.5 2 -4.3 4.5 -4.3 c2.5 0 4.5 1.8 4.5 4.3 v3 h-9 z"/>
+            </g>
+            <g class="m-puno">
+              <path d="M0 9 h7 a2 2 0 0 1 2 2 v13 a2 2 0 0 1 -2 2 h-7 z"/>
+              <path d="M8 10 c0 -2 2 -3.5 4 -3.5 h13 c3 0 5 1.5 5 4 v11 c0 3 -2.5 5 -5.5 5 h-12 c-2.5 0 -4.5 -2 -4.5 -4.5 z"/>
+              <path d="M27 8 h7 a2.3 2.3 0 0 1 0 4.6 h-7 z"/>
+              <path d="M27 12.8 h7.5 a2.3 2.3 0 0 1 0 4.6 h-7.5 z"/>
+              <path d="M27 17.6 h7.5 a2.3 2.3 0 0 1 0 4.6 h-7.5 z"/>
+              <path d="M27 22.4 h6.5 a2.3 2.3 0 0 1 0 4.6 h-6.5 z"/>
+              <path d="M12 8.5 h12 a2.4 2.4 0 0 1 0 4.8 h-12 z"/>
+            </g>
+          </svg>
+          <i class="c-mano-punto"></i>
+        </div>
+        <i class="c-borde"></i>
+      </div>
+      <svg class="foco" id="foco" width="10" height="10"><rect id="focoRect" x="0" y="0" width="10" height="10" rx="0" pathLength="100"/></svg>
+    </div>
+  </div>
+
+  <div class="pick">
+    <button type="button" data-choice="gota" onclick="pick(this)">Me quedo con A · la gota</button>
+    <button type="button" data-choice="mano" onclick="pick(this)">Me quedo con B · el manículo</button>
+    <button type="button" data-choice="borde" onclick="pick(this)">Me quedo con C · el borde activo</button>
+    <button type="button" data-choice="ninguna" onclick="pick(this)">Ninguna, sigue buscando</button>
+  </div>
+
+  <p class="note">Misma piel, mismo motor de color (deslizador de hora, corte de esquema a las 07:00 y 20:00) y mismas tres dianas que antes. Nada de azufre: A usa el pigmento de la hora, B y C la tinta del esquema. El fondo es el degradado de reserva del tema, no el shader; la captura de EchoPlan es una figura tonal porque las reales no existen.</p>
+</div>
+
+<script src="/files/gsap.min.js"></script>
+<script>
+/* ===== motor de color: copia literal de caelestia.color.ts ===== */
+const CLARO = { "surface":[0.98,0.012], "surface-container":[0.955,0.02], "surface-container-high":[0.925,0.026], "on-surface":[0.245,0.035], "on-surface-variant":[0.47,0.032], "outline":[0.7,0.022], "primary":[0.45,0.13], "on-primary":[0.99,0.01], "primary-container":[0.895,0.062], "on-primary-container":[0.31,0.1] };
+const OSCURO = { "surface":[0.185,0.016], "surface-container":[0.265,0.022], "surface-container-high":[0.345,0.026], "on-surface":[0.925,0.016], "on-surface-variant":[0.795,0.024], "outline":[0.42,0.02], "primary":[0.815,0.115], "on-primary":[0.27,0.095], "primary-container":[0.395,0.105], "on-primary-container":[0.9,0.062] };
+const ORIGEN = 60, AZUFRE = { l:0.855, lOscuro:0.905, c:0.152, h:96 };
+const ok = (l,c,h) => `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)})`;
+const hueAt = m => (((m/1440)*360 + ORIGEN) % 360 + 360) % 360;
+function chromaScaleAt(hue){ const d = Math.abs((((hue-240)%360)+540)%360-180); return d<=70 ? 1 : Math.max(0.32, 1-(d-70)/115); }
+const isDarkAt = m => m < 7*60 || m >= 20*60;
+function tokens(m){
+  const hue=hueAt(m), esc=chromaScaleAt(hue), osc=isDarkAt(m), roles=osc?OSCURO:CLARO, t={};
+  for (const [n,[l,c]] of Object.entries(roles)) t[`--cae-${n}`]=ok(l,c*esc,hue);
+  t["--cae-anchor"]=ok(osc?AZUFRE.lOscuro:AZUFRE.l,AZUFRE.c,AZUFRE.h); t["--cae-on-anchor"]=ok(0.215,0.05,AZUFRE.h);
+  t["--cae-wall-1"]=ok(osc?0.24:0.93,0.09*esc,hue); t["--cae-wall-2"]=ok(osc?0.21:0.95,0.07*esc,(hue+42)%360); t["--cae-wall-3"]=ok(osc?0.2:0.96,0.06*esc,(hue+318)%360);
+  return t;
+}
+/* ===== figuras (figurasM3.ts) ===== */
+const V = 240;
+function radiosM3({tipo,n,a}, relieve){ const amp=(tipo==="galleta"?-a:a)*relieve, seg=(tipo==="galleta"?a*0.18:-a*0.14)*relieve, rs=[]; for(let i=0;i<V;i++){const t=i*2*Math.PI/V; rs.push(1+amp*Math.cos(n*t)+seg*Math.cos(2*n*t));} return rs; }
+function radiosLibre(n,a,s){ const rs=[]; for(let i=0;i<V;i++){const t=i*2*Math.PI/V; rs.push(1+a*Math.cos(n*t)+s*Math.cos(2*n*t));} return rs; }
+function encaja(rs){ const p=rs.map((r,i)=>{const t=i*2*Math.PI/V; return [r*Math.cos(t), r*Math.sin(t)];}); const xs=p.map(q=>q[0]), ys=p.map(q=>q[1]); const cx=(Math.max(...xs)+Math.min(...xs))/2, cy=(Math.max(...ys)+Math.min(...ys))/2, hx=(Math.max(...xs)-Math.min(...xs))/2, hy=(Math.max(...ys)-Math.min(...ys))/2; return p.map(([x,y])=>[(x-cx)/hx,(y-cy)/hy]); }
+const poly = p => `polygon(${p.map(([x,y])=>`${(50+50*x).toFixed(2)}% ${(50+50*y).toFixed(2)}%`).join(", ")})`;
+const AMP = { python:{tipo:"trebol",n:3,a:0.183186}, django:{tipo:"trebol",n:4,a:0.056827}, nodedotjs:{tipo:"trebol",n:5,a:0.112974}, mysql:{tipo:"trebol",n:6,a:0.118822}, rxdb:{tipo:"trebol",n:7,a:0.089681}, typescript:{tipo:"galleta",n:7,a:0.070599} };
+const PIEZAS = [["python","Python"],["django","Django"],["nodedotjs","Node.js"],["mysql","MySQL"],["rxdb","RxDB"],["typescript","TypeScript"]];
+
+const win=document.getElementById("win"), stage=document.getElementById("stage"), cur=document.getElementById("cur"), grid=document.getElementById("grid"), foco=document.getElementById("foco"), focoRect=document.getElementById("focoRect");
+win.style.setProperty("--fig-cookie", poly(encaja(radiosLibre(12,-0.058,0.012))));
+fetch("/files/icons.json").then(r=>r.json()).then(list=>{
+  const by=Object.fromEntries(list.map(o=>[o.name,o.svg]));
+  for (const [slug,name] of PIEZAS){
+    const b=document.createElement("button"); b.type="button"; b.className="cae-cred-pieza"; b.dataset.hover=""; b.dataset.pieza=name;
+    const fig=document.createElement("span"); fig.className="cae-cred-fig";
+    fig.style.setProperty("--fig", poly(encaja(radiosM3(AMP[slug],1)))); fig.style.setProperty("--fig-suave", poly(encaja(radiosM3(AMP[slug],0.42))));
+    fig.innerHTML=by[name]||"";
+    const nom=document.createElement("figcaption"); nom.className="cae-cred-nom"; nom.textContent=name;
+    b.append(fig,nom); grid.append(b);
+  }
+});
+
+/* ===== hora, velocidad ===== */
+const hora=document.getElementById("hora"), horaOut=document.getElementById("horaOut"), clock=document.getElementById("clock");
+let esquemaActual=null;
+function aplicarHora(m){
+  const osc=isDarkAt(m);
+  if (esquemaActual!==null && esquemaActual!==osc){ win.classList.add("corte"); setTimeout(()=>win.classList.remove("corte"),60); }
+  esquemaActual=osc; win.dataset.caeEsquema=osc?"noche":"dia";
+  for (const [k,v] of Object.entries(tokens(m))) win.style.setProperty(k,v);
+  const hh=String(Math.floor(m/60)).padStart(2,"0"), mm=String(m%60).padStart(2,"0"); horaOut.value=`${hh}:${mm}`; clock.textContent=`${hh}:${mm}`;
+}
+const now=new Date(); hora.value=now.getHours()*60+now.getMinutes()-((now.getHours()*60+now.getMinutes())%5);
+aplicarHora(+hora.value); hora.addEventListener("input",()=>aplicarHora(+hora.value));
+let tl=null;
+const vel=document.getElementById("vel"), velOut=document.getElementById("velOut");
+function aplicarVel(){ document.documentElement.style.setProperty("--k", vel.value); velOut.value=`x${(+vel.value).toFixed(1)}`; if (tl) tl.timeScale(+vel.value); }
+vel.addEventListener("input",aplicarVel); aplicarVel();
+
+/* ===== pestañas ===== */
+const DESC = {
+  gota: "<em>La gota.</em> Una gota del pigmento de la hora, translúcida sobre lo que toca. Sobre lo que se pulsa se tensa en perla y espera; al pulsar se derrama y encharca la diana. Sobre lo que elige al rozarlo se derrama al entrar: ya está mojado. El núcleo de tinta marca la mano.",
+  mano: "<em>El manículo.</em> La mano que señala de los impresores, blanda y torcida como Fraunces, en la tinta del esquema. Sobre lo que se pulsa aparece señalando al centro de la diana; al pulsar, el dedo se recoge en puño. Sobre lo que elige al rozarlo aparece ya en puño: ya tocó.",
+  borde: "<em>El borde activo.</em> Lo que el compositor hace con la ventana que tiene el foco. Sobre lo que se pulsa, la diana se dibuja su propio borde desde el punto más cercano al ratón, en las dos direcciones, y se cierra; al pulsar se rellena. Sobre lo que elige al rozarlo, el borde llega ya cerrado y relleno.",
+};
+function setDir(d){ cur.dataset.dir=d; document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected", String(t.dataset.dir===d))); document.getElementById("desc").innerHTML=DESC[d]; if (hot) pintarFoco(); }
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>setDir(t.dataset.dir)));
+function pick(b){ document.querySelectorAll(".pick button").forEach(x=>x.classList.remove("selected")); b.classList.add("selected"); if (window.recordChoice) window.recordChoice(b.dataset.choice, b.textContent); }
+
+/* ===== escala ===== */
+let k=1; function fit(){ k=Math.min(stage.clientWidth/1412,1); win.style.transform=`scale(${k})`; } new ResizeObserver(fit).observe(stage); fit();
+
+/* ===== estado común ===== */
+let hot=null, pressable=null, pressed=false, px=0, py=0, enTour=false, trazo=null;
+const mano=cur.querySelector(".c-mano");
+function colocar(x,y){ px=x; py=y; cur.style.transform=`translate3d(${x}px, ${y}px, 0)`; if (hot && cur.dataset.dir==="mano") apuntar(); }
+function rectLocal(el){ const r=el.getBoundingClientRect(), w=win.getBoundingClientRect(); return { x:(r.left-w.left)/k, y:(r.top-w.top)/k, w:r.width/k, h:r.height/k }; }
+function apuntar(){ const r=rectLocal(hot); const a=Math.atan2(r.y+r.h/2-py, r.x+r.w/2-px)*180/Math.PI; mano.style.setProperty("--rot", `${a}deg`); }
+/* C: el borde se dibuja desde el punto del perímetro más cercano al ratón */
+function perimetroT(r){ // parámetro 0..100 del rect (pathLength) más cercano al puntero, arrancando arriba-izquierda en sentido horario
+  const P=2*(r.w+r.h); const cx=Math.min(Math.max(px,r.x),r.x+r.w), cy=Math.min(Math.max(py,r.y),r.y+r.h);
+  const dl=cx-r.x, dr=r.x+r.w-cx, dt=cy-r.y, db=r.y+r.h-cy; const m=Math.min(dl,dr,dt,db); let s;
+  if (m===dt) s=dl; else if (m===dr) s=r.w+dt; else if (m===db) s=r.w+r.h+(r.w-dl); else s=2*r.w+r.h+(r.h-dt);
+  return 100*s/P;
+}
+function pintarFoco(){
+  if (!hot || cur.dataset.dir!=="borde"){ foco.classList.remove("is-on"); return; }
+  const r=rectLocal(hot); const cs=getComputedStyle(hot); const rx=Math.min(parseFloat(cs.borderRadius)||0, r.h/2);
+  foco.setAttribute("width", r.w+8); foco.setAttribute("height", r.h+8); foco.style.left=(r.x-4)+"px"; foco.style.top=(r.y-4)+"px";
+  focoRect.setAttribute("x",2); focoRect.setAttribute("y",2); focoRect.setAttribute("width",r.w+4); focoRect.setAttribute("height",r.h+4); focoRect.setAttribute("rx", rx?rx+2:0);
+  foco.classList.add("is-on");
+}
+function trazar(inmediato){
+  if (trazo) trazo.kill();
+  const t0=perimetroT(rectLocal(hot)); const o={d:inmediato?100:0};
+  const pinta=()=>{ focoRect.setAttribute("stroke-dasharray", `${o.d} ${100-o.d}`); focoRect.setAttribute("stroke-dashoffset", `${-(t0-o.d/2)}`); };
+  pinta(); if (!inmediato) trazo=gsap.to(o,{d:100,duration:0.32/(+vel.value),ease:"power2.out",onUpdate:pinta});
+}
+function resolver(el){
+  const z=el && el.closest("[data-press], [data-hover], [data-native]");
+  if (hot && hot!==z){ hot.classList.remove("is-hot"); hot=null; foco.classList.remove("is-on","is-sunk"); }
+  pressable=null;
+  if (!z){ cur.dataset.state="idle"; return; }
+  if (z.hasAttribute("data-press")){ pressable=z; if (hot!==z){ hot=z; z.classList.add("is-hot"); apuntar(); pintarFoco(); trazar(false); } cur.dataset.state=pressed?"sunk":"open"; foco.classList.toggle("is-sunk", pressed); return; }
+  if (z.hasAttribute("data-hover")){ if (hot!==z){ hot=z; z.classList.add("is-hot"); apuntar(); pintarFoco(); trazar(true); } cur.dataset.state="sunk"; foco.classList.add("is-sunk"); return; }
+  cur.dataset.state="off";
+}
+function bajoElPunto(x,y){ const r=win.getBoundingClientRect(); const el=document.elementFromPoint(r.left+x*k, r.top+y*k); return el && win.contains(el) ? el : null; }
+stage.addEventListener("pointermove", e=>{ if (enTour) return; const r=win.getBoundingClientRect(); colocar((e.clientX-r.left)/k,(e.clientY-r.top)/k); });
+stage.addEventListener("pointerover", e=>{ if (enTour) return; resolver(e.target instanceof Element ? e.target : null); });
+stage.addEventListener("pointerleave", ()=>{ if (enTour) return; resolver(null); cur.dataset.state="off"; });
+stage.addEventListener("pointerdown", ()=>{ pressed=true; if (pressable){ cur.dataset.state="sunk"; foco.classList.add("is-sunk"); } });
+window.addEventListener("pointerup", ()=>{ pressed=false; if (pressable){ cur.dataset.state="open"; foco.classList.remove("is-sunk"); } });
+
+/* ===== recorrido guiado ===== */
+const pos={x:0,y:0};
+function paso(){ colocar(pos.x,pos.y); resolver(bajoElPunto(pos.x,pos.y)); }
+function tour(){
+  if (tl) tl.kill(); enTour=true; pressed=false;
+  const c=rectLocal(document.querySelector(".cae-obra-card")); const cx=c.x+c.w/2, cy=c.y+c.h/2;
+  const piezas=[...document.querySelectorAll(".cae-cred-pieza")].map(b=>{const r=rectLocal(b); return [r.x+r.w/2, r.y+44];});
+  if (!piezas.length) return;
+  pos.x=120; pos.y=250; paso();
+  tl=gsap.timeline({ onComplete:()=>{ enTour=false; resolver(null); cur.dataset.state="idle"; } }).timeScale(+vel.value);
+  tl.to(pos,{x:300,y:290,duration:0.9,ease:"power1.inOut",onUpdate:paso})
+    .to(pos,{x:cx-40,y:cy+10,duration:0.9,ease:"power2.inOut",onUpdate:paso})
+    .to(pos,{x:cx+30,y:cy-20,duration:0.7,ease:"power1.inOut",onUpdate:paso})
+    .add(()=>{ pressed=true; cur.dataset.state="sunk"; foco.classList.add("is-sunk"); }, "+=0.35")
+    .add(()=>{ pressed=false; cur.dataset.state="open"; foco.classList.remove("is-sunk"); }, "+=0.5")
+    .to(pos,{x:piezas[0][0],y:piezas[0][1],duration:1.0,ease:"power2.inOut",onUpdate:paso}, "+=0.4")
+    .to(pos,{x:piezas[piezas.length-1][0],y:piezas[0][1]+6,duration:2.6,ease:"none",onUpdate:paso}, "+=0.5")
+    .to(pos,{x:piezas[piezas.length-1][0]+80,y:piezas[0][1]-120,duration:0.8,ease:"power2.inOut",onUpdate:paso}, "+=0.5")
+    .to(pos,{x:720,y:38,duration:1.0,ease:"power2.inOut",onUpdate:paso}, "+=0.2")
+    .to(pos,{x:820,y:36,duration:0.6,ease:"power1.inOut",onUpdate:paso}, "+=0.6");
+}
+document.getElementById("rep").addEventListener("click", tour);
+setDir("gota");
+setTimeout(tour, 1200);
+</script>
+</body>
+</html>
