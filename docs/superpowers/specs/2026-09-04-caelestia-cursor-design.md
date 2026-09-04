@@ -1,7 +1,9 @@
 # La gota — el cursor de Caelestia es pigmento de la hora sobre la superficie
 
-Estado: pendiente de plan
-Fecha: 2026-09-04
+Estado: en ejecucion
+Plan: `docs/superpowers/plans/2026-09-04-caelestia-cursor.md`
+Fecha: 2026-09-04 (spec aprobado y plan escrito el mismo dia; **ninguna tarea del plan ejecutada
+todavia** — el progreso real son las casillas del plan, que es lo que `scripts/verify.py` cruza)
 Alcance: **solo el tema Caelestia**. Módulo nuevo `src/components/caelestiaCursor.ts`, bloque nuevo
 dentro de `:root[data-theme="caelestia"]` en `src/themes/themes.css`, un arnés nuevo
 `scripts/measure-caelestia-cursor.py`, y la puerta de montaje en `src/main.ts` (la quinta entrada
@@ -215,6 +217,55 @@ glifo nativo mientras nadie lo apunte, que es lo que convierte la regla en lista
 
 `.caelestia-cursor-ready` **la pone el JS solo tras montar con éxito.** Si el módulo no carga, no
 existe ninguna de esas reglas y el puntero del sistema sigue intacto en toda la página.
+
+### Corrección del 2026-09-04 (al escribir el plan) — la lista blanca no puede colgar de `[data-scene]`
+
+El párrafo de arriba daba por bueno el patrón de Vice y Hyprland tal cual, que cuelga de
+`[data-scene]`. **Medido en el build servido, en Caelestia eso deja fuera tres de las dianas de
+este dispositivo**, dos de ellas del propio spec:
+
+| diana | dónde vive de verdad | ¿dentro de `[data-scene]`? |
+|---|---|---|
+| las 5 tarjetas de Obra | `.cae-obra-card` → `.cae-obra-row` → `div#obra.obra-rail` → `main` | **no** |
+| las 5 pastillas de workspace | `.cae-ws` → `.cae-ws-list` → `header.cae-bar` → `#app` | **no** |
+| el dock | `.cae-dock-item` → `.cae-dock` → `#app` | **no** |
+| las 23 piezas de Créditos | `.cae-cred-pieza` → … → `section#creditos[data-scene="credits"]` | sí |
+
+La causa: los cinco workspaces son **los hijos directos de `main`**
+(`caelestia.choreography.ts:63`, `Array.from(root.children)`), y el de Obra es `div#obra.obra-rail`,
+que **no lleva `data-scene`**. El `[data-scene="obra"]` sí existe, anidado dentro, pero es el DOM
+genérico de `projectScene.ts` que B3 oculta: mide 0×0. Con la regla colgando de `[data-scene]`, el
+puntero del sistema seguiría visible justo encima de las dianas que este cursor existe para vestir.
+Es la misma clase de fallo que Hyprland documentó para `.scene-nav-trigger`, pero aquí no toca un
+caso raro: toca lo principal.
+
+**La lista blanca cuelga de la raíz**, no de las escenas, y opta hacia fuera:
+
+```css
+.caelestia-cursor-ready:root[data-theme="caelestia"] { cursor: none; }
+/* Texto corrido recupera su I-beam — salvo el que vive DENTRO de un pulsable
+   (la leyenda de una tarjeta de Obra, el nombre de una pieza de Créditos):
+   ahí manda el pulsable, igual que en la resolución de zona del módulo. */
+.caelestia-cursor-ready:root[data-theme="caelestia"]
+  :is(p, li, dd, dt, figcaption, blockquote):not(button *, a[href] *) { cursor: auto; }
+/* Enlace externo y galería: nativos. */
+.caelestia-cursor-ready:root[data-theme="caelestia"]
+  :is(a[target="_blank"], .gallery-track) { cursor: auto; }
+```
+
+Sigue siendo lista blanca por el mismo mecanismo (la herencia solo alcanza a quien no declara
+`cursor` propio) y sigue sin depender del JS: sin la clase no existe ninguna de las tres reglas.
+
+**Nota de alcance para el arnés:** `.gallery-track` existe en el DOM (5 nodos) pero **es invisible
+en Caelestia** — vive en el `projectScene.ts` que B3 oculta. Su línea aquí es preventiva, no
+medida: el gate 2 **no puede afirmar que la mide** sin volverse tautológico. Mide lo que sí es
+alcanzable: los `p` de Contacto y de «Quién soy», los `a[target="_blank"]` del dock y de la barra de
+contacto, la leyenda de una tarjeta y el nombre de una pieza.
+
+**Y `button[aria-pressed]` casa 46 nodos, no 23**: las 23 filas `.credit` del `credits.ts` genérico
+también lo llevan, ocultas por `.credits-grid { display: none }`. No es un problema —un nodo oculto
+no recibe `pointerover`, así que la familia de roce sigue siendo las 23 piezas visibles— pero ni el
+módulo ni el arnés pueden **contar nodos** para decidir nada.
 
 ## Color y contraste
 
