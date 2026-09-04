@@ -39,7 +39,14 @@ Copiadas del spec y de los dos `CLAUDE.md`. **Los requisitos de cada tarea las i
   la guarda de CSS **no alcanza a los pseudo-elementos**.
 - **Vice está cerrado y no se toca.** Hyprland tampoco. `contacto.ts` es compartido por los tres.
 - **No declarar DONE sin build + captura real en navegador.**
-- Comandos: `npm run build`, `npm run lint`, `npx vite preview --port 4173`.
+- **`npm` se ejecuta con Node 22, no con el del PATH.** El `node` por defecto de esta maquina es
+  v18.19.1 y `npm run build` revienta con `does not provide an export named 'styleText'`. Cada
+  bloque de comandos empieza por:
+  `export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"`
+- **El puerto es 4193 y NO se arranca ningun servidor.** El `vite preview` de este worktree ya corre
+  ahi y sirve `dist/` desde disco. **En 4173 corre otra sesion sirviendo otro repositorio**: medir
+  ahi da verde contra codigo ajeno. Cada bloque comprueba la huella del bundle antes de medir.
+- Comandos: `npm run build`, `npm run lint`.
 
 ---
 
@@ -178,13 +185,21 @@ con `order` (Task 4), que no le cambia el DOM a nadie.
 - [ ] **Step 1: Verificar el punto de partida en el navegador**
 
 ```bash
-npm run build && (npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
     b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
     pg = b.new_page(viewport={"width": 1440, "height": 900})
-    pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+    pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
     pg.wait_for_timeout(3000)
     print(pg.evaluate("""() => ({
         canales: document.querySelectorAll('[data-canal]').length,
@@ -251,7 +266,15 @@ y declararlo antes de `const band`:
 - [ ] **Step 5: Construir y comprobar que los ganchos existen y no rompen nada**
 
 ```bash
-npm run lint && npm run build && (npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run lint && npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 FALLOS = []
@@ -261,7 +284,7 @@ with sync_playwright() as p:
         pg = b.new_page(viewport={"width": 1440, "height": 900})
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))
-        pg.goto(f"http://localhost:4173/?theme={tema}", wait_until="domcontentloaded")
+        pg.goto(f"http://localhost:4193/?theme={tema}", wait_until="domcontentloaded")
         pg.wait_for_timeout(3000)
         d = pg.evaluate("""() => {
             const bars = [...document.querySelectorAll('a.contacto-bar')];
@@ -301,7 +324,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
     for tema in ("vice", "hyprland"):
         pg = b.new_page(viewport={"width": 1440, "height": 900})
-        pg.goto(f"http://localhost:4173/?theme={tema}#contacto", wait_until="domcontentloaded")
+        pg.goto(f"http://localhost:4193/?theme={tema}#contacto", wait_until="domcontentloaded")
         pg.wait_for_timeout(3500)
         pg.eval_on_selector('[data-scene="contacto"]', "e => e.scrollIntoView()")
         pg.wait_for_timeout(1200)
@@ -346,13 +369,21 @@ capturas antes y después.
 - [ ] **Step 1: Capturar B1 y B2 antes de tocar nada**
 
 ```bash
-npm run build && (npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
     b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
     pg = b.new_page(viewport={"width": 1440, "height": 900})
-    pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+    pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
     pg.wait_for_timeout(3500)
     pg.screenshot(path="/tmp/b5-t3-antes-hero.png")
     pg.click('[data-cae-ws="quien-es"]'); pg.wait_for_timeout(2500)
@@ -402,13 +433,21 @@ grep -c '"opsz" 9, "wght" 700' src/themes/themes.css            # esperado: 1 (l
 - [ ] **Step 5: Capturar después y comparar píxel a píxel**
 
 ```bash
-npm run lint && npm run build && (npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run lint && npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
     b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
     pg = b.new_page(viewport={"width": 1440, "height": 900})
-    pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+    pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
     pg.wait_for_timeout(3500)
     pg.screenshot(path="/tmp/b5-t3-despues-hero.png")
     pg.click('[data-cae-ws="quien-es"]'); pg.wait_for_timeout(2500)
@@ -724,7 +763,15 @@ Sin animación todavía y sin troquel: solo que la escena deje de estar rota.
 - [ ] **Step 2: Construir y medir la jerarquía**
 
 ```bash
-npm run lint && npm run build && (npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run lint && npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 FALLOS = []
@@ -734,7 +781,7 @@ with sync_playwright() as p:
         pg = b.new_page(viewport={"width": w, "height": h}, is_mobile=(w == 390), has_touch=(w == 390))
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))
-        pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+        pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
         pg.wait_for_timeout(3000)
         pg.click('[data-cae-ws="contacto"]'); pg.wait_for_timeout(1400)
         d = pg.evaluate("""() => {
@@ -790,7 +837,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
     for tema in ("vice", "hyprland"):
         pg = b.new_page(viewport={"width": 1440, "height": 900})
-        pg.goto(f"http://localhost:4173/?theme={tema}#contacto", wait_until="domcontentloaded")
+        pg.goto(f"http://localhost:4193/?theme={tema}#contacto", wait_until="domcontentloaded")
         pg.wait_for_timeout(3500)
         pg.eval_on_selector('[data-scene="contacto"]', "e => e.scrollIntoView()")
         pg.wait_for_timeout(1200)
@@ -1308,7 +1355,15 @@ deja definitivo):
 con su `import { montarFundido } from "./caelestia.fundido";`.
 
 ```bash
-npm run lint && npm run build && (npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run lint && npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 FALLOS = []
@@ -1318,7 +1373,7 @@ with sync_playwright() as p:
         pg = b.new_page(viewport={"width": w, "height": h}, is_mobile=(w == 390), has_touch=(w == 390))
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))
-        pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+        pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
         pg.wait_for_timeout(3000)
         pg.click('[data-cae-ws="contacto"]'); pg.wait_for_timeout(1400)
         d = pg.evaluate("""() => {
@@ -1662,7 +1717,15 @@ con `let fundidoVisto = false;` junto a `let actual = 0;`.
 Una captura no distingue una animación que corre de una que ya aterrizó.
 
 ```bash
-npm run lint && npm run build && (npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run lint && npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 FALLOS = []
@@ -1691,7 +1754,7 @@ with sync_playwright() as p:
     pg = b.new_page(viewport={"width": 1440, "height": 900})
     errs = []
     pg.on("pageerror", lambda e: errs.append(str(e)))
-    pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+    pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
     pg.wait_for_timeout(3000)
     pg.click('[data-cae-ws="contacto"]')
     pg.wait_for_timeout(120)
@@ -1730,7 +1793,7 @@ from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
     b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
     pg = b.new_page(viewport={"width": 1440, "height": 900})
-    pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+    pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
     pg.wait_for_timeout(3000)
     pg.click('[data-cae-ws="contacto"]'); pg.wait_for_timeout(3000)
     print(pg.evaluate("""() => {
@@ -1794,7 +1857,15 @@ Visto en rojo con el factor de crecimiento a 0,80."
 - [ ] **Step 2: Comprobar que la escena queda puesta y en 0 ms**
 
 ```bash
-npm run build && (npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 FALLOS = []
@@ -1804,7 +1875,7 @@ with sync_playwright() as p:
     pg = ctx.new_page()
     errs = []
     pg.on("pageerror", lambda e: errs.append(str(e)))
-    pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+    pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
     pg.wait_for_timeout(3000)
     pg.click('[data-cae-ws="contacto"]')
     pg.wait_for_timeout(200)   # 200 ms: si algo anima, aqui esta a medias
@@ -1901,8 +1972,16 @@ Los dos que hay que escribir con cuidado, porque son los que pueden pasar en fal
 - [ ] **Step 2: Ejecutarlo contra el build**
 
 ```bash
-npm run build && (npx vite preview --port 4173 &) && sleep 4
-python3 scripts/measure-caelestia-fundido.py --base http://localhost:4173
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
+python3 scripts/measure-caelestia-fundido.py --base http://localhost:4193
 ```
 
 Esperado: `TODO VERDE`.
@@ -1910,10 +1989,10 @@ Esperado: `TODO VERDE`.
 - [ ] **Step 3: Comprobar que los arneses de las fases anteriores siguen verdes**
 
 ```bash
-python3 scripts/measure-caelestia-hora.py --base http://localhost:4173
-python3 scripts/measure-caelestia-titulo.py --base http://localhost:4173
-python3 scripts/measure-caelestia-quien-soy.py --base http://localhost:4173
-python3 scripts/measure-caelestia-obra.py --base http://localhost:4173
+python3 scripts/measure-caelestia-hora.py --base http://localhost:4193
+python3 scripts/measure-caelestia-titulo.py --base http://localhost:4193
+python3 scripts/measure-caelestia-quien-soy.py --base http://localhost:4193
+python3 scripts/measure-caelestia-obra.py --base http://localhost:4193
 ```
 
 Los cuatro tienen que seguir verdes. **Si alguno cae, B5 ha roto una fase cerrada** — arreglarlo
@@ -1961,13 +2040,22 @@ anteriores siguen verdes."
 - [ ] **Step 1: Build limpio y lint**
 
 ```bash
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
 npm run lint && npm run build
 ```
 
 - [ ] **Step 2: Capturas reales, las cinco escenas y los tres temas**
 
 ```bash
-(npx vite preview --port 4173 &) && sleep 4
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+npm run build
+# El `vite preview` de ESTE worktree ya corre en 4193 y sirve `dist/` desde
+# disco, asi que recoge el build nuevo sin reiniciar nada. NO uses 4173: ahi
+# corre otra sesion sirviendo OTRO repositorio, y medir contra ella da verde
+# contra codigo que no es tuyo. La huella del bundle lo comprueba.
+ASSET=$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' dist/index.html | head -1)
+curl -s http://localhost:4193/ | grep -q "$ASSET" \
+  || { echo "PELIGRO: el puerto 4193 no sirve este worktree (espero $ASSET)"; exit 1; }
 python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 ESCENAS = ["hero", "quien-es", "obra", "creditos", "contacto"]
@@ -1975,7 +2063,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
     for w, h in ((1440, 900), (390, 844)):
         pg = b.new_page(viewport={"width": w, "height": h}, is_mobile=(w == 390), has_touch=(w == 390))
-        pg.goto("http://localhost:4173/?theme=caelestia", wait_until="domcontentloaded")
+        pg.goto("http://localhost:4193/?theme=caelestia", wait_until="domcontentloaded")
         pg.wait_for_timeout(3000)
         for e in ESCENAS:
             pg.click(f'[data-cae-ws="{e}"]'); pg.wait_for_timeout(2600)
@@ -1983,7 +2071,7 @@ with sync_playwright() as p:
         pg.close()
     for tema in ("vice", "hyprland"):
         pg = b.new_page(viewport={"width": 1440, "height": 900})
-        pg.goto(f"http://localhost:4173/?theme={tema}#contacto", wait_until="domcontentloaded")
+        pg.goto(f"http://localhost:4193/?theme={tema}#contacto", wait_until="domcontentloaded")
         pg.wait_for_timeout(3500)
         pg.eval_on_selector('[data-scene="contacto"]', "e => e.scrollIntoView()")
         pg.wait_for_timeout(1200)
