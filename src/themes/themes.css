@@ -4676,6 +4676,122 @@
   border-radius: 10px;
 }
 
+/* El icono va en la tinta del tema, no en el negro que hereda por defecto:
+   sobre el relleno `--cae-outline` de la figura mide 6,78:1 de noche y
+   6,04:1 a las 09:00. Todos en UNA sola tinta — los 23 logotipos de marca
+   traen colores ajenos a la rueda OkLCH del tema y con ellos el peor caso
+   caia a 2,53:1 a las 09:00. */
+:root[data-theme="caelestia"] .cae-cred-fig svg {
+  fill: var(--cae-on-surface);
+}
+
+/* La marca de la cabecera: sin caja quedaba suelta, sin fondo propio, con el
+   clip-path de la pieza actual puesto por JS pero sin superficie que recortar. */
+:root[data-theme="caelestia"] .cae-cred-marca {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--cae-primary);
+  color: var(--cae-on-primary);
+}
+
+:root[data-theme="caelestia"] .cae-cred-marca svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+:root[data-theme="caelestia"] .cae-cred-nombre {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: 32px;
+  line-height: 1;
+  margin: 0 0 4px;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-cred-detalle {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-variation-settings: "opsz" 24, "wght" 400, "SOFT" 0, "WONK" 1;
+  font-size: 17px;
+  color: var(--cae-on-surface-variant);
+}
+
+/* Especificidad `.cae-cred-cab .cae-cred-terr` (0,2,0) y no `.cae-cred-terr`
+   (0,1,0): `.cae-cred-cab p` le ganaba y el territorio se pintaba en Fraunces
+   itálica pese a pedir la monoespaciada, obedeciendo solo el tracking. Y no
+   basta con repetir la familia: hay que apagar tambien `font-style` y los ejes
+   heredados. Sin versalitas ni tracking largo — a 10 px separaba las letras. */
+:root[data-theme="caelestia"] .cae-cred-cab .cae-cred-terr {
+  font-family: "Martian Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  font-style: normal;
+  font-variation-settings: normal;
+  color: var(--cae-on-surface-variant);
+  margin: 7px 0 0;
+}
+
+/* HILERA, no pila. Medido: con tres obras (TypeScript: EchoPlan, TesisFar,
+   HyprFinance) la pila de <li> medía 111 px dentro de una cabecera de 96 y se
+   salía 15. En hilera con punto medio caben en uno: 51 px, 400 de ancho en un
+   hueco de 420. Los tres títulos siguen escritos, ninguno se resume. */
+:root[data-theme="caelestia"] .cae-cred-cruce {
+  text-align: right;
+  max-width: 420px;
+}
+
+/* Tracking corto: a .2em «APARECE EN» se leía como diez letras sueltas. Sigue
+   en versalitas porque es un epígrafe, no una palabra que se lea. */
+:root[data-theme="caelestia"] .cae-cred-cruce > span {
+  display: block;
+  font-family: "Martian Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface-variant);
+  margin-bottom: 9px;
+}
+
+:root[data-theme="caelestia"] .cae-cred-cruce-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0 2px;
+}
+
+:root[data-theme="caelestia"] .cae-cred-cruce-lista li {
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-variation-settings: "opsz" 48, "wght" 500, "SOFT" 0, "WONK" 1;
+  font-size: 26px;
+  line-height: 1.16;
+  color: var(--cae-on-surface);
+}
+
+:root[data-theme="caelestia"] .cae-cred-cruce-lista li + li::before {
+  content: "\00B7";
+  padding: 0 7px 0 5px;
+  color: var(--cae-on-surface-variant);
+  font-style: normal;
+}
+
+/* «Sin obra publicada» NO se apaga con tinta: en `--cae-outline` daba 1,80:1 de
+   noche y 2,34:1 a las 09:00, y son 7 de las 23 piezas (el 30 %). El estado lo
+   dice la PALABRA. Apagar la tinta para decir «esto pesa menos» es la misma
+   opacidad recalibrada que ya fallo en B1. */
+:root[data-theme="caelestia"] .cae-cred-cruce-lista li.is-vacia {
+  font-size: 21px;
+  color: var(--cae-on-surface-variant);
+}
+
 /*
  * La barra del shell: marca, pastillas de workspace y bandeja de estado.
  * `--cae-elev-1`/`--cae-elev-2` (Tarea 2) las pinta por primera vez de verdad.

@@ -102,6 +102,60 @@ def gate_piezas(pagina) -> None:
     check(len(m["lados"]) == 1, f"un solo lado en todo el DOM ({m['lados']})")
 
 
+def gate_cruce(pagina) -> None:
+    """El cruce «Aparece en» tiene que caber en los 96 px de cabecera en LAS 23
+    piezas, y el estado vacio tiene que leerse.
+
+    Visto rojo con: TypeScript (tres obras) apilaba tres renglones, 111 px en
+    una cabecera de 96 — se salia 15 contra el filete de la primera banda. Y
+    «Sin obra publicada» iba en `--cae-outline`: 1,80:1 de noche, 2,34:1 a las
+    09:00, en 7 de las 23 piezas.
+
+    El contraste se mide PINTANDO el color en un lienzo 1x1 y leyendo el pixel.
+    Leer `oklch(...)` con una regex como si fueran bytes RGB da 1.00:1 en todo
+    — la trampa que ya costo la fase A."""
+    print("[6] el cruce cabe en la cabecera y el estado vacio se lee")
+    peor = pagina.evaluate(
+        """() => {
+          const px = c => { const k=document.createElement('canvas'); k.width=k.height=1;
+            const x=k.getContext('2d'); x.fillStyle='#000'; x.fillRect(0,0,1,1);
+            x.fillStyle=c; x.fillRect(0,0,1,1);
+            const d=x.getImageData(0,0,1,1).data; return [d[0],d[1],d[2]]; };
+          const lum = r => { const f=r.map(v=>{v/=255;
+            return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4);});
+            return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2]; };
+          const rat = (a,b) => { const la=lum(px(a)), lb=lum(px(b));
+            const h=Math.max(la,lb), l=Math.min(la,lb); return (h+0.05)/(l+0.05); };
+          // El contenedor de la escena es TRANSPARENTE: leer su backgroundColor
+          // devuelve rgba(0,0,0,0) y el contraste sale contra negro (11,11:1
+          // donde lo real era 8,05). Se sube hasta el primer ancestro opaco.
+          const opaco = e => { let n=e; while(n && n!==document.documentElement){
+            const bg=getComputedStyle(n).backgroundColor;
+            if (bg && !/, *0\\)$/.test(bg) && bg!=='transparent') return bg;
+            n=n.parentElement; } return '#fff'; };
+          const cab = document.querySelector('.cae-cred-cab');
+          const cru = document.querySelector('.cae-cred-cruce');
+          const res = {sale: 0, peor: 99, cual: ''};
+          for (const b of document.querySelectorAll('.cae-cred-pieza')) {
+            b.dispatchEvent(new MouseEvent('mouseenter', {bubbles:true}));
+            const rc = cru.getBoundingClientRect(), rb = cab.getBoundingClientRect();
+            res.sale = Math.max(res.sale, Math.round(rc.bottom - rb.bottom));
+            const li = cru.querySelector('li');
+            if (li && li.getClientRects().length) {
+              const r = rat(getComputedStyle(li).color, opaco(li));
+              if (r < res.peor) { res.peor = r; res.cual = b.dataset.pieza; }
+            }
+          }
+          return res;
+        }"""
+    )
+    check(peor["sale"] <= 0, f"el cruce no se sale de la cabecera ({peor['sale']} px)")
+    check(
+        peor["peor"] >= 4.5,
+        f"el cruce se lee en las 23 (peor {peor['peor']:.2f}:1 en «{peor['cual']}»)",
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -123,6 +177,7 @@ def main() -> int:
         gate_sin_scroll(pagina)
         gate_rotulos(pagina)
         gate_piezas(pagina)
+        gate_cruce(pagina)
 
         print("[0] consola")
         check(not errores, f"cero errores de consola ({errores[:3]})")
