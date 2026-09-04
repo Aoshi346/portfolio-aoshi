@@ -8703,3 +8703,178 @@
     display: none;
   }
 }
+
+/* =====================================================================
+ * Cursor propio de Caelestia — la gota
+ *
+ * `.caelestia-cursor-ready` la pone el JS SOLO tras montar con exito. Si
+ * el modulo no carga, no existe ninguna de estas reglas y el cursor del
+ * sistema queda intacto: ni una senal depende del JavaScript.
+ *
+ * La lista blanca cuelga de la RAIZ y no de `[data-scene]`, al reves que
+ * en Vice y Hyprland. Medido: en Caelestia los cinco workspaces son los
+ * hijos directos de `main`, y el de Obra (`div#obra.obra-rail`) NO lleva
+ * `data-scene`; la barra y el dock cuelgan de `#app`, fuera de `main`.
+ * Con la regla colgando de `[data-scene]`, el puntero del sistema seguiria
+ * visible encima de las tarjetas de Obra, de las pastillas y del dock --
+ * tres de las dianas que este cursor existe para vestir.
+ *
+ * Sigue siendo lista blanca por el mismo mecanismo de siempre: `cursor`
+ * solo se hereda cuando el elemento no declara el suyo.
+ * ===================================================================== */
+
+.caelestia-cursor-ready:root[data-theme="caelestia"] {
+  cursor: none;
+}
+
+/* Opt-in explicito de los pulsables: sin esta regla el `cursor: none` de
+   la raiz nunca llega a ellos. Casi todo boton de esta pagina (tarjetas de
+   Obra, piezas de Creditos) trae su propio `cursor: pointer` desde su CSS
+   base -- una declaracion PROPIA que la herencia jamas pisa. Hace falta
+   apuntarlos uno a uno, con especificidad mayor que esas reglas base, para
+   que la gota sustituya de verdad al puntero. El enlace externo queda
+   fuera aposta: abre pestana nueva y no se toca. */
+.caelestia-cursor-ready:root[data-theme="caelestia"]
+  :is(button, a[href]:not([target="_blank"])) {
+  cursor: none;
+}
+
+/* Texto corrido recupera el I-beam que la herencia le habia quitado:
+   ocultarlo borraria la senal de que esto se selecciona y se copia.
+   Literal `text` y no `auto`: `getComputedStyle` no resuelve `auto` a un
+   glifo concreto, devuelve la palabra clave tal cual -- con `auto` la
+   senal de "esto se selecciona" no se puede verificar ni a ojo por su
+   nombre de valor. EXCEPTO el que vive dentro de un pulsable -- la
+   leyenda de una tarjeta de Obra, el nombre de una pieza de Creditos: ahi
+   manda el pulsable, igual que en `resolver()` dentro del modulo. Las dos
+   inversiones se mueven juntas o se contradicen sobre el mismo pixel. */
+.caelestia-cursor-ready:root[data-theme="caelestia"]
+  :is(p, li, dd, dt, figcaption, blockquote):not(button *, a[href] *) {
+  cursor: text;
+}
+
+/* `.gallery-track` es PREVENTIVO: su `grab` (declarado en `style.css`, su
+   propia regla, que la herencia tampoco alcanza) es la unica pista de que
+   la galeria se arrastra, pero hoy el `projectScene.ts` que la contiene
+   esta oculto en Caelestia (B3), asi que esta linea no la vigila ningun
+   gate -- y no puede, sin volverse tautologico. El enlace externo
+   (`a[target="_blank"]`) NO entra aqui: el opt-in de arriba ya lo deja
+   fuera, y su `pointer` nativo (la hoja del navegador lo declara en el
+   propio `<a>`, no por herencia) no necesita rescate. */
+.caelestia-cursor-ready:root[data-theme="caelestia"] .gallery-track {
+  cursor: auto;
+}
+
+.cae-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 72;
+  pointer-events: none;
+}
+
+/* La perla. `--s` tamano, `--al` opacidad, `--brillo` la tension
+   superficial. El pigmento es el de la hora: `--cae-primary` gira los 360
+   grados de la rueda en 24 horas, asi que el visitante de las 09:00 y el
+   de las 21:00 no llevan la misma gota en la mano. Aqui no se calcula
+   ningun color. */
+.cae-cursor-perla {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--s, 20px);
+  height: var(--s, 20px);
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--cae-primary);
+  opacity: var(--al, 0.42);
+  mix-blend-mode: multiply;
+  transition:
+    width 0.3s cubic-bezier(0.2, 0, 0, 1),
+    height 0.3s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.2s linear,
+    border-radius 0.3s cubic-bezier(0.2, 0, 0, 1),
+    background 0.2s linear;
+}
+
+/* De noche el pigmento no puede multiplicar: sobre superficie oscura
+   multiplicar es no hacer nada. Aclara. */
+:root[data-cae-esquema="noche"] .cae-cursor-perla {
+  mix-blend-mode: screen;
+}
+
+/* El brillo de la tension superficial: es lo que separa una gota de un
+   disco. Regla propia y no `*`, porque el selector universal NO alcanza a
+   los pseudo-elementos. */
+.cae-cursor-perla::before {
+  content: "";
+  position: absolute;
+  left: 22%;
+  top: 18%;
+  width: 30%;
+  height: 22%;
+  border-radius: 50%;
+  background: var(--cae-surface);
+  opacity: var(--brillo, 0.55);
+  filter: blur(0.5px);
+  transition: opacity 0.2s linear;
+}
+
+/* El nucleo marca la MANO: es el unico punto que dice donde esta el raton
+   exactamente, y por eso no se mueve ni se interpola nunca. */
+.cae-cursor-nucleo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 3px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--cae-on-surface);
+  transition: opacity 0.12s linear;
+}
+
+.cae-cursor[data-estado="reposo"] .cae-cursor-perla {
+  --s: 20px;
+  --al: 0.42;
+  --brillo: 0.55;
+}
+
+.cae-cursor[data-estado="perla"] .cae-cursor-perla {
+  --s: 15px;
+  --al: 0.95;
+  --brillo: 0.95;
+  /* Ligeramente asimetrica: una gota tensada no es un circulo. */
+  border-radius: 48% 52% 50% 50% / 55% 55% 45% 45%;
+}
+
+.cae-cursor[data-estado="apagada"] .cae-cursor-perla,
+.cae-cursor[data-estado="apagada"] .cae-cursor-nucleo {
+  opacity: 0;
+  /* 120ms: el relevo con el cursor del sistema tiene que ser inmediato. Si
+     la gota se apaga despacio, durante un cuarto de segundo hay dos
+     cursores en pantalla. */
+  transition: opacity 0.12s linear;
+}
+
+/* De noche la gota parte de mas arriba: sobre superficie oscura una
+   opacidad de dia se lee como suciedad, no como pigmento. */
+:root[data-cae-esquema="noche"] .cae-cursor[data-estado="reposo"] .cae-cursor-perla {
+  --al: 0.55;
+  --brillo: 0.35;
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor[data-estado="perla"] .cae-cursor-perla {
+  --al: 0.9;
+  --brillo: 0.6;
+}
+
+/* Cinturon y tirantes: si el modulo llegara a montar bajo movimiento
+   reducido, no se pinta nada. La puerta real esta en `main.ts`. */
+@media (prefers-reduced-motion: reduce) {
+  .cae-cursor {
+    display: none;
+  }
+}

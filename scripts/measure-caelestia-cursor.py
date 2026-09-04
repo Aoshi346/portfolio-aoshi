@@ -160,6 +160,31 @@ def gate_senales(p_pagina, base: str) -> None:
     check(estado(pagina) == "derrame", "[2] sobre el nombre de una pieza la gota sigue derramada")
 
 
+def gate_sin_inercia(pagina, base: str) -> None:
+    """Gate 4 -- la posicion NO se suaviza.
+
+    Un cursor con inercia miente sobre donde esta el raton, y en Creditos hay
+    23 dianas contiguas donde eso se lee como retraso. La asercion es delta
+    CERO tras UN fotograma, no "menor que": un umbral flojo deja pasar
+    exactamente el `lerp` que viene a prohibir.
+    """
+    print("[4] sin inercia en la posicion")
+    abre(pagina, base, "creditos")
+    pagina.mouse.move(400, 400)
+    pagina.wait_for_timeout(300)
+    pagina.mouse.move(900, 500)
+    medida = pagina.evaluate(
+        """() => new Promise(res => requestAnimationFrame(() => {
+             const m = new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.cae-cursor')).transform);
+             res([m.e, m.f]);
+           }))"""
+    )
+    check(
+        abs(medida[0] - 900) < 0.5 and abs(medida[1] - 500) < 0.5,
+        f"[4] la gota esta exactamente donde el raton tras un fotograma {medida}",
+    )
+
+
 ARGS = ["--no-sandbox", "--use-gl=swiftshader"]
 
 
@@ -181,6 +206,7 @@ def main() -> int:
 
         gate_presencia(navegador, args.base)
         gate_senales(pagina, args.base)
+        gate_sin_inercia(pagina, args.base)
 
         print("[8] consola")
         check(not errores, f"[8] cero errores de consola ({errores[:3]})")
