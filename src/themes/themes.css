@@ -4803,6 +4803,14 @@
   transform: scale(1.07);
 }
 
+/* El icono de la pieza elegida va sobre `--cae-primary`, no sobre el relleno
+   normal de la figura, asi que le toca su pareja `--cae-on-primary`. Con la
+   tinta general (`--cae-on-surface`) se volvia ilegible en esquema oscuro:
+   1,38:1 a las 06:00, «icono Tailwind CSS». */
+:root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-fig svg {
+  fill: var(--cae-on-primary);
+}
+
 :root[data-theme="caelestia"] .cae-cred-fig {
   transition:
     clip-path 0.22s ease,

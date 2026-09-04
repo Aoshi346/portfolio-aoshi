@@ -13,6 +13,49 @@ from playwright.sync_api import sync_playwright
 
 FALLOS: list[str] = []
 
+_JS_CONTRASTE = r"""() => {
+  const px = c => { const k=document.createElement('canvas'); k.width=k.height=1;
+    const x=k.getContext('2d'); x.fillStyle='#000'; x.fillRect(0,0,1,1);
+    x.fillStyle=c; x.fillRect(0,0,1,1);
+    const d=x.getImageData(0,0,1,1).data; return [d[0],d[1],d[2]]; };
+  const lum = r => { const f=r.map(v=>{v/=255;
+    return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4);});
+    return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2]; };
+  const rat = (a,b) => { const la=lum(px(a)), lb=lum(px(b));
+    const h=Math.max(la,lb), l=Math.min(la,lb); return (h+0.05)/(l+0.05); };
+  const opaco = e => { let n=e; while(n && n!==document.documentElement){
+    const bg=getComputedStyle(n).backgroundColor;
+    if (bg && !/, *0\)$/.test(bg) && bg!=='transparent') return bg;
+    n=n.parentElement; } return '#fff'; };
+
+  let peor = 99, cual = '';
+  const mide = (nom, el, color) => {
+    if (!el || el.getClientRects().length === 0) return;
+    const r = rat(color || getComputedStyle(el).color, opaco(el));
+    if (r < peor) { peor = r; cual = nom; }
+  };
+
+  mide('nombre', document.querySelector('.cae-cred-nombre'));
+  mide('detalle', document.querySelector('.cae-cred-detalle'));
+  mide('territorio', document.querySelector('.cae-cred-terr'));
+  mide('epigrafe', document.querySelector('.cae-cred-cruce > span'));
+  mide('cruce', document.querySelector('.cae-cred-cruce-lista li'));
+  document.querySelectorAll('.cae-cred-rot h4')
+    .forEach((h, i) => mide('rotulo ' + (i + 1), h));
+  // El icono se pinta con `fill`, no con `color`, y su fondo es LA FIGURA, no
+  // la escena: leer el fondo de la escena daria un numero que nadie ve.
+  document.querySelectorAll('.cae-cred-pieza').forEach(t => {
+    const sv = t.querySelector('svg'), fg = t.querySelector('.cae-cred-fig');
+    if (!sv || !fg || sv.getClientRects().length === 0) return;
+    const r = rat(getComputedStyle(sv).fill, getComputedStyle(fg).backgroundColor);
+    if (r < peor) { peor = r; cual = 'icono ' + t.dataset.pieza; }
+  });
+  document.querySelectorAll('.cae-cred-pieza figcaption')
+    .forEach(f => mide('nombre ' + f.parentElement.dataset.pieza, f));
+
+  return { peor, cual };
+}"""
+
 
 def check(ok: bool, etiqueta: str) -> None:
     print(("  OK   " if ok else "  FAIL ") + etiqueta)
@@ -210,6 +253,43 @@ def gate_entrada(pagina, base: str) -> None:
     contexto.close()
 
 
+def gate_horas(pagina) -> None:
+    """Contraste de TODO lo que lleva tinta, en las 24 posiciones del reloj y en
+    los DOS estados de la ficha (con obra y sin ella).
+
+    Los dos estados no son un extra: con solo uno, «Sin obra publicada» —7 de
+    las 23 piezas— no se mide nunca. El sabotaje lo demostro: la sonda daba
+    verde con ese par a 1,80:1, porque el nodo no existia mientras medía.
+
+    Visto rojo con: el territorio en `--cae-outline` — rojo en las 24 horas.
+
+    El reloj se mueve con la sonda que expone `caelestia.color`; el fondo se
+    resuelve subiendo al primer ancestro OPACO, no leyendo el de la escena, que
+    es transparente y daria el ratio contra negro.
+
+    Margen de espera tras el roce: `.cae-cred-fig` transiciona `background`
+    en 0,22s. Con 260ms de espera (40ms de margen) la sonda cae flaky —
+    peor caso saltando entre 3,78:1 y 4,25:1 en «icono Tailwind CSS», a horas
+    DISTINTAS entre ejecuciones — porque mide a medio camino de la transicion:
+    el `fill` del icono (`--cae-on-primary`, sin transition, cambia al
+    instante) ya adelanto al `background` (`--cae-primary`, con transition),
+    asi que el par se lee contra un fondo que todavia no ha llegado. Es ruido
+    del instrumento, no del diseno: con 700ms el mismo barrido no baja nunca
+    de ~5,9:1. 500ms deja mas del doble del margen que la transicion pide."""
+    print("[5] contraste en las 24 horas, en los dos estados de la ficha")
+    peor = (99.0, "", -1)
+    for hora in range(24):
+        pagina.evaluate("(m)=>window.__CAE_SET_MINUTOS__ && window.__CAE_SET_MINUTOS__(m)", hora * 60)
+        pagina.wait_for_timeout(220)
+        for pieza in ("Git", "Tailwind CSS"):
+            pagina.hover(f'.cae-cred-pieza[data-pieza="{pieza}"]')
+            pagina.wait_for_timeout(500)
+            m = pagina.evaluate(_JS_CONTRASTE)
+            if m["peor"] < peor[0]:
+                peor = (m["peor"], m["cual"], hora)
+    check(peor[0] >= 4.5, f"ningun par baja de AA (peor {peor[0]:.2f}:1 en «{peor[1]}» a las {peor[2]:02d}:00)")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -234,6 +314,7 @@ def main() -> int:
         gate_cruce(pagina)
         gate_seleccion(pagina)
         gate_entrada(pagina, args.base)
+        gate_horas(pagina)
 
         print("[0] consola")
         check(not errores, f"cero errores de consola ({errores[:3]})")
