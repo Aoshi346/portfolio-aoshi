@@ -4794,7 +4794,7 @@
    opacidad recalibrada que ya fallo en B1. */
 :root[data-theme="caelestia"] .cae-cred-cruce-lista li.is-vacia {
   font-size: 21px;
-  color: var(--cae-outline); /* SABOTAJE TEMPORAL DE REVISION — revertir */
+  color: var(--cae-on-surface-variant);
 }
 
 :root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-fig {
