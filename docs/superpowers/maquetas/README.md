@@ -15,4 +15,6 @@ que abiertas sueltas no traen `<html>` ni `<head>`. El navegador las muestra igu
 | `…-entrada.html` | la entrada de 440 ms, y la regla de «suena una vez» |
 | `…-movil.html` | 390 px, el sello entero y la figura de ocho lóbulos |
 
-Las de movimiento y entrada cargan GSAP del CDN; en el companion venía de `/files/`.
+Composición, movimiento y entrada cargan GSAP del CDN; en el companion venía de `/files/`.
+
+La maqueta de móvil trae su captura de «hoy» como PNG hermano (`2026-09-04-caelestia-fundido-movil-hoy.png`). Compara el estado actual del build contra la propuesta viva en iframe.
