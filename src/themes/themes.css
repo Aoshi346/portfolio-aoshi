@@ -4843,6 +4843,26 @@
    no partiendo el texto a mano. */
 :root[data-theme="caelestia"] .cae-fundido-linea { display: block; }
 
+/*
+ * Bajo `prefers-reduced-motion` la escena queda ATERRIZADA, no en una version
+ * corta: es ninguna version. El JS ya no monta ninguna linea de tiempo; esto
+ * solo apaga lo que anima el CSS.
+ *
+ * EL SELECTOR UNIVERSAL `*` NO ALCANZA A LOS PSEUDO-ELEMENTOS. Se pago en B2
+ * con `.ficha-k::before`, que siguio animando bajo la guarda generica. Cada
+ * pseudo-elemento que anime va nombrado aqui, uno por uno.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-dino-ojo {
+    transition: none;
+  }
+
+  :root[data-theme="caelestia"] .cae-fundido-troquel::before {
+    transition: none;
+    animation: none;
+  }
+}
+
 /* ---------- el pie de imprenta ---------- */
 
 /*
