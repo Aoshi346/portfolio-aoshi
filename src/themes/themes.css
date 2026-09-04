@@ -4633,6 +4633,25 @@
   align-self: center;
 }
 
+/* Sin regla, `h4` heredaba el cuerpo por defecto (Hanken Grotesk 400, 16px) —
+   igual que `.cae-cred-nom` mas abajo, asi que «Interfaz» y «React» eran
+   tipograficamente indistinguibles: el eje que estructura la bandeja (4
+   territorios, 23 piezas) no tenia ninguna autoridad. Martian Mono, como la
+   cabecera de la fase y el resto del shell — es la gramatica declarada de
+   las etiquetas del tema, no el cuerpo itálico de Fraunces. 16px, el mayor de
+   los dos tamanos de esta pareja (tamanos ya en uso en la escena, ninguno
+   nuevo), para que el rotulo GANE en presencia a las piezas de su banda. */
+:root[data-theme="caelestia"] .cae-cred-rot h4 {
+  margin: 0;
+  font-family: "Martian Mono", ui-monospace, monospace;
+  font-size: 16px;
+  font-style: normal;
+  font-variation-settings: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cae-on-surface);
+}
+
 :root[data-theme="caelestia"] .cae-cred-tira {
   position: relative;
   display: grid;
@@ -4665,6 +4684,21 @@
   padding: 0;
 }
 
+/* Subordinada a `.cae-cred-rot h4`: mismo eje monoespaciado, 10px — el mismo
+   tamano que ya lleva `.cae-cred-cab .cae-cred-terr` para el mismo dato
+   (territorio) en la cabecera, asi que el par «rotulo grande / etiqueta
+   pequena» es coherente en las dos lecturas de la escena. Sin versalitas:
+   son nombres propios de marca ("TypeScript", "Django"), no un epigrafe. */
+:root[data-theme="caelestia"] .cae-cred-nom {
+  margin: 0;
+  font-family: "Martian Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-style: normal;
+  font-variation-settings: normal;
+  letter-spacing: 0.01em;
+  color: var(--cae-on-surface-variant);
+}
+
 :root[data-theme="caelestia"] .cae-cred-fig {
   clip-path: var(--fig);
   display: grid;
@@ -4675,8 +4709,14 @@
   background: var(--cae-outline);
 }
 
+/* NO `--cae-anchor`: contra `--cae-elev-1` (el fondo de la escena) el ancla da
+   1,38:1 de dia — falla el 3:1 que exige WCAG 2.2 SC 1.4.11 para foco visible,
+   invisible 13 de las 24 horas. `--cae-on-surface` es el par `on-X` de esa
+   misma superficie por construccion del motor de color (Tarea 2), asi que el
+   3:1 no depende de la hora ni del matiz: medido 14,17:1 a las 09:00 y
+   12,26:1 a las 03:00, contra 11,53:1 de noche / 1,37:1 de dia con el ancla. */
 :root[data-theme="caelestia"] .cae-cred-pieza:focus-visible {
-  outline: 2px solid var(--cae-anchor);
+  outline: 2px solid var(--cae-on-surface);
   outline-offset: 5px;
   border-radius: 10px;
 }
@@ -4809,6 +4849,13 @@
    1,38:1 a las 06:00, «icono Tailwind CSS». */
 :root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-fig svg {
   fill: var(--cae-on-primary);
+}
+
+/* `.cae-cred-nom` ya baja el tono por defecto (Arreglo 3): la elegida sube a
+   la tinta plena para seguir distinguiendose del resto, con o sin
+   `is-tocando` — antes esa jerarquia la daba `color: inherit` sin querer. */
+:root[data-theme="caelestia"] .cae-cred-pieza[aria-pressed="true"] .cae-cred-nom {
+  color: var(--cae-on-surface);
 }
 
 :root[data-theme="caelestia"] .cae-cred-fig {

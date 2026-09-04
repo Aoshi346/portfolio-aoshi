@@ -218,9 +218,32 @@ export async function mountCaelestiaCreditosBandeja(
   // abrir— y cada una morfa a su figura mientras crece y se endereza. La
   // onda va POR TERRITORIOS: cada familia arranca 190 ms detras de la
   // anterior, y dentro de cada una las piezas se escalonan 34 ms.
+  //
+  // Se dispara solo al llegar de verdad a la escena de Creditos (evento
+  // `caelestia:workspace`), no al montar: montar pasa mientras el visitante
+  // esta en Titulo, con la escena fuera de pantalla, y la animacion corria y
+  // terminaba sin que nadie la viera. Mismo patron que
+  // `caelestiaObraEditorial.ts` (Task 7 de esa fase), con el id de ESTA
+  // escena (`sceneIndex` en `content.ts` lo llama "creditos", no "credits" —
+  // ese es el atributo `data-scene`, que es otro dato).
   const offEntrada: Array<() => void> = [];
-  if (!reduce) {
+  let entrado = false;
+
+  const jugarEntrada = (): void => {
     escena.setAttribute("data-cred-entrando", "");
+  };
+
+  const alCambiarWorkspace = (evento: Event): void => {
+    if (entrado) return;
+    if (!(evento instanceof CustomEvent)) return;
+    const detalle: unknown = evento.detail;
+    if (typeof detalle !== "object" || detalle === null || !("id" in detalle)) return;
+    if ((detalle as { id: unknown }).id !== "creditos") return;
+    entrado = true;
+    jugarEntrada();
+  };
+
+  if (!reduce) {
     let indice = 0;
     skillGroups.forEach((g, gi) => {
       g.items.forEach((_, i) => {
@@ -242,12 +265,19 @@ export async function mountCaelestiaCreditosBandeja(
       fig.addEventListener("animationend", soltar, { once: true });
       offEntrada.push(() => fig.removeEventListener("animationend", soltar));
     }
+
+    document.documentElement.addEventListener("caelestia:workspace", alCambiarWorkspace);
+    if (document.querySelector('[data-cae-ws="creditos"][aria-current="true"]')) {
+      entrado = true;
+      jugarEntrada();
+    }
   }
 
   return {
     destroy: () => {
       for (const off of escuchas) off();
       for (const off of offEntrada) off();
+      document.documentElement.removeEventListener("caelestia:workspace", alCambiarWorkspace);
       gsap.killTweensOf(escena.querySelectorAll("*"));
       wrap.remove();
     },

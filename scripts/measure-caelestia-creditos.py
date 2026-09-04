@@ -223,6 +223,48 @@ def gate_seleccion(pagina) -> None:
     check(tras_foco == "Python", f"el foco releva la ficha ({tras_foco})")
 
 
+def gate_entrada_dispara(pagina, base: str) -> None:
+    """La entrada no puede haber ocurrido YA cuando el visitante sigue en
+    Titulo — tiene que disparar al llegar de verdad a Creditos, no al montar.
+
+    Visto rojo con: el codigo original ponia `data-cred-entrando` en el mismo
+    `mountCaelestiaCreditosBandeja()`, que corre al arrancar la pagina con el
+    workspace activo en "1 Titulo". Medido en esa version: a los 1412 ms la
+    animacion ya esta corriendo con la escena en x=0 (fuera de la vista del
+    visitante, que sigue en Titulo); a los 2343 ms la escena esta a x=4334 px;
+    a los 2803 ms ya ha terminado. Cuando el visitante pulsa la pastilla
+    «4 Creditos» (aqui, a los ~5000 ms) la bandeja aterriza instalada y
+    quieta — la unica escena de Caelestia sin entrada.
+
+    Se mide leyendo el atributo desde dentro de la pagina, nunca con
+    `page.screenshot()`: perturba GSAP en headless (bloquea el compositor y
+    la timeline salta hacia delante), y aqui ademas moveria el momento exacto
+    en que se lee el DOM."""
+    print("[9] la entrada no se dispara antes de llegar a Creditos, y si al llegar")
+    pagina.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=45000)
+    pagina.wait_for_timeout(5000)
+    antes = pagina.evaluate(
+        """() => {
+             const e = document.querySelector('[data-scene="credits"]');
+             return e ? e.hasAttribute('data-cred-entrando') : null;
+           }"""
+    )
+    check(antes is False, f"sin 'data-cred-entrando' mientras el visitante sigue en Titulo ({antes})")
+
+    pagina.eval_on_selector_all(
+        ".cae-ws",
+        "bs=>{const b=bs.find(x=>/Cr..?ditos/.test(x.textContent)); if(b) b.click();}",
+    )
+    pagina.wait_for_timeout(150)
+    tras = pagina.evaluate(
+        """() => {
+             const e = document.querySelector('[data-scene="credits"]');
+             return e ? e.hasAttribute('data-cred-entrando') : null;
+           }"""
+    )
+    check(tras is True, f"'data-cred-entrando' aparece al pulsar la pastilla de Creditos ({tras})")
+
+
 def gate_entrada(pagina, base: str) -> None:
     """La entrada existe, y `prefers-reduced-motion` la salta ENTERA — al estado
     aterrizado, no a un fotograma intermedio.
@@ -290,6 +332,49 @@ def gate_horas(pagina) -> None:
     check(peor[0] >= 4.5, f"ningun par baja de AA (peor {peor[0]:.2f}:1 en «{peor[1]}» a las {peor[2]:02d}:00)")
 
 
+def gate_foco(pagina) -> None:
+    """El anillo de foco de las 23 piezas tiene que llegar a 3:1 contra su
+    fondo (WCAG 2.2 SC 1.4.11, indicador de foco), en los DOS esquemas: es el
+    unico indicador visible en los 23 controles interactivos de la escena.
+
+    Visto rojo con: `outline: 2px solid var(--cae-anchor)` contra
+    `--cae-elev-1` da 1,38:1 a las 09:00 — invisible 13 de las 24 horas
+    (el ancla solo aguanta en esquema oscuro, 11,53:1 a las 03:00).
+
+    Mismas dos trampas que el resto del arnes: el color se pinta en un lienzo
+    1x1 y se lee el pixel (una regex sobre `oklch(...)` como si fueran bytes
+    RGB da 1,00:1 en todo), y el fondo se resuelve subiendo al primer
+    ancestro OPACO — la escena es transparente."""
+    print("[4] el anillo de foco llega a 3:1 en los dos esquemas")
+    for etiqueta, minutos in (("09:00", 9 * 60), ("03:00", 3 * 60)):
+        pagina.evaluate(
+            "(m)=>window.__CAE_SET_MINUTOS__ && window.__CAE_SET_MINUTOS__(m)", minutos
+        )
+        pagina.wait_for_timeout(220)
+        r = pagina.evaluate(
+            """() => {
+              const px = c => { const k=document.createElement('canvas'); k.width=k.height=1;
+                const x=k.getContext('2d'); x.fillStyle='#000'; x.fillRect(0,0,1,1);
+                x.fillStyle=c; x.fillRect(0,0,1,1);
+                const d=x.getImageData(0,0,1,1).data; return [d[0],d[1],d[2]]; };
+              const lum = r => { const f=r.map(v=>{v/=255;
+                return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4);});
+                return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2]; };
+              const rat = (a,b) => { const la=lum(px(a)), lb=lum(px(b));
+                const h=Math.max(la,lb), l=Math.min(la,lb); return (h+0.05)/(l+0.05); };
+              const opaco = e => { let n=e; while(n && n!==document.documentElement){
+                const bg=getComputedStyle(n).backgroundColor;
+                if (bg && !/, *0\\)$/.test(bg) && bg!=='transparent') return bg;
+                n=n.parentElement; } return '#fff'; };
+              const b = document.querySelector('.cae-cred-pieza');
+              b.focus();
+              const anillo = getComputedStyle(b).outlineColor;
+              return rat(anillo, opaco(b));
+            }"""
+        )
+        check(r >= 3.0, f"foco a las {etiqueta}: {r:.2f}:1")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -311,9 +396,11 @@ def main() -> int:
         gate_sin_scroll(pagina)
         gate_rotulos(pagina)
         gate_piezas(pagina)
+        gate_foco(pagina)
         gate_cruce(pagina)
         gate_seleccion(pagina)
         gate_entrada(pagina, args.base)
+        gate_entrada_dispara(pagina, args.base)
         gate_horas(pagina)
 
         print("[0] consola")
