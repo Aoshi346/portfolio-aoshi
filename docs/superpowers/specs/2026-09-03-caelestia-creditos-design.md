@@ -265,12 +265,71 @@ El arnés será `scripts/measure-caelestia-creditos.py`, y su fila va a la tabla
    del roce el titular sale cortado a media palabra, y medido a 1,8 s los tres `clip-path` cierran
    en `inset(0px 0% 0px 0px)` con el texto entero dentro. No es un defecto que perseguir.
 
+## Gates de crítica
+
+**`lidia-naive-tester`: verde, 7,1/10, cero P0.** Entiende la escena sin ayuda y probó el gesto
+sobre más de diez piezas sin un solo fallo. Confirmó lo que se buscaba al subirle el contraste al
+estado vacío: **«Sin obra publicada» se lee como dato neutral, no como alarma**, porque comparte
+estilo con los nombres de proyecto reales. Deja dos P1 de producto, abiertos:
+
+1. **El gesto no es descubrible.** Sin explorar un rato no se adivina que hay que pasar el ratón:
+   no hay pista textual y las piezas en reposo son manchas grises.
+2. **«Aparece en» no enlaza con la escena Obra.** Son texto, sin `href`. Se pierde la cadena
+   *«sabe X → lo usó en Y»*, que es justo lo que esta escena aporta y ninguna otra tiene.
+
+**`vera-art-director`: BLOCK, 5,3/10 contra gate 7,5.** Se acepta el BLOCK residual, igual que en
+Vice (7,12), el shell (6,55) y B1 (6,36) — **pero sus dos P0 de producto se arreglaron antes de
+aceptarlo**, que es el precedente de B1.
+
+Lo que verificó como correcto, medido: cero hex hardcodeado, contraste de texto 5,93-14,15:1,
+23 `clip-path` distintos sobre 23 piezas, sin scroll interno, tabulación limpia en orden de
+lectura, y `prefers-reduced-motion` correcto. **Cierra además un hallazgo suyo abierto desde la
+primera auditoría del proyecto**: el foco de teclado ya cae exactamente sobre el control visible.
+
+### Los tres arreglados (commit `2b8db2c`)
+
+| # | defecto | antes | después |
+|---|---|---|---|
+| F-001 | **la entrada de escena no se veía nunca** | arrancaba al montar; terminaba a los 2.803 ms con la escena a **4.334 px fuera del viewport**. Créditos era la única escena del tema sin entrada | se dispara al llegar de verdad, escuchando `caelestia:workspace` |
+| F-002 | **el anillo de foco a 1,38:1 de día** | `--cae-anchor` sobre `--cae-elev-1`; invisible 13 h de cada 24, gobernando los únicos 23 controles | `--cae-on-surface`: **13,90:1 de día, 12,17:1 de noche** |
+| F-004 | **los rótulos de banda y las 23 etiquetas sin ninguna regla CSS** | 27 de ~30 nodos de texto heredaban el cuerpo: «Interfaz» y «React» tipográficamente idénticos | rótulo en Martian Mono 16 versalitas, etiqueta en Martian Mono 10 |
+
+**F-001 era una regresión contra un patrón documentado del mismo tema.** B3 ya lo había resuelto una
+fase antes, y su comentario lo dejaba escrito: *«Se dispara solo al llegar de verdad a la escena de
+Obra (evento `caelestia:workspace`), no al montar»*. El arreglo fue copiar ese patrón.
+
+**Y el gate que debía cazarlo estaba roto.** `gate_entrada` tenía dos aserciones y **las dos eran
+del camino de movimiento reducido**: se titulaba «la entrada» y no comprobaba que la entrada
+ocurriera. Es el noveno instrumento tautológico de esta pista, y el único que no se cazó
+saboteándolo sino mirando la escena con ojos de director de arte. **Un gate que sólo mide la rama
+degradada no vigila el camino que ve el visitante.**
+
+Al elegir el color del foco se midieron los candidatos en las dos horas en vez de aceptar el
+primero: `--cae-primary` también pasaba (5,71 / 8,66) y se descartó por menos robusto que un par
+`on-X`, que el motor de color garantiza por construcción.
+
+### Lo que queda abierto, aceptado
+
+- **La escala tipográfica (F-003), sexta aparición cross-proyecto.** Siete tamaños con razones
+  1,23 · 1,24 · 1,235 · 1,06 · 1,60 · 1,05. Es deuda de proyecto, no de esta fase: merece una
+  escala modular compartida por los tres temas, no un parche por escena. Los arreglos de arriba se
+  hicieron **dentro** del juego de tamaños existente para no agravarla.
+- **Las figuras a 2,34:1 / 1,80:1 contra el fondo (F-006).** SC 1.4.11 pide 3:1 para gráficos que
+  son contenido, y estas 23 lo son. El arnés mide el icono contra la figura pero **nunca la figura
+  contra el fondo**: es un hueco conocido del instrumento.
+- **La inversión de jerarquía de la cabecera (F-005):** el cruce lleva ~2,8× la tinta display del
+  nombre. Conversación de diseño, no defecto.
+- **Dos de los cuatro rótulos parten en dos líneas** tras darles cuerpo: es el precio de que ganen
+  presencia sin estrenar un tamaño nuevo fuera del set.
+- Los dos P1 de `lidia`, arriba.
+
 ## Preguntas abiertas para el plan
 
-1. **El hueco al pie derecho: 28,1 %.** Las tres bandas de cinco dejan tres módulos libres cada
-   una. Con el cruce ya en la línea inicial, no queda un candidato natural que meter ahí.
-   **Recomendación: aceptarlo** como el canto irregular de un 8/5/5/5 y dejarlo escrito como
-   decisión, no como deuda. Repartir las bandas de otra forma cuesta la alineación de columnas.
+1. **El hueco al pie derecho: 28,1 % — DECIDIDO: se acepta.** Aoshi lo acepta explícitamente
+   (2026-09-04) como el canto irregular de un 8/5/5/5. **Es una decisión, no deuda técnica**: no
+   se rellena, no se decora y no se reparten las bandas de otra forma para disimularlo — repartirlas
+   costaría la alineación de columnas, que es un requisito medido de la escena (las cuatro bandas
+   arrancan en x=301). Un futuro revisor que lo señale está señalando una decisión tomada. Repartir las bandas de otra forma cuesta la alineación de columnas.
 2. **Móvil**, según `## Movil (M8)`: fuera de alcance en B4, fase transversal después de B5.
 3. Los gates 2, 7 y 8 aún no se han visto dar rojo. Antes de aceptarlos, sabotearlos.
 
