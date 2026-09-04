@@ -146,13 +146,19 @@ export function montarFundido(
   pintarSuelo();
   window.addEventListener("resize", pintarSuelo);
 
+  /*
+   * `campo` y `troquel` SE INCLUYEN: si una timeline interrumpida (ver
+   * `tlFundido` mas abajo) se mata a medio crecer, sus `scale` quedarian
+   * congelados donde la mataron sin este reset — aterrizar de verdad
+   * significa devolver TODO lo que la partitura toca, no solo el texto.
+   */
   const aterrizado = (): void => {
     gsap.set([lead, ...lineas, ...actos, ...destinos, barras], { clearProps: "all" });
     if (estado) gsap.set(estado, { clearProps: "all" });
     if (svgBicho) gsap.set(svgBicho, { clearProps: "all" });
     if (ojo) ojo.setAttribute("x", String(OJO_DINO[0]));
+    gsap.set([troquel, campo], { clearProps: "all" });
   };
-  aterrizado();
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -189,6 +195,11 @@ export function montarFundido(
   campo.className = "cae-fundido-campo";
   campo.setAttribute("aria-hidden", "true");
   banda.append(campo);
+
+  // `aterrizado()` referencia `campo`, asi que la primera llamada tiene que
+  // ir aqui, DESPUES de crearlo — antes seria acceder a una `const` no
+  // inicializada todavia.
+  aterrizado();
 
   /*
    * La zancada la lleva un reloj propio y no la linea de tiempo: son doce
@@ -321,28 +332,70 @@ export function montarFundido(
    * LA ENTRADA. El carril de la fase A ya desliza 520 ms; esto son 440 y cabe
    * dentro, asi que no anade espera: la rellena. No es un fundido acortado —
    * un final que suena cada vez no es un final.
+   *
+   * `ENTRADA_MS` NO ES UN COMENTARIO CON NUMERO: los cinco tiempos de abajo
+   * son fracciones de `ENTRADA` (la version en segundos), sacadas de la
+   * partitura original (0/0.12/0.22/0.3/0.36/0.41 sobre un total de 0.44).
+   * Si alguien cambia `ENTRADA_MS` sin tocar nada mas, la entrada entera se
+   * reescala con el — la promesa del comentario se rompe sola si deja de
+   * caber en el carril, en vez de quedarse fingiendo mientras el numero real
+   * vive suelto en las llamadas de abajo.
    */
   const ENTRADA_MS = 440;
-  void ENTRADA_MS;
+  const ENTRADA = ENTRADA_MS / 1000;
   let tlEntrada: ReturnType<Gsap["timeline"]> | null = null;
+
+  /*
+   * `tlFundido` guarda la timeline de `reproducir()` con el MISMO patron que
+   * `tlEntrada` de arriba: si el visitante se va de «contacto» antes de que
+   * acaben los 1,9 s (la primera visita, con el carril libre, esto pasa) la
+   * timeline seguia corriendo sobre una escena inerte hasta agotarse sola —
+   * viola literalmente "kill timelines on teardown". Se declara AQUI, antes
+   * de `entrar`, porque `entrar` tambien la mata: `fundidoVisto` (en
+   * `caelestia.choreography.ts`) se pone a `true` en cuanto arranca
+   * `reproducir()`, no cuando termina, asi que un regreso a esta escena
+   * ANTES de que la primera pasada acabe llama a `entrar()`, no otra vez a
+   * `reproducir()` — matarla solo "si `reproducir()` se repite" nunca
+   * llegaria a ejecutarse en ese camino real.
+   */
+  let tlFundido: ReturnType<Gsap["timeline"]> | null = null;
 
   const entrar = (desde: number): void => {
     if (tlEntrada) tlEntrada.kill();
+    if (tlFundido) tlFundido.kill();
     aterrizado();
     if (reduce) return;
     // Vienes de un workspace menor => el contenido se queda atras hacia la
     // derecha y alcanza; y el bicho mira hacia donde estabas.
     const sentido = desde < indiceEscena ? 1 : -1;
     tlEntrada = gsap.timeline();
-    tlEntrada.fromTo(escena, { x: 28 * sentido }, { x: 0, duration: 0.38, ease: "power2.out" }, 0);
-    tlEntrada.fromTo(troquel, { scale: 0.965 }, { scale: 1, duration: 0.26, ease: "power2.out" }, 0.12);
+    tlEntrada.fromTo(
+      escena,
+      { x: 28 * sentido },
+      { x: 0, duration: ENTRADA * (0.38 / 0.44), ease: "power2.out" },
+      0,
+    );
+    tlEntrada.fromTo(
+      troquel,
+      { scale: 0.965 },
+      { scale: 1, duration: ENTRADA * (0.26 / 0.44), ease: "power2.out" },
+      ENTRADA * (0.12 / 0.44),
+    );
     if (ojo) {
-      tlEntrada.call(() => ojo.setAttribute("x", String(OJO_DINO[0] - sentido)), undefined, 0.22);
-      tlEntrada.call(() => ojo.setAttribute("x", String(OJO_DINO[0])), undefined, 0.36);
+      tlEntrada.call(
+        () => ojo.setAttribute("x", String(OJO_DINO[0] - sentido)),
+        undefined,
+        ENTRADA * (0.22 / 0.44),
+      );
+      tlEntrada.call(
+        () => ojo.setAttribute("x", String(OJO_DINO[0])),
+        undefined,
+        ENTRADA * (0.36 / 0.44),
+      );
       // El parpadeo: el ojo es un hueco TAPADO, asi que apagar el rect no lo
       // borra — lo cierra, porque debajo queda el cuerpo.
-      tlEntrada.to(ojo, { opacity: 0, duration: 0.001 }, 0.3);
-      tlEntrada.to(ojo, { opacity: 1, duration: 0.001 }, 0.41);
+      tlEntrada.to(ojo, { opacity: 0, duration: 0.001 }, ENTRADA * (0.3 / 0.44));
+      tlEntrada.to(ojo, { opacity: 1, duration: 0.001 }, ENTRADA * (0.41 / 0.44));
     }
   };
 
@@ -350,11 +403,15 @@ export function montarFundido(
     destroy: () => {
       window.removeEventListener("resize", pintarSuelo);
       gsap.ticker.remove(tic);
+      if (tlFundido) tlFundido.kill();
+      if (tlEntrada) tlEntrada.kill();
     },
     reproducir: () => {
+      if (tlFundido) tlFundido.kill();
       aterrizado();
       if (reduce) return; // No es una version corta: es ninguna version.
-      linea().play(0);
+      tlFundido = linea();
+      tlFundido.play(0);
     },
     entrar,
   };
