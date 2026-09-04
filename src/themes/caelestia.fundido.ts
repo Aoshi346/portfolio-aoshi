@@ -1,5 +1,5 @@
 import type { Gsap } from "./choreography";
-import { OJO_DINO, svgDino, svgHorizonte, svgNube } from "./caelestia.dino";
+import { dibujoDino, OJO_DINO, svgDino, svgHorizonte, svgNube, type Fotograma } from "./caelestia.dino";
 import { identity, sceneIndex } from "../data/content";
 
 /**
@@ -72,15 +72,9 @@ function partirEnLineas(lead: HTMLElement): HTMLElement[] {
 export function montarFundido(
   gsap: Gsap,
   escena: HTMLElement,
-  // Lo usa `entrar` en la Task 6, para saber de que lado vienes. Se recibe
-  // desde ya: cambiar la firma entre tareas es como se rompen los planes.
+  // Lo usa `entrar`, para saber de que lado vienes.
   indiceEscena: number,
 ): FundidoHandle | null {
-  // Sin uso todavia (lo estrena la Task 6 dentro de `entrar`): esta linea
-  // solo lo mantiene "leido" para `noUnusedParameters`/ESLint sin renombrar
-  // el parametro ni apagar ninguna regla.
-  void indiceEscena;
-
   const lead = escena.querySelector<HTMLElement>("[data-fundido-lead]");
   const banda = escena.querySelector<HTMLElement>(".contacto-band");
   const barras = escena.querySelector<HTMLElement>(".contacto-bars");
@@ -160,11 +154,208 @@ export function montarFundido(
   };
   aterrizado();
 
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /*
+   * Cuanto tiene que crecer el campo para tapar la ventana. NO es un numero a
+   * ojo: es la distancia del centro de la figura a la esquina mas lejana,
+   * dividida entre el radio MINIMO de la figura — los VALLES, no las crestas —
+   * con un 4% de margen. Con el radio maximo se queda corto y el escritorio
+   * asoma por una esquina.
+   */
+  const factorCrecimiento = (): number => {
+    const v = escena.getBoundingClientRect();
+    const c = troquel.getBoundingClientRect();
+    const cx = c.left + c.width / 2 - v.left;
+    const cy = c.top + c.height / 2 - v.top;
+    const lejos = Math.max(
+      Math.hypot(cx, cy),
+      Math.hypot(v.width - cx, cy),
+      Math.hypot(cx, v.height - cy),
+      Math.hypot(v.width - cx, v.height - cy),
+    );
+    const clip = window.getComputedStyle(troquel).clipPath;
+    const puntos = [...clip.matchAll(/([\d.]+)%\s+([\d.]+)%/g)];
+    if (puntos.length === 0) return 1;
+    const radios = puntos.map((m) => Math.hypot(Number(m[1]) - 50, Number(m[2]) - 50));
+    const rMin = (Math.min(...radios) / 50) * (c.width / 2);
+    return rMin > 0 ? (lejos / rMin) * 1.04 : 1;
+  };
+
+  // El campo de color: la MISMA figura que el troquel, en la misma posicion,
+  // pintada en `--cae-primary`. Un solo mecanismo en dos direcciones — es un
+  // iris de cine, no dos efectos sueltos.
+  const campo = document.createElement("span");
+  campo.className = "cae-fundido-campo";
+  campo.setAttribute("aria-hidden", "true");
+  banda.append(campo);
+
+  /*
+   * La zancada la lleva un reloj propio y no la linea de tiempo: son doce
+   * cambios de fotograma y meterlos como tweens ensuciaria la partitura sin
+   * aportar nada. Se enciende y se apaga desde el tween del desplazamiento,
+   * asi que sigue atado a el.
+   */
+  const ZANCADA = 0.085;
+  let corriendo = false;
+  let paso = 0;
+  let ultimo = 0;
+
+  const ponFotograma = (cual: Fotograma): void => {
+    const cuerpo = bicho.querySelector<SVGGElement>("[data-dino-cuerpo]");
+    if (cuerpo) cuerpo.innerHTML = dibujoDino(cual);
+    // El ojo movible SOLO existe de pie: en los de zancada el ojo es el hueco
+    // del propio sprite, y con el rect encima se veria doble.
+    if (ojo) ojo.style.opacity = cual === "quieto" ? "1" : "0";
+  };
+
+  const tic = (): void => {
+    if (!corriendo) return;
+    const ahora = performance.now() / 1000;
+    if (ahora - ultimo < ZANCADA) return;
+    ultimo = ahora;
+    paso ^= 1;
+    ponFotograma(paso ? "carrera1" : "carrera2");
+  };
+  gsap.ticker.add(tic);
+
+  const arrancarZancada = (): void => {
+    paso = 0;
+    ultimo = 0;
+    corriendo = true;
+  };
+  const pararZancada = (): void => {
+    corriendo = false;
+    ponFotograma("quieto");
+  };
+
+  const linea = (): ReturnType<Gsap["timeline"]> => {
+    const crece = factorCrecimiento();
+    const tl = gsap.timeline();
+    tl.fromTo(campo, { scale: 1 }, { scale: crece, duration: 0.48, ease: "power2.inOut" }, 0);
+    tl.fromTo(troquel, { scale: 0 }, { scale: 1, duration: 0.52, ease: "power3.out" }, 0.38);
+    // Todo lo que aparece se traza de izquierda a derecha: un gesto repetido,
+    // no tres maneras distintas de aparecer.
+    tl.fromTo(
+      lineas,
+      { clipPath: "inset(-12% 100% -12% -2%)" },
+      { clipPath: "inset(-12% -6% -12% -2%)", duration: 0.62, ease: "power2.inOut", stagger: 0.12 },
+      0.52,
+    );
+    // La frase se ABLANDA al llegar: entra con la voz de cabecera y aterriza en
+    // la de cierre. `opsz` no se toca: se lee a 159,66 px de principio a fin.
+    const ejes = { wght: 900, soft: 0 };
+    tl.fromTo(
+      ejes,
+      { wght: 900, soft: 0 },
+      {
+        wght: 300,
+        soft: 100,
+        duration: 0.78,
+        ease: "power2.out",
+        onUpdate: () => {
+          lead.style.fontVariationSettings =
+            `"opsz" 144, "wght" ${Math.round(ejes.wght)}, "SOFT" ${Math.round(ejes.soft)}, "WONK" 1`;
+        },
+        onComplete: () => {
+          // Se QUITA el valor en linea en vez de repetir el numero: un numero
+          // repetido es un numero que se desincroniza del token.
+          lead.style.fontVariationSettings = "";
+        },
+      },
+      0.52,
+    );
+    tl.fromTo(suelo, { scaleX: 0 }, { scaleX: 1, duration: 0.34, ease: "power2.inOut" }, 0.74);
+    if (svgBicho) {
+      // Entra CORRIENDO: el idioma del propio bicho. La zancada es finita, solo
+      // mientras entra, asi que no infringe la prohibicion de animacion
+      // infinita en la escena de cierre.
+      tl.fromTo(
+        bicho,
+        { x: -280 },
+        {
+          x: 0,
+          duration: 0.66,
+          ease: "power2.out",
+          onStart: () => arrancarZancada(),
+          onComplete: () => pararZancada(),
+        },
+        0.8,
+      );
+      tl.to(svgBicho, { scaleY: 0.9, scaleX: 1.07, duration: 0.07, transformOrigin: "50% 100%" }, 1.46);
+      tl.to(svgBicho, { scaleY: 1, scaleX: 1, duration: 0.16, ease: "power2.out" }, 1.53);
+    }
+    tl.fromTo(nube, { opacity: 0, x: 26 }, { opacity: 1, x: 0, duration: 0.28, ease: "power2.out" }, 1.55);
+    tl.fromTo(
+      barras,
+      { clipPath: "inset(-12% 100% -12% -2%)" },
+      { clipPath: "inset(-12% -6% -12% -2%)", duration: 0.42, ease: "power2.inOut" },
+      0.82,
+    );
+    // La escalonada DICE algo: los actos antes que los destinos, que es la
+    // jerarquia de la escena. Si se cambia esa jerarquia, esto se cae con ella.
+    tl.fromTo(
+      actos,
+      { clipPath: "inset(-12% 100% -12% -2%)" },
+      { clipPath: "inset(-12% -6% -12% -2%)", duration: 0.46, ease: "power2.inOut", stagger: 0.1 },
+      0.9,
+    );
+    tl.fromTo(
+      destinos,
+      { clipPath: "inset(-12% 100% -12% -2%)" },
+      { clipPath: "inset(-12% -6% -12% -2%)", duration: 0.42, ease: "power2.inOut", stagger: 0.09 },
+      1.16,
+    );
+    if (estado) {
+      tl.fromTo(
+        estado,
+        { clipPath: "inset(-12% 100% -12% -2%)" },
+        { clipPath: "inset(-12% -6% -12% -2%)", duration: 0.34, ease: "power2.inOut" },
+        1.3,
+      );
+    }
+    return tl;
+  };
+
+  /*
+   * LA ENTRADA. El carril de la fase A ya desliza 520 ms; esto son 440 y cabe
+   * dentro, asi que no anade espera: la rellena. No es un fundido acortado —
+   * un final que suena cada vez no es un final.
+   */
+  const ENTRADA_MS = 440;
+  void ENTRADA_MS;
+  let tlEntrada: ReturnType<Gsap["timeline"]> | null = null;
+
+  const entrar = (desde: number): void => {
+    if (tlEntrada) tlEntrada.kill();
+    aterrizado();
+    if (reduce) return;
+    // Vienes de un workspace menor => el contenido se queda atras hacia la
+    // derecha y alcanza; y el bicho mira hacia donde estabas.
+    const sentido = desde < indiceEscena ? 1 : -1;
+    tlEntrada = gsap.timeline();
+    tlEntrada.fromTo(escena, { x: 28 * sentido }, { x: 0, duration: 0.38, ease: "power2.out" }, 0);
+    tlEntrada.fromTo(troquel, { scale: 0.965 }, { scale: 1, duration: 0.26, ease: "power2.out" }, 0.12);
+    if (ojo) {
+      tlEntrada.call(() => ojo.setAttribute("x", String(OJO_DINO[0] - sentido)), undefined, 0.22);
+      tlEntrada.call(() => ojo.setAttribute("x", String(OJO_DINO[0])), undefined, 0.36);
+      // El parpadeo: el ojo es un hueco TAPADO, asi que apagar el rect no lo
+      // borra — lo cierra, porque debajo queda el cuerpo.
+      tlEntrada.to(ojo, { opacity: 0, duration: 0.001 }, 0.3);
+      tlEntrada.to(ojo, { opacity: 1, duration: 0.001 }, 0.41);
+    }
+  };
+
   return {
-    destroy: () => window.removeEventListener("resize", pintarSuelo),
-    // Las dos se implementan en la Task 6; aqui dejan la escena puesta para
-    // que la composicion se pueda revisar sin movimiento.
-    reproducir: aterrizado,
-    entrar: () => aterrizado(),
+    destroy: () => {
+      window.removeEventListener("resize", pintarSuelo);
+      gsap.ticker.remove(tic);
+    },
+    reproducir: () => {
+      aterrizado();
+      if (reduce) return; // No es una version corta: es ninguna version.
+      linea().play(0);
+    },
+    entrar,
   };
 }
