@@ -125,6 +125,25 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
    * modulo si nadie lo recoge, y eso es DOM huerfano.
    */
   const cercos = new Set<HTMLElement>();
+  // El temporizador de respaldo de cada cerco, para poder cancelarlo si
+  // `animationend` llega primero. La clave es el propio anillo.
+  const cercosTemporizador = new Map<HTMLElement, ReturnType<typeof window.setTimeout>>();
+
+  /*
+   * Retira un cerco del DOM y de `cercos`, y cancela su temporizador de
+   * respaldo si seguia pendiente. Idempotente a proposito: `animationend` y
+   * el `setTimeout` de respaldo pueden acabar llamando a esto por el mismo
+   * anillo, y la segunda llamada no debe hacer nada.
+   */
+  const retirarCerco = (anillo: HTMLElement): void => {
+    const temporizador = cercosTemporizador.get(anillo);
+    if (temporizador !== undefined) {
+      window.clearTimeout(temporizador);
+      cercosTemporizador.delete(anillo);
+    }
+    if (!cercos.delete(anillo)) return;
+    anillo.remove();
+  };
 
   /*
    * El anillo que deja una gota al secarse sobre papel. Es la constancia de
@@ -140,13 +159,24 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
     anillo.setAttribute("aria-hidden", "true");
     anillo.style.left = `${x}px`;
     anillo.style.top = `${y}px`;
-    anillo.addEventListener(
-      "animationend",
-      () => {
-        cercos.delete(anillo);
-        anillo.remove();
-      },
-      { once: true },
+    anillo.addEventListener("animationend", () => retirarCerco(anillo), { once: true });
+    /*
+     * Respaldo: el modulo nunca da por hecho que vio terminar la animacion.
+     * Si `prefers-reduced-motion` se activa DESPUES de montar (el caso real:
+     * alguien lo prueba con la emulacion de devtools a mitad de sesion), la
+     * guardia CSS deja el anillo en `display: none` para siempre -- un
+     * elemento que nunca se pinta nunca dispara `animationend`, y tampoco
+     * `animationcancel` (la animacion nunca llega a arrancar). Sin este
+     * respaldo el anillo se queda colgado de `host` y en `cercos` el resto
+     * de la sesion, y cada clic siguiente anade otro.
+     *
+     * 1200ms: la animacion dura 800ms: 400ms de margen cubre el jitter de un
+     * tick de rAF perdido sin dejar el anillo visible de mas en el camino
+     * feliz, donde `animationend` ya lo habra retirado mucho antes.
+     */
+    cercosTemporizador.set(
+      anillo,
+      window.setTimeout(() => retirarCerco(anillo), 1200),
     );
     cercos.add(anillo);
     host.append(anillo);

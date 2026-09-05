@@ -264,6 +264,45 @@ def gate_dos_momentos(pagina, base: str) -> None:
         "[3] barrer piezas al roce no deja ningun cerco",
     )
 
+    # El respaldo del cerco: si el movimiento reducido se activa DESPUES de
+    # montar (la emulacion de devtools a mitad de sesion, no el arranque en
+    # frio que ya cubre gate_presencia), la guardia CSS deja el anillo en
+    # `display: none` para siempre. Un elemento que nunca se pinta nunca
+    # dispara `animationend` -- ni `animationcancel`, la animacion no llega a
+    # arrancar -- asi que sin un respaldo por temporizador el anillo se
+    # quedaria colgado el resto de la sesion y cada clic siguiente anadiria
+    # otro. `emulate_media` reproduce justo ese cambio tardio: el modulo ya
+    # esta montado, asi que este es el unico camino que de verdad lo ejercita.
+    abre(pagina, base, "obra")
+    pagina.emulate_media(reduced_motion="reduce")
+    pagina.locator(".cae-obra-card").nth(0).hover(position={"x": 200, "y": 70})
+    pagina.wait_for_timeout(200)
+    pagina.mouse.down()
+    pagina.wait_for_timeout(120)
+    pagina.mouse.up()
+    check(
+        pagina.evaluate("() => document.querySelectorAll('.cae-cursor-cerco').length") >= 1,
+        "[3] el cerco se crea aunque el anillo no vaya a pintarse (movimiento reducido tardio)",
+    )
+    # El anillo nunca dispara `animationend` bajo `display: none`: lo unico
+    # que lo retira es el temporizador de respaldo (1200ms en el modulo). Se
+    # espera con `wait_for_function` y margen explicito (2500ms, muy por
+    # encima de los 1200ms del respaldo) en vez de un `wait_for_timeout` fijo
+    # calcado a ese valor, que mediria el reloj del harness contra si mismo.
+    try:
+        pagina.wait_for_function(
+            "() => document.querySelectorAll('.cae-cursor-cerco').length === 0",
+            timeout=2500,
+        )
+    except PlaywrightTimeoutError:
+        pass
+    restantes = pagina.evaluate("() => document.querySelectorAll('.cae-cursor-cerco').length")
+    check(
+        restantes == 0,
+        f"[3] el respaldo retira el cerco aunque 'animationend' nunca llegue ({restantes} restantes)",
+    )
+    pagina.emulate_media(reduced_motion="no-preference")
+
 
 ARGS = ["--no-sandbox", "--use-gl=swiftshader"]
 
