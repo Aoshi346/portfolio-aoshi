@@ -4077,6 +4077,56 @@
   pointer-events: none;
 }
 
+/*
+ * Estado previo a la entrada de Titulo (tarea de repaso de interfaces): nada
+ * ocultaba estas piezas antes de que llegara el chunk de coreografia (~2,9 s
+ * en la sandbox), asi que el hero se veia ENTERO en su estado FINAL -- firma
+ * a opacidad 1, lineas sin recorte, cifras a 1, terminal visible con
+ * "$ _" vacio y el trazo mostrando el contorno completo del nombre -- y
+ * saltaba de golpe al estado inicial cuando `montarEntrada` por fin corria.
+ *
+ * `visibility`, NO `display: none` ni `opacity`: `justificarTitular` mide el
+ * texto con `Range` y el aterrizaje del trazo mide con
+ * `getBoundingClientRect()`, y las dos necesitan el layout intacto (`display:
+ * none` lo destruye). Y no `opacity` porque GSAP anima esa misma propiedad
+ * inline en estas mismas piezas -- dos fuentes para el mismo valor es
+ * exactamente el tipo de conflicto que el CLAUDE.md del proyecto prohibe
+ * para `transform`, y aqui aplica igual.
+ */
+:root[data-theme="caelestia"].js-cae-entrada .cae-term,
+:root[data-theme="caelestia"].js-cae-entrada .cae-trazo-stage,
+:root[data-theme="caelestia"].js-cae-entrada .cae-firma,
+:root[data-theme="caelestia"].js-cae-entrada .cae-regla,
+:root[data-theme="caelestia"].js-cae-entrada .cae-meta,
+:root[data-theme="caelestia"].js-cae-entrada .cae-tit .cae-ln,
+:root[data-theme="caelestia"].js-cae-entrada .cae-statcol > div,
+:root[data-theme="caelestia"].js-cae-entrada .cae-widget {
+  visibility: hidden;
+}
+
+/*
+ * Cinturon de seguridad: si la clase llegara a quedar puesta con movimiento
+ * reducido (main.ts roto, orden de carga distinto), el contenido no puede
+ * depender de una animacion que nunca va a correr para revelarse -- mismo
+ * patron que `style.css` hace con `.js-intro`. Sin `!important`: el selector
+ * es IDENTICO al de arriba (misma especificidad) y esta regla va DESPUES en
+ * el fichero, asi que gana por orden de cascada sola -- comprobado leyendo
+ * `visibility` de `.cae-firma` con `prefers-reduced-motion: reduce` emulado
+ * y la clase forzada a mano: sale `visible` sin necesidad de `!important`.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"].js-cae-entrada .cae-term,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-trazo-stage,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-firma,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-regla,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-meta,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-tit .cae-ln,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-statcol > div,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-widget {
+    visibility: visible;
+  }
+}
+
 :root[data-theme="caelestia"] .cae-term {
   z-index: 60;
 }

@@ -17,6 +17,7 @@ dice cazar.
 """
 import argparse
 import sys
+import time
 
 from playwright.sync_api import sync_playwright
 
@@ -297,6 +298,160 @@ def entrada(pg, base: str) -> None:
     assert_que(est["term"] == "none", f"con movimiento reducido no hay terminal ({est['term']!r})")
     assert_que(est["firma"] >= 0.99, f"con movimiento reducido la firma esta puesta ({est['firma']})")
     ctx.close()
+
+    # Camino CON movimiento, que es el que ve casi todo el mundo. Lo que este
+    # bloque caza es la FUGA PREVIA A LA ENTRADA: alguna pieza del hero
+    # pintada en su estado FINAL antes de que la coreografia haya arrancado
+    # (arranque = primer `typed` no vacio, paso 2 de la timeline). NO es
+    # fallo que, ya arrancada la entrada, el trazo termine de dibujarse
+    # (dashoffset a 0, paso 4) o la firma haga su fundido cruzado (opacidad
+    # 0.8, pasos 8-9) antes del aterrizaje: eso es la propia coreografia
+    # avanzando, no una fuga. No se usa `abrir()` aqui -- espera 4 s fijos
+    # tras `domcontentloaded`, y hace falta muestrear desde el `commit`,
+    # antes de que nada llegue a pintarse.
+    pn = pg.context.browser.new_page(viewport=VENTANA)
+    pn.goto(f"{base}/?theme=caelestia", wait_until="commit", timeout=30000)
+
+    LEE_ENTRADA = """() => {
+      const q = (s) => document.querySelector(s);
+      const firma = q('#hero .cae-firma');
+      const path = q('#hero .cae-trazo path');
+      const cifra = q('#hero .cae-statcol > div');
+      const term = q('#hero .cae-term');
+      const typed = q('#hero .cae-term-typed');
+      const cs = (el) => el ? getComputedStyle(el) : null;
+      const csFirma = cs(firma), csPath = cs(path), csCifra = cs(cifra), csTerm = cs(term);
+      return {
+        firmaExiste: !!firma,
+        firmaVis: csFirma ? csFirma.visibility : null,
+        firmaOp: csFirma ? parseFloat(csFirma.opacity) : null,
+        trazoVis: csPath ? csPath.visibility : null,
+        trazoOffset: csPath ? csPath.strokeDashoffset : null,
+        trazoStrokeOp: csPath ? parseFloat(csPath.strokeOpacity) : null,
+        cifraVis: csCifra ? csCifra.visibility : null,
+        cifraOp: csCifra ? parseFloat(csCifra.opacity) : null,
+        termVis: csTerm ? csTerm.visibility : null,
+        termOp: csTerm ? parseFloat(csTerm.opacity) : null,
+        typed: typed ? typed.textContent : null,
+      };
+    }"""
+
+    def _muestra() -> dict | None:
+        try:
+            return pn.evaluate(LEE_ENTRADA)
+        except Exception:
+            return None
+
+    t0 = time.monotonic()
+    muestras: list[dict] = []
+    aterrizo: dict | None = None
+    while time.monotonic() - t0 < 25:
+        m = _muestra()
+        if m is not None:
+            m["t"] = time.monotonic() - t0
+            muestras.append(m)
+            if (
+                m["typed"] == "whoami"
+                and m["firmaOp"] is not None
+                and m["firmaOp"] >= 0.99
+                and m["firmaVis"] == "visible"
+                and m["termOp"] is not None
+                and m["termOp"] == 0
+            ):
+                aterrizo = m
+                break
+        pn.wait_for_timeout(30)
+
+    if aterrizo is None:
+        assert_que(False, "la entrada no aterrizo en 25s de reloj de pared")
+    else:
+        # Lo que este bloque caza es la FUGA PREVIA A LA ENTRADA: piezas
+        # pintadas en su estado final antes de que la coreografia haya
+        # arrancado siquiera. El ARRANQUE se define como la primera muestra
+        # con `typed` no vacio -- el tecleo de "whoami" es el paso 2 de la
+        # timeline, antes de que exista nada que pintar.
+        # NO es fallo que, YA arrancada la entrada y antes de aterrizar, el
+        # propio paso 4 termine de dibujar el trazo (dashoffset a 0) o el
+        # paso 8-9 haga el fundido cruzado de la firma (opacidad 0.8): eso es
+        # la coreografia haciendo su trabajo, no una fuga. Por eso la firma y
+        # el trazo solo se vigilan ANTES del arranque; las cifras, que entran
+        # en el paso 10 tras el aterrizaje de la firma, se vigilan en toda la
+        # ventana previa al aterrizaje.
+        previas_aterrizaje = [m for m in muestras if m["firmaExiste"] and m["t"] < aterrizo["t"]]
+        arranque = next((m for m in previas_aterrizaje if m["typed"]), None)
+
+        if arranque is None:
+            assert_que(False, "la entrada no arranco (nunca se tecleo nada)")
+            preentrada: list[dict] = []
+        else:
+            preentrada = [m for m in previas_aterrizaje if m["t"] < arranque["t"]]
+
+        def _etq(malas: list[dict], nombre: str) -> str:
+            if not malas:
+                return f"{nombre} (0 muestras malas)"
+            return f"{nombre} ({len(malas)} muestras malas, primera t={malas[0]['t']:.2f}s)"
+
+        malas_firma = [
+            m for m in preentrada if not (m["firmaVis"] == "hidden" or m["firmaOp"] == 0)
+        ]
+        assert_que(
+            len(malas_firma) == 0,
+            _etq(malas_firma, "la firma nunca se pinta antes de que arranque la entrada"),
+        )
+
+        malas_trazo = [
+            m
+            for m in preentrada
+            if not (
+                m["trazoVis"] == "hidden"
+                or m["trazoOffset"] != "0px"
+                or m["trazoStrokeOp"] == 0
+            )
+        ]
+        assert_que(
+            len(malas_trazo) == 0,
+            _etq(malas_trazo, "el trazo nunca muestra el contorno completo antes de que arranque la entrada"),
+        )
+
+        # Las cifras entran DESPUES del aterrizaje de la firma en la timeline
+        # (paso 10, tras el barrido de tinta): antes de aterrizar tienen que
+        # estar siempre a 0. Esta se mantiene sobre TODAS las muestras
+        # previas al aterrizaje, no solo las previas al arranque.
+        malas_cifras = [
+            m for m in previas_aterrizaje if not (m["cifraVis"] == "hidden" or m["cifraOp"] == 0)
+        ]
+        assert_que(
+            len(malas_cifras) == 0,
+            _etq(malas_cifras, "las cifras nunca se pintan antes de tiempo"),
+        )
+
+        # En una maquina rapida el primer chunk (con el arranque ya dentro)
+        # puede llegar en menos de 100ms, asi que exigir 3 muestras de 30ms
+        # antes del arranque es demasiado estricto -- se deja en 2, sin bajar
+        # de ahi: por debajo de 2 la asercion deja de comprobar nada real.
+        assert_que(
+            len(preentrada) >= 2,
+            f"hubo al menos 2 muestras antes de que arrancara la entrada ({len(preentrada)})",
+        )
+
+        # El widget es la pieza nueva de la timeline: se cubre por separado,
+        # anclado a estado, nunca a un cronometro fijo.
+        t1 = time.monotonic()
+        widget_ok = False
+        while time.monotonic() - t1 < 25:
+            w = pn.evaluate(
+                "() => { const w = document.querySelector('#hero .cae-widget');"
+                " if (!w) return null;"
+                " const cs = getComputedStyle(w);"
+                " return { op: parseFloat(cs.opacity), vis: cs.visibility }; }"
+            )
+            if w and w["op"] >= 0.99 and w["vis"] == "visible":
+                widget_ok = True
+                break
+            pn.wait_for_timeout(30)
+        assert_que(widget_ok, "el widget .cae-widget queda puesto al final de la entrada")
+
+    pn.close()
 
 
 def roce(pg, base: str) -> None:

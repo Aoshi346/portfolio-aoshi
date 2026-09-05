@@ -92,8 +92,18 @@ const NULO: EntradaHandle = { destroy: () => {} };
  * son `position: fixed` contra el viewport real, asi que las deltas de
  * `getBoundingClientRect()` se usan tal cual. Dividir por `k` aqui sacaria el
  * aterrizaje fuera de sitio.
+ *
+ * `js-cae-entrada`: la pone `main.ts` ANTES del primer pintado (oculta con
+ * `visibility: hidden` en `themes.css` la terminal, el trazo, la firma, la
+ * regla, la meta, las lineas del titular, las cifras y el widget) y esta
+ * funcion la retira en los TRES caminos de salida en cuanto ha escrito los
+ * estados iniciales con `gsap.set` de forma sincrona — nunca despues, o esas
+ * piezas se verian un fotograma en su estado FINAL antes de que la timeline
+ * las lleve a su estado de partida.
  */
 export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
+  const descubrir = (): void => document.documentElement.classList.remove("js-cae-entrada");
+
   const hero = root.querySelector<HTMLElement>("#hero");
   const term = hero?.querySelector<HTMLElement>(".cae-term") ?? null;
   const typed = hero?.querySelector<HTMLElement>(".cae-term-typed") ?? null;
@@ -102,9 +112,15 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
   const firma = hero?.querySelector<HTMLElement>(".cae-firma") ?? null;
   const regla = hero?.querySelector<HTMLElement>(".cae-regla") ?? null;
   const meta = hero?.querySelector<HTMLElement>(".cae-meta") ?? null;
+  const widget = hero?.querySelector<HTMLElement>(".cae-widget") ?? null;
   const lineas = hero ? Array.from(hero.querySelectorAll<HTMLElement>(".cae-ln")) : [];
   const bloques = hero ? Array.from(hero.querySelectorAll<HTMLElement>(".cae-statcol > div")) : [];
-  if (!term || !typed || !cursor || !trazo || !firma) return NULO;
+  if (!term || !typed || !cursor || !trazo || !firma) {
+    // Sin las piezas minimas no hay timeline que las revele: si no se retira
+    // aqui, el contenido queda invisible hasta el timeout de 3s de main.ts.
+    descubrir();
+    return NULO;
+  }
 
   const paths = Array.from(trazo.querySelectorAll<SVGPathElement>("path"));
 
@@ -116,9 +132,15 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
     gsap.set(term, { display: "none" });
     gsap.set(trazo, { opacity: 0 });
     gsap.set(firma, { opacity: 1 });
+    descubrir();
     return NULO;
   }
 
+  // Estados iniciales de TODA la escena, sincronos y antes de construir la
+  // timeline: es lo que sustituye al `visibility: hidden` de `themes.css` en
+  // cuanto se retira `js-cae-entrada`, asi que tiene que cubrir cada pieza
+  // que esa regla ocultaba.
+  gsap.set(term, { opacity: 0, y: 8 });
   gsap.set(firma, { opacity: 0 });
   for (const path of paths) {
     const longitud = path.getTotalLength();
@@ -129,6 +151,15 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
       strokeOpacity: 1,
     });
   }
+  if (regla) gsap.set(regla, { scaleX: 0 });
+  if (meta) gsap.set(meta, { opacity: 0, x: -8 });
+  if (lineas.length > 0) gsap.set(lineas, { clipPath: "inset(0 100% 0 0)" });
+  if (bloques.length > 0) {
+    gsap.set(bloques, { opacity: 0, rotateX: -82, y: 6, transformPerspective: 600 });
+  }
+  if (widget) gsap.set(widget, { opacity: 0, y: 8 });
+
+  descubrir();
 
   const tl = gsap.timeline();
 
@@ -212,6 +243,17 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
       bloques,
       { opacity: 0, rotateX: -82, y: 6 },
       { opacity: 1, rotateX: 0, y: 0, duration: 0.6, ease: "power3.out", stagger: 0.09 },
+    );
+  }
+
+  // 11. El widget "Ahora mismo": la unica pieza del hero que hasta ahora
+  // entraba de golpe en vez de paso a paso.
+  if (widget) {
+    tl.fromTo(
+      widget,
+      { opacity: 0, y: 8 },
+      { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+      "-=0.2",
     );
   }
 
