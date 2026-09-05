@@ -410,6 +410,20 @@ Hyprland y no deja deuda, a diferencia de B1-B4.
 3. **`backdrop-filter` en un elemento que se mueve a 60 fps** sobre un lienzo WebGL: en la maqueta
    no cuesta nada, pero la maqueta no lleva el shader. Medir en el build real; si penaliza, la lente
    se queda solo en `perla` (quieta sobre una diana) y se apaga en `reposo`.
+
+   **Medido (Task 5), build de producción bajo swiftshader, moviendo el ratón en diagonal 30
+   pasos, mediana/p95 de fotograma en 3s por brazo:**
+
+   | Orden | con lente | sin lente |
+   |---|---|---|
+   | 1 | 182.8 / 207.9 ms (n=18) | 198.6 / 237.3 ms (n=17) |
+   | 2 (invertido) | 175.3 / 217.8 ms (n=19) | 200.1 / 254.9 ms (n=17) |
+
+   Con lente sale entre un 7 % y un 12 % *más rápido* que sin lente en las dos direcciones de
+   medida — dentro del ruido de swiftshader (~5-6 fps de fondo, dominado por el shader, no por el
+   `backdrop-filter` de un círculo de 15-20px). No hay penalización que superar el umbral del 25 %:
+   **la lente se queda encendida en los tres estados, incluido `reposo`.** No se añade la regla de
+   apagado.
 4. **El umbral de "se nota"** del gate 6 se fija al ver la primera medida, y se anota aquí.
 
 ## Trampas ya pagadas en esta sesión

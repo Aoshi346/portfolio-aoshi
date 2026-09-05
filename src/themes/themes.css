@@ -9005,3 +9005,84 @@
     display: none;
   }
 }
+
+/* La lente. Es lo que separa una gota de un disco de color: lo que hay
+   debajo se ve a traves de ella. De DIA satura y contrasta; de NOCHE eso
+   no hace nada (sobre superficie oscura no hay nada que saturar), asi que
+   aclara. Es la misma pieza con otra luz, no otra pieza. */
+.cae-cursor-perla {
+  backdrop-filter: saturate(1.7) contrast(1.06) blur(0.7px);
+  -webkit-backdrop-filter: saturate(1.7) contrast(1.06) blur(0.7px);
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor-perla {
+  backdrop-filter: brightness(1.35) saturate(1.25) blur(0.7px);
+  -webkit-backdrop-filter: brightness(1.35) saturate(1.25) blur(0.7px);
+}
+
+/* Derramada no refracta: ya no es una gota sobre la superficie, es una
+   mancha extendida. */
+.cae-cursor[data-estado="derrame"] .cae-cursor-perla {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* La sombra dice que la gota esta SOBRE la superficie, no pintada en ella.
+   De noche una sombra no se ve: el papel de "esto tiene volumen" lo hace
+   un canto encendido y un halo. */
+.cae-cursor-perla {
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--cae-on-surface) 32%, transparent),
+    inset 0 -1px 1px color-mix(in oklch, var(--cae-on-surface) 12%, transparent);
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor-perla {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--cae-primary) 60%, white),
+    inset 0 -2px 3px color-mix(in oklch, var(--cae-primary) 40%, transparent),
+    0 0 6px color-mix(in oklch, var(--cae-primary) 45%, transparent);
+}
+
+.cae-cursor[data-estado="derrame"] .cae-cursor-perla,
+:root[data-cae-esquema="noche"] .cae-cursor[data-estado="derrame"] .cae-cursor-perla {
+  box-shadow: none;
+}
+
+/* De noche el brillo de tension se recoge y sube: con el canto encendido,
+   un brillo grande convierte la gota en una pastilla. */
+:root[data-cae-esquema="noche"] .cae-cursor-perla::before {
+  left: 26%;
+  top: 14%;
+  width: 26%;
+  height: 18%;
+}
+
+/* El rebote al posarse: la curva `expressive` de Material 3 hecha fisica.
+   UN ciclo y corto. Si se repite, es gelatina. */
+@keyframes cae-cursor-perla-posa {
+  0% {
+    scale: 1.35 0.8;
+  }
+  45% {
+    scale: 0.9 1.1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+.cae-cursor[data-estado="perla"] .cae-cursor-perla {
+  animation: cae-cursor-perla-posa 0.42s cubic-bezier(0.2, 0, 0, 1) 1;
+}
+
+/* El selector universal de la guardia de movimiento reducido NO alcanza a
+   los pseudo-elementos ni a las animaciones declaradas aparte: cada una
+   necesita su regla. (Trampa pagada en B2 con `.ficha-k::before`.) */
+@media (prefers-reduced-motion: reduce) {
+  .cae-cursor-perla,
+  .cae-cursor-perla::before,
+  .cae-cursor-gota {
+    animation: none;
+    transition: none;
+  }
+}
