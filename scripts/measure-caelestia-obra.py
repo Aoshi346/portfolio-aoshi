@@ -47,6 +47,7 @@ PROYECTOS = [
         ),
         "private": True,
         "link_href": None,
+        "stack": ["Python", "Django", "TypeScript", "React", "Vite"],
     },
     {
         "title": "TesisFar",
@@ -66,6 +67,7 @@ PROYECTOS = [
         ),
         "private": False,
         "link_href": "https://github.com/Aoshi346/teg-web-app",
+        "stack": ["TypeScript", "Next.js"],
     },
     {
         "title": "HyprFinance",
@@ -88,6 +90,7 @@ PROYECTOS = [
         ),
         "private": True,
         "link_href": None,
+        "stack": ["TypeScript", "React", "RxDB", "GSAP", "Zustand"],
     },
     {
         "title": "WatchDog",
@@ -108,6 +111,7 @@ PROYECTOS = [
         ),
         "private": False,
         "link_href": "https://github.com/Aoshi346/Proyecto-CiberSeg",
+        "stack": ["JavaScript", "Electron", "Python"],
     },
     {
         "title": "Editor de texto",
@@ -127,6 +131,7 @@ PROYECTOS = [
         ),
         "private": False,
         "link_href": "https://github.com/Aoshi346/Text-Editor-Application",
+        "stack": ["C", "GTK4"],
     },
 ]
 
@@ -329,6 +334,44 @@ def check_extremos(page) -> None:
         for d in datos:
             assert_true(d["texto"] > 0, f"Extremos ({titulo}): parrafo vacio")
             assert_true(d["dentro"], f"Extremos ({titulo}): parrafo se sale del carril por abajo")
+
+
+def check_stack_marcas(page) -> None:
+    """4i. Todas las tecnologias del Stack pintan marca, ninguna cae a texto.
+    Abre cada una de las cinco tarjetas y comprueba que TODAS las entradas
+    del `dl.cae-obra-drawer-meta` bajo `dd.cae-obra-stack` son `.obra-marca`
+    con un `<svg>` que se pinta de verdad (`getClientRects().length > 0`),
+    y que no queda ningun `.cae-obra-stack-text` (la version sin marca)."""
+    for i, esperado in enumerate(PROYECTOS):
+        page.evaluate(f"document.querySelectorAll('.cae-obra-card')[{i}].click()")
+        page.wait_for_timeout(400)
+        datos = page.evaluate(
+            """
+            () => {
+              const stack = document.querySelector('.cae-obra-drawer .cae-obra-stack');
+              const entradas = Array.from(stack.children);
+              return entradas.map(e => {
+                const svg = e.querySelector('svg');
+                return {
+                  esMarca: e.classList.contains('obra-marca'),
+                  esTexto: e.classList.contains('cae-obra-stack-text'),
+                  tieneSvg: !!svg,
+                  svgPintado: svg ? svg.getClientRects().length > 0 : false,
+                  titulo: e.getAttribute('title'),
+                };
+              });
+            }
+            """
+        )
+        assert_true(len(datos) == len(esperado["stack"]), f"Stack marcas ({esperado['title']}): se esperaban {len(esperado['stack'])} entradas, hay {len(datos)}")
+        for d in datos:
+            assert_true(d["esMarca"], f"Stack marcas ({esperado['title']}): entrada '{d['titulo']}' no es .obra-marca")
+            assert_true(not d["esTexto"], f"Stack marcas ({esperado['title']}): entrada '{d['titulo']}' cayo a .cae-obra-stack-text")
+            assert_true(d["tieneSvg"], f"Stack marcas ({esperado['title']}): entrada '{d['titulo']}' no tiene <svg>")
+            assert_true(d["svgPintado"], f"Stack marcas ({esperado['title']}): el <svg> de '{d['titulo']}' no se pinta (getClientRects vacio)")
+
+        hay_texto = page.evaluate("!!document.querySelector('.cae-obra-drawer .cae-obra-stack-text')")
+        assert_true(not hay_texto, f"Stack marcas ({esperado['title']}): no deberia quedar ningun .cae-obra-stack-text")
 
 
 def _oklab_to_srgb255(l: float, a_: float, b_: float) -> tuple[float, float, float]:
@@ -575,6 +618,7 @@ def main() -> int:
         check_capturas_no_cortadas(page, viewport)
         check_anti_mock(page)
         check_extremos(page)
+        check_stack_marcas(page)
         check_contraste(page)
         check_foco_visible(page)
         page.close()

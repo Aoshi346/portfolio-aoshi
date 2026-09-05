@@ -1,6 +1,10 @@
 /**
- * Iconos de marca vía `simple-icons`, importados como SVG crudo (sin loader
- * JS ni red): cada slug es un import estático que Vite inlinea en el bundle.
+ * Iconos de marca, importados como SVG crudo (sin loader JS ni red): cada
+ * slug es un import estatico que Vite inlinea en el bundle. La fuente
+ * principal es `simple-icons`, pero dos piezas vienen de Devicon Plain
+ * (MIT, ver `src/assets/icons/LICENSE-devicon.md`): `c` porque el logotipo
+ * de simple-icons (una C en caja) no es el hexagono que Aoshi reconoce, y
+ * `zustand` porque simple-icons no tiene esa marca.
  */
 import react from "simple-icons/icons/react.svg?raw";
 import typescript from "simple-icons/icons/typescript.svg?raw";
@@ -12,7 +16,8 @@ import mysql from "simple-icons/icons/mysql.svg?raw";
 import javascript from "simple-icons/icons/javascript.svg?raw";
 import html5 from "simple-icons/icons/html5.svg?raw";
 import css from "simple-icons/icons/css.svg?raw";
-import c from "simple-icons/icons/c.svg?raw";
+import c from "../assets/icons/devicon-plain-c.svg?raw";
+import zustand from "../assets/icons/devicon-plain-zustand.svg?raw";
 import cplusplus from "simple-icons/icons/cplusplus.svg?raw";
 import nextdotjs from "simple-icons/icons/nextdotjs.svg?raw";
 import nodedotjs from "simple-icons/icons/nodedotjs.svg?raw";
@@ -38,6 +43,7 @@ const icons: Record<string, string> = {
   html5,
   css,
   c,
+  zustand,
   cplusplus,
   nextdotjs,
   nodedotjs,
