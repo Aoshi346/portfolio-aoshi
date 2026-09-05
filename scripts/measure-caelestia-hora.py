@@ -15,6 +15,7 @@ el HMR de Vite corrompe las medidas.
 """
 import argparse
 import sys
+import time
 
 from playwright.sync_api import sync_playwright
 
@@ -342,32 +343,106 @@ def main():
                 fallos.append("%d accesos del dock sin icono" % dock["sinIcono"])
         ctx.close()
 
-        # ---- 8. la notificacion de disponibilidad aparece y no roba el foco
+        # ---- 8. la notificacion ya NO salta al entrar; solo al cambio de esquema
+        #
+        # Decision de Aoshi (repaso de interfaces 2026-09-05): el aviso de
+        # entrada a los 900ms se pisaba con la entrada de Titulo y con el
+        # widget "Ahora mismo", que ya dice lo mismo. Se quita el disparo de
+        # entrada y se queda solo el de `caelestia:esquema`.
+        #
+        # El corte se ancla al ESTADO (que la entrada de Titulo haya
+        # aterrizado: `#hero .cae-term-typed` con "whoami" y
+        # `#hero .cae-firma` con opacidad computada >= 0.99), nunca a un
+        # cronometro fijo -- en esta sandbox rAF/setTimeout van a 200-400ms,
+        # asi que un `wait_for_timeout` corto podria leer el toast ANTES de
+        # que el disparo de 900ms (si siguiera vivo) llegara a abrirlo, y el
+        # gate mentiria en verde. Se muestrea desde el `commit` cada ~50ms
+        # hasta el aterrizaje y se exige que el toast NO haya estado
+        # `is-open` en NINGUNA muestra: es la asercion que caza el disparo de
+        # 900ms aunque se hubiera cerrado ya (4200ms de vida) antes de que la
+        # entrada aterrizara.
         ctx = nav.new_context(viewport={"width": 1440, "height": 900})
         page = ctx.new_page()
-        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(3000)
-        aviso = page.evaluate(
-            """() => {
-                const t = document.querySelector('[data-cae-toast]');
-                if (!t) return null;
-                return {
-                  visible: t.classList.contains('is-open'),
-                  live: t.getAttribute('aria-live'),
-                  robaFoco: document.activeElement === t || t.contains(document.activeElement),
-                };
-            }"""
-        )
-        if aviso is None:
+        page.goto(args.base + "/?theme=caelestia", wait_until="commit", timeout=30000)
+
+        # El shell (barra/dock/toast) monta via `import()` diferido, igual que
+        # el resto de modulos de tema: no existe todavia en el instante del
+        # `commit`, asi que su presencia se comprueba DESPUES del muestreo,
+        # no antes -- comprobarla en caliente aqui confundiria "aun no ha
+        # montado" con "no existe".
+        LEE_ESTADO = """() => {
+            const t = document.querySelector('[data-cae-toast]');
+            const typed = document.querySelector('#hero .cae-term-typed');
+            const firma = document.querySelector('#hero .cae-firma');
+            const csFirma = firma ? getComputedStyle(firma) : null;
+            return {
+              toastExiste: !!t,
+              toastOpen: t ? t.classList.contains('is-open') : false,
+              typed: typed ? typed.textContent : null,
+              firmaOp: csFirma ? parseFloat(csFirma.opacity) : null,
+            };
+        }"""
+
+        t0 = time.monotonic()
+        vistoAbiertoAntes = False
+        vistoToast = False
+        aterrizo = None
+        while time.monotonic() - t0 < 30:
+            try:
+                m = page.evaluate(LEE_ESTADO)
+            except Exception:
+                m = None
+            if m is not None:
+                if m["toastExiste"]:
+                    vistoToast = True
+                if m["toastOpen"]:
+                    vistoAbiertoAntes = True
+                if (
+                    m["typed"] == "whoami"
+                    and m["firmaOp"] is not None
+                    and m["firmaOp"] >= 0.99
+                ):
+                    aterrizo = m
+                    break
+            page.wait_for_timeout(50)
+
+        if aterrizo is None:
+            fallos.append("la entrada no aterrizo, no se puede juzgar la notificacion")
+            ctx.close()
+        elif not (vistoToast or aterrizo["toastExiste"]):
             fallos.append("no existe [data-cae-toast]")
+            ctx.close()
         else:
+            if vistoAbiertoAntes or aterrizo["toastOpen"]:
+                fallos.append(
+                    "la notificacion se abrio al cargar (debe quedar muda hasta el cambio de esquema)"
+                )
+
+            # El disparo por cambio de esquema sigue vivo.
+            page.evaluate(
+                "document.documentElement.dispatchEvent("
+                "new CustomEvent('caelestia:esquema', {detail: {oscuro: true}}))"
+            )
+            page.wait_for_timeout(200)
+            aviso = page.evaluate(
+                """() => {
+                    const t = document.querySelector('[data-cae-toast]');
+                    return {
+                      visible: t.classList.contains('is-open'),
+                      live: t.getAttribute('aria-live'),
+                      robaFoco: document.activeElement === t || t.contains(document.activeElement),
+                    };
+                }"""
+            )
             if not aviso["visible"]:
-                fallos.append("la notificacion de disponibilidad no llego a mostrarse")
+                fallos.append("el cambio de esquema no abre la notificacion")
             if aviso["live"] != "polite":
-                fallos.append("la notificacion tiene aria-live=%r, esperado 'polite'" % aviso["live"])
+                fallos.append(
+                    "la notificacion tiene aria-live=%r, esperado 'polite'" % aviso["live"]
+                )
             if aviso["robaFoco"]:
                 fallos.append("la notificacion roba el foco")
-        ctx.close()
+            ctx.close()
 
         # ---- 9. cambio de workspace: la pagina no desplaza, el carril si
         ctx = nav.new_context(viewport={"width": 1440, "height": 900})

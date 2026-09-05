@@ -1,4 +1,4 @@
-import { contactChannels, identity, sceneIndex, type ContactChannel } from "../data/content";
+import { contactChannels, sceneIndex, type ContactChannel } from "../data/content";
 import { el, elFromMarkup } from "../utils/dom";
 
 /**
@@ -170,15 +170,12 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
     document.documentElement.removeEventListener("caelestia:esquema", alCambiarEsquema),
   );
 
-  // Primer aviso: el estado, que es lo que un reclutador viene a saber.
-  const primerAviso = window.setTimeout(() => {
-    notificar(identity.availability, `${identity.now} · ${identity.location}`);
-  }, 900);
+  // La notificacion ya no salta al entrar (decision de Aoshi, repaso de interfaces 2026-09-05:
+  // se pisaba con la entrada de Titulo y el widget "Ahora mismo", que ya lo dice). Su unico disparo es el cambio de esquema.
 
   return {
     destroy: () => {
       window.clearInterval(tic);
-      window.clearTimeout(primerAviso);
       window.clearTimeout(cierre);
       for (const limpiar of limpiadores) limpiar();
       barra.remove();
