@@ -65,6 +65,29 @@
   already slipped through once. Read the spec's epilogue before re-tuning anything: the whole
   calibration predates the `gsap` fix.
 
+- **Caelestia's cursor is BUILT and gated, pending merge** (`2026-09-04-caelestia-cursor`, branch
+  `design/caelestia-cursor` in the `portfolio-aoshi-cursor` worktree): **"la gota"** — a drop of the
+  hour's pigment. It is a theme-wide device, not one of the B1-B5 phases. Over pressables it tenses
+  into a pearl and waits; **on click it spills and floods the target to its edges**; over
+  hover-select targets (`button[aria-pressed]`, the Credits pieces) it spills on entry instead. Over
+  running text it goes out and the system I-beam takes over. The two states are not two symbols —
+  they are **one gesture fired at two moments**, which is how it satisfies "a cursor cannot have a
+  manual". DOM, not canvas (it needs `backdrop-filter` and `mix-blend-mode`), and **no GSAP**: CSS
+  transitions only, so the mount stays synchronous. No trail, no positional inertia.
+  `src/components/caelestiaCursor.ts`, gated by `scripts/measure-caelestia-cursor.py` (8 gates, 53
+  assertions, every one seen red against the failure it claims to catch).
+  - **The night spill's opacity is 0,20 and the day's is 0,22 — do not unify them.** They are
+    different mixes: `multiply` over light paper darkens the text's background, `screen` over dark
+    surface lightens it, and that is what eats contrast. At 0,30 the Obra caption fell to 4,06:1 at
+    06:30, below AA; at 0,20 the worst of the 24-hour sweep is **4,92:1**. The margin is 0,43, not
+    an order of magnitude — re-run gate 6 whole before touching it.
+  - **The spec's fallback (paint the spill under the text as an inline `background-image`, the
+    Hyprland pattern) is worse here, not a safety net**: a `background-image` paints below the
+    element's children, and the Obra card has an `<img>` filling its box, so the spill would vanish
+    in the scene where it shows most. That open question is closed.
+  - `destroy()` retires live rings **through `retirarCerco`**, never a raw `remove()`: it is the
+    only path that also cancels their 1200ms backstop timer.
+
 - **Caelestia's shell is DONE and merged** (`2026-08-20-caelestia-escritorio`, phase A of six): the
   theme stopped being a set of tokens and became **a Material You 3 desktop shell whose colour and
   scheme are governed by the visitor's clock**. The hue walks the full 360-degree wheel over 24

@@ -9429,3 +9429,440 @@
     display: none;
   }
 }
+
+/* =====================================================================
+ * Cursor propio de Caelestia — la gota
+ *
+ * `.caelestia-cursor-ready` la pone el JS SOLO tras montar con exito. Si
+ * el modulo no carga, no existe ninguna de estas reglas y el cursor del
+ * sistema queda intacto: ni una senal depende del JavaScript.
+ *
+ * La lista blanca cuelga de la RAIZ y no de `[data-scene]`, al reves que
+ * en Vice y Hyprland. Medido: en Caelestia los cinco workspaces son los
+ * hijos directos de `main`, y el de Obra (`div#obra.obra-rail`) NO lleva
+ * `data-scene`; la barra y el dock cuelgan de `#app`, fuera de `main`.
+ * Con la regla colgando de `[data-scene]`, el puntero del sistema seguiria
+ * visible encima de las tarjetas de Obra, de las pastillas y del dock --
+ * tres de las dianas que este cursor existe para vestir.
+ *
+ * Sigue siendo lista blanca por el mismo mecanismo de siempre: `cursor`
+ * solo se hereda cuando el elemento no declara el suyo.
+ * ===================================================================== */
+
+/* Toda la lista blanca vive dentro de `no-preference`, y no se apaga con
+   una regla de rescate en `reduce`. La razon es la trampa que este mismo
+   bloque ya pago dos veces: una regla que devuelve el glifo tiene que
+   ganarle en especificidad a la que lo quita, y al hacerlo le gana tambien
+   a la que cada pulsable declara por su cuenta (`cursor: pointer` en su CSS
+   base), asi que el rescate acabaria dando la flecha del sistema donde
+   tocaba una mano. Acotando la lista blanca no hay nada que pisar: bajo
+   movimiento reducido estas reglas simplemente NO EXISTEN y cada elemento
+   se queda con el cursor que ya declaraba.
+
+   Y hace falta porque la puerta de `main.ts` solo mira AL CARGAR. Quien
+   activa el ajuste a mitad de sesion tiene el modulo ya montado y la clase
+   `ready` puesta: sin esto, la guardia de cinturon y tirantes esconde la
+   gota y la lista blanca sigue ocultando el puntero del sistema -- la
+   pagina se queda SIN NINGUN cursor hasta recargar, justo para el perfil
+   al que la guardia dice proteger. Medido, y vigilado por el gate 1. */
+@media (prefers-reduced-motion: no-preference) {
+  .caelestia-cursor-ready:root[data-theme="caelestia"] {
+    cursor: none;
+  }
+
+/* Opt-in explicito de los pulsables: sin esta regla el `cursor: none` de
+   la raiz nunca llega a ellos. Casi todo boton de esta pagina (tarjetas de
+   Obra, piezas de Creditos) trae su propio `cursor: pointer` desde su CSS
+   base -- una declaracion PROPIA que la herencia jamas pisa. Hace falta
+   apuntarlos uno a uno, con especificidad mayor que esas reglas base, para
+   que la gota sustituya de verdad al puntero. El enlace externo queda
+   fuera aposta: abre pestana nueva y no se toca. */
+  .caelestia-cursor-ready:root[data-theme="caelestia"]
+    :is(button, a[href]:not([target="_blank"])) {
+    cursor: none;
+  }
+
+/* Texto corrido recupera el I-beam que la herencia le habia quitado:
+   ocultarlo borraria la senal de que esto se selecciona y se copia.
+   Literal `text` y no `auto`: `getComputedStyle` no resuelve `auto` a un
+   glifo concreto, devuelve la palabra clave tal cual -- con `auto` la
+   senal de "esto se selecciona" no se puede verificar ni a ojo por su
+   nombre de valor. EXCEPTO el que vive dentro de un pulsable -- la
+   leyenda de una tarjeta de Obra, el nombre de una pieza de Creditos: ahi
+   manda el pulsable, igual que en `resolver()` dentro del modulo. Las dos
+   inversiones se mueven juntas o se contradicen sobre el mismo pixel. */
+  .caelestia-cursor-ready:root[data-theme="caelestia"]
+    :is(p, li, dd, dt, figcaption, blockquote):not(button *, a[href] *) {
+    cursor: text;
+  }
+}
+
+/* `.gallery-track` NO necesita regla aqui, y a proposito: `style.css:911`
+   le declara `cursor: grab` (y `.is-dragging` en `style.css:937`,
+   `grabbing`) en una regla PROPIA sobre el propio elemento, y esa
+   herencia del `cursor: none` de la raiz nunca la alcanza -- exactamente
+   el mismo mecanismo por el que `a[target="_blank"]` tampoco necesita
+   rescate mas arriba. Una regla "de rescate" aqui solo podria pisar lo
+   que el elemento ya declara bien: una version anterior de este bloque
+   tenia `.gallery-track { cursor: auto }` con especificidad (0,4,0),
+   mayor que la (0,1,0)/(0,2,0) de sus propias reglas en `style.css`, y le
+   devolvia la flecha del sistema en vez de `grab`/`grabbing`. Hoy
+   `.gallery-track` es invisible en Caelestia -- vive en el
+   `projectScene.ts` que B3 oculta -- asi que nada de esto lo mide ningun
+   gate, y no puede, sin volverse tautologico. */
+
+.cae-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 72;
+  pointer-events: none;
+}
+
+/* La perla. `--s` tamano, `--al` opacidad, `--brillo` la tension
+   superficial. El pigmento es el de la hora: `--cae-primary` gira los 360
+   grados de la rueda en 24 horas, asi que el visitante de las 09:00 y el
+   de las 21:00 no llevan la misma gota en la mano. Aqui no se calcula
+   ningun color. */
+.cae-cursor-perla {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--s, 20px);
+  height: var(--s, 20px);
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--cae-primary);
+  opacity: var(--al, 0.42);
+  mix-blend-mode: multiply;
+  transition:
+    width 0.3s cubic-bezier(0.2, 0, 0, 1),
+    height 0.3s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.2s linear,
+    border-radius 0.3s cubic-bezier(0.2, 0, 0, 1),
+    background 0.2s linear;
+}
+
+/* De noche el pigmento no puede multiplicar: sobre superficie oscura
+   multiplicar es no hacer nada. Aclara. */
+:root[data-cae-esquema="noche"] .cae-cursor-perla {
+  mix-blend-mode: screen;
+}
+
+/* El brillo de la tension superficial: es lo que separa una gota de un
+   disco. Regla propia y no `*`, porque el selector universal NO alcanza a
+   los pseudo-elementos. */
+.cae-cursor-perla::before {
+  content: "";
+  position: absolute;
+  left: 22%;
+  top: 18%;
+  width: 30%;
+  height: 22%;
+  border-radius: 50%;
+  background: var(--cae-surface);
+  opacity: var(--brillo, 0.55);
+  filter: blur(0.5px);
+  transition: opacity 0.2s linear;
+}
+
+/* El nucleo marca la MANO: es el unico punto que dice donde esta el raton
+   exactamente, y por eso no se mueve ni se interpola nunca. */
+.cae-cursor-nucleo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 3px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--cae-on-surface);
+  transition: opacity 0.12s linear;
+}
+
+.cae-cursor[data-estado="reposo"] .cae-cursor-perla {
+  --s: 20px;
+  --al: 0.42;
+  --brillo: 0.55;
+}
+
+.cae-cursor[data-estado="perla"] .cae-cursor-perla {
+  --s: 15px;
+  --al: 0.95;
+  --brillo: 0.95;
+  /* Ligeramente asimetrica: una gota tensada no es un circulo. */
+  border-radius: 48% 52% 50% 50% / 55% 55% 45% 45%;
+}
+
+.cae-cursor[data-estado="apagada"] .cae-cursor-perla,
+.cae-cursor[data-estado="apagada"] .cae-cursor-nucleo {
+  opacity: 0;
+  /* 120ms: el relevo con el cursor del sistema tiene que ser inmediato. Si
+     la gota se apaga despacio, durante un cuarto de segundo hay dos
+     cursores en pantalla. */
+  transition: opacity 0.12s linear;
+}
+
+/* De noche la gota parte de mas arriba: sobre superficie oscura una
+   opacidad de dia se lee como suciedad, no como pigmento. */
+:root[data-cae-esquema="noche"] .cae-cursor[data-estado="reposo"] .cae-cursor-perla {
+  --al: 0.55;
+  --brillo: 0.35;
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor[data-estado="perla"] .cae-cursor-perla {
+  --al: 0.9;
+  --brillo: 0.6;
+}
+
+/* Cinturon y tirantes: si el modulo llegara a montar bajo movimiento
+   reducido, no se pinta nada. La puerta real esta en `main.ts`. */
+@media (prefers-reduced-motion: reduce) {
+  .cae-cursor {
+    display: none;
+  }
+}
+
+/* El derrame. Va ENCIMA de la diana, texto incluido: es pigmento sobre
+   papel, no luz por detras. `z-index: 65` lo pone sobre la barra (60) y
+   sobre el carril, y por debajo de la propia gota (72).
+
+   El modulo NUNCA escribe `display` aqui: el arnes lo apaga con
+   `display: none` para su A/B y necesita que el fotograma siguiente no se
+   lo pise. Ver el contrato en la cabecera del modulo. */
+.cae-cursor-mancha {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 65;
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor-mancha {
+  mix-blend-mode: screen;
+}
+
+/* El circulo que crece desde donde cayo la gota hasta llenar la caja. El
+   recorte a la forma de la diana lo hace el `overflow: hidden` del padre
+   con el `border-radius` que el modulo le copia: asi el liquido corre
+   hasta los cantos de lo que ha mojado, sea una tarjeta de 3px de radio o
+   una pastilla de 999px. */
+.cae-cursor-gota {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cae-primary);
+  opacity: 0.22;
+  transform: translate(-50%, -50%) scale(0);
+  transform-origin: 50% 50%;
+  transition: transform 0.42s cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor-gota {
+  /* 0,20 y no 0,22 como de dia: no es el mismo numero porque no es la misma
+     mezcla. De dia el derrame va con `multiply` sobre papel claro; de noche
+     con `screen` sobre superficie oscura, que ACLARA el fondo del texto y
+     por tanto le come contraste en vez de dárselo.
+
+     Calibrado el 2026-09-05 barriendo la opacidad (0,30 / 0,26 / 0,22 /
+     0,20 / 0,18) contra las horas peores de la noche, con la medida por
+     glifo del arnes. A 0,30 la leyenda de la tarjeta de Obra caia a 4,06:1
+     a las 06:30 -- por debajo de AA -- y el mismo recorte sin derrame daba
+     7,42:1, o sea que la causa era el derrame, no el tema. A 0,20 el peor
+     caso del barrido de 24 horas sube a 4,92:1 (obra 06:30) y el derrame
+     sigue notandose muy por encima del umbral (delta medio peor 13,25
+     frente a 6,625). No la subas sin volver a
+     correr el gate 6 entero: el margen es de 0,43, no de un orden. */
+  opacity: 0.2;
+}
+
+/* Recogerse tras el clic (180ms) va mas rapido que secarse al salir de la
+   diana (300ms), y las dos mas que llenar (420ms): llenar es el gesto,
+   recoger es su final, y secarse al marcharse no es ni una cosa ni la otra.
+   Los tres numeros son los del spec. */
+.cae-cursor[data-estado="perla"] ~ .cae-cursor-mancha .cae-cursor-gota {
+  transition-duration: 0.18s;
+}
+
+.cae-cursor[data-estado="reposo"] ~ .cae-cursor-mancha .cae-cursor-gota,
+.cae-cursor[data-estado="apagada"] ~ .cae-cursor-mancha .cae-cursor-gota {
+  transition-duration: 0.3s;
+}
+
+/* La caja mojada de una pieza de Creditos. Sin esto el derrame es un
+   rectangulo de esquina viva alrededor de una figura redonda. 10px es el
+   radio que la pieza YA declara para su anillo de foco
+   (`themes.css`, `.cae-cred-pieza:focus-visible`); se escribe aqui, en el
+   bloque del cursor y colgando de la clase `ready`, para no tocar B4:
+   sin el cursor esta regla no existe, y la pieza no tiene fondo ni borde
+   propios, asi que el radio no cambia nada de lo que se ve. */
+.caelestia-cursor-ready:root[data-theme="caelestia"] .cae-cred-pieza {
+  border-radius: 10px;
+}
+
+/* La perla derramada pasa a TINTA, no pigmento: sobre la pieza elegida el
+   pigmento es exactamente el color de la pieza (`--cae-primary` de fondo)
+   y la gota desaparece. Medido en el prototipo. */
+.cae-cursor[data-estado="derrame"] .cae-cursor-perla {
+  --s: 30px;
+  --al: 0.26;
+  --brillo: 0;
+  background: var(--cae-on-surface);
+  mix-blend-mode: normal;
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor[data-estado="derrame"] .cae-cursor-perla {
+  --al: 0.3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cae-cursor-mancha {
+    display: none;
+  }
+}
+
+/* El cerco: el anillo que deja una gota seca. Animacion CSS y no
+   transicion, porque es un disparo de una sola vez y se limpia solo en
+   `animationend`. */
+@keyframes cae-cursor-cerco {
+  from {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(2.1);
+    opacity: 0;
+  }
+}
+
+.cae-cursor-cerco {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 1.4px solid var(--cae-primary);
+  border-radius: 50%;
+  /* Escalera del dispositivo: 65 la mancha, 71 el cerco, 72 la gota. El
+     cerco queda sobre el derrame (es su marca) y bajo la gota, que es lo
+     unico que senala la mano. */
+  z-index: 71;
+  pointer-events: none;
+  animation: cae-cursor-cerco 0.8s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cae-cursor-cerco {
+    display: none;
+  }
+}
+
+/* La lente. Es lo que separa una gota de un disco de color: lo que hay
+   debajo se ve a traves de ella. De DIA satura y contrasta; de NOCHE eso
+   no hace nada (sobre superficie oscura no hay nada que saturar), asi que
+   aclara. Es la misma pieza con otra luz, no otra pieza. */
+.cae-cursor-perla {
+  backdrop-filter: saturate(1.7) contrast(1.06) blur(0.7px);
+  -webkit-backdrop-filter: saturate(1.7) contrast(1.06) blur(0.7px);
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor-perla {
+  backdrop-filter: brightness(1.35) saturate(1.25) blur(0.7px);
+  -webkit-backdrop-filter: brightness(1.35) saturate(1.25) blur(0.7px);
+}
+
+/* Derramada no refracta: ya no es una gota sobre la superficie, es una
+   mancha extendida. */
+.cae-cursor[data-estado="derrame"] .cae-cursor-perla {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* La sombra dice que la gota esta SOBRE la superficie, no pintada en ella.
+   De noche una sombra no se ve: el papel de "esto tiene volumen" lo hace
+   un canto encendido y un halo. */
+.cae-cursor-perla {
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--cae-on-surface) 32%, transparent),
+    inset 0 -1px 1px color-mix(in oklch, var(--cae-on-surface) 12%, transparent);
+}
+
+:root[data-cae-esquema="noche"] .cae-cursor-perla {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--cae-primary) 60%, white),
+    inset 0 -2px 3px color-mix(in oklch, var(--cae-primary) 40%, transparent),
+    0 0 6px color-mix(in oklch, var(--cae-primary) 45%, transparent);
+}
+
+.cae-cursor[data-estado="derrame"] .cae-cursor-perla,
+:root[data-cae-esquema="noche"] .cae-cursor[data-estado="derrame"] .cae-cursor-perla {
+  box-shadow: none;
+}
+
+/* De noche el brillo de tension se recoge y sube: con el canto encendido,
+   un brillo grande convierte la gota en una pastilla. */
+:root[data-cae-esquema="noche"] .cae-cursor-perla::before {
+  left: 26%;
+  top: 14%;
+  width: 26%;
+  height: 18%;
+}
+
+/* El rebote al posarse: la curva `expressive` de Material 3 hecha fisica.
+   UN ciclo y corto. Si se repite, es gelatina. */
+@keyframes cae-cursor-perla-posa {
+  0% {
+    scale: 1.35 0.8;
+  }
+  45% {
+    scale: 0.9 1.1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+.cae-cursor[data-estado="perla"] .cae-cursor-perla {
+  animation: cae-cursor-perla-posa 0.42s cubic-bezier(0.2, 0, 0, 1) 1;
+}
+
+/* El selector universal de la guardia de movimiento reducido NO alcanza a
+   los pseudo-elementos ni a las animaciones declaradas aparte, y `@media`
+   no suma especificidad: un selector desnudo pierde contra una regla mas
+   especifica aunque venga despues en la hoja. El rebote se aplica con
+   `.cae-cursor[data-estado="perla"] .cae-cursor-perla` (0,3,0) y el ritmo
+   del derrame con `.cae-cursor[data-estado=...] ~ .cae-cursor-mancha
+   .cae-cursor-gota` (0,4,0) -- las dos le ganan a `.cae-cursor-perla` o
+   `.cae-cursor-gota` a secas (0,1,0). Por eso cada regla de esta guardia
+   repite el selector EXACTO de lo que apaga: no basta con iguales o
+   despues, hace falta igual o mayor especificidad. (Trampa pagada en B2
+   con `.ficha-k::before`; aqui ademas hay que ganar la especificidad, no
+   solo el orden de la fuente -- medido: sin este espejo, forzando
+   `prefers-reduced-motion` tras el montaje, `.cae-cursor-perla` seguia
+   corriendo `cae-cursor-perla-posa`.) */
+@media (prefers-reduced-motion: reduce) {
+  .cae-cursor-perla,
+  .cae-cursor[data-estado="perla"] .cae-cursor-perla,
+  .cae-cursor-perla::before {
+    animation: none;
+    transition: none;
+  }
+
+  .cae-cursor-gota,
+  .cae-cursor[data-estado="perla"] ~ .cae-cursor-mancha .cae-cursor-gota,
+  .cae-cursor[data-estado="reposo"] ~ .cae-cursor-mancha .cae-cursor-gota,
+  .cae-cursor[data-estado="apagada"] ~ .cae-cursor-mancha .cae-cursor-gota {
+    animation: none;
+    transition: none;
+  }
+}

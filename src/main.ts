@@ -274,6 +274,27 @@ if (theme.id === "caelestia") {
   });
 }
 
+/*
+ * Cursor propio de Caelestia: la gota. Las mismas tres puertas que Vice y
+ * Hyprland — el tema, el perfil de motion y que el puntero sea fino con
+ * hover real. En tactil no hay hover que disparar ningun estado, asi que el
+ * coste correcto ahi es cero, no "cero animacion": la puerta esta ANTES del
+ * `import()`, no dentro del modulo.
+ *
+ * Se monta sin retardo, a diferencia de los otros dos: Caelestia no tiene
+ * leader ni encendido que tapen la pantalla al abrir.
+ */
+let caeCursorHandle: { destroy: () => void } | null = null;
+if (
+  theme.id === "caelestia" &&
+  !prefersReducedMotion &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches
+) {
+  void import("./components/caelestiaCursor").then(({ mountCaelestiaCursor }) => {
+    caeCursorHandle = mountCaelestiaCursor(app);
+  });
+}
+
 let backgroundHandle: BackgroundHandle | null = null;
 void applyTheme(theme, backgroundHost).then((handle) => {
   backgroundHandle = handle;
@@ -298,6 +319,7 @@ window.addEventListener(
     caeShellHandle?.destroy();
     caeObraHandle?.destroy();
     caeCreditosHandle?.destroy();
+    caeCursorHandle?.destroy();
     sceneNavHandle.destroy();
   },
   { once: true },
