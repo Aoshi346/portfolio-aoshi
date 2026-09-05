@@ -466,6 +466,14 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
     window.cancelAnimationFrame(frame);
     controller.abort();
     document.documentElement.classList.remove("caelestia-cursor-ready");
+    /*
+     * Los cercos vivos se retiran POR `retirarCerco`, no con un `remove()`
+     * suelto: es lo unico que ademas cancela su temporizador de respaldo.
+     * Un `remove()` crudo dejaria el nodo fuera del DOM pero el `setTimeout`
+     * de 1200 ms corriendo contra un nodo huerfano y un modulo desmontado.
+     * Se itera sobre una COPIA porque `retirarCerco` borra del propio `Set`.
+     */
+    for (const anillo of Array.from(cercos)) retirarCerco(anillo);
     cursor.remove();
     mancha.remove();
     delete (window as unknown as { __caeCursor__?: unknown }).__caeCursor__;

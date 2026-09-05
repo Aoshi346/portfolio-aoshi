@@ -628,6 +628,51 @@ def gate_contraste(pagina, base: str, mitad: int | None = None) -> None:
         print("  --   [6] perceptibilidad NO medida en esta mitad (la cubre --mitad 1)")
 
 
+def gate_limpieza(pagina, base: str) -> None:
+    """Gate 7 -- `destroy()` no deja nada detras.
+
+    Incluye el caso que se escapa solo: un cerco lanzado JUSTO antes de
+    desmontar. Su animacion dura 800 ms y se limpia en `animationend`; si
+    `destroy()` no se lo lleva, el anillo sobrevive a su modulo, se queda
+    colgado de `host` animandose, y ademas queda vivo el temporizador de
+    respaldo apuntando a un nodo que ya no tiene dueno.
+
+    La partida se comprueba antes de desmontar: sin ese `check` previo, una
+    version que no dejara ningun cerco vivo pasaria el gate sin haber
+    ejercitado nunca el caso que el gate existe para vigilar.
+    """
+    print("[7] limpieza")
+    abre(pagina, base, "obra")
+    pagina.hover(".cae-obra-card", position={"x": 200, "y": 70})
+    pagina.wait_for_timeout(400)
+    pagina.mouse.down()
+    pagina.mouse.up()  # deja un cerco vivo
+    pagina.wait_for_timeout(80)
+    check(
+        pagina.evaluate("() => document.querySelectorAll('.cae-cursor-cerco').length") >= 1,
+        "[7] partida: hay un cerco vivo",
+    )
+
+    pagina.evaluate("() => window.__caeCursor__.destroy()")
+    pagina.wait_for_timeout(200)
+
+    resto = pagina.evaluate(
+        """() => ({
+             nodos: document.querySelectorAll('[class^="cae-cursor"]').length,
+             clase: document.documentElement.classList.contains('caelestia-cursor-ready'),
+             sonda: '__caeCursor__' in window,
+             glifo: getComputedStyle(document.querySelector('.cae-obra-card')).cursor,
+           })"""
+    )
+    check(resto["nodos"] == 0, f"[7] no queda ningun nodo del cursor ({resto['nodos']})")
+    check(not resto["clase"], "[7] la clase ready se retira")
+    check(not resto["sonda"], "[7] la sonda desaparece de window")
+    check(
+        resto["glifo"] == "pointer",
+        f"[7] vuelve el glifo del sistema sobre lo pulsable ({resto['glifo']})",
+    )
+
+
 ARGS = ["--no-sandbox", "--use-gl=swiftshader"]
 
 
@@ -673,6 +718,8 @@ def main() -> int:
             gate_dos_momentos(pagina, args.base)
             gate_rancio(pagina, args.base)
         gate_contraste(pagina, args.base, mitad=args.mitad)
+        if not args.solo_gate6:
+            gate_limpieza(pagina, args.base)
 
         print("[8] consola")
         check(not errores, f"[8] cero errores de consola ({errores[:3]})")
