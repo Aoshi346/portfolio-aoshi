@@ -223,6 +223,22 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
   };
 
   /*
+   * Todo evento de puntero trae `buttons`: nunca hay que fiarse de haber
+   * visto el `pointerup` (el caso mas comun de perderlo: soltar fuera del
+   * viewport, donde `window` no recibe nada). Tiene que correr ANTES de que
+   * `resolver()` lea `pulsado` en el mismo evento -- por eso va primero en
+   * `alEntrar`, no solo en `alMover`: en un `pointerover` que aterriza
+   * directo sobre una diana nueva (el salto de un `hover()`, o un usuario
+   * real que suelta fuera de la ventana y su primer movimiento dentro cae ya
+   * sobre otro elemento), el `pointerover` llega ANTES que cualquier
+   * `pointermove` -- si solo viviera en `alMover`, `resolver()` ya habria
+   * mojado la diana con el `pulsado` viejo para cuando el self-heal corriera.
+   */
+  const sincronizarPulsado = (evento: PointerEvent): void => {
+    if (pulsado && evento.buttons === 0) pulsado = false;
+  };
+
+  /*
    * La posicion se escribe en el propio evento, sin suavizar. Un cursor con
    * inercia miente sobre donde esta el raton, y en Creditos hay 23 dianas
    * contiguas donde eso se lee como retraso. Lo que se interpola es el
@@ -230,23 +246,13 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
    */
   const alMover = (evento: PointerEvent): void => {
     if (evento.pointerType !== "mouse") return;
+    sincronizarPulsado(evento);
     x = evento.clientX;
     y = evento.clientY;
     if (!dentro) {
       dentro = true;
       setEstado(diana ? "perla" : "reposo");
     }
-    /*
-     * Guardia general: nunca nos fiamos de haber visto el `pointerup`. Si
-     * `pulsado` sigue `true` pero el navegador ya no reporta ningun boton
-     * pulsado, el `pointerup` se perdio (el caso mas comun: soltar fuera del
-     * viewport, donde `window` no recibe el evento) y `pulsado` se habria
-     * quedado encendido para siempre, mojando la familia de clic con un
-     * simple roce. Esto cubre CUALQUIER causa de un release no visto, no
-     * solo la de fuera del documento -- por eso es una guardia aparte de la
-     * de `alSalirDelDocumento`.
-     */
-    if (pulsado && evento.buttons === 0) pulsado = false;
     cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   };
 
@@ -268,6 +274,7 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
   const alEntrar = (evento: PointerEvent): void => {
     if (evento.pointerType !== "mouse") return;
     if (!(evento.target instanceof Element)) return;
+    sincronizarPulsado(evento);
     dentro = true;
     resolver(evento.target);
   };
