@@ -308,48 +308,64 @@ def gate_rancio(pagina, base: str) -> None:
     """Gate 5 -- la diana que se va con el raton quieto.
 
     Al cambiar de workspace, el carril se lleva la diana y deja otra escena
-    debajo del puntero, y eso NO emite ningun evento de puntero -- esa es la
-    premisa escrita en el propio modulo. Sin la escucha de
-    `caelestia:workspace` la gota se queda mojada sobre una caja que ya no
-    esta ahi -- una mancha flotando sobre la escena siguiente.
+    debajo del puntero. La premisa escrita en el propio modulo es que eso NO
+    emite ningun evento de puntero, y que por eso hace falta `marcarRancio()`
+    escuchando `caelestia:workspace`. El raton NO se mueve en toda la prueba
+    (el workspace se cambia por TECLADO): si se moviera, `pointerover` lo
+    arreglaria solo y ninguna de las dos familias de abajo mediria nada.
 
-    El raton NO se mueve en toda la prueba: si se moviera, `pointerover` lo
-    arreglaria solo y el gate no mediria nada. Por eso el workspace se cambia
-    por TECLADO.
+    HALLAZGO MEDIDO (no supuesto): esa premisa es FALSA en Chromium para este
+    caso concreto. `aislarInactivos()` pone `inert = true` en la escena
+    saliente en el mismo tick del clic, y Chromium recalcula el hit-test bajo
+    el puntero AUNQUE este no se mueva un pixel: dispara `pointerout`/
+    `pointerleave` nativos y REALES sobre la pieza mojada, medidos a ~50ms del
+    `Enter` -- muy antes de que el carril termine sus 520ms de transicion.
+    Esos eventos llegan al `alEntrar`/`pointerover` normal del modulo (sin
+    pasar nunca por `marcarRancio` ni por `stale`) y curan el estado solos.
+    En este motor, la via nativa gana la carrera y la escucha de
+    `caelestia:workspace` del modulo es defensa en profundidad, no la unica
+    via -- ver el comentario junto a esa escucha en `caelestiaCursor.ts`
+    sobre por que se queda de todos modos.
 
-    LA TRAMPA QUE CASI CUELA EL GATE SIN AISLAR: la premisa de arriba es
-    FALSA en Chromium para este caso concreto. `aislarInactivos()` pone
-    `inert = true` en la escena saliente en el mismo tick del clic, y
-    Chromium recalcula el hit-test bajo el puntero AUNQUE este no se mueva un
-    pixel -- dispara `pointerout`/`pointerleave` nativos y REALES sobre la
-    pieza mojada, con target la pieza y sus ancestros. Esos eventos llegan al
-    `alEntrar`/`pointerover` del propio modulo (via el listener normal, sin
-    pasar por `marcarRancio` ni por `stale`) y curan el estado solos. Medido
-    sin este bloqueo: la sonda vuelve a estado limpio incluso con la escucha
-    de `caelestia:workspace` retirada por completo del modulo -- el sabotaje
-    de la Task 6 no daba rojo. Es el mismo defecto que las nueve aserciones
-    tautologicas ya cazadas en este proyecto (`Aserciones que no pueden
-    fallar`): el gate media un mecanismo (el hit-test nativo de Chromium) que
-    no es el que este dispositivo dice defender.
+    Eso deja el gate con DOS caminos que probar, y ninguno sobra:
 
-    Por eso, antes de disparar el cambio de workspace, se bloquean en fase de
-    CAPTURA sobre `window` los cinco tipos de evento de puntero relacionados
-    con hover (`pointerover/out/leave/enter/move`) con
-    `stopImmediatePropagation()`. Un listener de captura en `window` es el
-    primer paso del recorrido del evento: pararlo ahi impide que llegue a
-    NINGUN listener mas abajo, nativo o del modulo, capa o burbuja -- aisla
-    el mecanismo bajo prueba (`marcarRancio` -> `stale` -> `tick()` ->
-    `elementFromPoint`) de cualquier curacion que el navegador pudiera dar
-    gratis. Verificado en los dos sentidos antes de escribir el gate: con el
-    modulo intacto y el bloqueo puesto, la diana se suelta igual (la via que
-    SI se quiere probar); con la escucha retirada y el mismo bloqueo, la
-    diana se queda mojada y `mancha()` en 1 -- la sabotage ahora si da rojo.
+    - Family A (abajo, "mecanismo propio"): con los eventos de puntero
+      relacionados con hover BLOQUEADOS en fase de CAPTURA sobre `window`
+      (`stopImmediatePropagation()`, el primer paso del recorrido del
+      evento -- para ahi y no llega a NINGUN listener mas abajo, nativo o
+      del modulo). Aisla `marcarRancio -> stale -> tick() ->
+      elementFromPoint` de la curacion nativa, y es la unica manera de que
+      el sabotaje (retirar esa escucha) de verdad rojo: sin este bloqueo, el
+      `pointerout` nativo cura el estado incluso con la escucha
+      completamente ausente del bundle, y el gate pasa siempre -- medido:
+      esa fue la version que escribi primero y no fallaba con el sabotaje.
+      Es el mismo defecto que las nueve aserciones tautologicas ya cazadas
+      en este proyecto (`Aserciones que no pueden fallar`).
+    - Family B (nueva en esta ronda, "camino del visitante"): la MISMA
+      escena, sin bloquear nada -- las condiciones reales, donde Chromium
+      cura el estado por su cuenta. Sin esta familia el gate solo prueba
+      "si el navegador no curara, el modulo curaria", que es una propiedad
+      real del modulo pero NUNCA es lo que un visitante de Chromium
+      experimenta. Es la leccion de B4 con los papeles cambiados: "un gate
+      que solo mide la rama degradada no vigila el camino que ve el
+      visitante" -- aqui la rama que faltaba no era la degradada, era la
+      real.
+
+    Las dos familias afirman el mismo estado final (diana suelta, mancha
+    seca, fuera de "derrame"); lo que cambia es SI se bloquea la curacion
+    nativa, y las etiquetas de cada `check` lo dicen para que nadie las
+    confunda leyendo el log.
     """
     print("[5] estado rancio tras cambiar de workspace")
+
+    # ---- Family A: mecanismo propio, con la sanacion nativa suprimida ----
     abre(pagina, base, "creditos")
     pagina.hover(".cae-cred-pieza:nth-child(3)")
     pagina.wait_for_timeout(700)
-    check(estado(pagina) == "derrame", "[5] partida: la pieza esta mojada")
+    check(
+        estado(pagina) == "derrame",
+        "[5-A] partida (mecanismo propio, sin sanacion nativa): la pieza esta mojada",
+    )
 
     pagina.evaluate(
         """() => {
@@ -368,12 +384,15 @@ def gate_rancio(pagina, base: str) -> None:
 
     check(
         pagina.evaluate("() => window.__caeCursor__.diana() === null"),
-        "[5] tras cambiar de workspace la diana mojada se suelta",
+        "[5-A] mecanismo propio, sin sanacion nativa: la diana mojada se suelta",
     )
-    check(estado(pagina) != "derrame", f"[5] la gota deja de estar derramada ({estado(pagina)})")
+    check(
+        estado(pagina) != "derrame",
+        f"[5-A] mecanismo propio, sin sanacion nativa: la gota deja de estar derramada ({estado(pagina)})",
+    )
     check(
         pagina.evaluate("() => window.__caeCursor__.mancha()") == 0,
-        "[5] la mancha queda seca",
+        "[5-A] mecanismo propio, sin sanacion nativa: la mancha queda seca",
     )
 
     pagina.evaluate(
@@ -383,6 +402,35 @@ def gate_rancio(pagina, base: str) -> None:
              }
              delete window.__caeGateBloqueo;
            }"""
+    )
+
+    # ---- Family B: camino del visitante, nada bloqueado ----
+    # Misma escena desde cero: el cambio de workspace de la Family A ya dejo
+    # la pagina en "contacto", asi que se vuelve a mojar la pieza de
+    # Creditos antes de repetir el cambio, esta vez sin ningun bloqueo.
+    abre(pagina, base, "creditos")
+    pagina.hover(".cae-cred-pieza:nth-child(3)")
+    pagina.wait_for_timeout(700)
+    check(
+        estado(pagina) == "derrame",
+        "[5-B] partida (camino del visitante, nada bloqueado): la pieza esta mojada",
+    )
+
+    pagina.evaluate("() => document.querySelectorAll('.cae-ws')[4].focus()")
+    pagina.keyboard.press("Enter")
+    pagina.wait_for_timeout(1500)
+
+    check(
+        pagina.evaluate("() => window.__caeCursor__.diana() === null"),
+        "[5-B] camino del visitante, nada bloqueado: la diana mojada se suelta",
+    )
+    check(
+        estado(pagina) != "derrame",
+        f"[5-B] camino del visitante, nada bloqueado: la gota deja de estar derramada ({estado(pagina)})",
+    )
+    check(
+        pagina.evaluate("() => window.__caeCursor__.mancha()") == 0,
+        "[5-B] camino del visitante, nada bloqueado: la mancha queda seca",
     )
 
 

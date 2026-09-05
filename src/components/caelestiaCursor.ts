@@ -396,6 +396,26 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
   window.addEventListener("resize", marcarRancio, { passive: true, signal });
   document.addEventListener("scroll", marcarRancio, { passive: true, capture: true, signal });
   document.addEventListener("pointerleave", alSalirDelDocumento, { passive: true, signal });
+  /*
+   * Medido en Chromium (`scripts/measure-caelestia-cursor.py`, gate 5): al
+   * cambiar de workspace, `aislarInactivos()` pone `inert = true` en la
+   * escena saliente y el navegador dispara `pointerout`/`pointerleave`
+   * NATIVOS y reales sobre la diana mojada, sin que el raton se mueva --
+   * esos eventos llegan a `alEntrar` y curan el estado solos, mas rapido de
+   * lo que tarda esta escucha en disparar. En este motor la via nativa gana
+   * la carrera y esta escucha es defensa en profundidad, no la unica via.
+   *
+   * Se queda de todos modos, por dos razones -- no es codigo muerto:
+   * 1. El mismo `marcarRancio` tambien sirve a `scroll` y a `resize`, que
+   *    NO tienen sanacion nativa ninguna: no es una escucha de un solo uso
+   *    que se pueda aislar y quitar.
+   * 2. La sanacion nativa de arriba es incidental: depende de que la fase A
+   *    elija marcar `inert` las escenas inactivas. Un cambio futuro que
+   *    mueva el carril sin `inert`, o un motor que no dispare `pointerout`
+   *    ante ese cambio, se lleva la sanacion por delante en silencio -- y el
+   *    modo de fallo es una mancha pintada sobre la escena siguiente, que es
+   *    justo lo que este dispositivo no puede hacer nunca.
+   */
   document.documentElement.addEventListener("caelestia:workspace", marcarRancio, {
     passive: true,
     signal,
