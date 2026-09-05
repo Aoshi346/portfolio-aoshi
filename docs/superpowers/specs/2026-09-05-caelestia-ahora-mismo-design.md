@@ -1,6 +1,6 @@
 # Caelestia — la tarjeta «Ahora mismo», rediseño
 
-Estado: pendiente de plan
+Estado: en ejecucion
 Fecha: 2026-09-05
 Rama de trabajo: `fix/repaso-interfaces` (se abrirá rama propia `design/caelestia-ahora-mismo` al planificar)
 Origen: sesión de repaso de interfaces con Aoshi. Reabre una pieza cerrada en
