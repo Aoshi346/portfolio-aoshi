@@ -3529,6 +3529,44 @@
      `font-mono` de Tailwind filtran `ui-monospace`. */
   --font-mono: "Martian Mono", ui-monospace, monospace;
 
+  /*
+   * La escala tipografica, los MISMOS diez pasos que Vice y Hyprland: cuarta,
+   * razon 1,333, base 16, suelo duro 12.
+   *
+   * NO estaba declarada para Caelestia, y esa es la razon de que el tema
+   * escribiera catorce tamanos a pelo en px: `var(--t-N)` no resolvia a nada,
+   * asi que usarla era imposible. El defecto se documento en la fase B5 como
+   * «14 de los 16 tamanos no salen de la escala»; esta es su causa.
+   *
+   * Comprobado al declararla: ninguna regla de Caelestia anterior a B5 consume
+   * `var(--t-N)`, asi que anadir los tokens no mueve un solo pixel de lo ya
+   * pintado — solo hace posible dejar de escribir literales.
+   *
+   * Las dos reglas de la escala valen aqui igual que en los otros dos temas:
+   *   1. Todo clamp() lleva LOS DOS extremos en pasos de esta escala.
+   *   2. Maximo cuatro tamanos por encuadre.
+   */
+  --t-1: 12px;
+  --t-2: 16px;
+  --t-3: 21.33px;
+  --t-4: 28.43px;
+  --t-5: 37.9px;
+  --t-6: 50.52px;
+  --t-7: 67.4px;
+  --t-8: 89.85px;
+  --t-9: 119.77px;
+  --t-10: 159.66px;
+  /*
+   * `--t-0`: UN ESCALON POR DEBAJO DEL SUELO (`--t-1`, 12px), en la misma
+   * razon de la escala (1,333): 12 / 1,333 = 9px. El suelo de `--t-1` es para
+   * texto de LECTURA corrida; esto no lo es — existe solo para la rotulacion
+   * mono de Fundido (la esquina, el rotulo de acto/destino, el estado), que
+   * es una palabra en versalitas, no un parrafo. Antes de este token esos tres
+   * sitios llevaban literales sin declarar (10px, 9px, 9.5px) — la sexta vez
+   * que ese defecto aparecia en el proyecto. No usar para texto de lectura.
+   */
+  --t-0: 9px;
+
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
   --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
   /*
@@ -3545,6 +3583,22 @@
    * lee a 15-30px y necesita el dibujo de texto.
    */
   --cae-display-axes-cartel: "opsz" 144, "wght" 900, "SOFT" 0, "WONK" 1;
+
+  /*
+   * La voz de TEXTO. Es el literal que B1 y B2 ya escribian a mano en tres
+   * reglas — la firma, el widget «Ahora mismo» y la frase de la ficha — y que
+   * NO coincide con `--cae-display-axes`, que dice 900. Ponerle nombre no
+   * cambia un pixel: es el mismo valor, escrito una vez.
+   */
+  --cae-display-axes-texto: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+
+  /*
+   * La voz de CIERRE, y solo se usa en un sitio de todo el sitio: la frase de
+   * «Fundido» (B5). `SOFT` a 100 redondea los angulos de los remates — la
+   * misma familia hablando bajo. Si se usara en dos sitios deja de significar
+   * «esto se acaba».
+   */
+  --cae-display-axes-cierre: "opsz" 144, "wght" 300, "SOFT" 100, "WONK" 1;
 
   --radius-card: 22px;
   --display-tracking: -0.03em;
@@ -3946,7 +4000,7 @@
   /* Los ejes del SHELL, no los del cartel: aqui se lee a 30px. Y `nowrap`
      porque esta linea es el destino del trazo de la entrada — si partiera en
      dos, el aterrizaje no cuadraria. */
-  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-variation-settings: var(--cae-display-axes-texto);
   font-size: 30px;
   line-height: 1;
   letter-spacing: -0.015em;
@@ -3988,7 +4042,7 @@
 :root[data-theme="caelestia"] .cae-v2 {
   display: block;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-variation-settings: var(--cae-display-axes-texto);
   font-size: 26px;
   line-height: 1;
   font-feature-settings: "tnum";
@@ -4101,7 +4155,7 @@
 :root[data-theme="caelestia"] .cae-wnow {
   margin: 12px 0 2px;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-variation-settings: var(--cae-display-axes-texto);
   font-size: 20px;
   line-height: 1.15;
 }
@@ -4916,6 +4970,678 @@
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="caelestia"] [data-cred-entrando] .cae-cred-fig {
     animation: none;
+  }
+}
+
+/*
+ * ===================================================================
+ * FUNDIDO (fase B5) — la contraportada del escritorio
+ *
+ * Es la UNICA de las cinco escenas que invierte a un campo de color: las
+ * otras cuatro son ventanas de aplicacion sobre el escritorio, esta es una
+ * superficie `--cae-primary` a sangre. Eso es lo que la hace legible como
+ * final sin que nadie lo explique.
+ *
+ * La excepcion al panel opaco generico de la fase A es deliberada, igual que
+ * la de `[data-scene="hero"]`, y esta acotada a esta escena.
+ * ===================================================================
+ */
+:root[data-theme="caelestia"] main[data-cae-track] > [data-scene="contacto"] {
+  background: var(--cae-primary);
+  color: var(--cae-on-primary);
+  /*
+   * `overflow: clip`, EN LOS DOS EJES, Y CON ESTE SELECTOR MAS ESPECIFICO A
+   * PROPOSITO. Dos motivos distintos:
+   *
+   * EJE X: el troquel sangra 10 px por el canto derecho (`.cae-fundido-
+   * troquel`, mas abajo); sin recortarlo esos 10 px generan barra horizontal.
+   *
+   * EJE Y: cada ventana del carril es su propio contenedor de scroll —
+   * `overflow-y: auto` en `main[data-cae-track] > *` (fase A, no se toca) —
+   * porque cada escena puede llevar mas contenido del que cabe en 748px. Esta
+   * escena no: en reposo `scrollHeight == clientHeight` (748 == 748, medido,
+   * sin nada que perder), pero el campo de color crecido (`.cae-fundido-
+   * campo`, en `scale(6.38)` a 1440) SI cuenta como desbordamiento por
+   * transform y sube el `scrollHeight` a 1813 — sin este `overflow: clip` el
+   * "app window" de Contacto se vuelve arrastrable de verdad, con una barra
+   * de scroll nativa que ensena metros de `--cae-primary` liso donde no hay
+   * nada. Comprobado con Playwright (`canScroll: true` antes de esta regla,
+   * `false` despues) y con captura (scroll a 600px: pared de color, sin
+   * contenido).
+   *
+   * EL SELECTOR IMPORTA. La regla generica en `[data-scene="contacto"]` (mas
+   * abajo) tiene MENOS especificidad que `main[data-cae-track] > *` (fase A):
+   * un `overflow-x: clip` ahi con el eje Y todavia en su `auto` heredado de
+   * fase A no evita el scroll, solo lo esconde a medias. Este selector
+   * (`main[data-cae-track] > [data-scene="contacto"]`) iguala la forma del de
+   * fase A y le gana en especificidad, asi que los dos ejes quedan resueltos
+   * aqui, sin tocar la regla de fase A y sin afectar a las otras cuatro
+   * escenas (que siguen con su scroll propio intacto).
+   */
+  overflow: clip;
+}
+
+/*
+ * El atenuado del cierre. UN NUMERO CALIBRADO CONTRA UNA SUPERFICIE, no un
+ * porcentaje suelto: 0,82 sobre `--cae-primary` da 4,80:1 en el peor de los
+ * 288 pasos del dia. A 0,72 caia a 4,08:1 y no llegaba a AA; el suelo exacto
+ * esta en 0,78 (4,50:1, sin margen).
+ *
+ * SI ESTO SE REUTILIZA SOBRE OTRA SUPERFICIE, HAY QUE VOLVER A MEDIRLO. Una
+ * opacidad es un porcentaje de un fondo concreto: llevarse el numero es no
+ * llevarse nada. Misma regla que `--nav-dim`.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] {
+  --fundido-dim: 0.82;
+  display: flex;
+  flex-direction: column;
+  padding: 2.125rem 3.25rem 1.875rem;
+  min-height: 0;
+}
+
+/* El antetitulo y el estado se apagan: en la contraportada el rotulo de
+   seccion lo lleva la esquina, y el estado baja al pie. */
+:root[data-theme="caelestia"] [data-scene="contacto"] .hero-kick,
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado-label,
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado-sep {
+  display: none;
+}
+
+/*
+ * EL TITULAR DE CIERRE. `--t-10` no sale a ojo: la linea larga mide 530 px
+ * sobre un hueco libre de 858, asi que el techo no lo pone el troquel — lo
+ * decide la ocupacion. A `--t-8` la frase flota en el campo de color.
+ *
+ * Un PASO de la escala, nunca un `clamp()` ni un `vw`: una funcion continua
+ * devuelve cualquier real entre sus topes y se esconde justo en 390 y 1440,
+ * que es donde se mira.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-variation-settings: var(--cae-display-axes-cierre);
+  font-size: var(--t-10);
+  line-height: 0.88;
+  letter-spacing: -0.028em;
+  margin: 0;
+  max-width: 48.75rem;
+  /* Mismo motivo que `.cae-fundido-corn`: por encima del campo (1), al nivel
+     del troquel (2), para que el titular siga siendo lo que se ve. */
+  position: relative;
+  z-index: 2;
+}
+
+/* «Hablemos» desaparece: el titular de la escena es la invitacion, y dos
+   titulares seguidos se estorban. El `h2` sigue en el arbol para los lectores
+   de pantalla — se oculta visualmente, no semanticamente. */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * `position: relative` NO es decorativo: el troquel de la tarea siguiente es
+ * absoluto y necesita un ancestro posicionado. Sin esto se colocaria contra la
+ * seccion, que lleva la clase `relative` de Tailwind desde `contacto.ts` —
+ * funcionaria por accidente y se romperia el dia que alguien quitase esa clase.
+ *
+ * Y `flex-direction: column` tampoco: sin ella la banda apila en FILA, que es
+ * el valor por defecto, y el titular y el estado quedan uno al lado del otro.
+ * A 1440 solo se ve raro; a 390 no hay sitio y «Disponible» se sale 37 px por
+ * la derecha. Lo cazo la comprobacion de desborde, que mide palabra a palabra.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+  min-height: 0;
+}
+
+/* El encabezado corrido de la contraportada. Lo monta el modulo, no el
+   marcado compartido: ese DOM lo comparten los tres temas.
+   `position: relative; z-index: 2`: EL CAMPO CRECE MAS ALLA DE SU CAJA Y
+   LLEGA A TAPAR LECTURA. Un elemento posicionado con z-index positivo
+   (`.cae-fundido-campo`, 1) pinta por ENCIMA del contenido en flujo normal
+   aunque ese contenido este antes en el DOM — comprobado con Playwright: sin
+   este nivel, `elementFromPoint` sobre esta cabecera devolvia el campo, no la
+   cabecera. Mismo nivel que el troquel (2), que ya convive con el texto. */
+:root[data-theme="caelestia"] .cae-fundido-corn {
+  display: flex;
+  align-items: baseline;
+  gap: 1.125rem;
+  margin: 0 0 1.375rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid currentColor;
+  font-family: var(--font-mono);
+  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
+     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  font-size: var(--t-0);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: var(--fundido-dim);
+  position: relative;
+  z-index: 2;
+}
+
+:root[data-theme="caelestia"] .cae-fundido-corn-der {
+  margin-left: auto;
+}
+
+/*
+ * EL CAMPO DE COLOR. La MISMA figura que el troquel, en la MISMA posicion —
+ * un solo mecanismo en dos direcciones, no dos efectos sueltos. Crece desde
+ * su tamano natural (identico al troquel) hasta tapar toda la ventana
+ * (`factorCrecimiento`, en `caelestia.fundido.ts`), pintado en `--cae-primary`
+ * — el mismo color que ya tiene el fondo de la escena.
+ *
+ * `z-index: 1`, POR DEBAJO del troquel (2) y por debajo de todo el contenido
+ * de lectura (`corn`, `contacto-lead`, `contacto-bars`, `contacto-estado`):
+ * esos elementos llevan su propio `z-index` mas abajo para quedar SIEMPRE
+ * por encima aunque el campo, ya crecido, ocupe geometricamente todo el
+ * hueco donde viven.
+ */
+:root[data-theme="caelestia"] .cae-fundido-campo {
+  position: absolute;
+  right: -3.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28.75rem;
+  height: 28.75rem;
+  z-index: 1;
+  background: var(--cae-primary);
+  clip-path: polygon(94.58% 50.00%, 94.59% 51.17%, 94.65% 52.34%, 94.82% 53.53%, 95.19% 54.75%, 95.77% 56.03%, 96.53% 57.37%, 97.34% 58.77%, 98.02% 60.21%, 98.39% 61.62%, 98.30% 62.94%, 97.71% 64.13%, 96.69% 65.17%, 95.39% 66.07%, 93.98% 66.88%, 92.65% 67.67%, 91.51% 68.48%, 90.58% 69.36%, 89.84% 70.30%, 89.20% 71.28%, 88.61% 72.29%, 88.03% 73.31%, 87.50% 74.35%, 87.05% 75.47%, 86.76% 76.71%, 86.63% 78.11%, 86.61% 79.65%, 86.61% 81.27%, 86.48% 82.85%, 86.09% 84.25%, 85.36% 85.36%, 84.25% 86.09%, 82.85% 86.48%, 81.27% 86.61%, 79.65% 86.61%, 78.11% 86.63%, 76.71% 86.76%, 75.47% 87.05%, 74.35% 87.50%, 73.31% 88.03%, 72.29% 88.61%, 71.28% 89.20%, 70.30% 89.84%, 69.36% 90.58%, 68.48% 91.51%, 67.67% 92.65%, 66.88% 93.98%, 66.07% 95.39%, 65.17% 96.69%, 64.13% 97.71%, 62.94% 98.30%, 61.62% 98.39%, 60.21% 98.02%, 58.77% 97.34%, 57.37% 96.53%, 56.03% 95.77%, 54.75% 95.19%, 53.53% 94.82%, 52.34% 94.65%, 51.17% 94.59%, 50.00% 94.58%, 48.83% 94.59%, 47.66% 94.65%, 46.47% 94.82%, 45.25% 95.19%, 43.97% 95.77%, 42.63% 96.53%, 41.23% 97.34%, 39.79% 98.02%, 38.38% 98.39%, 37.06% 98.30%, 35.87% 97.71%, 34.83% 96.69%, 33.93% 95.39%, 33.12% 93.98%, 32.33% 92.65%, 31.52% 91.51%, 30.64% 90.58%, 29.70% 89.84%, 28.72% 89.20%, 27.71% 88.61%, 26.69% 88.03%, 25.65% 87.50%, 24.53% 87.05%, 23.29% 86.76%, 21.89% 86.63%, 20.35% 86.61%, 18.73% 86.61%, 17.15% 86.48%, 15.75% 86.09%, 14.64% 85.36%, 13.91% 84.25%, 13.52% 82.85%, 13.39% 81.27%, 13.39% 79.65%, 13.37% 78.11%, 13.24% 76.71%, 12.95% 75.47%, 12.50% 74.35%, 11.97% 73.31%, 11.39% 72.29%, 10.80% 71.28%, 10.16% 70.30%, 9.42% 69.36%, 8.49% 68.48%, 7.35% 67.67%, 6.02% 66.88%, 4.61% 66.07%, 3.31% 65.17%, 2.29% 64.13%, 1.70% 62.94%, 1.61% 61.62%, 1.98% 60.21%, 2.66% 58.77%, 3.47% 57.37%, 4.23% 56.03%, 4.81% 54.75%, 5.18% 53.53%, 5.35% 52.34%, 5.41% 51.17%, 5.42% 50.00%, 5.41% 48.83%, 5.35% 47.66%, 5.18% 46.47%, 4.81% 45.25%, 4.23% 43.97%, 3.47% 42.63%, 2.66% 41.23%, 1.98% 39.79%, 1.61% 38.38%, 1.70% 37.06%, 2.29% 35.87%, 3.31% 34.83%, 4.61% 33.93%, 6.02% 33.12%, 7.35% 32.33%, 8.49% 31.52%, 9.42% 30.64%, 10.16% 29.70%, 10.80% 28.72%, 11.39% 27.71%, 11.97% 26.69%, 12.50% 25.65%, 12.95% 24.53%, 13.24% 23.29%, 13.37% 21.89%, 13.39% 20.35%, 13.39% 18.73%, 13.52% 17.15%, 13.91% 15.75%, 14.64% 14.64%, 15.75% 13.91%, 17.15% 13.52%, 18.73% 13.39%, 20.35% 13.39%, 21.89% 13.37%, 23.29% 13.24%, 24.53% 12.95%, 25.65% 12.50%, 26.69% 11.97%, 27.71% 11.39%, 28.72% 10.80%, 29.70% 10.16%, 30.64% 9.42%, 31.52% 8.49%, 32.33% 7.35%, 33.12% 6.02%, 33.93% 4.61%, 34.83% 3.31%, 35.87% 2.29%, 37.06% 1.70%, 38.38% 1.61%, 39.79% 1.98%, 41.23% 2.66%, 42.63% 3.47%, 43.97% 4.23%, 45.25% 4.81%, 46.47% 5.18%, 47.66% 5.35%, 48.83% 5.41%, 50.00% 5.42%, 51.17% 5.41%, 52.34% 5.35%, 53.53% 5.18%, 54.75% 4.81%, 56.03% 4.23%, 57.37% 3.47%, 58.77% 2.66%, 60.21% 1.98%, 61.62% 1.61%, 62.94% 1.70%, 64.13% 2.29%, 65.17% 3.31%, 66.07% 4.61%, 66.88% 6.02%, 67.67% 7.35%, 68.48% 8.49%, 69.36% 9.42%, 70.30% 10.16%, 71.28% 10.80%, 72.29% 11.39%, 73.31% 11.97%, 74.35% 12.50%, 75.47% 12.95%, 76.71% 13.24%, 78.11% 13.37%, 79.65% 13.39%, 81.27% 13.39%, 82.85% 13.52%, 84.25% 13.91%, 85.36% 14.64%, 86.09% 15.75%, 86.48% 17.15%, 86.61% 18.73%, 86.61% 20.35%, 86.63% 21.89%, 86.76% 23.29%, 87.05% 24.53%, 87.50% 25.65%, 88.03% 26.69%, 88.61% 27.71%, 89.20% 28.72%, 89.84% 29.70%, 90.58% 30.64%, 91.51% 31.52%, 92.65% 32.33%, 93.98% 33.12%, 95.39% 33.93%, 96.69% 34.83%, 97.71% 35.87%, 98.30% 37.06%, 98.39% 38.38%, 98.02% 39.79%, 97.34% 41.23%, 96.53% 42.63%, 95.77% 43.97%, 95.19% 45.25%, 94.82% 46.47%, 94.65% 47.66%, 94.59% 48.83%);
+}
+
+/*
+ * EL TROQUEL. Una figura de Material 3 recortando el escritorio sobre el campo
+ * de color, como el hueco de una contraportada por el que se ve la guarda.
+ *
+ * La caja es CUADRADA obligatoriamente: un `polygon()` en % en una caja alta
+ * no es una figura, es una mancha. Lo aprendio B2 con el retrato.
+ */
+:root[data-theme="caelestia"] .cae-fundido-troquel {
+  position: absolute;
+  /* Sangra 10 px por el canto de la ventana: 3.25rem (52px, el relleno
+     derecho de la escena, linea 4630) + 0.625rem (10px de sangrado). */
+  right: -3.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28.75rem;
+  height: 28.75rem;
+  z-index: 2;
+  overflow: hidden;
+  background: var(--cae-surface);
+  /* La galleta: 12 lobulos, 24,9 px de relieve a 460. */
+  clip-path: polygon(94.58% 50.00%, 94.59% 51.17%, 94.65% 52.34%, 94.82% 53.53%, 95.19% 54.75%, 95.77% 56.03%, 96.53% 57.37%, 97.34% 58.77%, 98.02% 60.21%, 98.39% 61.62%, 98.30% 62.94%, 97.71% 64.13%, 96.69% 65.17%, 95.39% 66.07%, 93.98% 66.88%, 92.65% 67.67%, 91.51% 68.48%, 90.58% 69.36%, 89.84% 70.30%, 89.20% 71.28%, 88.61% 72.29%, 88.03% 73.31%, 87.50% 74.35%, 87.05% 75.47%, 86.76% 76.71%, 86.63% 78.11%, 86.61% 79.65%, 86.61% 81.27%, 86.48% 82.85%, 86.09% 84.25%, 85.36% 85.36%, 84.25% 86.09%, 82.85% 86.48%, 81.27% 86.61%, 79.65% 86.61%, 78.11% 86.63%, 76.71% 86.76%, 75.47% 87.05%, 74.35% 87.50%, 73.31% 88.03%, 72.29% 88.61%, 71.28% 89.20%, 70.30% 89.84%, 69.36% 90.58%, 68.48% 91.51%, 67.67% 92.65%, 66.88% 93.98%, 66.07% 95.39%, 65.17% 96.69%, 64.13% 97.71%, 62.94% 98.30%, 61.62% 98.39%, 60.21% 98.02%, 58.77% 97.34%, 57.37% 96.53%, 56.03% 95.77%, 54.75% 95.19%, 53.53% 94.82%, 52.34% 94.65%, 51.17% 94.59%, 50.00% 94.58%, 48.83% 94.59%, 47.66% 94.65%, 46.47% 94.82%, 45.25% 95.19%, 43.97% 95.77%, 42.63% 96.53%, 41.23% 97.34%, 39.79% 98.02%, 38.38% 98.39%, 37.06% 98.30%, 35.87% 97.71%, 34.83% 96.69%, 33.93% 95.39%, 33.12% 93.98%, 32.33% 92.65%, 31.52% 91.51%, 30.64% 90.58%, 29.70% 89.84%, 28.72% 89.20%, 27.71% 88.61%, 26.69% 88.03%, 25.65% 87.50%, 24.53% 87.05%, 23.29% 86.76%, 21.89% 86.63%, 20.35% 86.61%, 18.73% 86.61%, 17.15% 86.48%, 15.75% 86.09%, 14.64% 85.36%, 13.91% 84.25%, 13.52% 82.85%, 13.39% 81.27%, 13.39% 79.65%, 13.37% 78.11%, 13.24% 76.71%, 12.95% 75.47%, 12.50% 74.35%, 11.97% 73.31%, 11.39% 72.29%, 10.80% 71.28%, 10.16% 70.30%, 9.42% 69.36%, 8.49% 68.48%, 7.35% 67.67%, 6.02% 66.88%, 4.61% 66.07%, 3.31% 65.17%, 2.29% 64.13%, 1.70% 62.94%, 1.61% 61.62%, 1.98% 60.21%, 2.66% 58.77%, 3.47% 57.37%, 4.23% 56.03%, 4.81% 54.75%, 5.18% 53.53%, 5.35% 52.34%, 5.41% 51.17%, 5.42% 50.00%, 5.41% 48.83%, 5.35% 47.66%, 5.18% 46.47%, 4.81% 45.25%, 4.23% 43.97%, 3.47% 42.63%, 2.66% 41.23%, 1.98% 39.79%, 1.61% 38.38%, 1.70% 37.06%, 2.29% 35.87%, 3.31% 34.83%, 4.61% 33.93%, 6.02% 33.12%, 7.35% 32.33%, 8.49% 31.52%, 9.42% 30.64%, 10.16% 29.70%, 10.80% 28.72%, 11.39% 27.71%, 11.97% 26.69%, 12.50% 25.65%, 12.95% 24.53%, 13.24% 23.29%, 13.37% 21.89%, 13.39% 20.35%, 13.39% 18.73%, 13.52% 17.15%, 13.91% 15.75%, 14.64% 14.64%, 15.75% 13.91%, 17.15% 13.52%, 18.73% 13.39%, 20.35% 13.39%, 21.89% 13.37%, 23.29% 13.24%, 24.53% 12.95%, 25.65% 12.50%, 26.69% 11.97%, 27.71% 11.39%, 28.72% 10.80%, 29.70% 10.16%, 30.64% 9.42%, 31.52% 8.49%, 32.33% 7.35%, 33.12% 6.02%, 33.93% 4.61%, 34.83% 3.31%, 35.87% 2.29%, 37.06% 1.70%, 38.38% 1.61%, 39.79% 1.98%, 41.23% 2.66%, 42.63% 3.47%, 43.97% 4.23%, 45.25% 4.81%, 46.47% 5.18%, 47.66% 5.35%, 48.83% 5.41%, 50.00% 5.42%, 51.17% 5.41%, 52.34% 5.35%, 53.53% 5.18%, 54.75% 4.81%, 56.03% 4.23%, 57.37% 3.47%, 58.77% 2.66%, 60.21% 1.98%, 61.62% 1.61%, 62.94% 1.70%, 64.13% 2.29%, 65.17% 3.31%, 66.07% 4.61%, 66.88% 6.02%, 67.67% 7.35%, 68.48% 8.49%, 69.36% 9.42%, 70.30% 10.16%, 71.28% 10.80%, 72.29% 11.39%, 73.31% 11.97%, 74.35% 12.50%, 75.47% 12.95%, 76.71% 13.24%, 78.11% 13.37%, 79.65% 13.39%, 81.27% 13.39%, 82.85% 13.52%, 84.25% 13.91%, 85.36% 14.64%, 86.09% 15.75%, 86.48% 17.15%, 86.61% 18.73%, 86.61% 20.35%, 86.63% 21.89%, 86.76% 23.29%, 87.05% 24.53%, 87.50% 25.65%, 88.03% 26.69%, 88.61% 27.71%, 89.20% 28.72%, 89.84% 29.70%, 90.58% 30.64%, 91.51% 31.52%, 92.65% 32.33%, 93.98% 33.12%, 95.39% 33.93%, 96.69% 34.83%, 97.71% 35.87%, 98.30% 37.06%, 98.39% 38.38%, 98.02% 39.79%, 97.34% 41.23%, 96.53% 42.63%, 95.77% 43.97%, 95.19% 45.25%, 94.82% 46.47%, 94.65% 47.66%, 94.59% 48.83%);
+}
+
+:root[data-theme="caelestia"] .cae-fundido-troquel::before {
+  content: "";
+  position: absolute;
+  width: 150%;
+  height: 150%;
+  left: -25%;
+  top: -30%;
+  background:
+    radial-gradient(circle at 40% 45%, var(--cae-wall-1) 0%, transparent 62%),
+    radial-gradient(circle at 78% 76%, var(--cae-wall-2) 0%, transparent 58%);
+}
+
+:root[data-theme="caelestia"] .cae-fundido-nube,
+:root[data-theme="caelestia"] .cae-fundido-suelo,
+:root[data-theme="caelestia"] .cae-fundido-bicho {
+  position: absolute;
+  display: block;
+}
+
+:root[data-theme="caelestia"] .cae-fundido-nube {
+  left: 17%;
+  top: 18%;
+  width: 7.75rem;
+}
+
+:root[data-theme="caelestia"] .cae-fundido-nube svg { width: 100%; height: auto; display: block; fill: var(--cae-outline); }
+:root[data-theme="caelestia"] .cae-fundido-suelo { left: 6%; right: 6%; bottom: 30%; transform-origin: 0 50%; }
+:root[data-theme="caelestia"] .cae-fundido-suelo svg { width: 100%; height: auto; display: block; fill: var(--cae-on-surface-variant); }
+:root[data-theme="caelestia"] .cae-fundido-bicho { left: 50%; bottom: 30%; width: 13.125rem; margin-left: -6.5625rem; }
+:root[data-theme="caelestia"] .cae-fundido-bicho svg { width: 100%; height: auto; display: block; }
+:root[data-theme="caelestia"] .cae-dino-cuerpo { fill: var(--cae-on-surface); }
+:root[data-theme="caelestia"] .cae-dino-ojo { fill: var(--cae-surface); transition: fill 0.3s; }
+
+/* El titular partido en lineas: cada una es una caja propia para poder
+   trazarla. `partirEnLineas` las crea leyendo donde las ha puesto el navegador,
+   no partiendo el texto a mano. */
+:root[data-theme="caelestia"] .cae-fundido-linea { display: block; }
+
+/*
+ * Bajo `prefers-reduced-motion` la escena queda ATERRIZADA, no en una version
+ * corta: es ninguna version. El JS ya no monta ninguna linea de tiempo; esto
+ * solo apaga lo que anima el CSS.
+ *
+ * EL SELECTOR UNIVERSAL `*` NO ALCANZA A LOS PSEUDO-ELEMENTOS. Se pago en B2
+ * con `.ficha-k::before`, que siguio animando bajo la guarda generica. Cada
+ * pseudo-elemento que ANIME va nombrado aqui, uno por uno.
+ *
+ * Aqui hoy no anima ninguno: `.cae-fundido-troquel::before` llevaba su propia
+ * guarda y se quito tras comprobar que su regla base —la unica que lo declara
+ * en toda la hoja— no tiene ni `transition` ni `animation`. Apagar algo que
+ * nadie enciende no protege nada y hace creer que si. Lo que anima por CSS en
+ * esta escena son dos cosas: el relleno del ojo y la capa de estado de los
+ * canales al rozar. Las dos se apagan aqui; el CAMBIO sigue ocurriendo, lo que
+ * se quita es el fundido entre estados — un hover que desaparece bajo
+ * movimiento reducido seria quitarle la respuesta al visitante, no la
+ * animacion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"] .cae-dino-ojo {
+    transition: none;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar {
+    transition: none;
+  }
+}
+
+/* ---------- el pie de imprenta ---------- */
+
+/*
+ * LOS CUATRO CANALES SE AGRUPAN CON `order`, NO CON ENVOLTORIOS. En el DOM
+ * siguen en el orden de `contactChannels` — correo, LinkedIn, telefono,
+ * GitHub — porque envolverlos reordenaria las barras tambien en Vice, que
+ * esta cerrado. Aqui los dos actos se van delante y los dos destinos detras
+ * sin que el arbol cambie: el orden de lectura de un lector de pantalla sigue
+ * siendo el del DOM, que es el orden en el que estan escritos los datos.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+  display: flex;
+  /*
+   * `row` EXPLICITO. La hoja base ya pone esta caja en `column` para que
+   * Hyprland y Caelestia apilen las cuatro barras en vertical —lo dice el
+   * docstring de `contacto.ts`— asi que declarar solo `display: flex` hereda
+   * esa direccion y el colofon sale apilado al canto derecho. Y ojo con
+   * `align-items: flex-end`: en fila alinea por abajo, que es lo que queremos,
+   * pero en columna alinea a la derecha.
+   */
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 3.5rem;
+  border-top: 1px solid currentColor;
+  padding-top: 1.125rem;
+  /* Mismo motivo que `.cae-fundido-corn`: por encima del campo (1), al nivel
+     del troquel (2), para que el colofon siga siendo lo que se ve. */
+  position: relative;
+  z-index: 2;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+  order: 1;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+  order: 2;
+}
+
+/*
+ * El primer destino empuja la pareja al canto derecho. Es `:nth-child(2)`
+ * porque LinkedIn es el segundo canal de `contactChannels`; si algun dia se
+ * anade un canal antes que el, esta regla deja de ser cierta y el colofon se
+ * queda pegado a los actos — visible al instante, no silencioso.
+ *
+ * Lleva `.contacto-bar` delante ADEMAS de `[data-canal="destino"]`: sin ese
+ * empujon de especificidad, esta regla y la de `.contacto-bar[data-canal=
+ * "destino"] { margin: ... }` de mas abajo empatan en especificidad (5 clases
+ * cada una), y como la del margin corto va DESPUES en la hoja, gana ella —
+ * medido: `margin-left` salia en `-12px` (el `-0.75rem` del shorthand), nunca
+ * `auto`, y los dos destinos se quedaban pegados a los actos con 252px de
+ * hueco libre a la derecha. Con la clase de mas, esta regla tiene mayor
+ * especificidad y gana sin depender del orden en el archivo.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"]:nth-child(2) {
+  margin-left: auto;
+}
+
+/*
+ * Entre los dos destinos el aire es menor que entre los actos: son una
+ * pareja, no dos columnas. El `gap` general los separaria igual que a los
+ * grandes.
+ *
+ * NO es `[data-canal="destino"] + [data-canal="destino"]` (hermano
+ * adyacente): en el DOM los dos destinos NO son adyacentes — el orden es
+ * correo, LinkedIn, telefono, GitHub, asi que el telefono esta ENTRE ellos.
+ * `order` cambia donde se PINTA cada barra, no donde vive en el arbol, y el
+ * selector `+` mira el arbol. Ese selector no podia casar nunca — comprobado:
+ * cero coincidencias. GitHub es el cuarto canal de `contactChannels`, asi que
+ * `:nth-child(4)` SI casa, con la misma logica de especificidad que el
+ * destino anterior (lleva `.contacto-bar` delante para ganarle al shorthand
+ * de mas abajo).
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"]:nth-child(4) {
+  margin-left: -1.75rem;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar {
+  text-decoration: none;
+  color: inherit;
+  border-radius: 0.5rem;
+  background: transparent;
+  transition:
+    background-color 0.18s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.18s;
+}
+
+/*
+ * ROZAR ENSENA LA CAJA. Caelestia era la unica de las tres pieles cuya llamada
+ * a la accion principal no reaccionaba al raton: `background`, `color`,
+ * `transform` y `text-decoration` identicos antes y despues, medido — el unico
+ * cambio era el `cursor: pointer` del navegador. En una escena que existe para
+ * que te escriban, eso pesa mas que en las otras cuatro.
+ *
+ * El gesto NO es decoracion: pinta EXACTAMENTE la caja accionable que el
+ * relleno con margen negativo ya crea y que hasta ahora no pintaba nada — la
+ * misma caja que hubo que recalibrar a 390 px cuando invadia a la vecina. Rozar
+ * responde a «¿donde tengo que pulsar?», que es la pregunta real aqui.
+ *
+ * `currentColor` y no un token nuevo: el color del texto de la escena ya sigue
+ * al reloj del visitante, asi que la capa de estado camina con el matiz de las
+ * 24 h sin declarar nada. Es la capa de estado de Material 3, con su valor.
+ *
+ * `:focus-visible` entra en la MISMA regla, no en una aparte: el teclado tiene
+ * que llegar a lo mismo que el raton, y separarlas es como se desincronizan.
+ * El anillo de foco del tema sigue encima, no lo sustituye esto.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar:hover,
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar:focus-visible {
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* El rotulo sale de su atenuacion al rozar: el canal entero se enciende, no
+   solo su caja. Un unico gesto en dos capas, no dos efectos sueltos. */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar:hover .contacto-bar-label,
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar:focus-visible .contacto-bar-label {
+  opacity: 1;
+}
+
+/*
+ * EL ACTO VALE EL DOBLE QUE EL DESTINO, y se puede medir: 85 px de alto contra
+ * 42. `mailto:` y `tel:` disparan una aplicacion del aparato y siguen
+ * sirviendo sin red; los externos abren una pestana y la necesitan. Cuatro
+ * columnas iguales dirian que los cuatro son intercambiables, que es falso.
+ *
+ * El relleno con margen negativo agranda el blanco SIN mover el texto.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+  display: block;
+  padding: 0.625rem 0.875rem 0.75rem;
+  margin: -0.625rem -0.875rem -0.75rem;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] .contacto-bar-value {
+  display: block;
+  font-size: var(--t-4);
+  margin-top: 0.4375rem;
+  letter-spacing: -0.005em;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5625rem;
+  padding: 0.5625rem 0.75rem;
+  margin: -0.5625rem -0.75rem;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] .contacto-bar-value {
+  font-size: var(--t-2);
+  letter-spacing: -0.005em;
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar-label {
+  font-family: var(--font-mono);
+  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
+     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  font-size: var(--t-0);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: var(--fundido-dim);
+}
+
+:root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] .contacto-bar-label {
+  display: block;
+}
+
+/* La marca de la barra es de la carta de ajuste de Vice; aqui no pinta nada. */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar-mark {
+  display: none;
+}
+
+/*
+ * EL ESTADO VA BAJO EL COLOFON, y en el DOM compartido vive DENTRO de
+ * `.contacto-band`, encima de las barras. Quien lo mueve es
+ * `caelestia.fundido.ts` al montar (Task 5), no `contacto.ts`: moverlo en el
+ * marcado cambiaria el orden de lectura en los tres temas.
+ *
+ * Hasta que la Task 5 exista, este bloque lo pinta donde este. Es correcto que
+ * en la captura de la Task 4 aparezca todavia bajo el titular.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado {
+  margin: 1rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  font-family: var(--font-mono);
+  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
+     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  font-size: var(--t-0);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: var(--fundido-dim);
+  /* Mismo motivo que `.cae-fundido-corn`: por encima del campo (1), al nivel
+     del troquel (2), para que el estado siga siendo lo que se ve. */
+  position: relative;
+  z-index: 2;
+}
+
+/* ---------- 390 px ----------
+ * Un PASO distinto, no una funcion. El techo lo pone el ancho y esta medido
+ * con `Range`, palabra a palabra, sobre el build: a 89,85 px «Cuentame» mide
+ * 330 sobre una medida util de 322 y se sale 32 px; a 67,4 px mide 248 y
+ * sobran 50. La jerarquia de M4 se conserva; lo que cambia es que en vertical
+ * los actos son FILAS ENTERAS — a 390 el ancho es el recurso escaso, y un
+ * acto que ocupa todo el ancho es el blanco mas facil que hay.
+ */
+@media (max-width: 40rem) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] {
+    padding: 1.25rem 1.25rem 1.125rem;
+  }
+
+  /*
+   * `--t-7`, no `--t-8`. El paso lo decide el ANCHO y esta medido con `Range`
+   * sobre el build, palabra a palabra: a 89,85 px «Cuentame» mide 330 sobre una
+   * medida util de 322 y se sale 32 px; a 67,4 mide 248 y sobran 50. La maqueta
+   * de diseno dio 299 y se equivoco — copiar los tokens no es ser el build.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    font-size: var(--t-7);
+  }
+
+  /*
+   * En vertical los actos son FILAS ENTERAS y los destinos se reparten la
+   * ultima a mitades.
+   *
+   * REJILLA, NO FLEX. Con flex, `flex-basis: 100%` aqui se resuelve como si
+   * fuera `auto` —medido: el acto salia de 274 px, su contenido, en vez de los
+   * 322 del contenedor— asi que no ocupaba la fila y nada se apilaba.
+   * `grid-column: 1 / -1` dice «fila entera» y no depende de que un porcentaje
+   * se resuelva contra un ancho que el motor considera indefinido. La rejilla
+   * respeta `order`, asi que el agrupamiento sin envoltorios sigue en pie.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: 0.25rem 0.625rem;
+  }
+
+  /* ---------- 390 px: el sello ----------
+   * Deja de sangrar y va ENTERO. Sangrar 208 px en una ventana de 362 se come
+   * mas de la mitad y lo que queda no deja completar la figura: se lee como
+   * una mancha, no como una forma recortada.
+   *
+   * Y la figura pierde lobulos al encoger. Una figura no se lee por su
+   * nombre: se lee por la PROFUNDIDAD de su lobulo en pixeles. La galleta cae
+   * de 24,9 px a 460 hasta 10,6 a 196. Aqui va el sol (8 lobulos): 20,6 px.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    align-self: flex-end;
+    /*
+     * `flex-shrink: 0`, NO OPCIONAL. A diferencia del escritorio (donde el
+     * troquel es `position: absolute` y no participa en el flex), aqui pasa a
+     * `relative` y se vuelve un item de flex real: el padding base de
+     * `.contacto-band` (`style.css`, 64/32 px) mas el titular dejan menos
+     * hueco que el troquel + el hueco entre ambos, y sin esto el motor lo
+     * encoge de 196 a ~106 px de alto para que quepa — deja de ser cuadrado.
+     * Medido con Playwright: sin esta linea, 196x106.
+     */
+    flex-shrink: 0;
+    width: 12.25rem;
+    height: 12.25rem;
+    clip-path: polygon(100.00% 50.00%, 99.95% 51.31%, 99.78% 52.61%, 99.48% 53.89%, 99.00% 55.15%, 98.33% 56.36%, 97.43% 57.51%, 96.32% 58.58%, 95.00% 59.57%, 93.54% 60.45%, 92.01% 61.26%, 90.50% 62.00%, 89.12% 62.71%, 87.94% 63.44%, 87.06% 64.22%, 86.49% 65.12%, 86.26% 66.14%, 86.33% 67.33%, 86.65% 68.67%, 87.12% 70.16%, 87.67% 71.75%, 88.18% 73.40%, 88.58% 75.06%, 88.82% 76.68%, 88.85% 78.23%, 88.67% 79.67%, 88.29% 81.01%, 87.74% 82.23%, 87.04% 83.35%, 86.24% 84.39%, 85.36% 85.36%, 84.39% 86.24%, 83.35% 87.04%, 82.23% 87.74%, 81.01% 88.29%, 79.67% 88.67%, 78.23% 88.85%, 76.68% 88.82%, 75.06% 88.58%, 73.40% 88.18%, 71.75% 87.67%, 70.16% 87.12%, 68.67% 86.65%, 67.33% 86.33%, 66.14% 86.26%, 65.12% 86.49%, 64.22% 87.06%, 63.44% 87.94%, 62.71% 89.12%, 62.00% 90.50%, 61.26% 92.01%, 60.45% 93.54%, 59.57% 95.00%, 58.58% 96.32%, 57.51% 97.43%, 56.36% 98.33%, 55.15% 99.00%, 53.89% 99.48%, 52.61% 99.78%, 51.31% 99.95%, 50.00% 100.00%, 48.69% 99.95%, 47.39% 99.78%, 46.11% 99.48%, 44.85% 99.00%, 43.64% 98.33%, 42.49% 97.43%, 41.42% 96.32%, 40.43% 95.00%, 39.55% 93.54%, 38.74% 92.01%, 38.00% 90.50%, 37.29% 89.12%, 36.56% 87.94%, 35.78% 87.06%, 34.88% 86.49%, 33.86% 86.26%, 32.67% 86.33%, 31.33% 86.65%, 29.84% 87.12%, 28.25% 87.67%, 26.60% 88.18%, 24.94% 88.58%, 23.32% 88.82%, 21.77% 88.85%, 20.33% 88.67%, 18.99% 88.29%, 17.77% 87.74%, 16.65% 87.04%, 15.61% 86.24%, 14.64% 85.36%, 13.76% 84.39%, 12.96% 83.35%, 12.26% 82.23%, 11.71% 81.01%, 11.33% 79.67%, 11.15% 78.23%, 11.18% 76.68%, 11.42% 75.06%, 11.82% 73.40%, 12.33% 71.75%, 12.88% 70.16%, 13.35% 68.67%, 13.67% 67.33%, 13.74% 66.14%, 13.51% 65.12%, 12.94% 64.22%, 12.06% 63.44%, 10.88% 62.71%, 9.50% 62.00%, 7.99% 61.26%, 6.46% 60.45%, 5.00% 59.57%, 3.68% 58.58%, 2.57% 57.51%, 1.67% 56.36%, 1.00% 55.15%, 0.52% 53.89%, 0.22% 52.61%, 0.05% 51.31%, 0.00% 50.00%, 0.05% 48.69%, 0.22% 47.39%, 0.52% 46.11%, 1.00% 44.85%, 1.67% 43.64%, 2.57% 42.49%, 3.68% 41.42%, 5.00% 40.43%, 6.46% 39.55%, 7.99% 38.74%, 9.50% 38.00%, 10.88% 37.29%, 12.06% 36.56%, 12.94% 35.78%, 13.51% 34.88%, 13.74% 33.86%, 13.67% 32.67%, 13.35% 31.33%, 12.88% 29.84%, 12.33% 28.25%, 11.82% 26.60%, 11.42% 24.94%, 11.18% 23.32%, 11.15% 21.77%, 11.33% 20.33%, 11.71% 18.99%, 12.26% 17.77%, 12.96% 16.65%, 13.76% 15.61%, 14.64% 14.64%, 15.61% 13.76%, 16.65% 12.96%, 17.77% 12.26%, 18.99% 11.71%, 20.33% 11.33%, 21.77% 11.15%, 23.32% 11.18%, 24.94% 11.42%, 26.60% 11.82%, 28.25% 12.33%, 29.84% 12.88%, 31.33% 13.35%, 32.67% 13.67%, 33.86% 13.74%, 34.88% 13.51%, 35.78% 12.94%, 36.56% 12.06%, 37.29% 10.88%, 38.00% 9.50%, 38.74% 7.99%, 39.55% 6.46%, 40.43% 5.00%, 41.42% 3.68%, 42.49% 2.57%, 43.64% 1.67%, 44.85% 1.00%, 46.11% 0.52%, 47.39% 0.22%, 48.69% 0.05%, 50.00% 0.00%, 51.31% 0.05%, 52.61% 0.22%, 53.89% 0.52%, 55.15% 1.00%, 56.36% 1.67%, 57.51% 2.57%, 58.58% 3.68%, 59.57% 5.00%, 60.45% 6.46%, 61.26% 7.99%, 62.00% 9.50%, 62.71% 10.88%, 63.44% 12.06%, 64.22% 12.94%, 65.12% 13.51%, 66.14% 13.74%, 67.33% 13.67%, 68.67% 13.35%, 70.16% 12.88%, 71.75% 12.33%, 73.40% 11.82%, 75.06% 11.42%, 76.68% 11.18%, 78.23% 11.15%, 79.67% 11.33%, 81.01% 11.71%, 82.23% 12.26%, 83.35% 12.96%, 84.39% 13.76%, 85.36% 14.64%, 86.24% 15.61%, 87.04% 16.65%, 87.74% 17.77%, 88.29% 18.99%, 88.67% 20.33%, 88.85% 21.77%, 88.82% 23.32%, 88.58% 24.94%, 88.18% 26.60%, 87.67% 28.25%, 87.12% 29.84%, 86.65% 31.33%, 86.33% 32.67%, 86.26% 33.86%, 86.49% 34.88%, 87.06% 35.78%, 87.94% 36.56%, 89.12% 37.29%, 90.50% 38.00%, 92.01% 38.74%, 93.54% 39.55%, 95.00% 40.43%, 96.32% 41.42%, 97.43% 42.49%, 98.33% 43.64%, 99.00% 44.85%, 99.48% 46.11%, 99.78% 47.39%, 99.95% 48.69%);
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.75rem;
+    align-items: stretch;
+  }
+
+  /*
+   * FUERA DE ALCANCE EN ESTA TAREA. El troquel movil es `position: relative`
+   * (item de flex real, ver arriba); el campo necesitaria coincidir con SU
+   * rectangulo exacto para que `factorCrecimiento` calzara, y eso pide
+   * coordenadas por JS, no un valor CSS estatico. Se apaga aqui, a proposito,
+   * en vez de dejarlo desalineado o tapando el titular: pendiente de una
+   * tarea propia de paridad movil.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-campo {
+    display: none;
+  }
+
+  :root[data-theme="caelestia"] .cae-fundido-nube { left: 13%; top: 15%; width: 3.625rem; }
+  :root[data-theme="caelestia"] .cae-fundido-suelo { left: 6%; right: 6%; bottom: 26%; }
+  :root[data-theme="caelestia"] .cae-fundido-bicho { left: 50%; bottom: 26%; width: 5.75rem; margin-left: -2.875rem; }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+    grid-column: 1 / -1;
+  }
+
+  /*
+   * EL TRUCO DE ZONA DE TOQUE (padding + margen negativo a juego, en el
+   * bloque de escritorio) SOLO FUNCIONA CON EL HUECO DE ESCRITORIO. Alli el
+   * `gap` de `.contacto-bars` es `3.5rem` (56px) y absorbe la sangria del
+   * margen negativo sin que se note. Aqui el `gap` de la rejilla es
+   * `0.25rem 0.625rem` (4px / 10px) — muchisimo menor que la sangria
+   * (10/12px verticales del acto, 9/12px del destino), asi que la caja
+   * PINTADA (`getBoundingClientRect`, que no ve el margen) invade la fila o
+   * columna vecina.
+   *
+   * Medido en el build antes de este cambio: correo x telefono 350x18,
+   * linkedin x telefono 168x17, linkedin x github 30x56 — y en el punto
+   * (183, 701), dentro de la caja de LinkedIn, `elementFromPoint` devolvia
+   * la barra de GitHub. `margin: 0` aqui NO cambia el tamano de ninguna caja
+   * (el padding ya formaba parte del alto/ancho medido): solo hace que la
+   * rejilla reserve el sitio real que cada caja ocupa, en vez del sitio
+   * encogido por el margen negativo.
+   *
+   * Selector IDENTICO al de la regla de escritorio (misma especificidad,
+   * `.contacto-bar` incluido): un intento anterior de apagar esto con
+   * `margin-left/right: 0` en un selector sin esa clase perdia el empate de
+   * especificidad contra el `margin` corto de escritorio (5 contra 4) y
+   * nunca llegaba a aplicarse — el mismo defecto de especificidad que ya
+   * documentan `:nth-child(2)` y `:nth-child(4)` mas arriba, esta vez sin
+   * el arreglo.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+    margin: 0;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] .contacto-bar-value {
+    font-size: var(--t-3);
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+    grid-column: span 1;
+  }
+
+  /*
+   * Mismo motivo que el `margin: 0` del acto, de arriba: la sangria del
+   * margen negativo de escritorio (9/12px) no cabe en el hueco de rejilla de
+   * aqui (4/10px).
+   *
+   * Y `flex-direction: column`: en escritorio el destino es una FILA —
+   * rotulo y valor lado a lado, hay sitio de sobra. En una columna de ~156px
+   * eso deja de ser cierto: rotulo y valor son items de flex encogibles por
+   * defecto (`flex-shrink: 1`, `min-width: auto`), asi que el valor se
+   * encoge a su MIN-CONTENT en vez de usar el ancho libre de la columna —
+   * medido: `.contacto-bar-value` calculaba 60,6px de ancho propio con 132px
+   * libres al lado, y «Aoshi Blanco Sanz» partia en tres lineas de 30-36px
+   * cada una AUNQUE el font-size ya bajara. El font-size no era la causa:
+   * apilar rotulo y valor (columna) le devuelve al valor el ancho entero de
+   * la caja.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+    margin: 0;
+    /*
+     * `width: 100%`, NO OPCIONAL. Un item de rejilla que es a la vez
+     * contenedor flex no hereda el `stretch` por defecto de `justify-items`
+     * en el eje en linea — se encoge a su contenido (`fit-content`) en vez de
+     * llenar la columna. Medido: sin esto, la caja de LinkedIn encogia de
+     * 156 a 122px Y SE DESPLAZABA a la derecha (el hueco sobrante se lo
+     * quedaba a la izquierda), asi que su canto derecho seguia tocando el de
+     * GitHub — 18x56px de solape, el mismo sitio que antes de esta tarea.
+     */
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+  }
+
+  /*
+   * El `margin-left: -1.75rem` de escritorio (linea ~4939, empareja los dos
+   * destinos) es un `:nth-child(4)` — especificidad 6, por encima del
+   * `margin: 0` de arriba (especificidad 5) para esa unica propiedad. Sin
+   * este reset GitHub seguia desplazandose 28px a la izquierda dentro de su
+   * columna de rejilla y volvia a solaparse con LinkedIn — medido: x=172 en
+   * vez de los 200 que le tocan (columna 2 empieza en 190 + 10px de gap).
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"]:nth-child(4) {
+    margin-left: 0;
+  }
+
+  /*
+   * Con el ancho ya recuperado, «Aoshi Blanco Sanz» a `--t-2` (16px, el de
+   * escritorio) cabria en una o dos lineas comodas; se deja en `--t-1`
+   * (12px) de todos modos para que la pareja de destinos (LinkedIn/GitHub)
+   * siga leyendose claramente MAS PEQUENA que los actos, ahora que ambos
+   * apilan igual. Se aplica a los dos destinos, no solo a LinkedIn, para no
+   * introducir una talla nueva entre los dos canales de la misma pareja.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] .contacto-bar-value {
+    font-size: var(--t-1);
   }
 }
 

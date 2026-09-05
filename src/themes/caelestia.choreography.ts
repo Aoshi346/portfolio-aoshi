@@ -1,5 +1,6 @@
 import type { Choreography } from "./choreography";
 import { montarFicha } from "./caelestia.ficha";
+import { montarFundido } from "./caelestia.fundido";
 import { montarEntrada, montarRoce, montarTitulo } from "./caelestia.titulo";
 
 /**
@@ -70,6 +71,7 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let actual = 0;
+  let fundidoVisto = false;
 
   const cuerpo = document.body;
   const raiz = document.documentElement;
@@ -112,6 +114,13 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   const ficha = escenaFicha ? montarFicha(gsap, escenaFicha) : null;
   const indiceFicha = escenaFicha ? escenas.indexOf(escenaFicha) : -1;
 
+  // El fundido de cierre (tarea 5, provisional): el troquel y el bicho
+  // montados sin animacion todavia. La tarea 6 lo deja definitivo, llamando
+  // a `reproducir`/`entrar` desde `irA`.
+  const indiceFundido = escenas.findIndex((escena) => escena.dataset.scene === "contacto");
+  const fundido =
+    indiceFundido >= 0 ? montarFundido(gsap, escenas[indiceFundido], indiceFundido) : null;
+
   const irA = (indice: number): void => {
     const destino = Math.max(0, Math.min(indice, escenas.length - 1));
     // El extremo de partida es la posicion ACTUAL, capturada antes de
@@ -125,6 +134,19 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
     // sin ningun affordance que prometa repeticion, 2,6 s de tecleo donde ya
     // estabas se lee como parpadeo. No es un caso que falte: es el arreglo.
     if (ficha && destino === indiceFicha && destino !== origen) ficha.reproducir();
+    /*
+     * EL FUNDIDO SUENA UNA VEZ; LA ENTRADA, TODAS. Es la misma regla que ya
+     * gobierna la ficha de B2 dos lineas mas arriba: no vuelves a abrir la
+     * aplicacion en la que ya estas. Un final de 1,9 s reproducido en la
+     * quinta visita deja de ser un final y pasa a ser un peaje.
+     */
+    if (fundido && destino === indiceFundido && destino !== origen) {
+      if (fundidoVisto) fundido.entrar(origen);
+      else {
+        fundido.reproducir();
+        fundidoVisto = true;
+      }
+    }
     anclarDocumento();
     // fromTo con los dos extremos escritos a mano: `gsap.from` esta prohibido
     // en este proyecto y ya provoco tres regresiones reales.
