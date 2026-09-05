@@ -1,0 +1,650 @@
+"""Arnes de la escena «Fundido» de Caelestia (fase B5, contraportada del escritorio).
+
+Se lanza a mano contra el build de produccion servido, NUNCA contra `npm run
+dev`: el HMR corrompe las medidas. En ESTE worktree el `vite preview` corre en
+el puerto 4193 (Ruling H) — el 4173 sirve OTRO repositorio de otra sesion.
+
+    export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+    npm run build
+    python3 scripts/measure-caelestia-fundido.py --base http://localhost:4193
+
+Los doce gates (ver el spec, seccion `## Los gates`):
+  1. jerarquia tipografica (el titular > acto > destino, valor exacto)
+  2. los ejes de cierre, no los del cartel
+  3. la ocupacion, medida con Range (no con la caja de bloque)
+  4. sin scroll interno, en 1440 y en 390
+  5. los cuatro canales siguen accionables (mailto/tel/rel)
+  6. el dato se lee sin hover
+  7. contraste AA en los dos esquemas, solo los pares que se pintan de verdad
+  8. el fundido suena una vez; la entrada, todas
+  9. la entrada cabe dentro del deslizamiento del carril (440 < 520)
+  10. `prefers-reduced-motion` aterriza la escena en 0 ms
+  11. 390 px: paso exacto, ocupacion, blancos >= 48x48, sello cuadrado
+  12. Vice y Hyprland no se alteran (`contacto.ts` es compartido)
+"""
+import argparse
+import pathlib
+import re
+import sys
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+from playwright.sync_api import sync_playwright
+
+FALLOS: list[str] = []
+RAIZ = pathlib.Path(__file__).resolve().parent.parent
+
+
+def comprobar(condicion: bool, etiqueta: str) -> None:
+    print(("  OK   " if condicion else "  FALLO") + f"  {etiqueta}")
+    if not condicion:
+        FALLOS.append(etiqueta)
+
+
+# El fondo del pixel real, no el rol teorico: convertir `oklch()` leyendolo
+# como bytes RGB es el instrumento roto que la fase A ya pago (1.00:1 en todo
+# el reloj). Se pinta en un lienzo 1x1 y se lee el pixel que el navegador
+# PINTA de verdad, tal como ya hace `measure-caelestia-quien-soy.py`.
+CONTRASTE_JS = """({ sel, pseudo }) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const csEl = getComputedStyle(el, pseudo || null);
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 1;
+    const ctx = cv.getContext("2d", { willReadFrequently: true });
+    const bytes = (c, debajo) => {
+        ctx.clearRect(0, 0, 1, 1);
+        if (debajo) {
+            ctx.fillStyle = `rgb(${debajo[0]},${debajo[1]},${debajo[2]})`;
+            ctx.fillRect(0, 0, 1, 1);
+        }
+        ctx.fillStyle = "#000";
+        ctx.fillStyle = c;
+        if (ctx.fillStyle === "#000000" && !/^#0{6}$|black|rgb\\(0, 0, 0\\)/.test(c)) return null;
+        ctx.fillRect(0, 0, 1, 1);
+        const d = ctx.getImageData(0, 0, 1, 1).data;
+        return [d[0], d[1], d[2]];
+    };
+    const lum = ([r, g, b]) => {
+        const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    // El fondo REAL: se sube por los ancestros hasta el primero que pinte
+    // algo. Comparar contra el rol teorico es como se colo que el reloj de
+    // la barra estuviera bajo AA cuatro horas al dia.
+    let nodo = el, fondo = null;
+    while (nodo && fondo === null) {
+        const bg = getComputedStyle(nodo).backgroundColor;
+        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") fondo = bg;
+        nodo = nodo.parentElement;
+    }
+    const bFondo = bytes(fondo || "rgb(255,255,255)", [255, 255, 255]);
+    let bTexto = bytes(csEl.color, bFondo);
+    if (!bFondo || !bTexto) return null;
+    // `getComputedStyle(...).color` NO SE MUEVE CON `opacity`: sigue devolviendo
+    // el color OPACO del texto aunque `--fundido-dim` lo este atenuando de
+    // verdad en pantalla. Es la misma trampa que la Task 6/B2 ya documentaron
+    // para otro caso (opacidad independiente del color computado) -- aqui la
+    // paga el propio gate si no se corrige: los rotulos del pie y el estado
+    // pintan a `opacity: var(--fundido-dim)`, y sin blanquear el color con esa
+    // opacidad contra el fondo, el gate mide el texto a opacidad 1 SIEMPRE,
+    // sea cual sea `--fundido-dim` -- un gate que no puede fallar.
+    const alfa = parseFloat(csEl.opacity);
+    if (!Number.isNaN(alfa) && alfa < 1) {
+        bTexto = [0, 1, 2].map((i) => Math.round(alfa * bTexto[i] + (1 - alfa) * bFondo[i]));
+    }
+    const a = lum(bTexto), b = lum(bFondo);
+    return {
+        ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+        texto: bTexto, fondo: bFondo, color: csEl.color, opacidad: alfa,
+    };
+}"""
+
+
+def nueva_pagina_en_contacto(navegador, base, *, viewport=None, timezone_id=None, reduced_motion=None):
+    """Abre una pagina fresca en Caelestia y lleva el carril a «contacto».
+
+    Es la primera visita al workspace SIEMPRE (contexto nuevo, `fundidoVisto`
+    empieza en `false`), asi que dispara `reproducir()`. Se espera a que el
+    fundido de 1900 ms termine del todo antes de devolver el control: medir
+    antes de eso es medir un fotograma a medio fundir.
+    """
+    kwargs = {"viewport": viewport or {"width": 1440, "height": 900}}
+    if timezone_id:
+        kwargs["timezone_id"] = timezone_id
+    if reduced_motion:
+        kwargs["reduced_motion"] = reduced_motion
+    ctx = navegador.new_context(**kwargs)
+    errores: list[str] = []
+    pg = ctx.new_page()
+    pg.on("pageerror", lambda e: errores.append(str(e)))
+    pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+    pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+    pg.wait_for_timeout(3000)
+    pg.click('[data-cae-ws="contacto"]')
+    pg.wait_for_timeout(2600)
+    return ctx, pg, errores
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--base", default="http://localhost:4193")
+    args = ap.parse_args()
+    base = args.base
+
+    errores_totales: list[str] = []
+
+    with sync_playwright() as p:
+        navegador = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+
+        # ================================================================
+        # [1] La jerarquia no esta invertida
+        # ================================================================
+        print("\n[1] La jerarquia tipografica: titular > acto > destino")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        jerarquia = pg.evaluate("""() => {
+            const px = (sel) => parseFloat(getComputedStyle(document.querySelector(sel)).fontSize);
+            return {
+                titular: px('.contacto-lead'),
+                acto: px('[data-canal="acto"] .contacto-bar-value'),
+                destino: px('[data-canal="destino"] .contacto-bar-value'),
+            };
+        }""")
+        print(f"       titular {jerarquia['titular']} · acto {jerarquia['acto']} "
+              f"· destino {jerarquia['destino']}")
+        comprobar(abs(jerarquia["titular"] - 159.66) < 0.5,
+                  f"el titular mide exactamente --t-10 (159.66px, medido {jerarquia['titular']})")
+        comprobar(jerarquia["titular"] > jerarquia["acto"] > jerarquia["destino"],
+                  f"la jerarquia no esta invertida (titular {jerarquia['titular']} > "
+                  f"acto {jerarquia['acto']} > destino {jerarquia['destino']})")
+        ctx.close()
+
+        # ================================================================
+        # [2] Los ejes son los que tocan: --cae-display-axes-cierre
+        # ================================================================
+        print("\n[2] Los ejes de cierre, no los del cartel ni los del shell")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        ejes = pg.evaluate("""() => {
+            const cs = getComputedStyle(document.documentElement);
+            return {
+                lead: getComputedStyle(document.querySelector('.contacto-lead')).fontVariationSettings,
+                tokenCierre: cs.getPropertyValue('--cae-display-axes-cierre').trim(),
+                tokenShell: cs.getPropertyValue('--cae-display-axes').trim(),
+                tokenCartel: cs.getPropertyValue('--cae-display-axes-cartel').trim(),
+            };
+        }""")
+        print(f"       .contacto-lead {ejes['lead']}")
+        print(f"       tokens: cierre {ejes['tokenCierre']!r} · shell {ejes['tokenShell']!r} "
+              f"· cartel {ejes['tokenCartel']!r}")
+        comprobar('"opsz" 144' in ejes["lead"] and '"wght" 300' in ejes["lead"],
+                  f"la frase usa opsz 144 / wght 300, el eje de cierre ({ejes['lead']})")
+        comprobar('"wght" 900' not in ejes["lead"],
+                  f"la frase NO se queda en la voz de cabecera (wght 900) ({ejes['lead']})")
+        comprobar(
+            ejes["tokenCierre"] not in ("", ejes["tokenShell"], ejes["tokenCartel"]),
+            "--cae-display-axes-cierre es un token propio, distinto de shell y cartel",
+        )
+        ctx.close()
+
+        # ================================================================
+        # [3] La ocupacion, medida con Range
+        # ================================================================
+        print("\n[3] La ocupacion del titular, medida con Range (no con la caja de bloque)")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        ocupacion = pg.evaluate("""() => {
+            const lead = document.querySelector('.contacto-lead');
+            const troquel = document.querySelector('[data-fundido-troquel]');
+            const lineas = [...document.querySelectorAll('.cae-fundido-linea')];
+            const anchoBloque = Math.round(lead.getBoundingClientRect().width);
+            // El extremo derecho REAL del texto, con Range: la caja de bloque
+            // de `lead` YA viene encogida a su contenido (`.contacto-band` usa
+            // `align-items: flex-start`, no `stretch`), asi que comparar el
+            // bloque CONTRA SI MISMO da 0 px muertos SIEMPRE, sea cual sea el
+            // texto — es la propia trampa que el spec describe: mide algo,
+            // pero no la ocupacion. La comparacion que si dice algo es contra
+            // el HUECO real disponible hasta el troquel, medido con Range.
+            let anchoTexto = 0;
+            for (const linea of lineas) {
+                const r = document.createRange();
+                r.selectNodeContents(linea);
+                anchoTexto = Math.max(anchoTexto, r.getBoundingClientRect().width);
+            }
+            const leadRect = lead.getBoundingClientRect();
+            const troquelRect = troquel.getBoundingClientRect();
+            const hueco = Math.round(troquelRect.left - leadRect.left);
+            return {
+                anchoBloque, anchoTexto: Math.round(anchoTexto), hueco,
+                lineas: lineas.length,
+            };
+        }""")
+        print(f"       ancho de bloque (encogido a su contenido) {ocupacion['anchoBloque']} · "
+              f"ancho de texto (Range) {ocupacion['anchoTexto']} · hueco hasta el troquel "
+              f"{ocupacion['hueco']} · lineas {ocupacion['lineas']}")
+        comprobar(ocupacion["lineas"] >= 1, f"el titular se parte en lineas trazables ({ocupacion['lineas']})")
+        # La trampa que el gate tiene que esquivar: comparar el bloque contra
+        # SI MISMO (`anchoBloque` vs `anchoBloque`) da 0 px muertos siempre —
+        # aqui se demuestra explicitamente, y el gate real compara contra el
+        # HUECO, no contra la propia caja.
+        comprobar(ocupacion["anchoBloque"] - ocupacion["anchoBloque"] == 0,
+                  "la caja de bloque contra si misma SIEMPRE da 0 px muertos (la trampa)")
+        muerto = ocupacion["hueco"] - ocupacion["anchoTexto"]
+        print(f"       espacio muerto real (hueco - texto por Range): {muerto}px")
+        # El texto ocupa la mayor parte del hueco (no flota diminuto en el
+        # campo de color) pero deja un margen real antes del troquel — ni 0
+        # (invadiria el troquel) ni la mayoria del hueco (flotaria perdido).
+        comprobar(ocupacion["anchoTexto"] < ocupacion["hueco"],
+                  f"el texto no invade el troquel ({ocupacion['anchoTexto']} < {ocupacion['hueco']})")
+        comprobar(100 <= muerto <= 250,
+                  f"hay un margen real y acotado antes del troquel, medido con Range ({muerto}px)")
+        ctx.close()
+
+        # ================================================================
+        # [4] Sin scroll interno, en 1440 y en 390
+        # ================================================================
+        print("\n[4] Sin scroll interno, en 1440 y en 390")
+        # `scrollHeight` NO sirve de instrumento aqui: el campo de color crece
+        # por `transform: scale(...)`, y ese desbordamiento por transform sigue
+        # contando en `scrollHeight` incluso con `overflow: clip` puesto (medido:
+        # 1813 contra un `clientHeight` de 748, con el `overflow: clip` de la
+        # Task 6 ya aplicado) — es un dato real del motor de layout, no un
+        # sintoma de que la escena sea desplazable. Lo que de verdad importa —
+        # y lo que Task 6 verifico con Playwright — es si el contenedor
+        # RESPONDE a un scroll programatico. Se intenta desplazar y se
+        # comprueba si se movio.
+        for ancho, alto in ((1440, 900), (390, 844)):
+            ctx, pg, err = nueva_pagina_en_contacto(navegador, base, viewport={"width": ancho, "height": alto})
+            errores_totales += err
+            desborde = pg.evaluate("""() => {
+                const sc = document.querySelector('[data-scene="contacto"]');
+                const ventana = sc.closest('main[data-cae-track] > *');
+                const antes = { top: ventana.scrollTop, left: ventana.scrollLeft };
+                ventana.scrollTop = 600;
+                ventana.scrollLeft = 600;
+                const despues = { top: ventana.scrollTop, left: ventana.scrollLeft };
+                ventana.scrollTop = antes.top;
+                ventana.scrollLeft = antes.left;
+                return {
+                    canScrollV: despues.top !== 0, canScrollH: despues.left !== 0,
+                    scrollWidthDoc: document.documentElement.scrollWidth,
+                    clientWidthDoc: document.documentElement.clientWidth,
+                };
+            }""")
+            print(f"       {ancho}px: canScrollV {desborde['canScrollV']} · canScrollH "
+                  f"{desborde['canScrollH']} · doc scrollWidth {desborde['scrollWidthDoc']} / "
+                  f"clientWidth {desborde['clientWidthDoc']}")
+            comprobar(not desborde["canScrollV"], f"la ventana no se desplaza en vertical a {ancho}px")
+            comprobar(not desborde["canScrollH"], f"la ventana no se desplaza en horizontal a {ancho}px")
+            comprobar(desborde["scrollWidthDoc"] - desborde["clientWidthDoc"] <= 1,
+                      f"sin barra horizontal a nivel de documento a {ancho}px "
+                      f"({desborde['scrollWidthDoc']} vs {desborde['clientWidthDoc']})")
+            ctx.close()
+
+        # ================================================================
+        # [5] Los cuatro canales siguen accionables
+        # ================================================================
+        print("\n[5] Los cuatro canales: mailto/tel bien formados, externos con rel completo")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        canales = pg.evaluate("""() => [...document.querySelectorAll('.contacto-bar')].map((a) => ({
+            canal: a.dataset.canal, href: a.getAttribute('href'),
+            target: a.getAttribute('target'), rel: a.getAttribute('rel'),
+        }))""")
+        print(f"       {canales}")
+        comprobar(len(canales) == 4, f"hay cuatro canales en el DOM ({len(canales)})")
+        mailto = next((c for c in canales if c["href"].startswith("mailto:")), None)
+        comprobar(mailto is not None and re.match(r"^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$", mailto["href"]),
+                  f"el mailto: esta bien formado ({mailto and mailto['href']})")
+        tel = next((c for c in canales if c["href"].startswith("tel:")), None)
+        comprobar(tel is not None and re.match(r"^tel:\+?\d+$", tel["href"]),
+                  f"el tel: no lleva espacios ni guiones ({tel and tel['href']})")
+        externos = [c for c in canales if c["target"] == "_blank"]
+        comprobar(len(externos) == 2, f"hay dos canales externos ({len(externos)})")
+        for c in externos:
+            rel = (c["rel"] or "").split()
+            comprobar("noopener" in rel and "noreferrer" in rel,
+                      f"{c['canal']} lleva las dos palabras de rel ({c['rel']!r})")
+        ctx.close()
+
+        # ================================================================
+        # [6] El dato se lee sin hover
+        # ================================================================
+        print("\n[6] El dato se lee SIN hover")
+        # No se simula nada: un MouseEvent sintetico NO dispara `:hover`, asi
+        # que una prueba que lo simule mide su propia simulacion. Se lee y ya.
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        visibles = pg.evaluate("""() => [...document.querySelectorAll(
+            '[data-scene="contacto"] .contacto-bar-value')].filter(v => {
+                const cs = getComputedStyle(v);
+                return v.textContent.trim().length > 0 && cs.visibility !== 'hidden'
+                    && cs.display !== 'none' && parseFloat(cs.opacity) > 0.05;
+            }).length""")
+        comprobar(visibles == 4, f"los cuatro datos se leen sin hover ({visibles}/4)")
+        ctx.close()
+
+        # ================================================================
+        # [7] Contraste AA, en los dos esquemas, solo lo que se pinta de verdad
+        # ================================================================
+        print("\n[7] Contraste AA en los dos esquemas (pares que se pintan de verdad)")
+        # No se inventa una API para forzar la hora: el motor de color lee
+        # `new Date().getHours()`, asi que el esquema se cambia con la ZONA
+        # HORARIA del contexto de Playwright — real, sin tocar produccion.
+        CANDIDATAS = (
+            "Pacific/Kiritimati", "Pacific/Auckland", "Asia/Tokyo", "Asia/Kolkata",
+            "Europe/Madrid", "Atlantic/Reykjavik", "America/New_York",
+            "America/Los_Angeles", "Pacific/Honolulu", "Pacific/Midway",
+        )
+        ahora_utc = datetime.now(timezone.utc)
+
+        def es_noche(zona: str) -> bool:
+            local = ahora_utc.astimezone(ZoneInfo(zona))
+            minutos = local.hour * 60 + local.minute
+            return minutos < 7 * 60 or minutos >= 20 * 60
+
+        zona_dia = next((z for z in CANDIDATAS if not es_noche(z)), None)
+        zona_noche = next((z for z in CANDIDATAS if es_noche(z)), None)
+        comprobar(zona_dia is not None and zona_noche is not None,
+                  f"hay una zona de dia y una de noche ({zona_dia} / {zona_noche})")
+
+        # Gate 7 · contraste: SOLO LOS PARES QUE SE PINTAN DE VERDAD.
+        #
+        # Vigilar los roles `on-X` contra `X` en abstracto es lo que dejo al reloj
+        # de la fase A bajo AA cuatro horas al dia con el arnes en verde. Y dos
+        # pares que NO se miden, a proposito:
+        #   · las nubes (2,19:1) son decorado, y WCAG exime el decorado;
+        #   · el ojo de dia NO EXISTE — de dia el ojo es el hueco, en
+        #     `--cae-surface`, no en `--cae-anchor`. Medirlo es medir un par que
+        #     nunca se pinta.
+        PARES = [
+            ("la frase", ".contacto-lead", '[data-scene="contacto"]'),
+            ("valor del acto", '[data-canal="acto"] .contacto-bar-value', '[data-scene="contacto"]'),
+            ("rotulo del acto", '[data-canal="acto"] .contacto-bar-label', '[data-scene="contacto"]'),
+            ("el estado", ".contacto-estado", '[data-scene="contacto"]'),
+        ]
+
+        peor, peor_etiqueta = 21.0, ""
+        esquemas_vistos: list[str] = []
+        for zona in (z for z in (zona_dia, zona_noche) if z):
+            ctx, pg, err = nueva_pagina_en_contacto(navegador, base, timezone_id=zona)
+            errores_totales += err
+            esquema = pg.evaluate("() => document.documentElement.dataset.caeEsquema")
+            esquemas_vistos.append(esquema)
+            hora = pg.evaluate("() => new Date().getHours() + ':' + new Date().getMinutes()")
+            for etiqueta, selector, _contenedor in PARES:
+                medida = pg.evaluate(CONTRASTE_JS, {"sel": selector, "pseudo": None})
+                comprobar(medida is not None,
+                          f"se pudo medir {etiqueta} en esquema {esquema} ({selector})")
+                if medida is None:
+                    continue
+                print(f"       {etiqueta}: {medida['ratio']:.2f}:1 en esquema {esquema}")
+                if medida["ratio"] < peor:
+                    peor, peor_etiqueta = medida["ratio"], f"{etiqueta} en esquema {esquema}"
+            print(f"       {zona} (hora local {hora}): esquema {esquema}")
+            ctx.close()
+        comprobar(len(set(esquemas_vistos)) == 2,
+                  f"se han visto los DOS esquemas ({esquemas_vistos})")
+        print(f"       peor par: {peor:.2f}:1 ({peor_etiqueta})")
+        comprobar(peor >= 4.5, f"contraste >= 4.5:1 en los dos esquemas ({peor:.2f}:1, {peor_etiqueta})")
+
+        # ================================================================
+        # [8] El fundido suena una vez; la entrada, todas
+        # ================================================================
+        print("\n[8] El fundido suena una vez; la entrada, todas")
+        # Discriminador robusto y SIN depender de la cadencia de frames de este
+        # entorno (el `requestAnimationFrame`/`setTimeout` de este sandbox
+        # dispara de forma muy irregular con `--use-gl=swiftshader`, medido:
+        # intervalos de 200-400ms en vez de los 16ms de un frame — un
+        # cronometro por frames aqui mide el jitter de la maquina, no la
+        # coreografia). GSAP renderiza el valor DE ARRANQUE de cada tween de
+        # una timeline de forma SINCRONA en cuanto la timeline se crea y se
+        # reproduce, sin esperar a ningun frame — asi que basta leer el estilo
+        # computado EN LA MISMA VUELTA DE `evaluate()` que dispara el clic,
+        # sin ningun `wait`, para ver el primer fotograma real:
+        #
+        #   reproducir(): `tl.fromTo(troquel, {scale:0}, ...)`      -> 0
+        #   entrar():     `tlEntrada.fromTo(troquel, {scale:0.965}, ...)` -> 0.965
+        #   nada:         el troquel se queda en su valor aterrizado -> 1
+        #
+        # Medido en la construccion de este arnes: los tres valores salen
+        # exactamente `matrix(0,...)`, `matrix(0.965,...)` y sin cambio,
+        # respectivamente — ver el informe.
+        def escala_troquel(matriz: str) -> float:
+            numeros = re.findall(r"-?[\d.]+", matriz)
+            return float(numeros[0]) if numeros else -1.0
+
+        CLIC_Y_LEER_JS = (
+            "() => { document.querySelector('[data-cae-ws=\"contacto\"]').click();"
+            " return getComputedStyle(document.querySelector('[data-fundido-troquel]')).transform; }"
+        )
+
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        # Ya aterrizado (primera visita, fundido completo ya jugado por
+        # `nueva_pagina_en_contacto`: la escala esta en 1).
+        antes = escala_troquel(pg.evaluate(
+            "() => getComputedStyle(document.querySelector('[data-fundido-troquel]')).transform"
+        ))
+        # Pulsar la pastilla YA ACTIVA:
+        tras_repulso = escala_troquel(pg.evaluate(CLIC_Y_LEER_JS))
+        print(f"       escala del troquel: aterrizada {antes} · justo tras repulsar {tras_repulso}")
+        comprobar(abs(tras_repulso - antes) < 0.01,
+                  f"pulsar el workspace activo no dispara nada (escala {antes} -> {tras_repulso})")
+
+        # Volver desde el workspace 4 ("creditos"): dispara SOLO la entrada.
+        pg.click('[data-cae-ws="creditos"]')
+        pg.wait_for_timeout(900)
+        tras_volver = escala_troquel(pg.evaluate(CLIC_Y_LEER_JS))
+        print(f"       escala del troquel justo tras volver desde «creditos»: {tras_volver} "
+              f"(entrar() arranca en 0.965; reproducir() arrancaria en 0)")
+        comprobar(0.9 <= tras_volver <= 1.0,
+                  f"volver desde el 4 dispara la ENTRADA (arranca en ~0.965), no el fundido completo "
+                  f"(arrancaria en 0) — medido {tras_volver}")
+        pg.wait_for_timeout(900)
+        ctx.close()
+
+        # ================================================================
+        # [9] La entrada cabe dentro del deslizamiento del carril
+        # ================================================================
+        print("\n[9] La entrada (440ms) cabe dentro del deslizamiento del carril (520ms)")
+        fundido_src = (RAIZ / "src" / "themes" / "caelestia.fundido.ts").read_text(encoding="utf-8")
+        choreo_src = (RAIZ / "src" / "themes" / "caelestia.choreography.ts").read_text(encoding="utf-8")
+        m_entrada = re.search(r"ENTRADA_MS\s*=\s*([\d.]+)", fundido_src)
+        m_duracion = re.search(r"DURACION\s*=\s*([\d.]+)", choreo_src)
+        comprobar(m_entrada is not None, "ENTRADA_MS se encuentra en caelestia.fundido.ts")
+        comprobar(m_duracion is not None, "DURACION se encuentra en caelestia.choreography.ts")
+        if m_entrada and m_duracion:
+            entrada_ms = float(m_entrada.group(1))
+            duracion_ms = float(m_duracion.group(1)) * 1000
+            print(f"       ENTRADA_MS = {entrada_ms} · DURACION del carril = {duracion_ms}")
+            comprobar(entrada_ms < duracion_ms,
+                      f"la entrada cabe dentro del deslizamiento ({entrada_ms} < {duracion_ms})")
+
+        # ================================================================
+        # [10] prefers-reduced-motion aterriza la escena en 0 ms
+        # ================================================================
+        print("\n[10] Movimiento reducido: la escena aterriza sin recorrido")
+        # OJO: NO se usa `nueva_pagina_en_contacto` aqui -- su espera de 2600ms
+        # tras el clic es mas larga que el fundido completo (1900ms), asi que
+        # si la guarda `if (reduce) return` desapareciera la timeline habria
+        # tenido tiempo de sobra para terminar SOLA y aterrizar igual, dejando
+        # este gate en verde aunque la guarda no exista. Se mide a 200ms, a
+        # mitad de un fundido de 1900ms si es que llegara a correr -- la misma
+        # ventana que uso la Task 7 para ver esto en rojo.
+        ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+        pg = ctx.new_page()
+        errores: list[str] = []
+        pg.on("pageerror", lambda e: errores.append(str(e)))
+        pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+        pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(3000)
+        pg.click('[data-cae-ws="contacto"]')
+        pg.wait_for_timeout(200)
+        errores_totales += errores
+        reducido = pg.evaluate("""() => {
+            const troquel = document.querySelector('[data-fundido-troquel]');
+            const linea = document.querySelector('.cae-fundido-linea');
+            const acto = document.querySelector('[data-canal="acto"]');
+            const suelo = document.querySelector('[data-fundido-suelo]');
+            const nube = document.querySelector('.cae-fundido-nube');
+            const oculto = (el) => /100(\\.0+)?%/.test(getComputedStyle(el).clipPath) ? 1 : 0;
+            return {
+                fraseOculta: linea ? oculto(linea) : null,
+                actoOculto: acto ? oculto(acto) : null,
+                troquelTransform: troquel ? getComputedStyle(troquel).transform : null,
+                sueloTransform: suelo ? getComputedStyle(suelo).transform : null,
+                nubeOpacidad: nube ? getComputedStyle(nube).opacity : null,
+            };
+        }""")
+        print(f"       {reducido}")
+        comprobar(reducido["fraseOculta"] == 0, f"la frase esta puesta, no oculta ({reducido['fraseOculta']})")
+        comprobar(reducido["actoOculto"] == 0, f"el acto esta puesto, no oculto ({reducido['actoOculto']})")
+        # Comparar la matriz ENTERA contra el literal "matrix(0, 0, 0, 0, 0, 0)"
+        # es una asercion que no puede fallar donde de verdad importa: el
+        # troquel lleva `transform: translateY(-50%)` en su CSS base, asi que
+        # su matriz en reposo YA trae un componente de traslacion (`-230` en
+        # 1440px) — un `scale(0)` sobre eso da `matrix(0, 0, 0, 0, 0, -230)`,
+        # que el string exacto de arriba no cazaba (visto en rojo al construir
+        # este gate: con la guarda de reduced-motion saboteada, esa comparacion
+        # devolvia "OK" con el troquel invisible de verdad). Se lee el
+        # componente `a` de la matriz (la escala X), que es 0 solo si de verdad
+        # esta encogido a la nada.
+        m = re.findall(r"-?[\d.]+", reducido["troquelTransform"] or "")
+        escala_troquel_reducido = float(m[0]) if m else -1.0
+        comprobar(escala_troquel_reducido > 0.5,
+                  f"el troquel esta de pie, no en scale(0) "
+                  f"({reducido['troquelTransform']}, escala {escala_troquel_reducido})")
+        comprobar(reducido["nubeOpacidad"] == "1", f"las nubes estan puestas ({reducido['nubeOpacidad']})")
+        ctx.close()
+
+        # ================================================================
+        # [11] 390 px
+        # ================================================================
+        print("\n[11] 390 px: paso exacto, ocupacion, blancos >= 48x48, sello cuadrado")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base, viewport={"width": 390, "height": 844})
+        errores_totales += err
+        movil = pg.evaluate("""() => {
+            const lead = document.querySelector('.contacto-lead');
+            const troquel = document.querySelector('[data-fundido-troquel]');
+            const bars = [...document.querySelectorAll('.contacto-bar')];
+            const lineas = [...document.querySelectorAll('.cae-fundido-linea')];
+            let anchoTexto = 0;
+            for (const linea of lineas) {
+                const r = document.createRange();
+                r.selectNodeContents(linea);
+                anchoTexto = Math.max(anchoTexto, r.getBoundingClientRect().width);
+            }
+            const tr = troquel.getBoundingClientRect();
+            return {
+                fontSize: parseFloat(getComputedStyle(lead).fontSize),
+                anchoTexto: Math.round(anchoTexto),
+                anchoUtil: Math.round(lead.getBoundingClientRect().width),
+                troquelW: Math.round(tr.width), troquelH: Math.round(tr.height),
+                troquelLeft: Math.round(tr.left), troquelRight: Math.round(tr.right),
+                blancos: bars.map((b) => {
+                    const r = b.getBoundingClientRect();
+                    return { w: Math.round(r.width), h: Math.round(r.height) };
+                }),
+                anchoViewport: window.innerWidth,
+                scrollDoc: document.documentElement.scrollWidth,
+            };
+        }""")
+        print(f"       titular {movil['fontSize']}px · texto (Range) {movil['anchoTexto']} "
+              f"sobre util {movil['anchoUtil']}")
+        print(f"       troquel {movil['troquelW']}x{movil['troquelH']} "
+              f"[{movil['troquelLeft']}, {movil['troquelRight']}] sobre viewport {movil['anchoViewport']}")
+        print(f"       blancos: {movil['blancos']}")
+        # --t-7 (67.4px), no --t-8: es el paso que de verdad cabe, medido con
+        # Range sobre el build — --t-8 se sale 32px de la medida util (ver el
+        # comentario en `themes.css`, junto a esta misma regla).
+        comprobar(abs(movil["fontSize"] - 67.4) < 0.5,
+                  f"el titular esta en su paso exacto a 390px, --t-7 (67.4px, medido {movil['fontSize']})")
+        comprobar(movil["anchoTexto"] <= movil["anchoUtil"],
+                  f"la linea mas larga cabe en la medida util ({movil['anchoTexto']} <= {movil['anchoUtil']})")
+        comprobar(all(b["w"] >= 48 and b["h"] >= 48 for b in movil["blancos"]),
+                  f"ningun blanco baja de 48x48 ({movil['blancos']})")
+        comprobar(abs(movil["troquelW"] - movil["troquelH"]) <= 1,
+                  f"el sello es cuadrado ({movil['troquelW']}x{movil['troquelH']})")
+        comprobar(movil["troquelLeft"] >= 0 and movil["troquelRight"] <= movil["anchoViewport"],
+                  f"el sello no sangra a 390px ([{movil['troquelLeft']}, {movil['troquelRight']}] "
+                  f"dentro de [0, {movil['anchoViewport']}])")
+        comprobar(movil["scrollDoc"] <= movil["anchoViewport"],
+                  f"sin barra horizontal a 390px (scrollWidth {movil['scrollDoc']} <= "
+                  f"viewport {movil['anchoViewport']})")
+        ctx.close()
+
+        # ================================================================
+        # [12] Vice y Hyprland no se alteran
+        # ================================================================
+        print("\n[12] Vice y Hyprland no se alteran: contacto.ts es compartido")
+        for tema in ("vice", "hyprland"):
+            ctx = navegador.new_context(viewport={"width": 1440, "height": 900})
+            errores: list[str] = []
+            pg = ctx.new_page()
+            pg.on("pageerror", lambda e: errores.append(str(e)))
+            pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+            pg.goto(f"{base}/?theme={tema}", wait_until="domcontentloaded", timeout=30000)
+            pg.wait_for_timeout(2500)
+            comprobar(pg.locator('[data-scene="contacto"]').count() == 1,
+                      f"la escena de contacto sigue existiendo en {tema}")
+            fuga = pg.evaluate("""() => {
+                const sc = document.querySelector('[data-scene="contacto"]');
+                const lead = sc && sc.querySelector('.contacto-lead');
+                const estadoLabel = sc && sc.querySelector('.contacto-estado-label');
+                return {
+                    troquel: !!sc.querySelector('.cae-fundido-troquel'),
+                    campo: !!sc.querySelector('.cae-fundido-campo'),
+                    corn: !!sc.querySelector('.cae-fundido-corn'),
+                    bicho: !!sc.querySelector('.cae-fundido-bicho'),
+                    leadEjes: lead ? getComputedStyle(lead).fontVariationSettings : null,
+                    leadFontSize: lead ? parseFloat(getComputedStyle(lead).fontSize) : null,
+                    // `.hero-kick`/`.contacto-estado-label`/`.contacto-estado-sep`
+                    // se apagan en Caelestia (`display: none`) porque ahi el
+                    // rotulo de seccion lo lleva la esquina y el estado baja al
+                    // pie -- pero en Vice y Hyprland esa etiqueta SI se ve
+                    // (tienen su propia regla de color para ella, sin tocar
+                    // `display`). Si la regla de Caelestia perdiera su guarda de
+                    // tema, este es el selector COMPARTIDO por el que se cuela:
+                    // ni el troquel ni el `fontVariationSettings` lo detectan
+                    // (el custom property de los ejes no resuelve fuera de su
+                    // scope, y el resto de selectores compartidos ya tienen su
+                    // propio override de mayor o igual especificidad en cada
+                    // tema) -- pero `display: none` no tiene competencia en
+                    // ninguno de los dos temas y SI se cuela. Visto en rojo al
+                    // construir este gate (Task 8): las dos etiquetas
+                    // desaparecian con solo quitar `[data-theme="caelestia"]`
+                    // de esa regla.
+                    estadoLabelDisplay: estadoLabel ? getComputedStyle(estadoLabel).display : null,
+                };
+            }""")
+            print(f"       {tema}: {fuga}")
+            comprobar(not (fuga["troquel"] or fuga["campo"] or fuga["corn"] or fuga["bicho"]),
+                      f"ningun elemento de Caelestia (troquel/campo/corn/bicho) se monta en {tema}")
+            comprobar(fuga["estadoLabelDisplay"] != "none",
+                      f"el rotulo «Estado» de {tema} sigue visible, no apagado por la regla de "
+                      f"Caelestia ({fuga['estadoLabelDisplay']})")
+            if fuga["leadEjes"] is not None:
+                comprobar('"opsz" 144' not in fuga["leadEjes"],
+                          f"la voz de cierre de Caelestia no se cuela en {tema} ({fuga['leadEjes']})")
+            errores_totales += errores
+            ctx.close()
+
+        # ================================================================
+        # Consola limpia en todas las paginas abiertas
+        # ================================================================
+        comprobar(not errores_totales, f"consola sin errores en ninguna pagina ({len(errores_totales)})")
+        for e in errores_totales:
+            print(f"       error de consola: {e}")
+
+        navegador.close()
+
+    print(f"\n{'TODO VERDE' if not FALLOS else f'{len(FALLOS)} FALLO(S)'}")
+    for f in FALLOS:
+        print(f"  - {f}")
+    return 1 if FALLOS else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

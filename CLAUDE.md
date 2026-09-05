@@ -126,6 +126,46 @@
   fall back to a hard cut, no error, no warning. And `*` in a `prefers-reduced-motion` CSS guard does
   **not** reach pseudo-elements — `.ficha-k::before` needed its own explicit rule to stop animating
   under reduced motion; the generic wildcard guard missed it.
+- **Caelestia's phases B3 (Obra) and B4 (Créditos) are not documented here yet** — this file jumps
+  from B2 straight to B5 below. `scripts/measure-caelestia-obra.py` exists and is green, so B3 is at
+  least implemented, but its status and spec are not recorded in this section. Flagged as a real gap,
+  not filled in with invented text.
+- **Caelestia's phase B5 (Fundido) is DONE** (`2026-09-04-caelestia-fundido`, last of the five
+  inside-window phases). The `#contacto` scene stops being the shared carta-de-ajuste layout and
+  becomes **the desktop's own contraportada**: the only one of the five scenes that inverts to a
+  flooded `--cae-primary` field instead of an application window. A Material 3 figure (the
+  "troquel", 240 points, bleeding 10px past the right edge, Ruling S) recorta el fondo generativo del
+  escritorio; inside it, the Chrome offline dino stands on a horizon with two clouds (BSD-3-Clause
+  code, but the sprite is a Google-identifiable asset — a branding risk Aoshi accepted explicitly,
+  twice, recorded in the spec). A fourth type voice, `--cae-display-axes-cierre` (italic, `opsz 144`,
+  `wght 300`, `SOFT 100`, `WONK 1`), used in exactly one place on the whole site: the closing line,
+  set at `--t-10` (159.66px), softening from the B1 cartel voice (`wght 900`) as it lands. The
+  fundido plays once per session (the first arrival at the workspace, ~1900ms: the field floods, the
+  troquel opens, the line traces and softens, the dino runs in and stops); every return plays only a
+  440ms entrance (content settles, the troquel breathes, the dino glances toward wherever you came
+  from) — same "you don't reopen the app you're already in" rule B2 established for the ficha. Four
+  contact channels split into two *acts* (`mailto:`/`tel:`, work offline, 85px tall) and two
+  *destinations* (external links, need network, 42px) — deliberately unequal weight, not four equal
+  columns. **390px is explicitly in scope for this phase** (B1-B3 left it out on purpose; a
+  contact scene that only works on desktop contradicts the one thing it exists to do): the troquel
+  stops bleeding and becomes a whole 196px seal (the figure drops to 8 lobes, matching Material 3's
+  own rule that lobe complexity must shrink with size), the headline steps down to `--t-7` (67.4px,
+  not the `--t-8` an earlier spec draft assumed — verified against the actual build with `Range`,
+  word by word, per this project's "the build is the source of truth" rule), and the four channels
+  regroup into full-width acts plus half-width destinations, all touch targets well above the
+  48×48 Material floor. `scripts/measure-caelestia-fundido.py` gates it with the twelve assertion
+  families in the spec's `## Los gates`, each seen red against its own sabotage before being
+  accepted (see the Task 8 report). Two pairs are deliberately NOT contrast-checked: the decorative
+  clouds (WCAG exempts decoration) and "the day eye" — a pair that never gets painted, since by day
+  the eye is the sprite's own cutout in `--cae-surface`, not `--cae-anchor`. **A real environment
+  trap paid while building this harness:** this sandbox's `requestAnimationFrame`/`setTimeout`
+  fire every 200-400ms under `--use-gl=swiftshader` instead of every ~16ms, so a duration-based
+  "how long did it keep animating" measurement is worthless here — it measures the sandbox's frame
+  starvation, not the choreography. The fix was reading GSAP's synchronously-rendered first-frame
+  value (a timeline renders its tweens' start state the instant it's built and played, no frame
+  needed) in the same `evaluate()` call as the click: the fundido's troquel tween starts from
+  `scale(0)`, the entrance's from `scale(0.965)`, and "nothing fired" leaves it unchanged — three
+  states, one synchronous read, no timing assumptions.
 
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**
