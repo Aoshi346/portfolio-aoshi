@@ -8,7 +8,7 @@ el puerto 4193 (Ruling H) — el 4173 sirve OTRO repositorio de otra sesion.
     npm run build
     python3 scripts/measure-caelestia-fundido.py --base http://localhost:4193
 
-Los doce gates (ver el spec, seccion `## Los gates`):
+Los trece gates (ver el spec, seccion `## Los gates`):
   1. jerarquia tipografica (el titular > acto > destino, valor exacto)
   2. los ejes de cierre, no los del cartel
   3. la ocupacion, medida con Range (no con la caja de bloque)
@@ -21,6 +21,7 @@ Los doce gates (ver el spec, seccion `## Los gates`):
   10. `prefers-reduced-motion` aterriza la escena en 0 ms
   11. 390 px: paso exacto, ocupacion, blancos >= 48x48, sello cuadrado
   12. Vice y Hyprland no se alteran (`contacto.ts` es compartido)
+  13. el fundido interrumpido aterriza del todo (bicho, nube, suelo, zancada)
 """
 import argparse
 import pathlib
@@ -224,12 +225,14 @@ def main() -> int:
               f"ancho de texto (Range) {ocupacion['anchoTexto']} · hueco hasta el troquel "
               f"{ocupacion['hueco']} · lineas {ocupacion['lineas']}")
         comprobar(ocupacion["lineas"] >= 1, f"el titular se parte en lineas trazables ({ocupacion['lineas']})")
-        # La trampa que el gate tiene que esquivar: comparar el bloque contra
-        # SI MISMO (`anchoBloque` vs `anchoBloque`) da 0 px muertos siempre —
-        # aqui se demuestra explicitamente, y el gate real compara contra el
-        # HUECO, no contra la propia caja.
-        comprobar(ocupacion["anchoBloque"] - ocupacion["anchoBloque"] == 0,
-                  "la caja de bloque contra si misma SIEMPRE da 0 px muertos (la trampa)")
+        # La trampa que este gate esquiva, IMPRESA y no aseverada: comparar el
+        # bloque contra si mismo da 0 px muertos siempre, por construccion. Era
+        # un `comprobar()` y se quito — una asercion que no puede ponerse roja
+        # engorda la cuenta de verdes sin vigilar nada, que es exactamente el
+        # instrumento tautologico que esta pista lleva nueve veces pagando. El
+        # gate real compara contra el HUECO hasta el troquel, no contra la caja.
+        print(f"       (la trampa, para el lector: bloque contra si mismo = "
+              f"{ocupacion['anchoBloque'] - ocupacion['anchoBloque']}px muertos, siempre)")
         muerto = ocupacion["hueco"] - ocupacion["anchoTexto"]
         print(f"       espacio muerto real (hueco - texto por Range): {muerto}px")
         # El texto ocupa la mayor parte del hueco (no flota diminuto en el
@@ -304,8 +307,10 @@ def main() -> int:
         comprobar(len(externos) == 2, f"hay dos canales externos ({len(externos)})")
         for c in externos:
             rel = (c["rel"] or "").split()
+            # Los dos externos son los dos `destino`: sin el href, las dos
+            # etiquetas salian identicas y un fallo no decia cual de los dos era.
             comprobar("noopener" in rel and "noreferrer" in rel,
-                      f"{c['canal']} lleva las dos palabras de rel ({c['rel']!r})")
+                      f"el destino {c['href']} lleva las dos palabras de rel ({c['rel']!r})")
         ctx.close()
 
         # ================================================================
@@ -628,6 +633,144 @@ def main() -> int:
             if fuga["leadEjes"] is not None:
                 comprobar('"opsz" 144' not in fuga["leadEjes"],
                           f"la voz de cierre de Caelestia no se cuela en {tema} ({fuga['leadEjes']})")
+            errores_totales += errores
+            ctx.close()
+
+        # ================================================================
+        # [13] El fundido interrumpido aterriza del todo
+        # ================================================================
+        print("\n[13] El fundido interrumpido aterriza del todo (ida y vuelta a media pasada)")
+        # El camino que ningun gate miraba: irse de «contacto» ANTES de que los
+        # 1900 ms del fundido acaben. `entrar()` mata la timeline y llama a
+        # `aterrizado()`, asi que todo lo que la partitura toca y `aterrizado()`
+        # no devuelva se queda CONGELADO donde lo mato el `kill()` — para el
+        # resto de la visita, porque `fundidoVisto` ya es `true` y el fundido no
+        # vuelve a sonar. Medido en rojo contra el codigo anterior a este gate:
+        # el bicho en `translateX(-105px)` (medio fuera del sello), la nube en
+        # `opacity: 0` y el suelo en `scaleX: 0.91`.
+        #
+        # Y la zancada: `pararZancada()` es el `onComplete` del tween del bicho,
+        # y `kill()` NO dispara `onComplete` — el reloj de fotogramas se queda
+        # encendido y el dino corre en el sitio para siempre.
+        #
+        # TODA la orquestacion va DENTRO de la pagina (un `async` con
+        # `setTimeout`), nunca con esperas desde fuera: el puente de Playwright
+        # mete 100-300 ms de ida y vuelta por llamada, que es justo el orden de
+        # magnitud de los cortes que este gate tiene que hacer (250 ms y 400 ms).
+        # Con `page.click()` + `wait_for_timeout()` no se estaria cortando donde
+        # se cree — ese instrumento ya mintio una vez en esta fase.
+        #
+        # Se corta DOS veces, en dos paginas frescas, porque la partitura no es
+        # homogenea: a 250 ms el bicho todavia entra y la nube no ha salido; el
+        # tween de los ejes del titular no arranca hasta 520 ms y no acaba hasta
+        # 1300, asi que un corte a 250 no puede dejar un `wght` intermedio en
+        # linea y esa asercion no podria ponerse roja nunca. El corte a 900 ms la
+        # pone roja de verdad. Un solo corte era un gate a medias.
+        #
+        # El corte NO se cronometra: se ANCLA AL ESTADO. Medido en esta maquina,
+        # `setTimeout` dentro de la pagina con `--use-gl=swiftshader` llega con
+        # cientos de ms de retraso y de forma irregular, asi que un `dormir(250)`
+        # cortaba unas veces con el bicho a media entrada y otras con el fundido
+        # practicamente acabado: el mismo gate salia rojo bajo carga y verde en
+        # vacio. Es el instrumento, no el diseno — la trampa que esta pista ya ha
+        # pagado once veces. Aqui se mira cada frame hasta que la escena esta de
+        # verdad en el punto que se quiere cortar, y si ese punto NUNCA llega, el
+        # gate FALLA en vez de medir otra cosa.
+        #
+        #   corte «bicho»: el dino a media entrada (translateX entre -260 y -20)
+        #   corte «ejes»:  el titular con un `wght` intermedio en linea (<850)
+        INTERRUMPE_JS = r"""async (corte) => {
+            const frame = () => new Promise(r => requestAnimationFrame(r));
+            const dormir = ms => new Promise(r => setTimeout(r, ms));
+            const q = s => document.querySelector(s);
+            const pulsa = id => q(`[data-cae-ws="${id}"]`).click();
+            const tr = s => { const e = q(s); return e ? getComputedStyle(e).transform : null; };
+            // `matrix(a, b, c, d, e, f)`: 0 es la escala en X, 4 el desplazamiento.
+            const val = (sel, i, sinTransform) => {
+                const m = tr(sel);
+                if (!m || m === 'none') return sinTransform;
+                const n = m.match(/-?[\d.]+/g);
+                return n ? parseFloat(n[i]) : NaN;
+            };
+            const pesoEnLinea = () => {
+                const v = q('[data-fundido-lead]').style.fontVariationSettings;
+                const m = v && v.match(/"wght"\s+(\d+)/);
+                return m ? parseFloat(m[1]) : null;
+            };
+            const enElPunto = corte === 'bicho'
+                ? () => { const x = val('.cae-fundido-bicho', 4, 0); return x < -20 && x > -260; }
+                : () => { const w = pesoEnLinea(); return w !== null && w < 850; };
+
+            pulsa('contacto');
+            let llego = false;
+            const t0 = performance.now();
+            while (performance.now() - t0 < 6000) {
+                if (enElPunto()) { llego = true; break; }
+                await frame();
+            }
+            pulsa('creditos');
+            await dormir(400);
+            pulsa('contacto');   // vuelve: entrar(), no reproducir()
+            await dormir(1600);  // de sobra para que la entrada (440ms) acabe
+
+            // La zancada, si sigue corriendo, cambia el dibujo del cuerpo cada
+            // 85 ms: se mira el LARGO del marcado en reposo durante ~1,8 s.
+            const cuerpo = q('.cae-fundido-bicho [data-dino-cuerpo]');
+            const dibujos = new Set();
+            for (let i = 0; i < 40; i++) {
+                dibujos.add(cuerpo ? cuerpo.innerHTML.length : -1);
+                await dormir(45);
+            }
+            return {
+                llegoAlPuntoDeCorte: llego,
+                bichoX:  val('.cae-fundido-bicho', 4, 0),
+                sueloX:  val('[data-fundido-suelo]', 0, 1),
+                troquel: val('[data-fundido-troquel]', 0, 1),
+                campo:   val('.cae-fundido-campo', 0, 1),
+                escenaX: val('[data-scene="contacto"]', 4, 0),
+                nubeOp:  parseFloat(getComputedStyle(q('.cae-fundido-nube')).opacity),
+                ejesEnLinea: q('[data-fundido-lead]').style.fontVariationSettings,
+                dibujosDistintos: dibujos.size,
+            };
+        }"""
+
+        for corte in ("bicho", "ejes"):
+            ctx = navegador.new_context(viewport={"width": 1440, "height": 900})
+            errores: list[str] = []
+            pg = ctx.new_page()
+            pg.on("pageerror", lambda e: errores.append(str(e)))
+            pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+            pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+            pg.wait_for_timeout(3000)
+            d = pg.evaluate(INTERRUMPE_JS, corte)
+            print(f"       --- corte «{corte}» ---")
+            for k, v in d.items():
+                print(f"       {k}: {v}")
+            comprobar(d["llegoAlPuntoDeCorte"],
+                      f"[{corte}] la escena llego al punto de corte: se interrumpe donde se cree "
+                      f"y no en otro sitio")
+            comprobar(abs(d["bichoX"]) < 1.0,
+                      f"[{corte}] el bicho vuelve a su sitio dentro del sello "
+                      f"(translateX {d['bichoX']}, se espera 0)")
+            comprobar(d["nubeOp"] > 0.99,
+                      f"[{corte}] la nube queda visible (opacity {d['nubeOp']}, se espera 1)")
+            comprobar(abs(d["sueloX"] - 1) < 0.01,
+                      f"[{corte}] el horizonte queda a su trazo entero "
+                      f"(scaleX {d['sueloX']}, se espera 1)")
+            comprobar(abs(d["troquel"] - 1) < 0.01,
+                      f"[{corte}] el troquel queda a escala 1 (medido {d['troquel']})")
+            comprobar(abs(d["campo"] - 1) < 0.01,
+                      f"[{corte}] el campo de color queda a escala 1, sin tapar la escena "
+                      f"(medido {d['campo']})")
+            comprobar(abs(d["escenaX"]) < 1.0,
+                      f"[{corte}] la escena queda en su sitio (translateX {d['escenaX']}, se espera 0)")
+            comprobar(d["ejesEnLinea"] == "",
+                      f"[{corte}] el eje variable en linea del titular se retira: lo escribe el "
+                      f"`onUpdate` en `style`, asi que `clearProps` no lo alcanza "
+                      f"(medido «{d['ejesEnLinea']}»)")
+            comprobar(d["dibujosDistintos"] == 1,
+                      f"[{corte}] la zancada esta parada en reposo: un solo dibujo del cuerpo "
+                      f"en 1,8 s (medidos {d['dibujosDistintos']})")
             errores_totales += errores
             ctx.close()
 

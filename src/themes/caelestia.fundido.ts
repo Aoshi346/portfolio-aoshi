@@ -147,17 +147,58 @@ export function montarFundido(
   window.addEventListener("resize", pintarSuelo);
 
   /*
-   * `campo` y `troquel` SE INCLUYEN: si una timeline interrumpida (ver
-   * `tlFundido` mas abajo) se mata a medio crecer, sus `scale` quedarian
-   * congelados donde la mataron sin este reset — aterrizar de verdad
-   * significa devolver TODO lo que la partitura toca, no solo el texto.
+   * TODO lo que las partituras tocan, anotado desde LAS PARTITURAS MISMAS en
+   * cuanto se construyen.
+   *
+   * `aterrizado()` mantenia la lista a mano y se desincronizo: le faltaban el
+   * bicho, la nube y el suelo, asi que interrumpir el fundido a media pasada
+   * los dejaba congelados donde el `kill()` los pillo —el bicho a
+   * `translateX(-105px)`, medio fuera del sello; la nube en `opacity: 0`; el
+   * horizonte a 0,91 de su trazo— y ahi se quedaban EL RESTO DE LA VISITA,
+   * porque `fundidoVisto` ya es `true` y el fundido no vuelve a sonar. Una
+   * lista en dos sitios se rompe en cuanto alguien anade un tween; anotarla al
+   * construir la partitura no puede romperse.
+   *
+   * Se anota al CONSTRUIR y no al aterrizar a proposito: `aterrizado()` corre
+   * despues del `kill()`, y que una timeline muerta conserve sus hijos es
+   * detalle interno de gsap, no contrato. El conjunto solo crece, asi que
+   * limpiar de mas es inofensivo y no depender de eso es gratis.
+   */
+  const tocados = new Set<Element>();
+  const anotar = <T extends ReturnType<Gsap["timeline"]>>(tl: T): T => {
+    // `(anidadas, tweens, timelines)`: los tweens, tambien los de timelines
+    // hijas por si la partitura llega a anidar alguna.
+    for (const hijo of tl.getChildren(true, true, false)) {
+      // Una `Timeline` no tiene `targets()`; un `Tween` si. Se comprueba en vez
+      // de castear a ciegas: `strict` esta puesto y `any` esta prohibido.
+      const leer = (hijo as { targets?: () => unknown[] }).targets;
+      if (typeof leer !== "function") continue;
+      for (const d of leer.call(hijo)) if (d instanceof Element) tocados.add(d);
+    }
+    return tl;
+  };
+
+  /*
+   * Aterrizar de verdad: devolver todo lo que las partituras tocan, parar la
+   * zancada y retirar lo que gsap no puso y por tanto `clearProps` no alcanza.
    */
   const aterrizado = (): void => {
-    gsap.set([lead, ...lineas, ...actos, ...destinos, barras], { clearProps: "all" });
-    if (estado) gsap.set(estado, { clearProps: "all" });
-    if (svgBicho) gsap.set(svgBicho, { clearProps: "all" });
+    if (tocados.size > 0) gsap.set([...tocados], { clearProps: "all" });
+    /*
+     * `pararZancada()` NO se dispara solo: es el `onComplete` del tween del
+     * bicho y `kill()` no llama a `onComplete`. Sin esta linea el reloj de
+     * fotogramas se queda encendido y el dino corre en el sitio para siempre.
+     * Va DESPUES del `clearProps` porque repone el fotograma de pie.
+     */
+    pararZancada();
+    /*
+     * Los ejes variables del titular los escribe el `onUpdate` de la partitura
+     * directamente en `style`, no gsap sobre el elemento: `clearProps` no los
+     * ve. Interrumpido a media pasada, el titular se quedaba con un `wght`
+     * intermedio en linea, ganandole al token.
+     */
+    lead.style.fontVariationSettings = "";
     if (ojo) ojo.setAttribute("x", String(OJO_DINO[0]));
-    gsap.set([troquel, campo], { clearProps: "all" });
   };
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -195,11 +236,6 @@ export function montarFundido(
   campo.className = "cae-fundido-campo";
   campo.setAttribute("aria-hidden", "true");
   banda.append(campo);
-
-  // `aterrizado()` referencia `campo`, asi que la primera llamada tiene que
-  // ir aqui, DESPUES de crearlo — antes seria acceder a una `const` no
-  // inicializada todavia.
-  aterrizado();
 
   /*
    * La zancada la lleva un reloj propio y no la linea de tiempo: son doce
@@ -360,6 +396,13 @@ export function montarFundido(
    */
   let tlFundido: ReturnType<Gsap["timeline"]> | null = null;
 
+  /*
+   * La primera llamada va AQUI, no donde nace el troquel: `aterrizado()` lee
+   * `tlFundido`, `tlEntrada` y `pararZancada`, y los tres se declaran arriba
+   * de esta linea. Llamarla antes seria tocarlos en su zona muerta.
+   */
+  aterrizado();
+
   const entrar = (desde: number): void => {
     if (tlEntrada) tlEntrada.kill();
     if (tlFundido) tlFundido.kill();
@@ -397,6 +440,8 @@ export function montarFundido(
       tlEntrada.to(ojo, { opacity: 0, duration: 0.001 }, ENTRADA * (0.3 / 0.44));
       tlEntrada.to(ojo, { opacity: 1, duration: 0.001 }, ENTRADA * (0.41 / 0.44));
     }
+    // Al final: `tlEntrada` se arma por partes y solo aqui esta completa.
+    anotar(tlEntrada);
   };
 
   return {
@@ -410,7 +455,7 @@ export function montarFundido(
       if (tlFundido) tlFundido.kill();
       aterrizado();
       if (reduce) return; // No es una version corta: es ninguna version.
-      tlFundido = linea();
+      tlFundido = anotar(linea());
       tlFundido.play(0);
     },
     entrar,
