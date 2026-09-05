@@ -3556,6 +3556,16 @@
   --t-8: 89.85px;
   --t-9: 119.77px;
   --t-10: 159.66px;
+  /*
+   * `--t-0`: UN ESCALON POR DEBAJO DEL SUELO (`--t-1`, 12px), en la misma
+   * razon de la escala (1,333): 12 / 1,333 = 9px. El suelo de `--t-1` es para
+   * texto de LECTURA corrida; esto no lo es — existe solo para la rotulacion
+   * mono de Fundido (la esquina, el rotulo de acto/destino, el estado), que
+   * es una palabra en versalitas, no un parrafo. Antes de este token esos tres
+   * sitios llevaban literales sin declarar (10px, 9px, 9.5px) — la sexta vez
+   * que ese defecto aparecia en el proyecto. No usar para texto de lectura.
+   */
+  --t-0: 9px;
 
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
   --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
@@ -4745,7 +4755,9 @@
   padding-bottom: 0.875rem;
   border-bottom: 1px solid currentColor;
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
+     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  font-size: var(--t-0);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   opacity: var(--fundido-dim);
@@ -4982,7 +4994,9 @@
 
 :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar-label {
   font-family: var(--font-mono);
-  font-size: 0.5625rem;
+  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
+     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  font-size: var(--t-0);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   opacity: var(--fundido-dim);
@@ -5012,7 +5026,9 @@
   align-items: center;
   gap: 0.5625rem;
   font-family: var(--font-mono);
-  font-size: 0.59375rem;
+  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
+     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  font-size: var(--t-0);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   opacity: var(--fundido-dim);
@@ -5120,22 +5136,99 @@
     grid-column: 1 / -1;
   }
 
+  /*
+   * EL TRUCO DE ZONA DE TOQUE (padding + margen negativo a juego, en el
+   * bloque de escritorio) SOLO FUNCIONA CON EL HUECO DE ESCRITORIO. Alli el
+   * `gap` de `.contacto-bars` es `3.5rem` (56px) y absorbe la sangria del
+   * margen negativo sin que se note. Aqui el `gap` de la rejilla es
+   * `0.25rem 0.625rem` (4px / 10px) — muchisimo menor que la sangria
+   * (10/12px verticales del acto, 9/12px del destino), asi que la caja
+   * PINTADA (`getBoundingClientRect`, que no ve el margen) invade la fila o
+   * columna vecina.
+   *
+   * Medido en el build antes de este cambio: correo x telefono 350x18,
+   * linkedin x telefono 168x17, linkedin x github 30x56 — y en el punto
+   * (183, 701), dentro de la caja de LinkedIn, `elementFromPoint` devolvia
+   * la barra de GitHub. `margin: 0` aqui NO cambia el tamano de ninguna caja
+   * (el padding ya formaba parte del alto/ancho medido): solo hace que la
+   * rejilla reserve el sitio real que cada caja ocupa, en vez del sitio
+   * encogido por el margen negativo.
+   *
+   * Selector IDENTICO al de la regla de escritorio (misma especificidad,
+   * `.contacto-bar` incluido): un intento anterior de apagar esto con
+   * `margin-left/right: 0` en un selector sin esa clase perdia el empate de
+   * especificidad contra el `margin` corto de escritorio (5 contra 4) y
+   * nunca llegaba a aplicarse — el mismo defecto de especificidad que ya
+   * documentan `:nth-child(2)` y `:nth-child(4)` mas arriba, esta vez sin
+   * el arreglo.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+    margin: 0;
+  }
+
   :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] .contacto-bar-value {
     font-size: var(--t-3);
   }
 
   :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
     grid-column: span 1;
-    margin-left: 0;
-    margin-right: 0;
   }
 
-  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"]:nth-child(2) {
+  /*
+   * Mismo motivo que el `margin: 0` del acto, de arriba: la sangria del
+   * margen negativo de escritorio (9/12px) no cabe en el hueco de rejilla de
+   * aqui (4/10px).
+   *
+   * Y `flex-direction: column`: en escritorio el destino es una FILA —
+   * rotulo y valor lado a lado, hay sitio de sobra. En una columna de ~156px
+   * eso deja de ser cierto: rotulo y valor son items de flex encogibles por
+   * defecto (`flex-shrink: 1`, `min-width: auto`), asi que el valor se
+   * encoge a su MIN-CONTENT en vez de usar el ancho libre de la columna —
+   * medido: `.contacto-bar-value` calculaba 60,6px de ancho propio con 132px
+   * libres al lado, y «Aoshi Blanco Sanz» partia en tres lineas de 30-36px
+   * cada una AUNQUE el font-size ya bajara. El font-size no era la causa:
+   * apilar rotulo y valor (columna) le devuelve al valor el ancho entero de
+   * la caja.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+    margin: 0;
+    /*
+     * `width: 100%`, NO OPCIONAL. Un item de rejilla que es a la vez
+     * contenedor flex no hereda el `stretch` por defecto de `justify-items`
+     * en el eje en linea — se encoge a su contenido (`fit-content`) en vez de
+     * llenar la columna. Medido: sin esto, la caja de LinkedIn encogia de
+     * 156 a 122px Y SE DESPLAZABA a la derecha (el hueco sobrante se lo
+     * quedaba a la izquierda), asi que su canto derecho seguia tocando el de
+     * GitHub — 18x56px de solape, el mismo sitio que antes de esta tarea.
+     */
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+  }
+
+  /*
+   * El `margin-left: -1.75rem` de escritorio (linea ~4939, empareja los dos
+   * destinos) es un `:nth-child(4)` — especificidad 6, por encima del
+   * `margin: 0` de arriba (especificidad 5) para esa unica propiedad. Sin
+   * este reset GitHub seguia desplazandose 28px a la izquierda dentro de su
+   * columna de rejilla y volvia a solaparse con LinkedIn — medido: x=172 en
+   * vez de los 200 que le tocan (columna 2 empieza en 190 + 10px de gap).
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"]:nth-child(4) {
     margin-left: 0;
   }
 
-  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] + [data-canal="destino"] {
-    margin-left: 0;
+  /*
+   * Con el ancho ya recuperado, «Aoshi Blanco Sanz» a `--t-2` (16px, el de
+   * escritorio) cabria en una o dos lineas comodas; se deja en `--t-1`
+   * (12px) de todos modos para que la pareja de destinos (LinkedIn/GitHub)
+   * siga leyendose claramente MAS PEQUENA que los actos, ahora que ambos
+   * apilan igual. Se aplica a los dos destinos, no solo a LinkedIn, para no
+   * introducir una talla nueva entre los dos canales de la misma pareja.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] .contacto-bar-value {
+    font-size: var(--t-1);
   }
 }
 
