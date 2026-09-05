@@ -1,6 +1,6 @@
 # Spec de Caelestia — Fundido: la contraportada del escritorio
 
-Estado: hecho — gate de `vera-art-director` en BLOCK (6,59/10 contra 7,5), sin aceptar; ver `## Gates de critica`
+Estado: implementado — gate de `vera-art-director` en BLOCK (6,59/10 contra 7,5), sin aceptar; ver `## Gates de critica`
 Fecha: 2026-09-04
 Agenda de maquetado: `docs/superpowers/plans/2026-09-04-caelestia-fundido-maquetado.md`
 Plan de implementacion: `docs/superpowers/plans/2026-09-04-caelestia-fundido.md`
