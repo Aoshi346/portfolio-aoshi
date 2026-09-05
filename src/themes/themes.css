@@ -8723,9 +8723,26 @@
  * solo se hereda cuando el elemento no declara el suyo.
  * ===================================================================== */
 
-.caelestia-cursor-ready:root[data-theme="caelestia"] {
-  cursor: none;
-}
+/* Toda la lista blanca vive dentro de `no-preference`, y no se apaga con
+   una regla de rescate en `reduce`. La razon es la trampa que este mismo
+   bloque ya pago dos veces: una regla que devuelve el glifo tiene que
+   ganarle en especificidad a la que lo quita, y al hacerlo le gana tambien
+   a la que cada pulsable declara por su cuenta (`cursor: pointer` en su CSS
+   base), asi que el rescate acabaria dando la flecha del sistema donde
+   tocaba una mano. Acotando la lista blanca no hay nada que pisar: bajo
+   movimiento reducido estas reglas simplemente NO EXISTEN y cada elemento
+   se queda con el cursor que ya declaraba.
+
+   Y hace falta porque la puerta de `main.ts` solo mira AL CARGAR. Quien
+   activa el ajuste a mitad de sesion tiene el modulo ya montado y la clase
+   `ready` puesta: sin esto, la guardia de cinturon y tirantes esconde la
+   gota y la lista blanca sigue ocultando el puntero del sistema -- la
+   pagina se queda SIN NINGUN cursor hasta recargar, justo para el perfil
+   al que la guardia dice proteger. Medido, y vigilado por el gate 1. */
+@media (prefers-reduced-motion: no-preference) {
+  .caelestia-cursor-ready:root[data-theme="caelestia"] {
+    cursor: none;
+  }
 
 /* Opt-in explicito de los pulsables: sin esta regla el `cursor: none` de
    la raiz nunca llega a ellos. Casi todo boton de esta pagina (tarjetas de
@@ -8734,10 +8751,10 @@
    apuntarlos uno a uno, con especificidad mayor que esas reglas base, para
    que la gota sustituya de verdad al puntero. El enlace externo queda
    fuera aposta: abre pestana nueva y no se toca. */
-.caelestia-cursor-ready:root[data-theme="caelestia"]
-  :is(button, a[href]:not([target="_blank"])) {
-  cursor: none;
-}
+  .caelestia-cursor-ready:root[data-theme="caelestia"]
+    :is(button, a[href]:not([target="_blank"])) {
+    cursor: none;
+  }
 
 /* Texto corrido recupera el I-beam que la herencia le habia quitado:
    ocultarlo borraria la senal de que esto se selecciona y se copia.
@@ -8748,9 +8765,10 @@
    leyenda de una tarjeta de Obra, el nombre de una pieza de Creditos: ahi
    manda el pulsable, igual que en `resolver()` dentro del modulo. Las dos
    inversiones se mueven juntas o se contradicen sobre el mismo pixel. */
-.caelestia-cursor-ready:root[data-theme="caelestia"]
-  :is(p, li, dd, dt, figcaption, blockquote):not(button *, a[href] *) {
-  cursor: text;
+  .caelestia-cursor-ready:root[data-theme="caelestia"]
+    :is(p, li, dd, dt, figcaption, blockquote):not(button *, a[href] *) {
+    cursor: text;
+  }
 }
 
 /* `.gallery-track` NO necesita regla aqui, y a proposito: `style.css:911`
@@ -9009,6 +9027,9 @@
   box-sizing: border-box;
   border: 1.4px solid var(--cae-primary);
   border-radius: 50%;
+  /* Escalera del dispositivo: 65 la mancha, 71 el cerco, 72 la gota. El
+     cerco queda sobre el derrame (es su marca) y bajo la gota, que es lo
+     unico que senala la mano. */
   z-index: 71;
   pointer-events: none;
   animation: cae-cursor-cerco 0.8s cubic-bezier(0.2, 0, 0, 1) forwards;

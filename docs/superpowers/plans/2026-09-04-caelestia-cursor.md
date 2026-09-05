@@ -42,7 +42,7 @@ Ejecutado con `superpowers:subagent-driven-development` en el worktree
 | 8 · limpieza y consola | **cerrada** | `0b4b7b5` | 1 (la fuga de cercos, prevista en el Task 4) |
 | 9 · cerrar documentación | **cerrada** salvo la fila de `.claude/` (queda para el merge) | — | 0 |
 
-El arnés va por **47 aserciones en verde**, gate 6 incluido. La tarea 7 estuvo en rojo un día: el
+El arnés va por **53 aserciones en verde**, gate 6 incluido. La tarea 7 estuvo en rojo un día: el
 derrame nocturno hundía la leyenda de Obra a 4,06:1. Se resolvió **calibrando, no cambiando de
 mecanismo** — opacidad de noche 0,30 → 0,20, peor caso 4,92:1. La alternativa que preveía el spec
 (`background-image` bajo el texto) habría sido peor: la tarjeta de Obra lleva un `<img>` que lo

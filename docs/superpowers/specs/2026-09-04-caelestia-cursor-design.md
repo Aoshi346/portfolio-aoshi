@@ -5,7 +5,7 @@ Plan: `docs/superpowers/plans/2026-09-04-caelestia-cursor.md`
 Fecha: 2026-09-04 (spec aprobado y plan escrito el mismo dia)
 
 **Ejecucion, al 2026-09-05:** **las nueve tareas del plan cerradas**, arnes en verde con
-**47 aserciones** (`scripts/measure-caelestia-cursor.py`, 8 gates). Cruzadas tambien en verde: el
+**53 aserciones** (`scripts/measure-caelestia-cursor.py`, 8 gates). Cruzadas tambien en verde: el
 motor de color de Caelestia (fase A intacta), el cursor de Hyprland (no se ha tocado el de al lado)
 y `scripts/verify.py` (12 fallos conocidos de fixtures, 0 nuevos). Las tres dianas miradas a ojo,
 de dia y de noche, con el derrame lleno.
@@ -146,9 +146,14 @@ curva *expressive* de Material 3 hecha física. Si se repite, es gelatina.
 
 **La posición no se suaviza nunca.** Se escribe en el propio `pointermove`, como en los otros dos
 cursores. Lo que se interpola son el tamaño, la opacidad y la silueta (transiciones CSS de 300 ms
-sobre `cubic-bezier(.2, 0, 0, 1)`), el derrame (GSAP, 420 ms `power2.out` al llenar, 180-300 ms
-`power2.in` al secar) y el cerco (GSAP, 800 ms). En Créditos hay 23 dianas contiguas: un cursor con
+sobre `cubic-bezier(.2, 0, 0, 1)`), el derrame (420 ms al llenar, 180 ms al recogerse tras el clic,
+300 ms al secarse al salir) y el cerco (800 ms). En Créditos hay 23 dianas contiguas: un cursor con
 inercia ahí se lee como retraso.
+
+> **Corregido el 2026-09-05.** Este párrafo decía «GSAP» para el derrame y el cerco. **No hay GSAP
+> en este dispositivo**: todo el movimiento son transiciones y una animación CSS, precisamente para
+> que el montaje siga siendo síncrono y el módulo no dependa de una librería que carga aparte. Las
+> curvas son `cubic-bezier(0.2, 0, 0, 1)`, no `power2.*`. Los tiempos sí eran los correctos.
 
 ## Las tres dianas
 

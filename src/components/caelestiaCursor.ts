@@ -342,15 +342,22 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
     resolver(evento.target);
   };
 
+  /*
+   * Solo el boton principal. Un menu contextual no es una activacion: sin
+   * este filtro, un clic derecho sobre una tarjeta la derrama y deja cerco
+   * -- y el cerco esta escrito en el spec como la marca de haber SOLTADO un
+   * clic sobre una diana de clic. Seria la unica senal del dispositivo
+   * disparandose por algo que no ocurrio.
+   */
   const alPulsar = (evento: PointerEvent): void => {
-    if (evento.pointerType !== "mouse") return;
+    if (evento.pointerType !== "mouse" || evento.button !== 0) return;
     pulsado = true;
     if (diana && !mojada) mojar(diana);
     if (diana) setEstado("derrame");
   };
 
   const alSoltar = (evento: PointerEvent): void => {
-    if (evento.pointerType !== "mouse") return;
+    if (evento.pointerType !== "mouse" || evento.button !== 0) return;
     pulsado = false;
     if (!diana) return;
     // La familia de roce se queda mojada: ahi el derrame no lo trajo el clic.

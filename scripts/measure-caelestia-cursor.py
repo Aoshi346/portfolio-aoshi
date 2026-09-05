@@ -55,7 +55,7 @@ def estado(pagina) -> str:
     return pagina.evaluate("() => window.__caeCursor__ ? window.__caeCursor__.estado() : 'sin-modulo'")
 
 
-def gate_presencia(navegador, base: str) -> None:
+def gate_presencia(navegador, base: str, errores: list[str]) -> None:
     """Gate 1 -- presencia por tema y las TRES puertas de montaje.
 
     Falla si el modulo monta donde no debe, y -- lo que de verdad importa --
@@ -63,12 +63,30 @@ def gate_presencia(navegador, base: str) -> None:
     tiene que estar antes del `import()`, no dentro del modulo: en tactil el
     coste correcto es cero, no "cero animacion". Por eso se vigila la
     peticion de red, no el DOM.
+
+    `errores` es la MISMA lista que vigila el gate 8, y se engancha en cada
+    pagina que abre este gate. Sin eso, las paginas de Vice y de Hyprland
+    -- las unicas de todo el arnes que abren esos dos temas -- corren sin
+    ningun oyente de consola: esta rama toca `themes.css`, que es global, y
+    `main.ts`; si el `import()` nuevo reventara en Vice, este gate seguiria
+    VERDE (solo comprueba que `.cae-cursor` NO exista, que es justo lo que
+    pasa cuando algo falla) y el gate 8 no veria el error porque nunca miro
+    esa pagina. Es el modo de fallo exacto del `gsap` sin desestructurar de
+    Hyprland, que estuvo semanas invisible.
     """
     print("[1] presencia por tema y puertas de montaje")
+
+    def escucha(pagina) -> None:
+        pagina.on("pageerror", lambda e: errores.append(f"pageerror: {e}"))
+        pagina.on(
+            "console",
+            lambda m: errores.append(f"console.error: {m.text}") if m.type == "error" else None,
+        )
 
     for tema, debe in (("caelestia", True), ("vice", False), ("hyprland", False)):
         contexto = navegador.new_context(viewport={"width": 1440, "height": 900})
         pagina = contexto.new_page()
+        escucha(pagina)
         pagina.goto(f"{base}/?theme={tema}", wait_until="domcontentloaded", timeout=45000)
         pagina.wait_for_timeout(6000)
         hay = pagina.evaluate("() => !!document.querySelector('.cae-cursor')")
@@ -94,6 +112,7 @@ def gate_presencia(navegador, base: str) -> None:
     ):
         contexto = navegador.new_context(**kwargs)
         pagina = contexto.new_page()
+        escucha(pagina)
         pedidos: list[str] = []
         pagina.on("request", lambda r: pedidos.append(r.url))
         pagina.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=45000)
@@ -105,6 +124,45 @@ def gate_presencia(navegador, base: str) -> None:
             f"[1] {etiqueta}: la gota no monta",
         )
         contexto.close()
+
+    # Movimiento reducido activado DESPUES de montar. La puerta de `main.ts`
+    # solo mira al cargar, asi que aqui el modulo YA esta montado y la clase
+    # `ready` puesta: la lista blanca sigue en pie y la guardia de cinturon y
+    # tirantes esconde `.cae-cursor`. Si nadie devuelve el glifo, el visitante
+    # que activa un ajuste de accesibilidad a mitad de sesion se queda SIN
+    # NINGUN puntero hasta recargar -- justo el perfil al que la guardia dice
+    # proteger.
+    contexto = navegador.new_context(viewport={"width": 1440, "height": 900})
+    pagina = contexto.new_page()
+    escucha(pagina)
+    pagina.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=45000)
+    pagina.wait_for_timeout(6000)
+    check(
+        pagina.evaluate("() => !!document.querySelector('.cae-cursor')"),
+        "[1] partida: con movimiento normal la gota esta montada",
+    )
+    pagina.emulate_media(reduced_motion="reduce")
+    pagina.wait_for_timeout(300)
+    glifos = pagina.evaluate(
+        """() => ({
+             raiz: getComputedStyle(document.documentElement).cursor,
+             pulsable: getComputedStyle(document.querySelector('.cae-obra-card')).cursor,
+             gota: getComputedStyle(document.querySelector('.cae-cursor')).display,
+           })"""
+    )
+    check(
+        glifos["gota"] == "none",
+        f"[1] movimiento reducido tardio: la gota deja de pintarse ({glifos['gota']})",
+    )
+    check(
+        glifos["raiz"] != "none",
+        f"[1] movimiento reducido tardio: la raiz recupera puntero ({glifos['raiz']})",
+    )
+    check(
+        glifos["pulsable"] != "none",
+        f"[1] movimiento reducido tardio: lo pulsable recupera puntero ({glifos['pulsable']})",
+    )
+    contexto.close()
 
 
 def gate_senales(p_pagina, base: str) -> None:
@@ -237,6 +295,20 @@ def gate_dos_momentos(pagina, base: str) -> None:
         pagina.evaluate("() => window.__caeCursor__.mancha()") == 0,
         "[3] sin clic la tarjeta esta seca",
     )
+    # El boton DERECHO no es una activacion: abre un menu contextual. Si
+    # derramara, la unica senal escrita del dispositivo (el cerco marca haber
+    # soltado un clic sobre una diana de clic) se dispararia por algo que no
+    # ocurrio.
+    pagina.mouse.down(button="right")
+    pagina.wait_for_timeout(500)
+    check(estado(pagina) == "perla", "[3] el clic DERECHO no derrama")
+    pagina.mouse.up(button="right")
+    pagina.wait_for_timeout(300)
+    check(
+        pagina.evaluate("() => document.querySelectorAll('.cae-cursor-cerco').length") == 0,
+        "[3] el clic DERECHO no deja cerco",
+    )
+
     pagina.mouse.down()
     pagina.wait_for_timeout(700)
     check(estado(pagina) == "derrame", "[3] la tarjeta se moja al PULSAR")
@@ -609,7 +681,8 @@ def gate_contraste(pagina, base: str, mitad: int | None = None) -> None:
 
     check(
         peor_contraste[0] >= AA,
-        f"[6] AA bajo el derrame en las 24 horas (peor {peor_contraste[0]:.2f}:1 en {peor_contraste[1]})",
+        f"[6] AA bajo el derrame ({'24 horas' if mitad is None else f'mitad {mitad}'}) "
+        f"(peor {peor_contraste[0]:.2f}:1 en {peor_contraste[1]})",
     )
     # UMBRAL_NOTA se fija con la primera medida y se anota en el spec. No lo
     # bajes para que pase: si el derrame no se nota, el derrame esta mal.
@@ -712,7 +785,7 @@ def main() -> int:
         )
 
         if not args.solo_gate6:
-            gate_presencia(navegador, args.base)
+            gate_presencia(navegador, args.base, errores)
             gate_senales(pagina, args.base)
             gate_sin_inercia(pagina, args.base)
             gate_dos_momentos(pagina, args.base)

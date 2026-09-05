@@ -67,7 +67,7 @@
   they are **one gesture fired at two moments**, which is how it satisfies "a cursor cannot have a
   manual". DOM, not canvas (it needs `backdrop-filter` and `mix-blend-mode`), and **no GSAP**: CSS
   transitions only, so the mount stays synchronous. No trail, no positional inertia.
-  `src/components/caelestiaCursor.ts`, gated by `scripts/measure-caelestia-cursor.py` (8 gates, 47
+  `src/components/caelestiaCursor.ts`, gated by `scripts/measure-caelestia-cursor.py` (8 gates, 53
   assertions, every one seen red against the failure it claims to catch).
   - **The night spill's opacity is 0,20 and the day's is 0,22 — do not unify them.** They are
     different mixes: `multiply` over light paper darkens the text's background, `screen` over dark
