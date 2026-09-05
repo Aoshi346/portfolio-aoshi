@@ -304,6 +304,88 @@ def gate_dos_momentos(pagina, base: str) -> None:
     pagina.emulate_media(reduced_motion="no-preference")
 
 
+def gate_rancio(pagina, base: str) -> None:
+    """Gate 5 -- la diana que se va con el raton quieto.
+
+    Al cambiar de workspace, el carril se lleva la diana y deja otra escena
+    debajo del puntero, y eso NO emite ningun evento de puntero -- esa es la
+    premisa escrita en el propio modulo. Sin la escucha de
+    `caelestia:workspace` la gota se queda mojada sobre una caja que ya no
+    esta ahi -- una mancha flotando sobre la escena siguiente.
+
+    El raton NO se mueve en toda la prueba: si se moviera, `pointerover` lo
+    arreglaria solo y el gate no mediria nada. Por eso el workspace se cambia
+    por TECLADO.
+
+    LA TRAMPA QUE CASI CUELA EL GATE SIN AISLAR: la premisa de arriba es
+    FALSA en Chromium para este caso concreto. `aislarInactivos()` pone
+    `inert = true` en la escena saliente en el mismo tick del clic, y
+    Chromium recalcula el hit-test bajo el puntero AUNQUE este no se mueva un
+    pixel -- dispara `pointerout`/`pointerleave` nativos y REALES sobre la
+    pieza mojada, con target la pieza y sus ancestros. Esos eventos llegan al
+    `alEntrar`/`pointerover` del propio modulo (via el listener normal, sin
+    pasar por `marcarRancio` ni por `stale`) y curan el estado solos. Medido
+    sin este bloqueo: la sonda vuelve a estado limpio incluso con la escucha
+    de `caelestia:workspace` retirada por completo del modulo -- el sabotaje
+    de la Task 6 no daba rojo. Es el mismo defecto que las nueve aserciones
+    tautologicas ya cazadas en este proyecto (`Aserciones que no pueden
+    fallar`): el gate media un mecanismo (el hit-test nativo de Chromium) que
+    no es el que este dispositivo dice defender.
+
+    Por eso, antes de disparar el cambio de workspace, se bloquean en fase de
+    CAPTURA sobre `window` los cinco tipos de evento de puntero relacionados
+    con hover (`pointerover/out/leave/enter/move`) con
+    `stopImmediatePropagation()`. Un listener de captura en `window` es el
+    primer paso del recorrido del evento: pararlo ahi impide que llegue a
+    NINGUN listener mas abajo, nativo o del modulo, capa o burbuja -- aisla
+    el mecanismo bajo prueba (`marcarRancio` -> `stale` -> `tick()` ->
+    `elementFromPoint`) de cualquier curacion que el navegador pudiera dar
+    gratis. Verificado en los dos sentidos antes de escribir el gate: con el
+    modulo intacto y el bloqueo puesto, la diana se suelta igual (la via que
+    SI se quiere probar); con la escucha retirada y el mismo bloqueo, la
+    diana se queda mojada y `mancha()` en 1 -- la sabotage ahora si da rojo.
+    """
+    print("[5] estado rancio tras cambiar de workspace")
+    abre(pagina, base, "creditos")
+    pagina.hover(".cae-cred-pieza:nth-child(3)")
+    pagina.wait_for_timeout(700)
+    check(estado(pagina) == "derrame", "[5] partida: la pieza esta mojada")
+
+    pagina.evaluate(
+        """() => {
+             window.__caeGateBloqueo = (e) => { e.stopImmediatePropagation(); };
+             for (const t of ['pointerover','pointerout','pointerleave','pointerenter','pointermove']) {
+               window.addEventListener(t, window.__caeGateBloqueo, true);
+             }
+           }"""
+    )
+
+    # Cambio de workspace SIN mover el raton: se pulsa la pastilla con el
+    # teclado, desde el foco.
+    pagina.evaluate("() => document.querySelectorAll('.cae-ws')[4].focus()")
+    pagina.keyboard.press("Enter")
+    pagina.wait_for_timeout(1500)
+
+    check(
+        pagina.evaluate("() => window.__caeCursor__.diana() === null"),
+        "[5] tras cambiar de workspace la diana mojada se suelta",
+    )
+    check(estado(pagina) != "derrame", f"[5] la gota deja de estar derramada ({estado(pagina)})")
+    check(
+        pagina.evaluate("() => window.__caeCursor__.mancha()") == 0,
+        "[5] la mancha queda seca",
+    )
+
+    pagina.evaluate(
+        """() => {
+             for (const t of ['pointerover','pointerout','pointerleave','pointerenter','pointermove']) {
+               window.removeEventListener(t, window.__caeGateBloqueo, true);
+             }
+             delete window.__caeGateBloqueo;
+           }"""
+    )
+
+
 ARGS = ["--no-sandbox", "--use-gl=swiftshader"]
 
 
@@ -327,6 +409,7 @@ def main() -> int:
         gate_senales(pagina, args.base)
         gate_sin_inercia(pagina, args.base)
         gate_dos_momentos(pagina, args.base)
+        gate_rancio(pagina, args.base)
 
         print("[8] consola")
         check(not errores, f"[8] cero errores de consola ({errores[:3]})")
