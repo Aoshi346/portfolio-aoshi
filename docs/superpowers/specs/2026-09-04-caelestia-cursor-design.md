@@ -1,6 +1,6 @@
 # La gota — el cursor de Caelestia es pigmento de la hora sobre la superficie
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-09-04-caelestia-cursor.md`
 Fecha: 2026-09-04 (spec aprobado y plan escrito el mismo dia)
 
@@ -10,12 +10,14 @@ motor de color de Caelestia (fase A intacta), el cursor de Hyprland (no se ha to
 y `scripts/verify.py` (12 fallos conocidos de fixtures, 0 nuevos). Las tres dianas miradas a ojo,
 de dia y de noche, con el derrame lleno.
 
-**Por que el estado sigue en `en ejecucion` y no en `implementado`:** falta el merge, y con el
-merge la unica pieza de documentacion que no vive en esta rama — la fila del arnes en
-`.claude/rules/verification.md` y el parrafo de `.claude/CLAUDE.md`. `.claude/` esta en
-`.gitignore`: no existe en este worktree, vive solo en el directorio del repo principal, donde hay
-otra sesion trabajando en B5 que va a escribir en los mismos ficheros. Se aplica al fusionar. El
-`CLAUDE.md` de la raiz, que si esta versionado, ya lleva su parrafo.
+**Revision final de rama** (modelo top, modo lectura, con los 11 minors diferidos delante): cinco
+hallazgos, los cinco cerrados. Dos importaban de verdad — con movimiento reducido activado DESPUES
+de montar la pagina se quedaba sin ningun cursor, y las paginas de Vice y Hyprland del gate 1
+corrian sin oyente de consola. Detalle en el `## Registro de implementacion`.
+
+**Fusionado a `main` el 2026-09-05.** Con el merge se aplicaron las dos piezas de documentacion que
+no viven en la rama porque `.claude/` esta en `.gitignore`: la fila del arnes en
+`.claude/rules/verification.md` y el parrafo en espanol de `.claude/CLAUDE.md`.
 
 El progreso real son **las casillas del plan**, que es lo que cruza `scripts/verify.py`; el detalle
 de cada ronda vive en `.superpowers/sdd/2026-09-04-caelestia-cursor/progress.md`, ignorado por git.
@@ -575,3 +577,35 @@ Cinco, y es un dato, no un hueco:
 Y un fallo de proceso que costó tres turnos: **los subagentes se van solos a ejecución en segundo
 plano**, y su propia parada mata la corrida. El barrido largo hubo que partirlo en dos mitades
 detrás de una bandera de CLI para que cupiera en una llamada en primer plano.
+
+### Lo que encontro la revision final de rama (2026-09-05)
+
+Revision adversarial en el modelo mas capaz, en modo lectura, con los 11 minors diferidos delante
+para triarlos. Cinco hallazgos, los cinco cerrados antes de fusionar.
+
+1. **Con movimiento reducido activado DESPUES de montar, la pagina se quedaba sin ningun cursor.**
+   La guardia de cinturon y tirantes esconde `.cae-cursor`, pero nada revertia el `cursor: none` de
+   la raiz ni el opt-in de los pulsables, y la puerta de `main.ts` solo mira AL CARGAR. Era el
+   fallo exacto para el perfil al que la guardia dice proteger. Arreglado **acotando la lista
+   blanca** a `@media (prefers-reduced-motion: no-preference)`, y no con una regla de rescate: un
+   rescate tendria que ganarle en especificidad a la regla que quita el glifo, y al hacerlo le
+   ganaria tambien al `cursor: pointer` que cada pulsable declara por su cuenta — el mismo defecto
+   que esta rama ya pago dos veces. Acotando, bajo `reduce` esas reglas simplemente no existen y
+   cada elemento se queda con lo que ya declaraba (medido: raiz `auto`, pulsable `pointer`).
+2. **Las paginas de Vice y Hyprland del gate 1 corrian sin oyente de consola.** Son las unicas de
+   todo el arnes que abren esos dos temas, esta rama toca `themes.css` (global) y `main.ts`, y un
+   fallo alli habria dejado el gate en VERDE: solo comprueba que `.cae-cursor` NO exista, que es
+   justo lo que pasa cuando algo revienta. Es el modo de fallo del `gsap` sin desestructurar de
+   Hyprland, que estuvo semanas invisible. Enganchadas a la misma lista que vigila el gate 8.
+3. **El clic DERECHO derramaba y dejaba cerco.** Un menu contextual no es una activacion, y el
+   cerco esta escrito aqui como la marca de haber SOLTADO un clic sobre una diana de clic: era la
+   unica senal del dispositivo disparandose por algo que no ocurrio.
+4. **Este mismo documento describia el derrame y el cerco como GSAP.** No lo son. Corregido.
+5. La etiqueta del check de AA decia "en las 24 horas" tambien corriendo con `--mitad`.
+
+**Triaje de los 11 minors diferidos:** tres NO eran problema —dos con la premisa falsa (`main()`
+si cierra Chromium, porque el bloque vive dentro de `with sync_playwright()`; y el
+`void HOVER_SELECT` dejo de existir en el Task 3) y uno que resulta ser lo CORRECTO (que `secar()`
+deje quietas las coordenadas de la mancha: la caja tiene que quedarse donde esta mientras la gota
+se recoge, o el liquido se recogeria hacia un sitio equivocado)—, siete quedan como deuda anotada
+y uno se arreglo (el `z-index: 71` del cerco sin su comentario de escalera).

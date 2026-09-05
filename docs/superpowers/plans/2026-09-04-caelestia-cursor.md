@@ -40,7 +40,7 @@ Ejecutado con `superpowers:subagent-driven-development` en el worktree
 | 6 · el estado rancio | **cerrada** | `4b0c6cf`, `4c0eb85` | 1 |
 | 7 · el barrido de 24 horas | **cerrada** | `8e1198e`, `6a4ad82` | 1 (la recalibración) |
 | 8 · limpieza y consola | **cerrada** | `0b4b7b5` | 1 (la fuga de cercos, prevista en el Task 4) |
-| 9 · cerrar documentación | **cerrada** salvo la fila de `.claude/` (queda para el merge) | — | 0 |
+| 9 · cerrar documentación | **cerrada** | `90d6169`, `e989a6e` | 0 |
 
 El arnés va por **53 aserciones en verde**, gate 6 incluido. La tarea 7 estuvo en rojo un día: el
 derrame nocturno hundía la leyenda de Obra a 4,06:1. Se resolvió **calibrando, no cambiando de
@@ -2103,14 +2103,15 @@ git commit -m "test(cursor): gate de limpieza de destroy() y de consola"
 - Consumes: todo lo anterior.
 - Produces: el estado final del spec.
 
-- [ ] **Step 1: Añade el arnés a la tabla de `rules/verification.md`** — QUEDA PARA EL MERGE
+- [x] **Step 1: Añade el arnés a la tabla de `rules/verification.md`** — HECHO AL FUSIONAR
 
 `.claude/` está en `.gitignore`: **no existe en este worktree y no viaja en esta rama**. Vive solo
-en el directorio del repo principal, que es justo donde hay otra sesión trabajando en B5 con su
-`vite preview` vivo, y que además va a escribir su propio párrafo en el mismo fichero. Editarlo
-desde aquí no aporta nada a la rama y se pisa con esa sesión, así que la fila se aplica **al
-fusionar**, no ahora. La fila lista para pegar es la de abajo; el `Estado:` del spec se queda en
-`en ejecucion` hasta entonces, que es lo que de verdad pasa.
+en el directorio del repo principal, donde mientras tanto había otra sesión trabajando en B5 que
+iba a escribir en el mismo fichero. Por eso este paso se aplazó al merge en vez de hacerse desde
+aquí. **Hecho el 2026-09-05**, con B5 ya fusionada: la fila del arnés en
+`.claude/rules/verification.md` (bajo la de `measure-caelestia-fundido.py`) y el párrafo en español
+en `.claude/CLAUDE.md` (antes del shell de Caelestia). El del `CLAUDE.md` versionado ya viajaba en
+la rama.
 
 Una fila, con el mismo formato que las demás:
 
