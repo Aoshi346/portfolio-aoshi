@@ -19,6 +19,41 @@ Verificación con Playwright desde Python.
 
 **Spec:** `docs/superpowers/specs/2026-09-04-caelestia-fundido-design.md`
 
+## Estado de ejecución
+
+**Las nueve tareas están hechas y revisadas** (2026-09-05). Los 53 pasos quedan marcados. La
+bitácora completa —con las veinticinco decisiones tomadas durante la ejecución y lo que costaría
+cada una si fuese equivocada— está en `.superpowers/sdd/2026-09-04-caelestia-fundido/progress.md`.
+
+| tarea | commits | revisión |
+|---|---|---|
+| 1. Rescatar las maquetas | `29427c8`, `ffa9af8` | limpia |
+| 2. Ganchos en el DOM compartido | `ea689fb` | limpia |
+| 3. Tokens de ejes de Fraunces | `fc8ce36` | limpia |
+| 4. Campo de color y escala del cierre | `9a1a22f`..`a4eaff4` | 1 ronda de arreglos |
+| 5. El troquel y el sprite | `4c03475` | limpia |
+| 6. El fundido y la entrada | `228e2bf`..`071d915` | 1 ronda de arreglos |
+| 7. Movimiento reducido | `0a92996` | limpia, sin hallazgos |
+| 8. El arnés | `f9fbeed` | limpia |
+| 9. Cierre: build, capturas y spec | `71a9227` | — |
+| Ronda de los dos P0 de los gates | `f6423c1` | — |
+
+**Gates de crítica.** `lidia-naive-tester` 7,1/10 con un P0 en móvil —el colofón tenía las cajas
+solapadas y tocar sobre el nombre de LinkedIn abría GitHub—; `vera-art-director` **BLOCK**, 6,9/10
+contra su listón de 7,5, con ese mismo P0 y otro tipográfico. **Los dos P0 se arreglaron** en
+`f6423c1`: los tres solapes a cero, las veinte pruebas de impacto devolviendo su propia barra, y los
+tres literales de tamaño por debajo del suelo del sistema recogidos en un `--t-0` declarado.
+
+Tres P1 quedan aceptados como deuda registrada, en el spec y en la bitácora: el espaciado fuera de
+la rejilla de 4/8 px (el mismo hallazgo que B1 ya aceptó), el campo de color apagado en móvil (recorte
+de alcance deliberado), y la ausencia de respuesta al roce en los cuatro canales de contacto —el
+primero que convendría arreglar si Aoshi quiere otra pasada.
+
+**Lo que este plan se equivocó**, y quedó corregido durante la ejecución: no traía el CSS de
+`.cae-fundido-campo` en ninguna tarea; anclaba el troquel donde nunca podía sangrar; daba por buenos
+dos sabotajes de gate que no producían rojo por construcción; y ponía el puerto equivocado en
+veintinueve sitios.
+
 ## Global Constraints
 
 Copiadas del spec y de los dos `CLAUDE.md`. **Los requisitos de cada tarea las incluyen.**
@@ -78,7 +113,7 @@ Copiadas del spec y de los dos `CLAUDE.md`. **Los requisitos de cada tarea las i
 - Create: `docs/superpowers/maquetas/2026-09-04-caelestia-fundido-movil.html`
 - Create: `docs/superpowers/maquetas/README.md`
 
-- [ ] **Step 1: Localizar el directorio del companion**
+- [x] **Step 1: Localizar el directorio del companion**
 
 ```bash
 ls .superpowers/brainstorm/*/content/*.html
@@ -87,7 +122,7 @@ ls .superpowers/brainstorm/*/content/*.html
 Esperado: al menos `10-dino-chrome.html`, `12-escala.html`, `13-canales.html`, `14-fundido.html`,
 `15-entrada.html`, `16-movil.html`.
 
-- [ ] **Step 2: Copiar las seis maquetas que documentan decisiones aprobadas**
+- [x] **Step 2: Copiar las seis maquetas que documentan decisiones aprobadas**
 
 ```bash
 mkdir -p docs/superpowers/maquetas
@@ -100,7 +135,7 @@ cp "$D/15-entrada.html"     docs/superpowers/maquetas/2026-09-04-caelestia-fundi
 cp "$D/16-movil.html"       docs/superpowers/maquetas/2026-09-04-caelestia-fundido-movil.html
 ```
 
-- [ ] **Step 3: Arreglar la única dependencia externa**
+- [x] **Step 3: Arreglar la única dependencia externa**
 
 Las maquetas de movimiento y entrada cargan `<script src="/files/gsap.min.js">`, que solo existe
 mientras corre el servidor del companion. Se apunta al CDN para que sigan abriéndose sueltas.
@@ -114,7 +149,7 @@ grep -c 'files/gsap' docs/superpowers/maquetas/*.html
 
 Esperado: `0` en todos.
 
-- [ ] **Step 4: Escribir el README que dice qué es cada una**
+- [x] **Step 4: Escribir el README que dice qué es cada una**
 
 ```markdown
 # Maquetas de la fase B5 — Fundido
@@ -137,7 +172,7 @@ que abiertas sueltas no traen `<html>` ni `<head>`. El navegador las muestra igu
 Las de movimiento y entrada cargan GSAP del CDN; en el companion venía de `/files/`.
 ```
 
-- [ ] **Step 5: Comprobar que se abren sin el servidor del companion**
+- [x] **Step 5: Comprobar que se abren sin el servidor del companion**
 
 ```bash
 python3 -c "
@@ -150,7 +185,7 @@ for f in sorted(pathlib.Path('docs/superpowers/maquetas').glob('*.html')):
 "
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docs/superpowers/maquetas
@@ -182,7 +217,7 @@ con `order` (Task 4), que no le cambia el DOM a nadie.
   hijos de `.contacto-bars` no cambia**: sigue siendo el de `contactChannels` — correo, LinkedIn,
   teléfono, GitHub. Las Tasks 4, 5 y 6 dependen de estos nombres y de ese orden.
 
-- [ ] **Step 1: Verificar el punto de partida en el navegador**
+- [x] **Step 1: Verificar el punto de partida en el navegador**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -211,7 +246,7 @@ PY
 
 Esperado: `{'canales': 0, 'lead': False}` — los ganchos no existen todavía.
 
-- [ ] **Step 2: Añadir el tipo de canal, derivado del `href`**
+- [x] **Step 2: Añadir el tipo de canal, derivado del `href`**
 
 En `src/sections/contacto.ts`, dentro de `createBar`, justo antes del `return bar;`:
 
@@ -227,7 +262,7 @@ En `src/sections/contacto.ts`, dentro de `createBar`, justo antes del `return ba
   bar.dataset.canal = esquema === "mailto" || esquema === "tel" ? "acto" : "destino";
 ```
 
-- [ ] **Step 3: Dejar `.contacto-bars` exactamente como está**
+- [x] **Step 3: Dejar `.contacto-bars` exactamente como está**
 
 No hay nada que hacer aquí, y es deliberado. La línea
 
@@ -239,7 +274,7 @@ No hay nada que hacer aquí, y es deliberado. La línea
 `contactChannels`. Añadir envoltorios reordenaría el DOM y con él el orden visible de las barras en
 Vice y en Hyprland; el agrupamiento visual de Caelestia lo hace su CSS con `order` en la Task 4.
 
-- [ ] **Step 4: Poner el gancho del titular de cierre**
+- [x] **Step 4: Poner el gancho del titular de cierre**
 
 En `createContacto`, sustituir:
 
@@ -263,7 +298,7 @@ y declararlo antes de `const band`:
   lead.setAttribute("data-fundido-lead", "");
 ```
 
-- [ ] **Step 5: Construir y comprobar que los ganchos existen y no rompen nada**
+- [x] **Step 5: Construir y comprobar que los ganchos existen y no rompen nada**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -315,7 +350,7 @@ PY
 Esperado: los tres temas con 4 canales, tipos `acto, destino, acto, destino` (el orden de
 `contactChannels` es correo, linkedin, telefono, github), `rel`/`tel` intactos, cero errores.
 
-- [ ] **Step 6: Ver que el orden visible no ha cambiado en Vice ni en Hyprland**
+- [x] **Step 6: Ver que el orden visible no ha cambiado en Vice ni en Hyprland**
 
 ```bash
 python3 - <<'PY'
@@ -341,7 +376,7 @@ apiladas, en el mismo orden y con la misma pinta.** Esta tarea solo añade atrib
 única forma de romperlas sería que algún selector de esos temas usara `a.contacto-bar:not([data-*])`
 o similar — improbable, pero la captura es barata y el diseño de Vice está cerrado.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/sections/contacto.ts
@@ -366,7 +401,7 @@ capturas antes y después.
 **Interfaces:**
 - Produces: `--cae-display-axes-texto` y `--cae-display-axes-cierre`. La Task 4 usa el segundo.
 
-- [ ] **Step 1: Capturar B1 y B2 antes de tocar nada**
+- [x] **Step 1: Capturar B1 y B2 antes de tocar nada**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -392,7 +427,7 @@ with sync_playwright() as p:
 PY
 ```
 
-- [ ] **Step 2: Declarar los dos tokens nuevos**
+- [x] **Step 2: Declarar los dos tokens nuevos**
 
 En `src/themes/themes.css`, justo después de la declaración de `--cae-display-axes-cartel`:
 
@@ -414,7 +449,7 @@ En `src/themes/themes.css`, justo después de la declaración de `--cae-display-
   --cae-display-axes-cierre: "opsz" 144, "wght" 300, "SOFT" 100, "WONK" 1;
 ```
 
-- [ ] **Step 3: Sustituir los tres literales por el token**
+- [x] **Step 3: Sustituir los tres literales por el token**
 
 ```bash
 grep -n '"opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1' src/themes/themes.css
@@ -423,14 +458,14 @@ grep -n '"opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1' src/themes/themes.css
 Esperado: tres coincidencias, todas como valor de `font-variation-settings`. Sustituir cada una por
 `var(--cae-display-axes-texto)`. **No tocar** la línea de la declaración del token nuevo.
 
-- [ ] **Step 4: Comprobar que no queda ningún literal y que el token se usa tres veces**
+- [x] **Step 4: Comprobar que no queda ningún literal y que el token se usa tres veces**
 
 ```bash
 grep -c 'var(--cae-display-axes-texto)' src/themes/themes.css   # esperado: 3
 grep -c '"opsz" 9, "wght" 700' src/themes/themes.css            # esperado: 1 (la declaracion)
 ```
 
-- [ ] **Step 5: Capturar después y comparar píxel a píxel**
+- [x] **Step 5: Capturar después y comparar píxel a píxel**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -486,7 +521,7 @@ o esta comparación no puede dar verde jamás:**
    lo más seguidas posible, y si aun así hay diferencia, repetir las dos seguidas antes de concluir
    nada.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -514,7 +549,7 @@ Sin animación todavía y sin troquel: solo que la escena deje de estar rota.
   (Task 3).
 - Produces: `--fundido-dim` sobre `[data-scene="contacto"]`. La Task 5 lo hereda.
 
-- [ ] **Step 1: Escribir el bloque de la escena**
+- [x] **Step 1: Escribir el bloque de la escena**
 
 ```css
 /*
@@ -778,7 +813,7 @@ Sin animación todavía y sin troquel: solo que la escena deje de estar rota.
 }
 ```
 
-- [ ] **Step 2: Construir y medir la jerarquía**
+- [x] **Step 2: Construir y medir la jerarquía**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -839,14 +874,14 @@ PY
 Esperado: titular **159,66** a 1440 y **89,85** a 390, mayor que el valor del acto en los dos, sin
 scroll interno, cero errores.
 
-- [ ] **Step 3: Mirar las dos capturas**
+- [x] **Step 3: Mirar las dos capturas**
 
 Abrir `/tmp/b5-t4-1440.png` y `/tmp/b5-t4-390.png`. Los números pueden estar verdes con el
 resultado roto: **hay que ver el campo de color, el titular grande y el colofón en dos grupos.**
 Si a 390 la frase desborda por la derecha, el paso elegido no cabe — volver al spec, no bajar el
 tamaño a ojo.
 
-- [ ] **Step 4: Comprobar que Vice y Hyprland siguen intactos**
+- [x] **Step 4: Comprobar que Vice y Hyprland siguen intactos**
 
 ```bash
 python3 - <<'PY'
@@ -873,7 +908,7 @@ PY
 El titular de Vice y Hyprland **no puede estar en `position: absolute`**: la regla que lo oculta
 lleva `[data-theme="caelestia"]` delante y solo debe aplicar ahí.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -903,7 +938,7 @@ de 288 pasos del dia)."
     y `export function montarFundido(gsap: Gsap, escena: HTMLElement): FundidoHandle | null`.
     La Task 6 llama a `reproducir` y `entrar`; la Task 7 no toca esta interfaz.
 
-- [ ] **Step 1: Escribir `caelestia.dino.ts` con los mapas y su cabecera legal**
+- [x] **Step 1: Escribir `caelestia.dino.ts` con los mapas y su cabecera legal**
 
 Los mapas de bits salen de las maquetas rescatadas en la Task 1. **Ojo con de cuál**:
 
@@ -1051,7 +1086,7 @@ export function alturaMapa(fotograma: Fotograma): number {
 }
 ```
 
-- [ ] **Step 2: Comprobar los invariantes del sprite sobre el propio fichero**
+- [x] **Step 2: Comprobar los invariantes del sprite sobre el propio fichero**
 
 Antes de que nada lo pinte. Si un mapa está torcido, el bicho flota o se deforma, y en una captura
 reducida no se ve.
@@ -1111,7 +1146,7 @@ FIN
 Esperado: `ninguno`. **Si alguno falla, los mapas se copiaron mal** — volver a la maqueta, no
 retocarlos a mano.
 
-- [ ] **Step 3: Escribir `caelestia.fundido.ts` — el montaje, sin animación todavía**
+- [x] **Step 3: Escribir `caelestia.fundido.ts` — el montaje, sin animación todavía**
 
 ```ts
 import type { Gsap } from "./choreography";
@@ -1261,7 +1296,7 @@ export function montarFundido(
 }
 ```
 
-- [ ] **Step 4: Añadir el CSS del troquel**
+- [x] **Step 4: Añadir el CSS del troquel**
 
 En el bloque de `[data-scene="contacto"]` de la Task 4:
 
@@ -1359,7 +1394,7 @@ En el bloque de `[data-scene="contacto"]` de la Task 4:
 }
 ```
 
-- [ ] **Step 5: Montarlo temporalmente para poder verlo, y medir**
+- [x] **Step 5: Montarlo temporalmente para poder verlo, y medir**
 
 En `caelestia.choreography.ts`, junto a `montarFicha`, añadir de forma provisional (la Task 6 lo
 deja definitivo):
@@ -1431,12 +1466,12 @@ Esperado: troquel cuadrado de 460 (escritorio) y 196 (móvil), **240 puntos** en
 lóbulo de 24,9 y 20,6 px, el titular partido en 2 líneas y **con el mismo texto de `content.ts`**,
 el horizonte con `viewBox` recortado solo a 390.
 
-- [ ] **Step 6: Mirar las capturas**
+- [x] **Step 6: Mirar las capturas**
 
 `/tmp/b5-t5-1440.png` y `/tmp/b5-t5-390.png`. El bicho tiene que **apoyarse en el horizonte**, no
 flotar; el ojo tiene que verse **una vez**, no dos.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/themes/caelestia.dino.ts src/themes/caelestia.fundido.ts \
@@ -1461,7 +1496,7 @@ recorta a un tramo en movil -- entero, su linea medía menos de un pixel."
 - Consumes: `FundidoHandle` (Task 5).
 - Produces: nada nuevo; completa `reproducir` y `entrar`.
 
-- [ ] **Step 1: Generar los dos `clip-path` y pegarlos en el CSS**
+- [x] **Step 1: Generar los dos `clip-path` y pegarlos en el CSS**
 
 ```bash
 python3 - <<'PY'
@@ -1488,7 +1523,7 @@ Pegar cada salida en el `clip-path` correspondiente de la Task 5, sustituyendo e
 marcador. **Los 240 puntos son obligatorios en los dos**: dos `polygon()` solo interpolan si tienen
 el mismo número de vértices, y con recuentos distintos el navegador hace un corte seco sin avisar.
 
-- [ ] **Step 2: Escribir el fundido**
+- [x] **Step 2: Escribir el fundido**
 
 En `caelestia.fundido.ts`, sustituir el `return` del final:
 
@@ -1664,7 +1699,7 @@ Y la zancada, sobre el ticker de GSAP, encima del `return`:
 Ampliar el `import` de `caelestia.dino` con `dibujoDino` y el tipo `Fotograma`, y el `destroy` con
 `gsap.ticker.remove(tic)`.
 
-- [ ] **Step 3: Escribir la entrada**
+- [x] **Step 3: Escribir la entrada**
 
 ```ts
   /*
@@ -1708,7 +1743,7 @@ Y el `reproducir` definitivo:
     },
 ```
 
-- [ ] **Step 4: Cablearlo en la coreografía con la regla de B2**
+- [x] **Step 4: Cablearlo en la coreografía con la regla de B2**
 
 En `caelestia.choreography.ts`, dentro de `irA`, junto a la línea de la ficha:
 
@@ -1730,7 +1765,7 @@ En `caelestia.choreography.ts`, dentro de `irA`, junto a la línea de la ficha:
 
 con `let fundidoVisto = false;` junto a `let actual = 0;`.
 
-- [ ] **Step 5: Medir la línea de tiempo parándola en instantes exactos**
+- [x] **Step 5: Medir la línea de tiempo parándola en instantes exactos**
 
 Una captura no distingue una animación que corre de una que ya aterrizó.
 
@@ -1800,7 +1835,7 @@ assert not FALLOS
 PY
 ```
 
-- [ ] **Step 6: Ver el gate del crecimiento dar rojo antes de aceptarlo**
+- [x] **Step 6: Ver el gate del crecimiento dar rojo antes de aceptarlo**
 
 Cambiar temporalmente el `* 1.04` de `factorCrecimiento` por `* 0.80`, reconstruir, y comprobar que
 al terminar el fundido **el escritorio asoma por una esquina de la escena**:
@@ -1828,7 +1863,7 @@ PY
 Con `0.80` alguna esquina **no** puede ser `cae-fundido-campo`. Restaurar `1.04` y volver a
 ejecutar: las cuatro tienen que serlo. **Si con 0,80 sale verde, el gate no vale.**
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/themes/caelestia.fundido.ts src/themes/caelestia.choreography.ts src/themes/themes.css
@@ -1848,7 +1883,7 @@ Visto en rojo con el factor de crecimiento a 0,80."
 - Modify: `src/themes/themes.css`
 - Modify: `src/themes/caelestia.fundido.ts` (ya lo contempla; aquí se verifica)
 
-- [ ] **Step 1: Añadir la guarda de CSS, con sus pseudo-elementos nombrados**
+- [x] **Step 1: Añadir la guarda de CSS, con sus pseudo-elementos nombrados**
 
 ```css
 /*
@@ -1872,7 +1907,7 @@ Visto en rojo con el factor de crecimiento a 0,80."
 }
 ```
 
-- [ ] **Step 2: Comprobar que la escena queda puesta y en 0 ms**
+- [x] **Step 2: Comprobar que la escena queda puesta y en 0 ms**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -1921,12 +1956,12 @@ assert not FALLOS
 PY
 ```
 
-- [ ] **Step 3: Ver el gate dar rojo**
+- [x] **Step 3: Ver el gate dar rojo**
 
 Comentar temporalmente el `if (reduce) return;` de `reproducir`, reconstruir y volver a ejecutar el
 paso 2. **Tiene que fallar** con `no esta aterrizado`. Restaurar y volver a verde.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -1945,7 +1980,7 @@ return temprano de reproducir()."
 - Create: `scripts/measure-caelestia-fundido.py`
 - Modify: `CLAUDE.md` (raíz del proyecto)
 
-- [ ] **Step 1: Escribir el arnés con los doce gates del spec**
+- [x] **Step 1: Escribir el arnés con los doce gates del spec**
 
 Sigue el patrón de `scripts/measure-caelestia-quien-soy.py`: `argparse` con `--base`, la función
 `comprobar(condicion, etiqueta)`, un bloque `print` por familia y `sys.exit(main())`. Los doce gates
@@ -1987,7 +2022,7 @@ Los dos que hay que escribir con cuidado, porque son los que pueden pasar en fal
     comprobar(visibles == 4, f"los cuatro datos se leen sin hover ({visibles}/4)")
 ```
 
-- [ ] **Step 2: Ejecutarlo contra el build**
+- [x] **Step 2: Ejecutarlo contra el build**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -2004,7 +2039,7 @@ python3 scripts/measure-caelestia-fundido.py --base http://localhost:4193
 
 Esperado: `TODO VERDE`.
 
-- [ ] **Step 3: Comprobar que los arneses de las fases anteriores siguen verdes**
+- [x] **Step 3: Comprobar que los arneses de las fases anteriores siguen verdes**
 
 ```bash
 python3 scripts/measure-caelestia-hora.py --base http://localhost:4193
@@ -2016,7 +2051,7 @@ python3 scripts/measure-caelestia-obra.py --base http://localhost:4193
 Los cuatro tienen que seguir verdes. **Si alguno cae, B5 ha roto una fase cerrada** — arreglarlo
 antes de seguir, no anotarlo como deuda.
 
-- [ ] **Step 4: Ver rojo cada gate nuevo**
+- [x] **Step 4: Ver rojo cada gate nuevo**
 
 Para cada uno de los doce, introducir el fallo exacto que dice cazar, ejecutar el arnés y anotar el
 mensaje rojo en una tabla. Los cuatro sabotajes ya ejecutados durante el maquetado están en el spec
@@ -2034,13 +2069,13 @@ hacerlos aquí**. Ejemplos:
 | 11 · 390 | poner `font-size: var(--t-10)` también en el `@media` |
 | 12 · Vice/Hyprland | quitar el `[data-theme="caelestia"]` de la regla del campo de color |
 
-- [ ] **Step 5: Actualizar `CLAUDE.md`**
+- [x] **Step 5: Actualizar `CLAUDE.md`**
 
 Añadir el párrafo de B5 a la sección `## Theme Status`, con los números del spec, y actualizar el
 estado general de Caelestia. **Ojo:** ese fichero todavía no menciona B3 ni B4 — anotarlo como
 pendiente, no inventar su texto.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/measure-caelestia-fundido.py CLAUDE.md
@@ -2055,14 +2090,14 @@ anteriores siguen verdes."
 
 ## Task 9: Cierre — build, capturas y gates de crítica
 
-- [ ] **Step 1: Build limpio y lint**
+- [x] **Step 1: Build limpio y lint**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
 npm run lint && npm run build
 ```
 
-- [ ] **Step 2: Capturas reales, las cinco escenas y los tres temas**
+- [x] **Step 2: Capturas reales, las cinco escenas y los tres temas**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -2102,19 +2137,19 @@ PY
 **Mirar las doce capturas.** Los números pueden estar verdes con el resultado roto: es la lección
 que este repo ha pagado más veces.
 
-- [ ] **Step 3: Gates de crítica**
+- [x] **Step 3: Gates de crítica**
 
 Lanzar `lidia-naive-tester` y `vera-art-director` sobre la escena, **con `model: sonnet` pinado** y
 prohibiéndoles explícitamente editar producción. Registrar sus veredictos en el spec, en una sección
 `## Gates de critica`, igual que hicieron B1 y la fase A — incluido un BLOCK aceptado, si lo hay,
 con el motivo de la aceptación.
 
-- [ ] **Step 4: Actualizar el estado del spec**
+- [x] **Step 4: Actualizar el estado del spec**
 
 Cambiar `Estado: disenado, sin implementar` por `Estado: hecho`, y rellenar el `Registro de
 implementación` con lo que rompió cada gate y con lo que se descubrió al implementar.
 
-- [ ] **Step 5: Commit final**
+- [x] **Step 5: Commit final**
 
 ```bash
 git add docs/superpowers/specs/2026-09-04-caelestia-fundido-design.md
