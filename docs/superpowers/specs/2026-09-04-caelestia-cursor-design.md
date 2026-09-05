@@ -2,8 +2,24 @@
 
 Estado: en ejecucion
 Plan: `docs/superpowers/plans/2026-09-04-caelestia-cursor.md`
-Fecha: 2026-09-04 (spec aprobado y plan escrito el mismo dia; **ninguna tarea del plan ejecutada
-todavia** — el progreso real son las casillas del plan, que es lo que `scripts/verify.py` cruza)
+Fecha: 2026-09-04 (spec aprobado y plan escrito el mismo dia)
+
+**Ejecucion, al 2026-09-05:** seis de las nueve tareas del plan cerradas con revision limpia, la
+septima en curso. El dispositivo esta construido y funciona —perla, derrame en sus dos momentos,
+cerco, lente, sombra, rebote, material de noche y estado rancio—, con 34 aserciones en verde en
+`scripts/measure-caelestia-cursor.py`. **Aoshi pidio parar al terminar la tarea 7**, asi que
+quedan sin hacer la 8 (gates de limpieza de `destroy()` y de consola) y la 9 (documentacion,
+registro de implementacion y estado de los temas). El progreso real son **las casillas del plan**,
+que es lo que cruza `scripts/verify.py`; el detalle de cada ronda vive en
+`.superpowers/sdd/2026-09-04-caelestia-cursor/progress.md`, ignorado por git.
+
+**Este spec NO pasa a `implementado` hasta que la tarea 9 lo cierre.** Y cuando lo haga, el
+`Registro de implementacion` tiene que recoger lo que la ejecucion desmintio de este documento,
+que no es poco: la lista blanca no podia colgar como estaba escrita, `cursor: auto` no computa a
+`"text"`, la regla de rescate rompia las dos senales que venia a proteger, las guardias de
+movimiento reducido no ganaban la cascada, y **el gate del estado rancio era infalsificable**
+porque Chromium sana el estado por su cuenta al marcar la escena `inert`. El plan lleva el
+resumen en su `## Estado de ejecucion`.
 Alcance: **solo el tema Caelestia**. Módulo nuevo `src/components/caelestiaCursor.ts`, bloque nuevo
 dentro de `:root[data-theme="caelestia"]` en `src/themes/themes.css`, un arnés nuevo
 `scripts/measure-caelestia-cursor.py`, y la puerta de montaje en `src/main.ts` (la quinta entrada

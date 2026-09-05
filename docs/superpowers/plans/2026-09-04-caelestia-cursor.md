@@ -25,6 +25,57 @@ servido** — no hay runner de tests JS en el repo y no se añade ninguno.
 empezar**, incluida la `### Corrección del 2026-09-04` de la sección `## El reparto de señales`, que
 es la que fija dónde cuelga la lista blanca. El plan argumenta desde ahí.
 
+## Estado de ejecución (2026-09-05)
+
+Ejecutado con `superpowers:subagent-driven-development` en el worktree
+`/home/aoshi/proyectos/portfolio-aoshi-cursor`, rama `design/caelestia-cursor`, desde `10fc4af`.
+
+| tarea | estado | commits | rondas de arreglo |
+|---|---|---|---|
+| 1 · el arnés en rojo | **cerrada**, revisión limpia | `a004d2d` | 0 |
+| 2 · el módulo y la lista blanca | **cerrada** | `dd0a699`, `b4ad045` | 1 |
+| 3 · el derrame | **cerrada** | `c78f772`, `35128e4`, `b1ac3d7`, `5582599` | 3 |
+| 4 · el cerco | **cerrada** | `9fae5be`, `3a97324` | 1 |
+| 5 · lente, sombra, rebote y noche | **cerrada** | `85d9e3d`, `9c763c7` | 1 |
+| 6 · el estado rancio | **cerrada** | `4b0c6cf`, `4c0eb85` | 1 |
+| 7 · el barrido de 24 horas | **en curso** | — | — |
+| 8 · limpieza y consola | pendiente | — | — |
+| 9 · cerrar documentación | pendiente | — | — |
+
+El arnés va por 34 aserciones en verde. **Aoshi pidió parar al terminar la tarea 7**, así que las
+tareas 8 y 9 quedan sin despachar.
+
+**El registro de la ejecución vive en `.superpowers/sdd/2026-09-04-caelestia-cursor/progress.md`**
+(directorio ignorado por git): lleva el barrido previo de conflictos, cada ronda de arreglo, los
+hallazgos menores aparcados y **todas las decisiones que el controlador tomó en nombre de Aoshi**.
+Si ese directorio se pierde, la historia de git es el registro que queda.
+
+**Lo que la ejecución encontró y el plan no preveía**, resumido, porque cambia cómo hay que leer
+los pasos de más abajo:
+
+- **La lista blanca del CSS no podía funcionar como estaba escrita.** La raíz no alcanza a los
+  pulsables: `<button>` y `<a>` declaran su propio `cursor` en la hoja del navegador, así que
+  hacía falta una regla de opt-in explícita. Y la regla de rescate que este plan escribió para
+  el enlace externo y la galería **rompía las dos señales que venía a proteger** — sobre un
+  enlace, `cursor: auto` pisa el `pointer` nativo, y sobre `.gallery-track` pisaba su `grab`.
+- **`cursor: auto` no computa a `"text"`**: el navegador devuelve la palabra clave tal cual, así
+  que la regla y su aserción eran incoherentes. El texto corrido lleva `cursor: text` literal,
+  que diverge de lo que hacen Vice y Hyprland.
+- **El gate del estado rancio, tal como lo escribió este plan, era infalsificable.** Chromium
+  dispara `pointerout` sobre el elemento mojado en cuanto su escena pasa a `inert`, unos 50 ms
+  antes de que el carril termine, y eso sana el estado por la vía normal. Quitar el listener no
+  ponía el gate en rojo. Ahora el gate tiene dos familias: el mecanismo propio con la sanación
+  nativa suprimida, y el camino que de verdad recorre el visitante.
+- **Las guardias de `prefers-reduced-motion` de este plan no ganaban la cascada** (`@media` no
+  suma especificidad), así que no desactivaban nada.
+- **El script de muestreo del rebote leía `transform`** cuando la animación mueve la propiedad
+  `scale`: medía la propiedad equivocada.
+- **Un umbral estaba puesto más fino que el ruido de su instrumento** (`> 0.9` tras una espera
+  fija para una transición de 420 ms). Se sustituyó por una espera determinista a que el valor
+  asiente, con la aserción más estricta, no más laxa.
+
+---
+
 ## Restricciones globales
 
 - **Cero `any`.** `strict` está activo; usa `unknown` + guardas.
@@ -129,7 +180,7 @@ fallar**: eso es lo que demuestra que miden algo.
   `abre(pagina, base: str, escena: str = "creditos") -> None`,
   `FALLOS: list[str]`, y las constantes `PRESSABLE`, `NATIVE_ZONE`, `HOVER_SELECT`.
 
-- [ ] **Step 1: Escribe el arnés con el esqueleto y los gates 1 y 2**
+- [x] **Step 1: Escribe el arnés con el esqueleto y los gates 1 y 2**
 
 ```python
 """Arnes del cursor de Caelestia (la gota).
@@ -335,7 +386,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Levanta el build servido y corre el arnés para verlo en ROJO**
+- [x] **Step 2: Levanta el build servido y corre el arnés para verlo en ROJO**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -354,7 +405,7 @@ movimiento reducido salen **OK** desde ya, porque hoy no monta nada en ningún s
 y no es trampa, siempre que los de Caelestia estén en rojo. Si TODO sale verde, el arnés no está
 midiendo: revísalo antes de seguir.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add scripts/measure-caelestia-cursor.py
@@ -385,7 +436,7 @@ sobre lo pulsable. Todavía no se derrama.
   - Clases CSS: `.cae-cursor`, `.cae-cursor-perla`, `.cae-cursor-nucleo`, y la clase de raíz
     `.caelestia-cursor-ready`.
 
-- [ ] **Step 1: Escribe el módulo**
+- [x] **Step 1: Escribe el módulo**
 
 Crea `src/components/caelestiaCursor.ts`:
 
@@ -635,7 +686,7 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
 }
 ```
 
-- [ ] **Step 2: Escribe el CSS**
+- [x] **Step 2: Escribe el CSS**
 
 Al **final** del bloque `:root[data-theme="caelestia"]` de `src/themes/themes.css` (al final del
 fichero está bien: el bloque del cursor de Hyprland ya vive ahí). Va al final a propósito: la fase
@@ -802,7 +853,7 @@ adyacencia y no de solape.
 }
 ```
 
-- [ ] **Step 3: Monta el módulo en `main.ts`**
+- [x] **Step 3: Monta el módulo en `main.ts`**
 
 Detrás del bloque que monta el shell de Caelestia (`src/main.ts`, alrededor de la línea 262), añade:
 
@@ -835,7 +886,7 @@ Y en el oyente de `pagehide`, junto a los demás:
     caeCursorHandle?.destroy();
 ```
 
-- [ ] **Step 4: Añade el gate 4 (sin inercia) al arnés**
+- [x] **Step 4: Añade el gate 4 (sin inercia) al arnés**
 
 Dentro de `main()`, después de `gate_senales(...)`:
 
@@ -865,7 +916,7 @@ def gate_sin_inercia(pagina, base: str) -> None:
     )
 ```
 
-- [ ] **Step 5: Build, lint y corre el arnés — gates 1, 2 y 4 en VERDE**
+- [x] **Step 5: Build, lint y corre el arnés — gates 1, 2 y 4 en VERDE**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -878,7 +929,7 @@ sleep 4 && python3 scripts/measure-caelestia-cursor.py --base http://localhost:4
 Esperado: todo OK salvo el check del gate 2 sobre el nombre de una pieza, que espera `derrame` y
 todavía da `perla` — lo cierra el Task 3. Anótalo y sigue.
 
-- [ ] **Step 6: Mira la pantalla, que ningún número lo dice**
+- [x] **Step 6: Mira la pantalla, que ningún número lo dice**
 
 ```bash
 python3 - <<'PY'
@@ -899,13 +950,13 @@ PY
 debajo ni recortada. Si el `mix-blend-mode` se aplica contra el contexto equivocado, aquí se ve y
 en ningún número.
 
-- [ ] **Step 7: Sabotea el gate 2 y míralo en rojo**
+- [x] **Step 7: Sabotea el gate 2 y míralo en rojo**
 
 Quita la segunda vuelta de `resolver()` (deja solo `zona.matches(PRESSABLE) ? zona : null`),
 reconstruye y corre el arnés: los dos checks de la leyenda de la tarjeta tienen que dar **FAIL**.
 Restaura, reconstruye, verde otra vez.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/components/caelestiaCursor.ts src/themes/themes.css src/main.ts scripts/measure-caelestia-cursor.py
@@ -927,7 +978,7 @@ git commit -m "feat(cursor): la gota de Caelestia — perla, resolucion de zona 
   `diana(): HTMLElement | null` (la diana **mojada**, no la que está bajo el puntero) y
   `mancha(): number` (avance pintado, 0 a 1).
 
-- [ ] **Step 1: Añade la mancha al módulo**
+- [x] **Step 1: Añade la mancha al módulo**
 
 Después de crear `cursor` y antes de `host.append(...)`:
 
@@ -1117,7 +1168,7 @@ Actualiza la sonda y `destroy()`:
     mancha.remove();   // en destroy(), junto a cursor.remove()
 ```
 
-- [ ] **Step 2: Añade el CSS de la mancha**
+- [x] **Step 2: Añade el CSS de la mancha**
 
 ```css
 /* El derrame. Va ENCIMA de la diana, texto incluido: es pigmento sobre
@@ -1218,7 +1269,7 @@ Actualiza la sonda y `destroy()`:
 > **en silencio**: el derrame seguiría funcionando y solo se recogería más lento. Compruébalo con el
 > muestreo del Task 5, Step 3, que sí lo vería.
 
-- [ ] **Step 3: Añade el gate 3 al arnés**
+- [x] **Step 3: Añade el gate 3 al arnés**
 
 ```python
 def gate_dos_momentos(pagina, base: str) -> None:
@@ -1266,18 +1317,18 @@ def gate_dos_momentos(pagina, base: str) -> None:
     check(estado(pagina) == "perla", "[3] al soltar, la tarjeta se seca y vuelve la perla")
 ```
 
-- [ ] **Step 4: Build, arnés y captura**
+- [x] **Step 4: Build, arnés y captura**
 
 Los tres gates (2, 3, 4) en verde, incluido el check del nombre de la pieza que quedó pendiente en
 el Task 2. Y mira una captura del derrame lleno sobre la tarjeta y sobre la pieza, de día y de
 noche (usa `window.__CAE_SET_MINUTOS__(180)` para la noche).
 
-- [ ] **Step 5: Sabotea y mira el rojo**
+- [x] **Step 5: Sabotea y mira el rojo**
 
 Cambia `HOVER_SELECT` por `"button[data-no-existe]"`, reconstruye y corre: los tres checks de la
 pieza tienen que dar **FAIL** y los de la tarjeta seguir verdes. Restaura.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/caelestiaCursor.ts src/themes/themes.css scripts/measure-caelestia-cursor.py
@@ -1298,7 +1349,7 @@ git commit -m "feat(cursor): el derrame — la gota moja la diana en sus dos mom
 - Produces: la clase `.cae-cursor-cerco` y el conjunto `cercos: Set<HTMLElement>`, que el `destroy()`
   del Task 8 vacía.
 
-- [ ] **Step 1: Añade el cerco al módulo**
+- [x] **Step 1: Añade el cerco al módulo**
 
 ```ts
   /*
@@ -1344,7 +1395,7 @@ En `alSoltar()`, dentro de la rama que no es familia de roce:
     }
 ```
 
-- [ ] **Step 2: CSS del cerco**
+- [x] **Step 2: CSS del cerco**
 
 ```css
 /* El cerco: el anillo que deja una gota seca. Animacion CSS y no
@@ -1382,7 +1433,7 @@ En `alSoltar()`, dentro de la rama que no es familia de roce:
 }
 ```
 
-- [ ] **Step 3: Gate 3-bis**
+- [x] **Step 3: Gate 3-bis**
 
 Añade al final de `gate_dos_momentos`:
 
@@ -1410,12 +1461,12 @@ Añade al final de `gate_dos_momentos`:
     )
 ```
 
-- [ ] **Step 4: Build, arnés verde, y sabotaje**
+- [x] **Step 4: Build, arnés verde, y sabotaje**
 
 Sabotaje: llama a `dejarCerco()` también en la rama de roce. El último check tiene que dar **FAIL**.
 Restaura.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/caelestiaCursor.ts src/themes/themes.css scripts/measure-caelestia-cursor.py
@@ -1437,7 +1488,7 @@ Los cuatro añadidos que quedan del prototipo aprobado. Son CSS puro; ninguno to
 - Consumes: `.cae-cursor-perla` y sus estados del Task 2.
 - Produces: nada nuevo para tareas posteriores.
 
-- [ ] **Step 1: Escribe las cuatro reglas**
+- [x] **Step 1: Escribe las cuatro reglas**
 
 ```css
 /* La lente. Es lo que separa una gota de un disco de color: lo que hay
@@ -1522,7 +1573,7 @@ Los cuatro añadidos que quedan del prototipo aprobado. Son CSS puro; ninguno to
 }
 ```
 
-- [ ] **Step 2: Mira las cuatro capturas, que es el único juez aquí**
+- [x] **Step 2: Mira las cuatro capturas, que es el único juez aquí**
 
 ```bash
 python3 - <<'PY'
@@ -1546,7 +1597,7 @@ Compara con `2026-09-04-caelestia-cursor-perla-dia.png` y `…-perla-noche.png` 
 que leerse como gota oscura con brillo; de noche, como gota encendida con el canto iluminado. **Si
 de noche parece un disco plano, la lente o el canto no están llegando** — revísalo antes de seguir.
 
-- [ ] **Step 3: Comprueba que el rebote no se repite**
+- [x] **Step 3: Comprueba que el rebote no se repite**
 
 Con la velocidad del ojo no basta. Muestrea la escala desde dentro de la página:
 
@@ -1576,7 +1627,7 @@ PY
 Esperado: la escala sale de ~1,35, cruza por debajo de 1 y **se asienta en 1** antes de los 500 ms,
 sin volver a moverse. Si oscila después, el `animation` se está reiniciando cada fotograma.
 
-- [ ] **Step 4: Mide lo que cuesta la lente (pregunta abierta 3 del spec)**
+- [x] **Step 4: Mide lo que cuesta la lente (pregunta abierta 3 del spec)**
 
 `backdrop-filter` en un elemento que se mueve a 60 fps sobre un lienzo WebGL puede salir caro, y la
 maqueta no lo dice: la maqueta no lleva shader detrás. Mide el reparto de fotogramas moviendo el
@@ -1625,7 +1676,7 @@ dejó escrita — la lente se queda solo en `perla` (quieta sobre una diana) y s
 Anota los dos números en el `Registro de implementación` del spec, decidas lo que decidas. Un
 «no costaba nada» sin medida es exactamente lo que este proyecto ya no acepta.
 
-- [ ] **Step 5: Build, lint, arnés verde, commit**
+- [x] **Step 5: Build, lint, arnés verde, commit**
 
 ```bash
 git add src/themes/themes.css
@@ -1648,7 +1699,7 @@ documentó una fase antes.
 - Consumes: la sonda `estado()` y `diana()`.
 - Produces: nada nuevo.
 
-- [ ] **Step 1: Escribe el gate 5**
+- [x] **Step 1: Escribe el gate 5**
 
 ```python
 def gate_rancio(pagina, base: str) -> None:
@@ -1686,7 +1737,7 @@ def gate_rancio(pagina, base: str) -> None:
     )
 ```
 
-- [ ] **Step 2: Córrelo. Si falla, arréglalo en el módulo**
+- [x] **Step 2: Córrelo. Si falla, arréglalo en el módulo**
 
 Es posible que falle aunque el código esté: al enfocar la pastilla con teclado, el puntero sigue
 sobre las coordenadas de la pieza y `document.elementFromPoint` puede devolver la propia pieza si
@@ -1707,12 +1758,12 @@ también cuando el carril **termina** de moverse, no solo cuando empieza: añade
 
 y sustituye la escucha anterior por esta.
 
-- [ ] **Step 3: Sabotea y mira el rojo**
+- [x] **Step 3: Sabotea y mira el rojo**
 
 Quita la escucha de `caelestia:workspace` entera, reconstruye, corre: los tres checks del gate 5
 tienen que dar **FAIL**. Restaura.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/measure-caelestia-cursor.py src/components/caelestiaCursor.ts
