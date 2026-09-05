@@ -327,6 +327,7 @@ def entrada(pg, base: str) -> None:
         firmaOp: csFirma ? parseFloat(csFirma.opacity) : null,
         trazoVis: csPath ? csPath.visibility : null,
         trazoOffset: csPath ? csPath.strokeDashoffset : null,
+        trazoDasharray: csPath ? csPath.strokeDasharray : null,
         trazoStrokeOp: csPath ? parseFloat(csPath.strokeOpacity) : null,
         cifraVis: csCifra ? csCifra.visibility : null,
         cifraOp: csCifra ? parseFloat(csCifra.opacity) : null,
@@ -411,6 +412,53 @@ def entrada(pg, base: str) -> None:
         assert_que(
             len(malas_trazo) == 0,
             _etq(malas_trazo, "el trazo nunca muestra el contorno completo antes de que arranque la entrada"),
+        )
+
+        # ORDEN: la terminal tiene que haberse ido del todo (paso 4 de la
+        # timeline) antes de que el trazo empiece a dibujarse (paso 5).
+        # `preentrada` ya no sirve aqui -- ese tramo es ANTES de que se
+        # teclee nada, y esto es DESPUES. Se mira toda la ventana entre el
+        # arranque (typed no vacio) y el aterrizaje: si en cualquier muestra
+        # de ese tramo el trazo esta dibujandose o ya dibujado (dashoffset
+        # distinto de dasharray, con visibility visible) mientras la
+        # terminal sigue visible (termOp > 0 y visibility visible), es la
+        # fuga que este gate viene a cazar. `strokeDashoffset` computado
+        # sale en px como string ("123.4px"); se compara en numero con
+        # tolerancia de 1px.
+        def _px(valor: str | None) -> float | None:
+            if valor is None or not valor.endswith("px"):
+                return None
+            try:
+                return float(valor[:-2])
+            except ValueError:
+                return None
+
+        def _trazo_dibujando(m: dict) -> bool:
+            if m["trazoVis"] != "visible":
+                return False
+            off = _px(m["trazoOffset"])
+            dash = _px(m["trazoDasharray"])
+            if off is None or dash is None:
+                return False
+            return abs(off - dash) > 1
+
+        def _term_visible(m: dict) -> bool:
+            return (
+                m["termVis"] == "visible"
+                and m["termOp"] is not None
+                and m["termOp"] > 0
+            )
+
+        if arranque is None:
+            malas_orden: list[dict] = []
+        else:
+            posteriores_arranque = [m for m in previas_aterrizaje if m["t"] >= arranque["t"]]
+            malas_orden = [
+                m for m in posteriores_arranque if _trazo_dibujando(m) and _term_visible(m)
+            ]
+        assert_que(
+            len(malas_orden) == 0,
+            _etq(malas_orden, "el nombre no se traza hasta que la terminal se ha ido"),
         )
 
         # Las cifras entran DESPUES del aterrizaje de la firma en la timeline

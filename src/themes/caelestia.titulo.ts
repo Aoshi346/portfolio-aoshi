@@ -77,9 +77,15 @@ export interface EntradaHandle {
 const NULO: EntradaHandle = { destroy: () => {} };
 
 /**
- * La entrada de escena: una terminal falsa teclea `whoami`, el nombre se
- * traza con los contornos reales de Fraunces (`caelestia.firma.ts`, mismos
- * ejes que el display), se rellena y aterriza sobre `.cae-firma`.
+ * La entrada de escena: una terminal falsa teclea `whoami`, la terminal se
+ * va DEL TODO y solo entonces el nombre se traza con los contornos reales de
+ * Fraunces (`caelestia.firma.ts`, mismos ejes que el display), se rellena y
+ * aterriza sobre `.cae-firma`. La orden se ejecuta y su salida aparece
+ * cuando la terminal ya no esta en pantalla — decision de Aoshi, repaso de
+ * interfaces 2026-09-05. Antes la terminal se iba con solape
+ * (`"-=0.15"`) mientras el trazo ya se dibujaba entero detras de su caja;
+ * ahora el paso 4 (la terminal se va) corre sin solape y el paso 5 (el
+ * trazo) no arranca hasta que termina.
  *
  * Firma DISTINTA de `montarTitulo`: esta funcion SI recibe `gsap` (threaded
  * desde la coreografia, igual que en el resto de temas — `gsap` no se
@@ -181,7 +187,12 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
   // 3. El cursor parpadea.
   tl.to(cursor, { opacity: 0, duration: 0.14, repeat: 3, yoyo: true });
 
-  // 4. El trazo: cada glifo dibuja su contorno.
+  // 4. La terminal se va del todo, sin solape con el paso siguiente: la
+  // orden se ejecuta y su salida (el nombre) aparece cuando la terminal ya
+  // no esta en pantalla.
+  tl.to(term, { opacity: 0, y: -8, duration: 0.26, ease: "power2.in" });
+
+  // 5. El trazo: cada glifo dibuja su contorno.
   tl.to(paths, {
     strokeDashoffset: 0,
     duration: 0.52,
@@ -189,12 +200,9 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
     stagger: 0.045,
   });
 
-  // 5. Relleno, con el trazo desvaneciendose a la vez.
+  // 6. Relleno, con el trazo desvaneciendose a la vez.
   tl.to(paths, { fillOpacity: 1, duration: 0.3, stagger: 0.03, ease: "power1.out" }, "-=0.42");
   tl.to(paths, { strokeOpacity: 0, duration: 0.3 }, "<");
-
-  // 6. La terminal se va.
-  tl.to(term, { opacity: 0, y: -8, duration: 0.26, ease: "power2.in" }, "-=0.15");
 
   // 7. El aterrizaje: hay que medir en este instante, no antes (el layout de
   // .cae-firma depende de la justificacion del titular, que ya corrio, pero
