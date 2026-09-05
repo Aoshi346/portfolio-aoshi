@@ -9076,12 +9076,31 @@
 }
 
 /* El selector universal de la guardia de movimiento reducido NO alcanza a
-   los pseudo-elementos ni a las animaciones declaradas aparte: cada una
-   necesita su regla. (Trampa pagada en B2 con `.ficha-k::before`.) */
+   los pseudo-elementos ni a las animaciones declaradas aparte, y `@media`
+   no suma especificidad: un selector desnudo pierde contra una regla mas
+   especifica aunque venga despues en la hoja. El rebote se aplica con
+   `.cae-cursor[data-estado="perla"] .cae-cursor-perla` (0,3,0) y el ritmo
+   del derrame con `.cae-cursor[data-estado=...] ~ .cae-cursor-mancha
+   .cae-cursor-gota` (0,4,0) -- las dos le ganan a `.cae-cursor-perla` o
+   `.cae-cursor-gota` a secas (0,1,0). Por eso cada regla de esta guardia
+   repite el selector EXACTO de lo que apaga: no basta con iguales o
+   despues, hace falta igual o mayor especificidad. (Trampa pagada en B2
+   con `.ficha-k::before`; aqui ademas hay que ganar la especificidad, no
+   solo el orden de la fuente -- medido: sin este espejo, forzando
+   `prefers-reduced-motion` tras el montaje, `.cae-cursor-perla` seguia
+   corriendo `cae-cursor-perla-posa`.) */
 @media (prefers-reduced-motion: reduce) {
   .cae-cursor-perla,
-  .cae-cursor-perla::before,
-  .cae-cursor-gota {
+  .cae-cursor[data-estado="perla"] .cae-cursor-perla,
+  .cae-cursor-perla::before {
+    animation: none;
+    transition: none;
+  }
+
+  .cae-cursor-gota,
+  .cae-cursor[data-estado="perla"] ~ .cae-cursor-mancha .cae-cursor-gota,
+  .cae-cursor[data-estado="reposo"] ~ .cae-cursor-mancha .cae-cursor-gota,
+  .cae-cursor[data-estado="apagada"] ~ .cae-cursor-mancha .cae-cursor-gota {
     animation: none;
     transition: none;
   }

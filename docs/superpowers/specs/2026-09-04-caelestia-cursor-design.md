@@ -420,10 +420,20 @@ Hyprland y no deja deuda, a diferencia de B1-B4.
    | 2 (invertido) | 175.3 / 217.8 ms (n=19) | 200.1 / 254.9 ms (n=17) |
 
    Con lente sale entre un 7 % y un 12 % *más rápido* que sin lente en las dos direcciones de
-   medida — dentro del ruido de swiftshader (~5-6 fps de fondo, dominado por el shader, no por el
-   `backdrop-filter` de un círculo de 15-20px). No hay penalización que superar el umbral del 25 %:
-   **la lente se queda encendida en los tres estados, incluido `reposo`.** No se añade la regla de
-   apagado.
+   medida. Ese signo es físicamente inverosímil para trabajo de composición en GPU — un
+   `backdrop-filter` no puede hacer que el fotograma vaya más rápido — así que lo que dice el
+   resultado no es "la lente no cuesta", dice **que el instrumento no aisló el efecto**: bajo
+   swiftshader el tiempo de fotograma lo domina el shader de fondo (~5-6 fps de base), y el coste
+   de un `backdrop-filter` sobre un círculo de 15-20px queda por debajo del ruido de esa medida. Un
+   resultado negativo en las dos direcciones no confirma que no haya coste; confirma que **esta
+   medida no puede zanjar la pregunta en ningún sentido, ni a favor ni en contra**.
+
+   **La decisión de dejar la lente encendida en los tres estados, incluido `reposo`, descansa por
+   tanto en un supuesto sin medir**, no en una medida que lo respalde. Sigue siendo el valor por
+   defecto correcto porque no hay evidencia de coste — pero la validación en una GPU real (sin
+   swiftshader de por medio) queda pendiente y abierta, no cerrada por esta tabla. No se añade la
+   regla de apagado mientras tanto: no hay evidencia que la justifique, solo la ausencia de una
+   medida que pueda confirmarla o descartarla.
 4. **El umbral de "se nota"** del gate 6 se fija al ver la primera medida, y se anota aquí.
 
 ## Trampas ya pagadas en esta sesión
