@@ -613,10 +613,19 @@ def gate_contraste(pagina, base: str, mitad: int | None = None) -> None:
     )
     # UMBRAL_NOTA se fija con la primera medida y se anota en el spec. No lo
     # bajes para que pase: si el derrame no se nota, el derrame esta mal.
-    check(
-        peor_delta[0] >= UMBRAL_NOTA,
-        f"[6] el derrame se NOTA (peor delta medio {peor_delta[0]:.2f} en {peor_delta[1]})",
-    )
+    #
+    # Y si la mitad activa no cubre ninguna de las dos horas de
+    # perceptibilidad, NO se afirma nada. El centinela (999.0) es mayor que
+    # cualquier umbral, asi que un `check` incondicional saldria verde en
+    # `--mitad 2` sin haber tomado ni una medida: la decima asercion
+    # tautologica de esta pista, cazada aqui antes de aceptarse.
+    if horas_perceptibilidad:
+        check(
+            peor_delta[0] >= UMBRAL_NOTA,
+            f"[6] el derrame se NOTA (peor delta medio {peor_delta[0]:.2f} en {peor_delta[1]})",
+        )
+    else:
+        print("  --   [6] perceptibilidad NO medida en esta mitad (la cubre --mitad 1)")
 
 
 ARGS = ["--no-sandbox", "--use-gl=swiftshader"]

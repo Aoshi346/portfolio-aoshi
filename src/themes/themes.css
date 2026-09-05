@@ -8924,7 +8924,21 @@
 }
 
 :root[data-cae-esquema="noche"] .cae-cursor-gota {
-  opacity: 0.3;
+  /* 0,20 y no 0,22 como de dia: no es el mismo numero porque no es la misma
+     mezcla. De dia el derrame va con `multiply` sobre papel claro; de noche
+     con `screen` sobre superficie oscura, que ACLARA el fondo del texto y
+     por tanto le come contraste en vez de dárselo.
+
+     Calibrado el 2026-09-05 barriendo la opacidad (0,30 / 0,26 / 0,22 /
+     0,20 / 0,18) contra las horas peores de la noche, con la medida por
+     glifo del arnes. A 0,30 la leyenda de la tarjeta de Obra caia a 4,06:1
+     a las 06:30 -- por debajo de AA -- y el mismo recorte sin derrame daba
+     7,42:1, o sea que la causa era el derrame, no el tema. A 0,20 el peor
+     caso del barrido de 24 horas sube a 4,92:1 (obra 06:30) y el derrame
+     sigue notandose muy por encima del umbral (delta medio peor 13,25
+     frente a 6,625). No la subas sin volver a
+     correr el gate 6 entero: el margen es de 0,43, no de un orden. */
+  opacity: 0.2;
 }
 
 /* Recogerse tras el clic (180ms) va mas rapido que secarse al salir de la
