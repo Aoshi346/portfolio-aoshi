@@ -213,7 +213,7 @@ def gate_dos_momentos(pagina, base: str) -> None:
 
     # Familia de clic: perla al entrar, derrame solo al pulsar.
     abre(pagina, base, "obra")
-    pagina.hover(".cae-obra-card", position={"x": 200, "y": 70})
+    pagina.locator(".cae-obra-card").nth(0).hover(position={"x": 200, "y": 70})
     pagina.wait_for_timeout(700)
     check(estado(pagina) == "perla", "[3] la tarjeta de Obra NO se moja al entrar")
     check(

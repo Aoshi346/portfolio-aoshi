@@ -236,6 +236,17 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
       dentro = true;
       setEstado(diana ? "perla" : "reposo");
     }
+    /*
+     * Guardia general: nunca nos fiamos de haber visto el `pointerup`. Si
+     * `pulsado` sigue `true` pero el navegador ya no reporta ningun boton
+     * pulsado, el `pointerup` se perdio (el caso mas comun: soltar fuera del
+     * viewport, donde `window` no recibe el evento) y `pulsado` se habria
+     * quedado encendido para siempre, mojando la familia de clic con un
+     * simple roce. Esto cubre CUALQUIER causa de un release no visto, no
+     * solo la de fuera del documento -- por eso es una guardia aparte de la
+     * de `alSalirDelDocumento`.
+     */
+    if (pulsado && evento.buttons === 0) pulsado = false;
     cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   };
 
@@ -280,6 +291,9 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
   const alSalirDelDocumento = (): void => {
     dentro = false;
     diana = null;
+    // Salir del documento borra el estado transitorio del puntero: si el
+    // clic se solto fuera del viewport, este es el unico evento que lo sabe.
+    pulsado = false;
     secar();
     setEstado("apagada");
   };
