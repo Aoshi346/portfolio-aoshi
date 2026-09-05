@@ -38,12 +38,15 @@ Ejecutado con `superpowers:subagent-driven-development` en el worktree
 | 4 · el cerco | **cerrada** | `9fae5be`, `3a97324` | 1 |
 | 5 · lente, sombra, rebote y noche | **cerrada** | `85d9e3d`, `9c763c7` | 1 |
 | 6 · el estado rancio | **cerrada** | `4b0c6cf`, `4c0eb85` | 1 |
-| 7 · el barrido de 24 horas | **en curso** | — | — |
-| 8 · limpieza y consola | pendiente | — | — |
-| 9 · cerrar documentación | pendiente | — | — |
+| 7 · el barrido de 24 horas | **cerrada** | `8e1198e`, `6a4ad82` | 1 (la recalibración) |
+| 8 · limpieza y consola | **cerrada** | `0b4b7b5` | 1 (la fuga de cercos, prevista en el Task 4) |
+| 9 · cerrar documentación | **cerrada** salvo la fila de `.claude/` (queda para el merge) | — | 0 |
 
-El arnés va por 34 aserciones en verde. **Aoshi pidió parar al terminar la tarea 7**, así que las
-tareas 8 y 9 quedan sin despachar.
+El arnés va por **47 aserciones en verde**, gate 6 incluido. La tarea 7 estuvo en rojo un día: el
+derrame nocturno hundía la leyenda de Obra a 4,06:1. Se resolvió **calibrando, no cambiando de
+mecanismo** — opacidad de noche 0,30 → 0,20, peor caso 4,92:1. La alternativa que preveía el spec
+(`background-image` bajo el texto) habría sido peor: la tarjeta de Obra lleva un `<img>` que lo
+habría tapado. Detalle y tabla en la pregunta 4 del spec.
 
 **El registro de la ejecución vive en `.superpowers/sdd/2026-09-04-caelestia-cursor/progress.md`**
 (directorio ignorado por git): lleva el barrido previo de conflictos, cada ronda de arreglo, los
@@ -1786,7 +1789,7 @@ abierta 1 del spec).
 - Consumes: la sonda, y `window.__CAE_SET_MINUTOS__(minutos)` que ya expone `caelestia.color.ts`.
 - Produces: `_contraste_glifo(pagina, caja) -> float` y `_media_canal(png_a, png_b) -> float`.
 
-- [ ] **Step 1: Escribe las dos utilidades de medida**
+- [x] **Step 1: Escribe las dos utilidades de medida**
 
 El contraste **no** se puede leer de `getComputedStyle`: la mancha va encima con `mix-blend-mode`,
 así que el color pintado del texto y el del fondo no son los declarados. Hay que leer píxeles.
@@ -1881,7 +1884,7 @@ def _delta_medio(pagina, selector: str) -> float:
     return total / (con.size[0] * con.size[1] * 3)
 ```
 
-- [ ] **Step 2: Escribe el gate 6**
+- [x] **Step 2: Escribe el gate 6**
 
 ```python
 # AA para texto normal. La leyenda de la tarjeta es Fraunces 14px y el texto
@@ -1963,7 +1966,7 @@ def gate_contraste(pagina, base: str) -> None:
     )
 ```
 
-- [ ] **Step 3: Corre una vez con `UMBRAL_NOTA = 0` para leer las medidas**
+- [x] **Step 3: Corre una vez con `UMBRAL_NOTA = 0` para leer las medidas**
 
 ```bash
 nohup python3 scripts/measure-caelestia-cursor.py --base http://localhost:4173 \
@@ -1979,7 +1982,7 @@ Anota el `delta medio` peor. Fija `UMBRAL_NOTA` en **la mitad** de ese valor (ma
 frente al ruido del compositor, no un umbral pegado a la medida: un umbral más fino que el ruido de
 su instrumento mide carga de máquina).
 
-- [ ] **Step 4: El punto de decisión — si AA no aguanta**
+- [x] **Step 4: El punto de decisión — si AA no aguanta**
 
 Si el peor contraste baja de 4,5, **no toques el umbral**. Aplica la pregunta abierta 1 del spec: la
 mancha pasa a pintarse **debajo del texto**. El cambio es acotado:
@@ -1991,19 +1994,19 @@ mancha pasa a pintarse **debajo del texto**. El cambio es acotado:
   en la sonda, como `hyprCursor.ts:medirImagen`, y **documenta por qué existe**.
 - Anota el cambio de mecanismo en el `Registro de implementación` del spec, con los dos números.
 
-- [ ] **Step 5: Fija el umbral, anótalo en el spec y deja el gate verde**
+- [x] **Step 5: Fija el umbral, anótalo en el spec y deja el gate verde**
 
 Escribe en el spec, en `## Preguntas abiertas para el plan`, punto 4: el valor medido, el umbral
 elegido y la fecha. Corre el arnés entero: verde.
 
-- [ ] **Step 6: Sabotea el gate por los dos lados**
+- [x] **Step 6: Sabotea el gate por los dos lados**
 
 1. Sube la opacidad de `.cae-cursor-gota` a `0.6`: el check de AA tiene que dar **FAIL**.
 2. Bájala a `0`: el check de «se nota» tiene que dar **FAIL**.
 
 Los dos sabotajes por separado, mirando el rojo cada vez. Restaura.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add scripts/measure-caelestia-cursor.py docs/superpowers/specs/2026-09-04-caelestia-cursor-design.md
@@ -2022,7 +2025,7 @@ git commit -m "test(cursor): barrido de 24 horas — contraste bajo el derrame y
 - Consumes: `__caeCursor__.destroy()`.
 - Produces: nada nuevo.
 
-- [ ] **Step 1: Escribe el gate 7**
+- [x] **Step 1: Escribe el gate 7**
 
 ```python
 def gate_limpieza(pagina, base: str) -> None:
@@ -2065,12 +2068,12 @@ def gate_limpieza(pagina, base: str) -> None:
     )
 ```
 
-- [ ] **Step 2: Corre. Si falla, arréglalo**
+- [x] **Step 2: Corre. Si falla, arréglalo**
 
 Lo previsible es que fallen los cercos (si no los recoge `destroy()`) y `glifo` (si la clase `ready`
 no se quita). Los dos tienen su código desde los Tasks 2 y 4; si fallan, es que falta llamarlo.
 
-- [ ] **Step 3: Comprueba el gate 8 con una página que sí ensucia la consola**
+- [x] **Step 3: Comprueba el gate 8 con una página que sí ensucia la consola**
 
 El gate 8 (cero errores de consola) existe desde el Task 1 y ha estado verde todo el rato — que es
 justo lo que lo hace sospechoso. Sabotéalo: mete `window.noExiste.nada;` al principio de
@@ -2080,7 +2083,7 @@ Restaura y reconstruye.
 Este es el gate que caza el modo de fallo más caro del proyecto: un `gsap is not defined` que `tsc`
 y `eslint` dan por bueno y solo aparece en el navegador.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/measure-caelestia-cursor.py src/components/caelestiaCursor.ts
@@ -2100,7 +2103,14 @@ git commit -m "test(cursor): gate de limpieza de destroy() y de consola"
 - Consumes: todo lo anterior.
 - Produces: el estado final del spec.
 
-- [ ] **Step 1: Añade el arnés a la tabla de `rules/verification.md`**
+- [ ] **Step 1: Añade el arnés a la tabla de `rules/verification.md`** — QUEDA PARA EL MERGE
+
+`.claude/` está en `.gitignore`: **no existe en este worktree y no viaja en esta rama**. Vive solo
+en el directorio del repo principal, que es justo donde hay otra sesión trabajando en B5 con su
+`vite preview` vivo, y que además va a escribir su propio párrafo en el mismo fichero. Editarlo
+desde aquí no aporta nada a la rama y se pisa con esa sesión, así que la fila se aplica **al
+fusionar**, no ahora. La fila lista para pegar es la de abajo; el `Estado:` del spec se queda en
+`en ejecucion` hasta entonces, que es lo que de verdad pasa.
 
 Una fila, con el mismo formato que las demás:
 
@@ -2108,7 +2118,7 @@ Una fila, con el mismo formato que las demás:
 | `measure-caelestia-cursor.py` | El cursor de Caelestia (la gota): presencia por tema y que en táctil y con movimiento reducido **no se descargue el chunk** (se vigila la petición de red, no el DOM); el reparto de señales, incluida la inversión que hace que la leyenda de una tarjeta y el nombre de una pieza **no** apaguen la gota aunque sean `figcaption`; los dos momentos del gesto (la pieza se moja al rozarla, la tarjeta al pulsarla) leyendo el avance **pintado** y no el objetivo escrito; que no haya inercia (delta cero tras un fotograma, no «menor que»); el estado rancio al cambiar de workspace **con el ratón quieto**; el contraste bajo el derrame medido **píxel a píxel** en las 24 horas —la mezcla `multiply`/`screen` hace que ni el texto ni el fondo se pinten del color que declaran, así que `getComputedStyle` mediría otra página— junto con que el derrame **se note**; la limpieza de `destroy()` incluido un cerco vivo; y la consola. **No juzga `.gallery-track`**: existe en el DOM pero es invisible en Caelestia, y una aserción suya sería tautológica. | `npm run build && npx vite preview --port 4173 &`<br>`nohup python3 scripts/measure-caelestia-cursor.py --base http://localhost:4173 > /tmp/cursor.log 2>&1 &`<br>`PID=$!; until ! kill -0 $PID 2>/dev/null; do sleep 5; done; tail -40 /tmp/cursor.log` |
 ```
 
-- [ ] **Step 2: Escribe el `Registro de implementación` en el spec**
+- [x] **Step 2: Escribe el `Registro de implementación` en el spec**
 
 Añade una sección al final con: qué se desvió del diseño y por qué, los números finales del gate 6
 (peor contraste y en qué hora, peor delta y umbral elegido), qué mecanismo quedó para el derrame
@@ -2117,12 +2127,12 @@ ninguno lo estuvo, escríbelo también: es un dato, no un hueco.
 
 Cambia la cabecera a `Estado: implementado` y añade `Plan: docs/superpowers/plans/2026-09-04-caelestia-cursor.md`.
 
-- [ ] **Step 3: Marca las casillas de este plan**
+- [x] **Step 3: Marca las casillas de este plan**
 
 Todas las de las tareas hechas. `scripts/verify.py` cruza el `Estado:` del spec contra las casillas
 del plan: con el spec en `implementado` y casillas sin marcar, falla — y con razón.
 
-- [ ] **Step 4: Actualiza los dos `CLAUDE.md`**
+- [x] **Step 4: Actualiza los dos `CLAUDE.md`**
 
 Un párrafo en `## Theme Status` (inglés) y otro en `## ESTADO DE LOS TEMAS` (español), al estilo de
 los del cursor de Hyprland. Tiene que decir: que Caelestia ya tiene cursor propio y cuál es su
@@ -2132,7 +2142,7 @@ tesis; que la lista blanca cuelga de la **raíz** y no de `[data-scene]`, con la
 **No edites los `CLAUDE.md` a mitad de una sesión de trabajo** — invalida la caché de prompt. Esta
 tarea es el final, así que aquí es el sitio correcto.
 
-- [ ] **Step 5: Verificación final completa**
+- [x] **Step 5: Verificación final completa**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -2146,13 +2156,13 @@ python3 scripts/measure-cursor-luz.py --base http://localhost:4173          # Hy
 Los cuatro en verde. El de Hyprland es el que demuestra que no se ha tocado el cursor de al lado; el
 de la hora, que la fase A sigue en pie.
 
-- [ ] **Step 6: Captura de las tres dianas, de día y de noche, y a ojo**
+- [x] **Step 6: Captura de las tres dianas, de día y de noche, y a ojo**
 
 Última mirada antes de declarar nada: las tres dianas (tarjeta, pieza, pastilla), a 09:00 y a 03:00,
 con el derrame lleno. Es lo que ningún número dice, y es lo que cazó el fallo de B4 que ningún gate
 vio.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add .claude/rules/verification.md docs/superpowers/ CLAUDE.md .claude/CLAUDE.md

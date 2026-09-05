@@ -4,49 +4,23 @@ Estado: en ejecucion
 Plan: `docs/superpowers/plans/2026-09-04-caelestia-cursor.md`
 Fecha: 2026-09-04 (spec aprobado y plan escrito el mismo dia)
 
-**Ejecucion, al 2026-09-05:** seis de las nueve tareas del plan cerradas con revision limpia, la
-septima en curso. El dispositivo esta construido y funciona —perla, derrame en sus dos momentos,
-cerco, lente, sombra, rebote, material de noche y estado rancio—, con 34 aserciones en verde en
-`scripts/measure-caelestia-cursor.py`. **Aoshi pidio parar al terminar la tarea 7**, asi que
-quedan sin hacer la 8 (gates de limpieza de `destroy()` y de consola) y la 9 (documentacion,
-registro de implementacion y estado de los temas). El progreso real son **las casillas del plan**,
-que es lo que cruza `scripts/verify.py`; el detalle de cada ronda vive en
-`.superpowers/sdd/2026-09-04-caelestia-cursor/progress.md`, ignorado por git.
+**Ejecucion, al 2026-09-05:** **las nueve tareas del plan cerradas**, arnes en verde con
+**47 aserciones** (`scripts/measure-caelestia-cursor.py`, 8 gates). Cruzadas tambien en verde: el
+motor de color de Caelestia (fase A intacta), el cursor de Hyprland (no se ha tocado el de al lado)
+y `scripts/verify.py` (12 fallos conocidos de fixtures, 0 nuevos). Las tres dianas miradas a ojo,
+de dia y de noche, con el derrame lleno.
 
-**Este spec NO pasa a `implementado` hasta que la tarea 9 lo cierre.** Y cuando lo haga, el
-`Registro de implementacion` tiene que recoger lo que la ejecucion desmintio de este documento,
-que no es poco: la lista blanca no podia colgar como estaba escrita, `cursor: auto` no computa a
-`"text"`, la regla de rescate rompia las dos senales que venia a proteger, las guardias de
-movimiento reducido no ganaban la cascada, y **el gate del estado rancio era infalsificable**
-porque Chromium sana el estado por su cuenta al marcar la escena `inert`. El plan lleva el
-resumen en su `## Estado de ejecucion`.
-Alcance: **solo el tema Caelestia**. Módulo nuevo `src/components/caelestiaCursor.ts`, bloque nuevo
-dentro de `:root[data-theme="caelestia"]` en `src/themes/themes.css`, un arnés nuevo
-`scripts/measure-caelestia-cursor.py`, y la puerta de montaje en `src/main.ts` (la quinta entrada
-del patrón que ya usan Vice en la 206 y Hyprland en la 238). Es un **dispositivo de tema,
-transversal a las cinco escenas**: no es ninguna de las fases B1-B5.
-**Vice no se toca** (cerrado el 2026-08-05). **Hyprland no se toca**: `src/components/hyprCursor.ts`
-y `src/components/viceCursor.ts` se leen como contrato y no se editan. **Las fases A, B1, B2, B3 y
-B4 de Caelestia no se tocan**: los tres gestos de roce que este cursor viste ya son `<button>` y no
-necesitan ni un atributo nuevo (ver `## Las tres dianas`). **`src/data/content.ts` no cambia**: este
-dispositivo no escribe ni un carácter en pantalla.
+**Por que el estado sigue en `en ejecucion` y no en `implementado`:** falta el merge, y con el
+merge la unica pieza de documentacion que no vive en esta rama — la fila del arnes en
+`.claude/rules/verification.md` y el parrafo de `.claude/CLAUDE.md`. `.claude/` esta en
+`.gitignore`: no existe en este worktree, vive solo en el directorio del repo principal, donde hay
+otra sesion trabajando en B5 que va a escribir en los mismos ficheros. Se aplica al fusionar. El
+`CLAUDE.md` de la raiz, que si esta versionado, ya lleva su parrafo.
 
-Prototipo aprobado por Aoshi, mirando la maqueta viva a 09:00 y a 03:00 con hover real:
-`.superpowers/brainstorm/434936-1788559042/content/04-la-gota-noche.html`.
-
-Rescatado al repo desde el acompañante visual (`.superpowers/` está en `.gitignore`):
-
-| fichero | qué es |
-|---|---|
-| `2026-09-04-caelestia-cursor-maqueta.html` | la maqueta aprobada: la gota con los cinco añadidos y su material de noche, deslizador de hora, velocidad y recorrido guiado |
-| `2026-09-04-caelestia-cursor-descartes.html` | la ronda de tres (gota, manículo, borde activo), por si hay que volver a mirar por qué cayeron dos |
-| `2026-09-04-caelestia-cursor-icons.json` | los SVG de las 23 piezas de Créditos leídos del sitio en marcha, que las maquetas piden por `/files/icons.json` |
-| `2026-09-04-caelestia-cursor-perla-dia.png`, `…-perla-noche.png`, `…-derrame-dia.png` | la perla sobre la tarjeta en los dos esquemas, y el derrame llenando la tarjeta |
-
-Las maquetas necesitan `icons.json` y `gsap.min.js` servidos a su lado (rutas `/files/…`): el
-segundo es `node_modules/gsap/dist/gsap.min.js`.
-
----
+El progreso real son **las casillas del plan**, que es lo que cruza `scripts/verify.py`; el detalle
+de cada ronda vive en `.superpowers/sdd/2026-09-04-caelestia-cursor/progress.md`, ignorado por git.
+Lo que la ejecucion desmintio de este documento esta recogido en el
+`## Registro de implementacion` del final.
 
 ## Por qué
 
@@ -307,7 +281,7 @@ misma pieza vista con otra luz, no otra pieza.
 | lente | `saturate(1.7) contrast(1.06) blur(.7px)` | `brightness(1.35) saturate(1.25) blur(.7px)` |
 | tensión | brillo 0,55 / 0,95 | brillo 0,35 / 0,6 y canto encendido |
 | sombra | `0 1px 2px` on-surface 32% | halo 6px primary 45% |
-| derrame | primary 22% | primary 30% |
+| derrame | primary 22% | primary 20% (calibrado, ver pregunta 4) |
 
 **Lo que hay que medir, no dar por bueno:** el derrame va encima del texto de la diana. Con
 `multiply` sobre texto oscuro el texto no cambia y el fondo se oscurece, así que el contraste baja;
@@ -315,6 +289,11 @@ con `screen` sobre texto claro, al revés. La leyenda de la tarjeta (`.cae-obra-
 itálica 14px) y la pastilla de workspace (12px) son los peores casos y **tienen que aguantar AA en
 las 24 horas y los dos esquemas**. Si no, el derrame pasa al mecanismo de Hyprland (`background-image`
 en línea, bajo el texto) — es una pregunta para el plan, no para el diseño.
+
+**Medido (Task 7): no hizo falta cambiar de mecanismo, hizo falta calibrar.** El peor caso del
+barrido completo es **4,92:1 en "obra 06:30"**, con la opacidad nocturna del derrame en 0,20 y no en
+0,30. El detalle, la tabla de la calibración y por qué el mecanismo alternativo habría sido peor
+(la tarjeta de Obra lleva un `<img>` que taparía un `background-image`) están en la pregunta 4.
 
 ## Movimiento
 
@@ -466,19 +445,58 @@ Hyprland y no deja deuda, a diferencia de B1-B4.
      día y noche): el mismo recorte a la misma hora sube a **7,42:1** — la caída de 7,42 a 4,06 es
      enteramente atribuible al derrame, no a un fallo de instrumento.
 
-   **El gate 6 queda en ROJO por diseño, no por error de medida.** El mecanismo elegido — pintar el
-   derrame ENCIMA del texto con `mix-blend-mode` — no aguanta AA en la franja nocturna. Es
-   exactamente la pregunta abierta 1 de más arriba, y la decisión de cambiar de mecanismo
-   (`background-image` en línea, bajo el texto, patrón de Hyprland) es de Aoshi, no de esta tarea:
-   el umbral de AA no se ha tocado ni se ha calibrado la opacidad del derrame para esquivarlo.
+   **Primera lectura: el gate 6 en ROJO, y no por error de medida.** El mecanismo elegido —pintar
+   el derrame ENCIMA del texto con `mix-blend-mode`— no aguantaba AA en la franja nocturna. Las dos
+   peores horas caían de noche (`screen`, derrame al 30 %).
 
-   **Nota sobre el sabotaje de AA (Step 6, subir a 60 %):** el ajuste de la sesión solo toca la
-   regla de día (`.cae-cursor-gota { opacity }`); la regla de noche
-   (`:root[data-cae-esquema="noche"] .cae-cursor-gota { opacity: 0.3 }`) tiene más especificidad y
-   gana siempre en horas nocturnas, así que ese sabotaje concreto no mueve el peor caso (que ya cae
-   de noche) — el check de AA sigue en FAIL, pero por el fallo real de base, no por el sabotaje. El
-   sabotaje que sí aísla el mecanismo es el de perceptibilidad (opacidad a 0 en las dos reglas): con
-   la mancha invisible el delta cae a 0,00 y el check de "se nota" da FAIL, como se esperaba.
+   **Resuelto el 2026-09-05 recalibrando, sin cambiar de mecanismo.** Antes de rearquitecturar se
+   barrió la opacidad nocturna (0,30 / 0,26 / 0,22 / 0,20 / 0,18) contra las horas peores, con la
+   misma medida por glifo del arnés. La relación es monótona y limpia:
+
+   | opacidad noche | peor contraste | peor delta |
+   |---|---|---|
+   | 0,30 | 4,06:1 (obra 06:30) | 26,06 |
+   | 0,26 | 4,37:1 | 22,48 |
+   | 0,22 | 4,74:1 | 19,25 |
+   | **0,20** | **4,92:1** (barrido completo) | **13,25** |
+   | 0,18 | 5,12:1 | 15,86 |
+
+   Se elige **0,20** y no 0,22: deja 0,43 de margen sobre AA en vez de 0,24, y el derrame sigue
+   notándose al doble del umbral. **De día se queda en 0,22** — no es el mismo número porque no es
+   la misma mezcla: `multiply` sobre papel claro oscurece el fondo del texto, `screen` sobre
+   superficie oscura lo aclara, y es esto último lo que le come contraste. Reutilizar la cifra
+   habría sido la enésima repetición del error que este proyecto ya tiene escrito: *una opacidad se
+   calibra contra una superficie, no contra un token*.
+
+   Barrido completo posterior, en verde: **peor 4,92:1 en "obra 06:30"**, peor delta 13,25 en
+   "obra 09:00".
+
+   **Por qué NO se aplicó la pregunta abierta 1** (mover el derrame a un `background-image` bajo el
+   texto, el patrón de Hyprland): además de innecesaria, habría sido *peor*. Un `background-image`
+   se pinta bajo el contenido del elemento, y la tarjeta de Obra tiene un `<img>` como hijo que
+   ocupa casi toda su caja — el derrame habría desaparecido justo en la escena donde más se ve. La
+   pregunta 1 queda **cerrada**: el derrame se queda encima, con el número calibrado.
+
+   **Sabotajes del gate 6, los dos vistos en rojo:**
+   - *AA*: subir la opacidad nocturna de 0,20 a 0,30 devuelve el peor caso a 4,06:1 y el check da
+     FAIL. Es el sabotaje que sí aísla el mecanismo. **El del plan (subir `.cae-cursor-gota` a
+     0,6) no vale**: toca solo la regla de día, y la regla de noche
+     (`:root[data-cae-esquema="noche"] ...`) tiene más especificidad y gana en las horas donde está
+     el peor caso.
+   - *"se nota"*: opacidad 0 en las dos reglas → delta 0,00 → FAIL.
+
+   **Y una décima aserción tautológica cazada aquí.** Con `--mitad 2` el `check` de perceptibilidad
+   salía VERDE sin haber tomado ni una medida: las dos horas de perceptibilidad caen en la primera
+   mitad, y el centinela con el que arranca el peor delta (999.0) supera cualquier umbral. Ahora la
+   mitad que no cubre esas horas **dice que no las mide**, en vez de afirmar que pasan.
+
+5. **La limpieza de `destroy()`** (Task 8). El gate 7 se vio en rojo por la razón que anticipó el
+   Task 4: `destroy()` se llevaba `cursor` y `mancha`, pero los cercos cuelgan de `host` y
+   sobrevivían — un nodo huérfano animándose y su temporizador de respaldo de 1200 ms apuntando a
+   un nodo sin dueño. Se retiran **a través de `retirarCerco`**, iterando una copia del `Set`,
+   porque es lo único que además cancela el temporizador; un `remove()` crudo habría dejado
+   pasar la mitad del fallo.
+
 
 ## Trampas ya pagadas en esta sesión
 
@@ -492,3 +510,63 @@ Hyprland y no deja deuda, a diferencia de B1-B4.
 - **Un `MouseEvent` sintético no dispara `:hover`**, y aquí todo pasa en hover: las capturas de
   este documento se tomaron con `page.hover()` real, y el recorrido guiado de la maqueta pone las
   clases a mano por la misma razón (la maqueta no depende de `:hover` en ningún punto).
+
+## Registro de implementación (2026-09-05)
+
+Ejecutado con `superpowers:subagent-driven-development` en el worktree `portfolio-aoshi-cursor`,
+rama `design/caelestia-cursor`. Nueve tareas, 17 commits. El registro por rondas vive en
+`.superpowers/sdd/2026-09-04-caelestia-cursor/progress.md` (ignorado por git); si se pierde, la
+historia de git es el registro que queda.
+
+**Números finales del gate 6** (barrido completo de 24 horas, paso de 30 minutos, dos dianas,
+medida por glifo contra el fondo real, build de producción):
+
+- Peor contraste bajo el derrame: **4,92:1 en "obra 06:30"** (AA = 4,5).
+- Peor delta medio de perceptibilidad: **13,25 en "obra 09:00"**; umbral `UMBRAL_NOTA = 6,625`,
+  fijado en la mitad de la primera medida.
+- Mecanismo del derrame: **encima del texto, con mezcla** (`multiply` de día, `screen` de noche).
+  La alternativa del diseño —`background-image` bajo el texto, patrón de Hyprland— queda descartada
+  con razón medida, no por preferencia: se pinta bajo los hijos del elemento y la tarjeta de Obra
+  lleva un `<img>` que la taparía.
+
+### Lo que se desvió del diseño, y por qué
+
+1. **La lista blanca no podía colgar de `[data-scene]`.** Las tarjetas de Obra, las pastillas del
+   shell y el dock viven fuera de ese subárbol. Cuelga de la raíz, con una regla de opt-in explícita
+   para los pulsables: `<button>` y `<a>` declaran su propio `cursor` en la hoja del navegador, así
+   que la herencia nunca los alcanza.
+2. **`cursor: auto` no computa a `"text"`.** El navegador devuelve la palabra clave tal cual. El
+   texto corrido lleva `cursor: text` literal, lo que diverge de lo que hacen Vice y Hyprland.
+3. **La regla de rescate que el plan escribió rompía las dos señales que venía a proteger**: sobre
+   un enlace externo pisaba su `pointer` nativo, y sobre `.gallery-track` pisaba su `grab` con una
+   especificidad de (0,4,0) contra (0,1,0). Se resolvió borrándola: el elemento que declara su
+   propio cursor no necesita rescate, porque la herencia no le llega.
+4. **`button[aria-pressed]` casa 46 nodos, no 23.** El corte entre las dos familias sigue siendo
+   ese selector, pero el número del spec estaba mal contado.
+5. **La opacidad nocturna del derrame bajó de 0,30 a 0,20** tras medir. Es la única recalibración
+   de color de toda la ejecución. Ver la pregunta abierta 4.
+
+### Qué instrumento resultó estar roto
+
+Cinco, y es un dato, no un hueco:
+
+1. **El gate del estado rancio era infalsificable.** Chromium dispara `pointerout` sobre el elemento
+   mojado en cuanto su escena pasa a `inert`, unos 50 ms antes de que el carril termine: eso sanaba
+   el estado por la vía nativa y quitar el listener del módulo no ponía el gate en rojo. Ahora tiene
+   dos familias: el mecanismo propio con la sanación nativa suprimida, y el camino del visitante.
+2. **Un umbral más fino que el ruido de su instrumento** (`> 0.9` tras una espera fija para una
+   transición de 420 ms; medía 0,89). Se arregló haciendo la espera determinista y la aserción
+   **más estricta** (`>= 0.99`), no más floja.
+3. **Un muestreo del rebote que leía `transform`** cuando la animación mueve la propiedad `scale`
+   suelta. Medía siempre lo mismo.
+4. **La aserción de perceptibilidad salía verde sin medir nada con `--mitad 2`**: el centinela
+   (999.0) supera cualquier umbral y las dos horas de perceptibilidad caen en la primera mitad. Es
+   la décima aserción tautológica de esta pista. Ahora dice que no las mide.
+5. **El sabotaje de AA del plan no sabotea nada.** Subir `.cae-cursor-gota` a 0,6 toca solo la regla
+   de día; la de noche tiene más especificidad y gana justo en las horas del peor caso. El sabotaje
+   que sí aísla el mecanismo es subir la opacidad **nocturna** de 0,20 a 0,30, que devuelve el peor
+   caso a 4,06:1.
+
+Y un fallo de proceso que costó tres turnos: **los subagentes se van solos a ejecución en segundo
+plano**, y su propia parada mata la corrida. El barrido largo hubo que partirlo en dos mitades
+detrás de una bandera de CLI para que cupiera en una llamada en primer plano.
