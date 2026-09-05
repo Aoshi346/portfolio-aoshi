@@ -5903,6 +5903,65 @@
   transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
 }
 
+/*
+ * Decision de Aoshi (repaso de interfaces 2026-09-05): la barra y el dock
+ * aparecian de golpe. Reabre la frase del spec de B1 "el shell ya esta
+ * puesto, y lo unico que se anima es el escritorio" -- ahora el shell
+ * tambien entra, antes de que llegue la coreografia de Titulo (el modulo
+ * del shell monta via `import()` diferido, asi que su entrada corre primero
+ * solo por orden de carga).
+ *
+ * La barra baja desde arriba y el dock sube desde abajo, 0.4s,
+ * `cubic-bezier(0.22, 1, 0.36, 1)` -- la misma curva que `caeCredInstala`
+ * usa mas abajo en este fichero.
+ *
+ * Posicionamiento comprobado antes de tocar nada: `.cae-bar` (arriba) NO
+ * lleva `transform` propio, asi que anima `transform` sin conflicto. `.cae-dock`
+ * SI lleva `transform: translateX(-50%)` para centrarse -- animar `transform`
+ * ahi pisaria ese centrado y lo desplazaria. Por eso el dock anima la
+ * propiedad CSS `translate` (individual, se compone con `transform` sin
+ * sustituirlo) en vez de `transform`.
+ *
+ * Ninguno de los dos tiene `transition` sobre `opacity`/`transform`/`translate`
+ * que pueda pelear con la animacion (sus unicas `transition` son sobre
+ * `background`).
+ *
+ * Todo dentro de `no-preference`: bajo movimiento reducido no existe
+ * animacion ninguna (rama obligatoria de este proyecto), y aqui no hace
+ * falta guardia aparte para pseudo-elementos porque no se anima ninguno.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes caeShellBaja {
+    from {
+      transform: translateY(-0.75rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes caeShellSube {
+    from {
+      translate: 0 0.75rem;
+      opacity: 0;
+    }
+    to {
+      translate: 0 0;
+      opacity: 1;
+    }
+  }
+
+  :root[data-theme="caelestia"] .cae-bar {
+    animation: caeShellBaja 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  :root[data-theme="caelestia"] .cae-dock {
+    animation: caeShellSube 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
 :root[data-theme="caelestia"] .cae-dock-item {
   position: relative;
   width: 2.875rem;

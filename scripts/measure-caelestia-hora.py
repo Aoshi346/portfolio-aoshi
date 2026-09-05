@@ -670,6 +670,159 @@ def main():
                     )
         ctx.close()
 
+        # ---- 14. la barra baja y el dock sube (y con movimiento reducido no)
+        #
+        # Decision de Aoshi (repaso de interfaces 2026-09-05): la barra y el
+        # dock aparecian de golpe. Ahora la barra ENTRA desde arriba
+        # (`caeShellBaja`) y el dock desde abajo (`caeShellSube`), 0.4s,
+        # `animation-fill-mode: both`.
+        #
+        # El shell monta via `import()` diferido (igual que el toast de la
+        # seccion 8), asi que no existe en el instante del `commit` -- se
+        # muestrea desde ahi, sin `wait_for_timeout` entre lecturas para no
+        # perderse el fotograma intermedio con opacidad < 1 (la cadencia de un
+        # `evaluate()` de ida y vuelta ya basta de por si). El corte de "ha
+        # terminado" se ancla al ESTADO de `getAnimations()`
+        # (`playState === 'finished'`), nunca a un cronometro: en esta sandbox
+        # rAF/setTimeout van a 200-400ms, muy por encima de los 400ms
+        # declarados, con lo que un plazo fijo mide la carga de la maquina, no
+        # la animacion.
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="commit", timeout=30000)
+
+        LEE_ENTRADA_SHELL = """() => {
+            const leer = (el) => {
+                if (!el) return null;
+                const anims = el.getAnimations();
+                const r = el.getBoundingClientRect();
+                return {
+                    opacity: parseFloat(getComputedStyle(el).opacity),
+                    nombres: anims.map(a => a.animationName),
+                    terminadas: anims.length > 0 && anims.every(a => a.playState === 'finished'),
+                    top: r.top,
+                    bottom: r.bottom,
+                };
+            };
+            return {
+                barra: leer(document.querySelector('[data-cae-bar]')),
+                dock: leer(document.querySelector('[data-cae-dock]')),
+            };
+        }"""
+
+        t0 = time.monotonic()
+        primeraExistB = None
+        primeraExistD = None
+        nombresVistosB = set()
+        nombresVistosD = set()
+        vistoOpMenorB = False
+        vistoOpMenorD = False
+        final = None
+        while time.monotonic() - t0 < 30:
+            m = page.evaluate(LEE_ENTRADA_SHELL)
+            ahora = time.monotonic()
+            b, d = m["barra"], m["dock"]
+            if b is not None:
+                if primeraExistB is None:
+                    primeraExistB = ahora
+                nombresVistosB.update(b["nombres"])
+                if b["opacity"] < 0.99:
+                    vistoOpMenorB = True
+            if d is not None:
+                if primeraExistD is None:
+                    primeraExistD = ahora
+                nombresVistosD.update(d["nombres"])
+                if d["opacity"] < 0.99:
+                    vistoOpMenorD = True
+            if b is not None and d is not None and b["terminadas"] and d["terminadas"]:
+                final = m
+                break
+            # corte de seguridad: existen desde hace >2s y jamas hubo animacion
+            if (
+                b is not None and d is not None
+                and not b["nombres"] and not d["nombres"]
+                and primeraExistB is not None and ahora - primeraExistB > 2
+                and primeraExistD is not None and ahora - primeraExistD > 2
+            ):
+                final = m
+                break
+
+        if final is None:
+            fallos.append("la entrada de la barra/dock no aterrizo en 30s")
+        else:
+            if "caeShellBaja" not in nombresVistosB:
+                fallos.append(
+                    "la barra no llevo la animacion caeShellBaja (vistas: %s)" % nombresVistosB
+                )
+            if "caeShellSube" not in nombresVistosD:
+                fallos.append(
+                    "el dock no llevo la animacion caeShellSube (vistas: %s)" % nombresVistosD
+                )
+            if final["barra"]["opacity"] < 0.99:
+                fallos.append("la barra no termino a opacity 1: %.2f" % final["barra"]["opacity"])
+            if final["dock"]["opacity"] < 0.99:
+                fallos.append("el dock no termino a opacity 1: %.2f" % final["dock"]["opacity"])
+            if final["barra"]["top"] < 0 or final["barra"]["bottom"] > 900:
+                fallos.append(
+                    "la barra queda fuera del viewport al aterrizar: %s"
+                    % [final["barra"]["top"], final["barra"]["bottom"]]
+                )
+            if final["dock"]["top"] < 0 or final["dock"]["bottom"] > 900:
+                fallos.append(
+                    "el dock queda fuera del viewport al aterrizar: %s"
+                    % [final["dock"]["top"], final["dock"]["bottom"]]
+                )
+            if not vistoOpMenorB:
+                fallos.append(
+                    "nunca se vio la barra con opacity < 1 (aparece de golpe, no baja)"
+                )
+            if not vistoOpMenorD:
+                fallos.append(
+                    "nunca se vio el dock con opacity < 1 (aparece de golpe, no sube)"
+                )
+        ctx.close()
+
+        # ---- 14b. con movimiento reducido no hay animacion de entrada
+        ctx = nav.new_context(
+            viewport={"width": 1440, "height": 900}, reduced_motion="reduce"
+        )
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+
+        t0 = time.monotonic()
+        reducido = None
+        while time.monotonic() - t0 < 15:
+            r = page.evaluate(
+                """() => {
+                    const b = document.querySelector('[data-cae-bar]');
+                    const d = document.querySelector('[data-cae-dock]');
+                    if (!b || !d) return null;
+                    return {
+                        barraAnims: b.getAnimations().length,
+                        dockAnims: d.getAnimations().length,
+                        barraOp: parseFloat(getComputedStyle(b).opacity),
+                        dockOp: parseFloat(getComputedStyle(d).opacity),
+                    };
+                }"""
+            )
+            if r is not None:
+                reducido = r
+                break
+            page.wait_for_timeout(50)
+
+        if reducido is None:
+            fallos.append("movimiento reducido: la barra/dock nunca llegaron a existir")
+        else:
+            if reducido["barraAnims"] or reducido["dockAnims"]:
+                fallos.append(
+                    "movimiento reducido: quedan animaciones activas: %r" % reducido
+                )
+            if reducido["barraOp"] < 0.99 or reducido["dockOp"] < 0.99:
+                fallos.append(
+                    "movimiento reducido: opacity distinta de 1: %r" % reducido
+                )
+        ctx.close()
+
         nav.close()
 
     if fallos:
