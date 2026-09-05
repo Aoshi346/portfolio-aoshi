@@ -12,8 +12,11 @@ sintetico no dispara `:hover`, y todo lo que hace este dispositivo ocurre en
 hover -- es la trampa que ya costo la fase B2.
 """
 import argparse
+import io
+import math
 import sys
 
+from PIL import Image
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
@@ -434,12 +437,213 @@ def gate_rancio(pagina, base: str) -> None:
     )
 
 
+def _lum(px: tuple[int, int, int]) -> float:
+    f = []
+    for v in px:
+        v /= 255
+        f.append(v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2]
+
+
+def _ratio(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:
+    la, lb = _lum(a) + 0.05, _lum(b) + 0.05
+    return max(la, lb) / min(la, lb)
+
+
+def _contraste_glifo(pagina, selector: str) -> float:
+    """Contraste real del texto de `selector` contra su fondo, PIXEL A PIXEL.
+
+    Dos capturas del mismo recorte: una normal y otra con la tinta apagada
+    (`color: transparent`). Los pixeles que cambian entre las dos son los
+    glifos; el mismo pixel en la segunda captura es su fondo exacto.
+
+    Por que asi y no con `getComputedStyle`: el derrame va ENCIMA con
+    `mix-blend-mode`, asi que ni el texto ni el fondo se pintan del color que
+    declaran. Un numero sacado de los estilos seria de otra pagina.
+
+    Por que el percentil 90 y no el minimo: el antialias deja un halo de
+    pixeles a medio camino entre tinta y fondo, y su contraste es siempre
+    peor que el del trazo. El minimo mediria el borde de la letra; el
+    percentil 90 mide el NUCLEO SOLIDO, que es lo que se lee.
+    """
+    caja = pagina.locator(selector).first.bounding_box()
+    recorte = {k: caja[k] for k in ("x", "y", "width", "height")}
+
+    con = Image.open(io.BytesIO(pagina.screenshot(clip=recorte))).convert("RGB")
+    previo = pagina.eval_on_selector(
+        selector,
+        "el => { const p = el.style.color;"
+        " el.style.setProperty('color', 'transparent', 'important');"
+        " el.querySelectorAll('*').forEach(d => d.style.setProperty('color','transparent','important'));"
+        " return p; }",
+    )
+    sin = Image.open(io.BytesIO(pagina.screenshot(clip=recorte))).convert("RGB")
+    pagina.eval_on_selector(
+        selector,
+        "(el, prev) => { if (prev) el.style.color = prev; else el.style.removeProperty('color');"
+        " el.querySelectorAll('*').forEach(d => d.style.removeProperty('color')); }",
+        previo,
+    )
+
+    pares = [
+        (a, b)
+        for a, b in zip(con.getdata(), sin.getdata())
+        if math.dist(a, b) > 12  # pixel con tinta encima
+    ]
+    if not pares:
+        return 0.0  # no hay glifo que medir: lo trata el llamador
+    ratios = sorted(_ratio(a, b) for a, b in pares)
+    return ratios[int(len(ratios) * 0.9)]
+
+
+def _delta_medio(pagina, selector: str) -> float:
+    """Diferencia media de canal entre la diana CON derrame y SIN el.
+
+    Es la mitad que falta del gate: un derrame que no baje de AA porque no
+    se ve no es un derrame. El arnes apaga la mancha con `display: none`,
+    y puede hacerlo porque el modulo nunca escribe esa propiedad (contrato
+    de la cabecera del modulo).
+
+    La diana esta sobre un panel OPACO (la ventana o la propia tarjeta), asi
+    que el shader del fondo no entra en el recorte y las dos capturas son
+    comparables. Contra el fondo generativo no lo serian: se mueve solo.
+    """
+    caja = pagina.locator(selector).first.bounding_box()
+    recorte = {k: caja[k] for k in ("x", "y", "width", "height")}
+    con = Image.open(io.BytesIO(pagina.screenshot(clip=recorte))).convert("RGB")
+    pagina.eval_on_selector(".cae-cursor-mancha", "el => { el.style.display = 'none'; }")
+    sin = Image.open(io.BytesIO(pagina.screenshot(clip=recorte))).convert("RGB")
+    pagina.eval_on_selector(".cae-cursor-mancha", "el => { el.style.removeProperty('display'); }")
+    total = sum(
+        abs(a[i] - b[i]) for a, b in zip(con.getdata(), sin.getdata()) for i in range(3)
+    )
+    return total / (con.size[0] * con.size[1] * 3)
+
+
+# AA para texto normal. La leyenda de la tarjeta es Fraunces 14px y el texto
+# de la pastilla 12px: ninguno llega a "texto grande", asi que el umbral es
+# 4.5 y no 3.
+AA = 4.5
+# Medido el 2026-09-05 (barrido en dos mitades, --mitad 1 y --mitad 2,
+# build de produccion en :4173): el peor delta medio de las 4 medidas de
+# perceptibilidad (obra/creditos x 09:00/03:00) fue 13.25 en "obra 09:00".
+# UMBRAL_NOTA es la MITAD de ese valor -- margen explicito frente al ruido
+# del compositor, no un umbral pegado a la medida. No lo bajes despues para
+# que pase: si el derrame no se nota, el derrame esta mal.
+UMBRAL_NOTA = 6.625
+# Cada 30 minutos: 48 posiciones del reloj. El matiz avanza 0,25 grados por
+# minuto y la marea de croma es continua, asi que 30 min no se salta ningun
+# extremo -- y el cruce de esquema (07:00 y 20:00) cae dentro del barrido.
+PASO_MINUTOS = 30
+
+
+def gate_contraste(pagina, base: str, mitad: int | None = None) -> None:
+    """Gate 6 -- el contraste bajo el derrame, en las 24 horas.
+
+    Lo que NO es invariante por construccion: la perla y la mancha mezclan
+    (`multiply` de dia, `screen` de noche) con lo que hay debajo, y el
+    pigmento pierde dos tercios de croma cuando la marea pasa por el naranja
+    y el magenta. La invariancia del motor de color vale para los ROLES, no
+    para una mezcla encima. Un cursor calibrado a una sola hora no esta
+    calibrado.
+
+    Antes de creerse un solo numero: la consola en verde. Toda la
+    calibracion del cursor de Hyprland se midio contra una pagina cuya
+    coreografia estaba rota, y ninguna asercion pudo detectarlo porque todas
+    comparaban la pagina consigo misma.
+
+    `mitad` (1, 2 o `None`): un barrido completo son 96 medidas -- 48
+    posiciones del reloj x 2 dianas -- con DOS capturas cada una, y eso no
+    cabe en una sola llamada de Bash en primer plano (limite practico de
+    ~10 min). `--mitad 1` cubre 00:00-11:30, `--mitad 2` cubre 12:00-23:30;
+    sin la bandera (`None`, el default) se barren las 24 horas enteras, que
+    es como debe correr el gate para cualquiera que lo lance normalmente.
+    La perceptibilidad (540 y 180 minutos, dentro de la primera mitad) se
+    mide siempre que la mitad activa la cubra, para que las dos mitades
+    combinadas sigan viendo las mismas horas que el barrido completo.
+    """
+    print(f"[6] contraste bajo el derrame, barrido de 24 horas (mitad={mitad or 'completa'})")
+
+    if mitad == 1:
+        rango_horas = range(0, 720, PASO_MINUTOS)
+    elif mitad == 2:
+        rango_horas = range(720, 1440, PASO_MINUTOS)
+    else:
+        rango_horas = range(0, 1440, PASO_MINUTOS)
+    horas_perceptibilidad = [m for m in (540, 180) if m in rango_horas or mitad is None]
+
+    peor_contraste = (99.0, "")
+    peor_delta = (999.0, "")
+
+    for escena, diana, texto, accion in (
+        ("obra", ".cae-obra-card", ".cae-obra-caption", "clic"),
+        ("creditos", ".cae-cred-pieza:nth-child(3)", ".cae-cred-pieza:nth-child(3) .cae-cred-nom", "roce"),
+    ):
+        abre(pagina, base, escena)
+        pagina.hover(diana, position={"x": 40, "y": 30})
+        if accion == "clic":
+            pagina.mouse.down()
+        pagina.wait_for_timeout(700)
+
+        for minutos in rango_horas:
+            pagina.evaluate(f"() => window.__CAE_SET_MINUTOS__({minutos})")
+            pagina.wait_for_timeout(120)
+            ratio = _contraste_glifo(pagina, texto)
+            etiqueta = f"{escena} {minutos // 60:02d}:{minutos % 60:02d}"
+            if 0 < ratio < peor_contraste[0]:
+                peor_contraste = (ratio, etiqueta)
+            if ratio == 0.0:
+                check(False, f"[6] {etiqueta}: no se encontro ni un pixel de glifo que medir")
+
+        # La perceptibilidad se mide en dos horas, no en las 48: es una
+        # propiedad del derrame, no del reloj.
+        for minutos in horas_perceptibilidad:
+            pagina.evaluate(f"() => window.__CAE_SET_MINUTOS__({minutos})")
+            pagina.wait_for_timeout(200)
+            delta = _delta_medio(pagina, diana)
+            if delta < peor_delta[0]:
+                peor_delta = (delta, f"{escena} {minutos // 60:02d}:00")
+
+        if accion == "clic":
+            pagina.mouse.up()
+
+    check(
+        peor_contraste[0] >= AA,
+        f"[6] AA bajo el derrame en las 24 horas (peor {peor_contraste[0]:.2f}:1 en {peor_contraste[1]})",
+    )
+    # UMBRAL_NOTA se fija con la primera medida y se anota en el spec. No lo
+    # bajes para que pase: si el derrame no se nota, el derrame esta mal.
+    check(
+        peor_delta[0] >= UMBRAL_NOTA,
+        f"[6] el derrame se NOTA (peor delta medio {peor_delta[0]:.2f} en {peor_delta[1]})",
+    )
+
+
 ARGS = ["--no-sandbox", "--use-gl=swiftshader"]
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
+    ap.add_argument(
+        "--mitad",
+        type=int,
+        choices=(1, 2),
+        default=None,
+        help=(
+            "Gate 6 solo: barre media rueda del reloj (1: 00:00-11:30, "
+            "2: 12:00-23:30) en vez de las 24 horas completas. Existe "
+            "porque el barrido entero (96 medidas, dos capturas cada una) "
+            "no cabe en una sola llamada de Bash en primer plano; sin la "
+            "bandera el gate barre el dia completo, que es como debe "
+            "correr para cualquiera que lo lance normalmente."
+        ),
+    )
+    ap.add_argument(
+        "--solo-gate6",
+        action="store_true",
+        help="Salta los gates 1-5, 7 y 8 -- solo corre el gate de contraste (util junto a --mitad).",
+    )
     args = ap.parse_args()
 
     with sync_playwright() as p:
@@ -453,11 +657,13 @@ def main() -> int:
             lambda m: errores.append(f"console.error: {m.text}") if m.type == "error" else None,
         )
 
-        gate_presencia(navegador, args.base)
-        gate_senales(pagina, args.base)
-        gate_sin_inercia(pagina, args.base)
-        gate_dos_momentos(pagina, args.base)
-        gate_rancio(pagina, args.base)
+        if not args.solo_gate6:
+            gate_presencia(navegador, args.base)
+            gate_senales(pagina, args.base)
+            gate_sin_inercia(pagina, args.base)
+            gate_dos_momentos(pagina, args.base)
+            gate_rancio(pagina, args.base)
+        gate_contraste(pagina, args.base, mitad=args.mitad)
 
         print("[8] consola")
         check(not errores, f"[8] cero errores de consola ({errores[:3]})")

@@ -452,6 +452,34 @@ Hyprland y no deja deuda, a diferencia de B1-B4.
    medida que pueda confirmarla o descartarla.
 4. **El umbral de "se nota"** del gate 6 se fija al ver la primera medida, y se anota aquí.
 
+   **Medido (Task 7), 2026-09-05, build de producción bajo swiftshader, barrido completo de las 24
+   horas en dos mitades foreground (`--mitad 1` 00:00-11:30, `--mitad 2` 12:00-23:30, 30 min de
+   paso, `.cae-obra-caption` y `.cae-cred-nom` contra el fondo real):**
+
+   - **Peor delta medio de perceptibilidad: 13,25 en "obra 09:00"** (de las 4 medidas fijas:
+     obra/créditos × 09:00/03:00 — todas caen en la primera mitad, por eso la segunda no repite la
+     medida). `UMBRAL_NOTA = 6,625` — la MITAD de ese valor, margen explícito frente al ruido del
+     compositor y no un umbral pegado a la medida.
+   - **Peor contraste AA: 4,06:1 en "obra 06:30"** (mitad 1) y 4,12:1 en "obra 22:00" (mitad 2) —
+     **las dos por debajo de 4,5:1**. Las dos peores horas caen de noche (`mix-blend-mode: screen`,
+     derrame al 30 % de opacidad). Confirmado con el sabotaje al 0 % (opacidad 0 en las dos reglas,
+     día y noche): el mismo recorte a la misma hora sube a **7,42:1** — la caída de 7,42 a 4,06 es
+     enteramente atribuible al derrame, no a un fallo de instrumento.
+
+   **El gate 6 queda en ROJO por diseño, no por error de medida.** El mecanismo elegido — pintar el
+   derrame ENCIMA del texto con `mix-blend-mode` — no aguanta AA en la franja nocturna. Es
+   exactamente la pregunta abierta 1 de más arriba, y la decisión de cambiar de mecanismo
+   (`background-image` en línea, bajo el texto, patrón de Hyprland) es de Aoshi, no de esta tarea:
+   el umbral de AA no se ha tocado ni se ha calibrado la opacidad del derrame para esquivarlo.
+
+   **Nota sobre el sabotaje de AA (Step 6, subir a 60 %):** el ajuste de la sesión solo toca la
+   regla de día (`.cae-cursor-gota { opacity }`); la regla de noche
+   (`:root[data-cae-esquema="noche"] .cae-cursor-gota { opacity: 0.3 }`) tiene más especificidad y
+   gana siempre en horas nocturnas, así que ese sabotaje concreto no mueve el peor caso (que ya cae
+   de noche) — el check de AA sigue en FAIL, pero por el fallo real de base, no por el sabotaje. El
+   sabotaje que sí aísla el mecanismo es el de perceptibilidad (opacidad a 0 en las dos reglas): con
+   la mancha invisible el delta cae a 0,00 y el check de "se nota" da FAIL, como se esperaba.
+
 ## Trampas ya pagadas en esta sesión
 
 - **Un `let` de nivel superior no está disponible antes de su línea.** Dos maquetas seguidas
