@@ -14,6 +14,7 @@ hover -- es la trampa que ya costo la fase B2.
 import argparse
 import sys
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 FALLOS: list[str] = []
@@ -185,6 +186,20 @@ def gate_sin_inercia(pagina, base: str) -> None:
     )
 
 
+def esperar_derrame_lleno(pagina, etiqueta: str) -> None:
+    """Espera a que `mancha()` SIENTE en vez de esperar un tiempo fijo: un
+    `wait_for_timeout` fijo contra una transicion de 420ms mide la carga de
+    la maquina, no el derrame. Si el timeout salta, se reporta como FAIL con
+    el ultimo valor leido -- no como excepcion, para no matar el resto de
+    gates."""
+    try:
+        pagina.wait_for_function("() => window.__caeCursor__.mancha() >= 0.99", timeout=2000)
+    except PlaywrightTimeoutError:
+        pass
+    avance = pagina.evaluate("() => window.__caeCursor__.mancha()")
+    check(avance >= 0.99, f"[3] el derrame llega a llenar {etiqueta} ({avance:.2f})")
+
+
 def gate_dos_momentos(pagina, base: str) -> None:
     """Gate 3 -- los dos momentos del mismo gesto.
 
@@ -202,8 +217,7 @@ def gate_dos_momentos(pagina, base: str) -> None:
     pagina.locator(".cae-cred-pieza").nth(2).hover()
     pagina.wait_for_timeout(700)
     check(estado(pagina) == "derrame", "[3] la pieza de Creditos se moja al ENTRAR, sin clic")
-    avance = pagina.evaluate("() => window.__caeCursor__.mancha()")
-    check(avance > 0.9, f"[3] el derrame llega a llenar la pieza ({avance:.2f})")
+    esperar_derrame_lleno(pagina, "la pieza")
     check(
         pagina.evaluate("() => window.__caeCursor__.diana()?.className || ''").startswith(
             "cae-cred-pieza"
@@ -223,8 +237,7 @@ def gate_dos_momentos(pagina, base: str) -> None:
     pagina.mouse.down()
     pagina.wait_for_timeout(700)
     check(estado(pagina) == "derrame", "[3] la tarjeta se moja al PULSAR")
-    avance = pagina.evaluate("() => window.__caeCursor__.mancha()")
-    check(avance > 0.9, f"[3] el derrame llega a llenar la tarjeta ({avance:.2f})")
+    esperar_derrame_lleno(pagina, "la tarjeta")
     pagina.mouse.up()
     pagina.wait_for_timeout(500)
     check(estado(pagina) == "perla", "[3] al soltar, la tarjeta se seca y vuelve la perla")
