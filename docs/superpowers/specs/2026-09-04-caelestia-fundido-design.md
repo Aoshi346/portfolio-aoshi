@@ -476,15 +476,15 @@ El arnes nuevo, `scripts/measure-caelestia-fundido.py`, tiene que comprobar al m
 11. **390 px**: titular en su paso exacto, la linea mas larga cabe en la medida util, ningun blanco
     baja de 48 × 48, el sello es **cuadrado** y no sangra.
 12. **Vice y Hyprland no se alteran**: `contacto.ts` es compartido.
-14. **Rozar responde, y el teclado llega a lo mismo.** Los cuatro canales pintan al rozar la caja
-    accionable que su relleno ya crea, el rotulo sale de su atenuacion, el foco de teclado alcanza
-    exactamente lo mismo, y el dato mantiene AA **con la capa de estado puesta**. Con `hover()` de
-    verdad: un `MouseEvent` sintetico no dispara `:hover` (trampa de B2 y B4).
 13. **El fundido interrumpido aterriza del todo.** Irse de la escena a media pasada y volver:
     el bicho en su sitio, la nube visible, el horizonte entero, troquel y campo a escala 1, la
     escena sin desplazar, los ejes en linea del titular retirados y la zancada parada. Es el
     unico camino que los doce anteriores no miraban, y el que dejaba el sello roto para el
     resto de la visita (`fundidoVisto` ya es `true`: el fundido no vuelve a sonar).
+14. **Rozar responde, y el teclado llega a lo mismo.** Los cuatro canales pintan al rozar la caja
+    accionable que su relleno ya crea, el rotulo sale de su atenuacion, el foco de teclado alcanza
+    exactamente lo mismo, y el dato mantiene AA **con la capa de estado puesta**. Con `hover()` de
+    verdad: un `MouseEvent` sintetico no dispara `:hover` (trampa de B2 y B4).
 
 ### Ninguno se acepta sin haberlo visto dar rojo
 
@@ -568,16 +568,26 @@ tautologicos. Estos son los sabotajes que ya se ejecutaron durante el maquetado,
 
 ## Lo que queda abierto en Caelestia despues de B5
 
-B5 cierra el **diseno** de las seis fases, no el tema:
+B5 cierra el **diseno** de las seis fases, no el tema. Al fusionar (`aecc4b9`) queda asi:
 
 - **B3 (Obra) sigue `en ejecucion`**, a la espera de las **nueve capturas reales** de los proyectos;
-  hoy lleva huecos neutros.
-- **Los dos `CLAUDE.md` no mencionan B3 ni B4.** Hay texto verificado de B3 en `.ai/memory.md` para
-  pegarlo al principio de una sesion.
-- **Las maquetas viven en `.superpowers/`, que esta en `.gitignore`.** Hay que rescatar al repo lo
-  aprobado antes de cerrar la fase.
+  hoy lleva marcadores «CAPTURA PENDIENTE» pintados con la paleta de Vice, que dentro de Caelestia
+  se leen como un error de tema. Es un encargo a Aoshi, no deuda de diseno.
+- **El arnes de B3 falla con tres hallazgos de contraste, y fallaba ya antes de fusionar B5** —
+  comprobado en un worktree aparte contra `1f61752`. Por la pinta (`bg=rgba(0, 0, 0, 0)`) es su
+  propio instrumento, que no resuelve el fondo que de verdad se pinta: **la misma trampa que este
+  arnes corrigio** apilando los fondos translucidos hasta el primero OPACO. Quien lo toque, que
+  empiece por ahi y no por el CSS.
+- **B4 (Creditos) sigue `en ejecucion`** con dos P1 de producto abiertos: el gesto de rozar no es
+  descubrible, y «Aparece en» no enlaza con la escena Obra.
+- ~~Los dos `CLAUDE.md` no mencionan B3 ni B4.~~ **Resuelto**: B3 y B4 llegaron por `main` y B5 se
+  anadio al fusionar.
+- ~~Las maquetas viven en `.superpowers/`, que esta en `.gitignore`.~~ **Resuelto** en la Task 1:
+  estan en `docs/superpowers/maquetas/`.
 - **La deuda de escala tipografica** queda documentada aqui con numero por primera vez (16 tamanos,
-  2 en la escala). B5 arregla su escena; **el resto del tema sigue con diez literales sueltos.**
+  2 en la escala). B5 arregla su escena —y declara `--t-0` … `--t-10` bajo el `:root` de Caelestia,
+  que era la causa raiz—; **el resto del tema sigue con sus literales sueltos**, ahora sobre una
+  escala que por fin existe.
 
 ---
 
@@ -681,6 +691,14 @@ las capas a medias, componiendolas de abajo arriba. Y una segunda, mas tonta: le
 mismo instante del `Tab` devolvia el fotograma de arranque de la transicion (`oklab(0 0 0 / 0)`) y
 el gate acusaba al CSS de un fallo del cronometro. Van **trece**.
 
+**Decision de Aoshi, tomada con el veredicto completo delante:** se arreglan los tres y se fusiona.
+F-3 y F-2 cayeron en `f6423c1`, F-1 en `e1e1e65`. **El gate NO se ha vuelto a pasar** — el 6,59/10
+es el score contra el build que tenia los tres hallazgos vivos, asi que ese numero ya no describe lo
+que hay. F-4 (el dino como activo de marca de Google) sigue anotado y aceptado por escrito.
+
+Lo que sigue es el registro de lo que se decidio EN LA TAREA que levanto el BLOCK, antes de esa
+decision, y se conserva porque explica por que no se arreglo alli:
+
 **No se acepto este BLOCK dentro de la tarea que lo levanto.** El pliego de Task 9 limita mi alcance a
 construccion, capturas y spec — no a tocar CSS de produccion. F-3 (el P0 por recurrencia) es una
 correccion barata y de un ambito ya poseido por B5 (unificar tres literales del propio bloque
@@ -693,7 +711,7 @@ decision se tome con el veredicto completo delante.
 
 ## Registro de implementacion
 
-Los trece gates de `scripts/measure-caelestia-fundido.py` se vieron dar rojo contra el sabotaje que
+Los catorce gates de `scripts/measure-caelestia-fundido.py` (95 comprobaciones) se vieron dar rojo contra el sabotaje que
 cada uno dice cazar (ver `## Los gates`), y despues verdes contra el build de produccion. `npm run
 lint` y `npm run build` limpios. `lidia-naive-tester` da verde (7,1/10); `vera-art-director` da
 **BLOCK** (6,59/10 contra 7,5), sin aceptar todavia — el detalle de los dos veredictos esta en

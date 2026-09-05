@@ -34,6 +34,13 @@
   accepted (7.12/10 against a 7.5 gate — the residual is a known, accepted product finding, not a
   defect). **Do not touch Vice** (background, nav trigger, choreography, typography) unless Aoshi
   asks for it explicitly. Full record in `docs/superpowers/specs/2026-08-04-vice-fondo-tinta-design.md`.
+- **Caelestia: all six phases (A, B1-B5) are MERGED.** The theme's design is closed; two things
+  keep it from being DONE, and neither is design work: **B3 needs the nine real project captures**
+  (today they are "CAPTURA PENDIENTE" markers painted in *Vice's* palette) and **B4 has two open
+  product P1s**. Also open: `measure-caelestia-obra.py` fails three contrast assertions — **it failed
+  the same way before B5 merged** (verified in a separate worktree against `1f61752`), and the shape
+  of the failure (`bg=rgba(0, 0, 0, 0)`) points at its own instrument, not at the CSS. Read each
+  phase's block below before touching anything.
 - **Hyprland and Caelestia: IN PROGRESS.** Current focus. They share `shaderBackground.ts` with
   Vice (don't touch that module without confirming Vice still renders) but each has its own
   background (`hyprGradient.ts` / `caelestiaBlobs.ts`), palette, and typography — see `src/themes/themes.css`.
@@ -71,8 +78,9 @@
   (`display: none`): the bar already carries the five scenes as always-visible pills, and its panel
   changed the hash without moving anything. Fraunces (`opsz 9 wght 900 SOFT 0 WONK 1`) over Hanken
   Grotesk and Martian Mono. `scripts/measure-caelestia-hora.py` gates it with 16 assertions.
-  **Phases B1-B5 (the five sections inside the window) are NOT done** — their layout still assumes a
-  page that scrolls, so cramped content inside a workspace is expected, not a defect.
+  **Phases B1-B5 (the five sections inside the window) are NOT done** — *true when phase A closed;
+  all five are merged today, see their blocks below.* Their layout still assumed a page that
+  scrolls, so cramped content inside a workspace was expected, not a defect.
   `vera-art-director` gate BLOCK explicitly accepted (6.55/10 against a 7.5 gate), same as Vice: its
   P0 was fixed, its three P1s are open product decisions recorded in the spec.
   **Read the spec's `Registro de implementación` before re-tuning anything.** It records the lesson
@@ -104,7 +112,8 @@
   explicitly out of scope for B1**: the headline's justification target is a fixed 1080px measure
   with no narrow-viewport fallback, so at 390px the titles overflow and the stat column overlaps
   them — known, not a regression to chase. **B2-B5 (Quién soy, Obra, Créditos, Fundido, still
-  inside the same window) remain pending** — B1 only closes `#hero`.
+  inside the same window) remain pending** — *true when B1 closed; all four are merged today.*
+  B1 only closes `#hero`.
   `lidia-naive-tester` gate green (7.1/10, zero P0). `vera-art-director` gate came back **BLOCK**
   initially (6.36/10 against the 7.5 gate) on a real P0, not a polish issue: the phase-A generic
   workspace-panel rule gave Título the same opaque `background` as the other four scenes (which
