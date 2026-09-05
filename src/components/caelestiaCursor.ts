@@ -119,6 +119,39 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
   let cajaAlto = 0;
   let pulsado = false;
 
+  /*
+   * Los cercos vivos. Se guardan porque `destroy()` tiene que llevarselos:
+   * un cerco lanzado en el ultimo clic antes de navegar sobrevive a su
+   * modulo si nadie lo recoge, y eso es DOM huerfano.
+   */
+  const cercos = new Set<HTMLElement>();
+
+  /*
+   * El anillo que deja una gota al secarse sobre papel. Es la constancia de
+   * que el clic ocurrio, sin escribir un solo caracter -- la regla dura
+   * heredada de Hyprland: un cursor no puede tener manual.
+   *
+   * Solo en el clic REAL, nunca en el roce: la gota deja huella donde ha
+   * actuado, nunca por donde pasa. (Por lo mismo no hay estela.)
+   */
+  const dejarCerco = (): void => {
+    const anillo = document.createElement("i");
+    anillo.className = "cae-cursor-cerco";
+    anillo.setAttribute("aria-hidden", "true");
+    anillo.style.left = `${x}px`;
+    anillo.style.top = `${y}px`;
+    anillo.addEventListener(
+      "animationend",
+      () => {
+        cercos.delete(anillo);
+        anillo.remove();
+      },
+      { once: true },
+    );
+    cercos.add(anillo);
+    host.append(anillo);
+  };
+
   const setEstado = (siguiente: Estado): void => {
     if (estadoActual === siguiente) return;
     estadoActual = siguiente;
@@ -291,7 +324,10 @@ export function mountCaelestiaCursor(host: HTMLElement): CaelestiaCursorHandle {
     pulsado = false;
     if (!diana) return;
     // La familia de roce se queda mojada: ahi el derrame no lo trajo el clic.
-    if (!diana.matches(HOVER_SELECT)) secar();
+    if (!diana.matches(HOVER_SELECT)) {
+      secar();
+      dejarCerco();
+    }
     setEstado(mojada ? "derrame" : "perla");
   };
 

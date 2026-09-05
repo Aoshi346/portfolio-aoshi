@@ -242,6 +242,28 @@ def gate_dos_momentos(pagina, base: str) -> None:
     pagina.wait_for_timeout(500)
     check(estado(pagina) == "perla", "[3] al soltar, la tarjeta se seca y vuelve la perla")
 
+    # El cerco: solo en el clic real, y se limpia solo.
+    check(
+        pagina.evaluate("() => document.querySelectorAll('.cae-cursor-cerco').length") >= 1,
+        "[3] el clic deja cerco",
+    )
+    pagina.wait_for_timeout(1400)
+    check(
+        pagina.evaluate("() => document.querySelectorAll('.cae-cursor-cerco').length") == 0,
+        "[3] el cerco se limpia solo antes de 1,4 s",
+    )
+
+    # El roce NO deja cerco: la gota deja huella donde actua, no por donde pasa.
+    abre(pagina, base, "creditos")
+    pagina.locator(".cae-cred-pieza").nth(1).hover()
+    pagina.wait_for_timeout(400)
+    pagina.locator(".cae-cred-pieza").nth(4).hover()
+    pagina.wait_for_timeout(400)
+    check(
+        pagina.evaluate("() => document.querySelectorAll('.cae-cursor-cerco').length") == 0,
+        "[3] barrer piezas al roce no deja ningun cerco",
+    )
+
 
 ARGS = ["--no-sandbox", "--use-gl=swiftshader"]
 

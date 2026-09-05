@@ -8971,3 +8971,37 @@
     display: none;
   }
 }
+
+/* El cerco: el anillo que deja una gota seca. Animacion CSS y no
+   transicion, porque es un disparo de una sola vez y se limpia solo en
+   `animationend`. */
+@keyframes cae-cursor-cerco {
+  from {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(2.1);
+    opacity: 0;
+  }
+}
+
+.cae-cursor-cerco {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 1.4px solid var(--cae-primary);
+  border-radius: 50%;
+  z-index: 71;
+  pointer-events: none;
+  animation: cae-cursor-cerco 0.8s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cae-cursor-cerco {
+    display: none;
+  }
+}
