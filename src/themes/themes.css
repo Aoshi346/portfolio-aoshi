@@ -3781,11 +3781,53 @@
 }
 
 /*
- * Decision de Aoshi, repaso de interfaces 2026-09-05. Antes: el cajon
- * media 249px de alto (326-575) dentro de un workspace de 596, con 89px
- * vacios debajo; las columnas flotaban centradas con ~60px de aire arriba
- * y abajo. Ahora el cajon llena el resto de la ventana y sus columnas
- * cuelgan desde arriba, en vez de flotar en el centro.
+ * Decision de Aoshi, repaso de interfaces 2026-09-05, primera vuelta. Antes:
+ * el cajon media 249px de alto (326-575) dentro de un workspace de 596, con
+ * 89px vacios debajo; las columnas flotaban centradas con ~60px de aire
+ * arriba y abajo. Se hizo que el cajon llenara el resto de la ventana y sus
+ * columnas colgaran desde arriba, en vez de flotar en el centro.
+ *
+ * Segunda vuelta, mismo dia: con el cajon ya lleno (top 325.75, bottom 650,
+ * padding 20 -> interior de ~284px), la columna mas alta (metadatos, ~207px)
+ * no llegaba al fondo y dejaba una banda vacia de ~120px en la parte baja
+ * del cajon. Decision de Aoshi: la captura pasa a ocupar TODA la altura del
+ * cajon (columna .cae-obra-drawer-preview, ver mas abajo) y la prosa
+ * Problema/Solucion baja de dos columnas a una.
+ *
+ * Tercera vuelta, mismo dia: la fila de cuatro columnas (flex) no aguantaba
+ * la composicion de la segunda vuelta. Medido al viewport oficial 1440x900,
+ * panel #obra 1412x748, cajon 1412x473, interior 436: la captura estirada a
+ * toda la altura media 692x433 y dejaba la prosa en apenas 164px de ancho
+ * — HyprFinance desbordaba (scrollHeight 766 contra 748). Cuatro columnas
+ * en fila no llenan 436px de alto sin romper la prosa. Decision de Aoshi:
+ * el cajon pasa a grid de tres columnas y dos filas, sin tocar el DOM (los
+ * cuatro hijos siguen en el mismo orden: titulo, captura, metadatos,
+ * prosa). El titulo y la prosa comparten columna (una encima de otra); la
+ * captura y los metadatos son columnas propias que cruzan las dos filas.
+ *
+ * Cuarta vuelta, repaso de interfaces 2026-09-05: la tercera vuelta cabia a
+ * 1440x900 pero desbordaba 22px a 1366x768 (panel #obra 616 de alto en vez
+ * de 748) con HyprFinance. Causa, un circulo: `.cae-obra-thumb` sacaba su
+ * alto de `height: 100%` sobre el AREA de grid `captura`, y esa area no
+ * tiene alto propio — lo saca de las FILAS del grid, que crecen con el
+ * texto de la prosa. Mas texto -> fila mas alta -> area mas alta -> captura
+ * (100%) mas alta -> captura mas ancha por su aspect-ratio -> menos ancho
+ * libre para la prosa -> prosa mas alta todavia. El alto del CAJON en si
+ * nunca fue el problema: es definido, viene de flex (`flex: 1 1 auto`
+ * dentro de `.obra-rail`, columna con `height: 100%`), pero nada dentro del
+ * grid podia leerlo directamente. Arreglo: `container-type: size` en este
+ * mismo `.cae-obra-drawer` convierte su alto (ya definido) en el eje de
+ * consulta `cqh` para sus descendientes, sea cual sea el tamano de las
+ * filas del grid. `.cae-obra-thumb` pasa a `height: 100cqh` (ver su regla
+ * mas abajo — el porque de NO restar el padding ahi, y el descarte de un
+ * primer intento que si lo restaba, queda documentado en esa misma regla).
+ * Con eso, 1366x768 pasa a interior fijo de 310px para la captura, y el
+ * ancho que le sobra a la prosa deja de depender de cuanto crezca su propio
+ * texto. Aviso para quien vuelva a tocar esto: si un futuro contenido
+ * desborda de todos modos, el respaldo documentado es reproducir la
+ * composicion flex de antes de esta vuelta (`git show c1017b9`) dentro de
+ * un `@media (max-height: 800px)` — NO recortar mas la fuente de la prosa,
+ * que ya bajo una vez a 13.5px/1.45 en esa misma media query.
  */
 :root[data-theme="caelestia"] .cae-obra-drawer {
   margin-top: 14px;
@@ -3793,15 +3835,29 @@
   padding: 20px 24px;
   border-radius: 16px;
   background: var(--cae-surface-container);
-  display: flex;
-  align-items: flex-start;
-  gap: 26px;
+  display: grid;
+  grid-template-areas:
+    "texto captura meta"
+    "prosa captura meta";
+  grid-template-columns: minmax(320px, 1fr) auto 200px;
+  grid-template-rows: auto 1fr;
+  column-gap: 26px;
+  row-gap: 18px;
+  align-items: start;
   flex: 1 1 auto;
   min-height: 0;
+  /* Cuarta vuelta 2026-09-05: el cajon pasa a contenedor de tamano
+     (`container-type: size`) para que la captura pueda leer SU alto en
+     unidades `cqh` en vez del `100%` que arrastraba el circulo descrito
+     abajo. El alto del cajon ya es definido (hijo flexible de
+     `.obra-rail`, `flex: 1 1 auto` dentro de una columna con
+     `height: 100%`), asi que la contencion no lo cambia — solo lo
+     expone como eje de consulta. */
+  container-type: size;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-title {
-  flex: 0 0 230px;
+  grid-area: texto;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-kick {
@@ -3828,11 +3884,45 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-preview {
-  flex: 0 0 300px;
+  /* Cuarta vuelta 2026-09-05: ya no hace falta `align-self: stretch` —
+     el alto de la captura sale de `cqh` (ver `.cae-obra-thumb` mas abajo),
+     no de estirar esta columna. `align-self: start` deja que el grid la
+     coloque como al resto de columnas de la fila 1. */
+  grid-area: captura;
+  align-self: start;
+  min-height: 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-preview .cae-obra-thumb {
+  /* Cuarta vuelta 2026-09-05 — el circulo que rompia 1366x768: `height: 100%`
+     lee el alto del AREA de grid de la captura, y esa area de grid no tiene
+     alto propio — lo saca de las FILAS del grid, que a su vez crecen con el
+     texto (HyprFinance alarga la prosa, la prosa alarga la fila, la fila
+     alarga el area, el area alarga la captura al 100%, la captura mas ancha
+     dejaba menos sitio a la prosa. Cierra el circulo).
+     `container-type: size` en `.cae-obra-drawer` (ver arriba) expone el alto
+     REAL del cajon como `cqh` — pero `cqh` ya resuelve contra el CONTENT BOX
+     del contenedor de tamano (el padding ya esta descontado por la
+     contencion misma), asi que `100cqh` ES el interior (alto del cajon
+     menos su padding vertical), no el borde exterior. Un primer intento
+     resto 40px OTRA VEZ (`calc(100cqh - 40px)`) y media 393 contra un
+     interior de 433 a 1440x900 — descontaba el padding dos veces. `100cqh`
+     a secas, sin resta: 433 a 1440x900 (verificado: 692x433, el mismo
+     numero que la segunda vuelta cuando la captura SI llenaba el cajon) y
+     310 a 1366x768, fijo, sin depender de cuanto crezcan las filas del
+     grid — eso es lo que cierra el circulo. `width: auto` + `aspect-ratio`
+     calculan el ancho a partir de ese alto; `max-height` sigue topando
+     pantallas muy altas (1920x1080). `.cae-obra-thumb` base fija ancho 100%
+     y alto por aspect-ratio (fila de tarjetas) — esto solo se invierte
+     dentro del cajon. */
+  width: auto;
+  height: 100cqh;
+  aspect-ratio: 16 / 10;
+  max-height: 450px;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-meta {
-  flex: 0 0 200px;
+  grid-area: meta;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -3888,10 +3978,16 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-prose {
-  flex: 1 1 auto;
+  /* Segunda vuelta 2026-09-05: de dos columnas a una. Con el ancho de
+     prosa reducido (la captura ahora ocupa mas alto que ancho, pero el
+     cajon entero se quedo sin margen para dos columnas legibles: a dos
+     salian ~176px cada una), una columna da ~50 caracteres por linea.
+     Tercera vuelta: `grid-area: prosa`, misma columna que el titulo
+     (`texto`), debajo de el en la segunda fila del grid del cajon. */
+  grid-area: prosa;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 22px;
+  grid-template-columns: 1fr;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -3905,10 +4001,32 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-prose p {
+  /* Tercera vuelta 2026-09-05: con el grid de tres columnas / dos filas,
+     14px/1.5 cabe sin scroll a 1440x900 (panel #obra 1412x748, cajon
+     interior 436, titulo+prosa comparten columna: HyprFinance cabe con
+     margen). A 1366x768 (panel 616 de alto en vez de 748) el titulo mas la
+     prosa a 14px no cabian: se aplico un recorte a 13.5px/1.45 bajo
+     `max-height: 800px` que AUN ASI dejaba HyprFinance desbordando #obra en
+     ~22px, porque el problema real no era el tamano de la fuente — era que
+     la columna de la captura crecia con el propio texto (ver la cuarta
+     vuelta en el comentario de cabecera de `.cae-obra-drawer`, mas arriba).
+     Cuarta vuelta, mismo dia: arreglada la causa (captura con alto fijo via
+     `cqh`), HyprFinance cabe en el mismo cajon SIN este recorte — medido:
+     #obra 616/616 (sin scroll) con `.cae-obra-prose p` en 14px/1.5 en las
+     CINCO tarjetas a 1366x768. El recorte de `max-height: 800px` se deja
+     puesto (no estorba, y cubre portatiles mas bajos aun que 768 de alto que
+     no se han medido), pero HyprFinance a 1366x768 ya no depende de el. */
   font-size: 14px;
   line-height: 1.5;
   color: var(--cae-on-surface);
   margin: 0;
+}
+
+@media (max-height: 800px) {
+  :root[data-theme="caelestia"] .cae-obra-prose p {
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
 }
 
 /*

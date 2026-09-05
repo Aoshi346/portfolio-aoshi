@@ -576,94 +576,272 @@ def check_foco_visible(page) -> None:
         assert_true(estilo_outline != "none", f"Foco visible: outlineStyle del enlace es 'none' (sin anillo de foco)")
 
 
-def check_cajon_llena(page) -> None:
-    """Decision de Aoshi, repaso de interfaces 2026-09-05. Antes el cajon
-    media 249px de alto (326-575) dentro de un workspace #obra de 596, con
-    89px vacios debajo, y sus columnas flotaban centradas con ~60px de aire
-    arriba y abajo. Ahora el cajon llena el resto de la ventana y sus
-    columnas cuelgan desde arriba. `#obra` ES `[data-obra-rail]`
-    (`obraRail.id = "obra"` en `src/main.ts`)."""
-    # Card 0 (EchoPlan, privado) esta abierta por defecto al llegar a Obra.
-    datos = page.evaluate(
-        """
-        () => {
-          const ws = document.querySelector('#obra');
-          const drawer = document.querySelector('.cae-obra-drawer');
-          const title = document.querySelector('.cae-obra-drawer-title');
-          const preview = document.querySelector('.cae-obra-drawer-preview');
-          const thumb = preview ? preview.querySelector('.cae-obra-thumb') : null;
-          const meta = document.querySelector('.cae-obra-drawer-meta');
-          const prose = document.querySelector('.cae-obra-prose');
-          const privado = document.querySelector('.cae-obra-foot-private');
-          const wr = ws.getBoundingClientRect();
-          const dr = drawer.getBoundingClientRect();
-          const cs = getComputedStyle(drawer);
-          const csPrivado = privado ? getComputedStyle(privado) : null;
-          return {
-            wsBottom: wr.bottom,
-            drawerBottom: dr.bottom,
-            tops: {
-              title: title.getBoundingClientRect().top,
-              preview: preview.getBoundingClientRect().top,
-              meta: meta.getBoundingClientRect().top,
-              prose: prose.getBoundingClientRect().top,
-            },
-            capturaAncho: thumb ? thumb.getBoundingClientRect().width : 0,
-            borderTopWidth: cs.borderTopWidth,
-            borderRadius: cs.borderRadius,
-            privado: csPrivado ? {
-              textTransform: csPrivado.textTransform,
-              letterSpacing: csPrivado.letterSpacing,
-              fontFamily: csPrivado.fontFamily,
-            } : null,
-          };
-        }
-        """
-    )
+def check_cajon_llena(page, etiqueta_viewport: str) -> None:
+    """Decision de Aoshi, repaso de interfaces 2026-09-05, primera vuelta.
+    Antes el cajon media 249px de alto (326-575) dentro de un workspace
+    #obra de 596, con 89px vacios debajo, y sus columnas flotaban centradas
+    con ~60px de aire arriba y abajo. Se hizo que el cajon llenara el resto
+    de la ventana y sus columnas colgaran desde arriba. `#obra` ES
+    `[data-obra-rail]` (`obraRail.id = "obra"` en `src/main.ts`).
 
-    holgura = datos["wsBottom"] - datos["drawerBottom"]
-    assert_true(
-        0 <= holgura <= 16,
-        f"Cajon llena: drawer.bottom {datos['drawerBottom']:.0f} vs ws.bottom {datos['wsBottom']:.0f} (holgura {holgura:.0f}px, esperado 0-16)",
-    )
+    Segunda vuelta, mismo dia: con el cajon ya lleno (top 325.75, bottom 650,
+    padding 20 -> interior de ~284px) la columna mas alta (metadatos, ~207px)
+    no llegaba al fondo y dejaba una banda vacia de ~120px. Aoshi decidio que
+    la captura pasara a ocupar TODA la altura del cajon y que la prosa
+    Problema/Solucion bajara de dos columnas a una.
 
-    tops = datos["tops"]
-    base_top = tops["title"]
-    for nombre, valor in tops.items():
-        assert_true(
-            abs(valor - base_top) < 4,
-            f"Cajon llena: top de '{nombre}' ({valor:.1f}) difiere >4px del de 'title' ({base_top:.1f}) — las columnas no cuelgan desde arriba",
+    Tercera vuelta, mismo dia: la fila de cuatro columnas (flex) no aguantaba
+    esa composicion — a 1440x900 la captura estirada a toda la altura dejaba
+    apenas 164px a la prosa, y HyprFinance desbordaba. El cajon paso a grid
+    de tres columnas y dos filas (texto/prosa comparten columna, captura y
+    metadatos cruzan las dos filas), asi que las aserciones de "columnas
+    colgando desde arriba" y "banda vacia" cambian de forma: solo title,
+    preview y meta estan en la fila 1 (la prosa esta DEBAJO del titulo, en
+    la misma columna, no a su lado), y la banda vacia se mide bajo la
+    CAPTURA (la pieza mas alta), no bajo el maximo de las cuatro. Se
+    comprueba para las CINCO tarjetas (los textos son distintos; el mas
+    largo manda), no solo la que esta abierta por defecto.
+
+    Cuarta vuelta, mismo dia: el grid de la tercera vuelta cabia a 1440x900
+    pero desbordaba 22px a 1366x768 con HyprFinance — la captura sacaba su
+    alto del AREA de grid, que crecia con las filas, que crecian con el
+    texto (circulo). Se paso el cajon a `container-type: size` y la captura
+    a `calc(100cqh - 40px)`, asi que su alto ya no depende de las filas.
+    Esta funcion corre ahora en DOS viewports (parametro `etiqueta_viewport`,
+    p.ej. "1440x900" o "1366x768") y DETECTA la composicion realmente
+    pintada leyendo `getComputedStyle(drawer).display`: si sigue en grid,
+    aplica las aserciones de la tercera vuelta; si el respaldo de la cuarta
+    vuelta tuvo que volver al flex en fila de columnas fijas (reproducido de
+    antes de hoy, `git show c1017b9`), aplica las aserciones equivalentes de
+    esa composicion (prosa en DOS columnas, titulo y captura como columnas
+    propias en la misma fila que la prosa, no una encima de otra)."""
+    for i, esperado in enumerate(PROYECTOS):
+        page.evaluate(f"document.querySelectorAll('.cae-obra-card')[{i}].click()")
+        page.wait_for_timeout(400)
+        titulo = f"{esperado['title']} @ {etiqueta_viewport}"
+
+        datos = page.evaluate(
+            """
+            () => {
+              const ws = document.querySelector('#obra');
+              const drawer = document.querySelector('.cae-obra-drawer');
+              const title = document.querySelector('.cae-obra-drawer-title');
+              const preview = document.querySelector('.cae-obra-drawer-preview');
+              const thumb = preview ? preview.querySelector('.cae-obra-thumb') : null;
+              const meta = document.querySelector('.cae-obra-drawer-meta');
+              const prose = document.querySelector('.cae-obra-prose');
+              const privado = document.querySelector('.cae-obra-foot-private');
+              const wr = ws.getBoundingClientRect();
+              const dr = drawer.getBoundingClientRect();
+              const cs = getComputedStyle(drawer);
+              const csPrivado = privado ? getComputedStyle(privado) : null;
+              const csProse = prose ? getComputedStyle(prose) : null;
+              const thumbRect = thumb ? thumb.getBoundingClientRect() : null;
+              const titleRect = title.getBoundingClientRect();
+              const previewRect = preview.getBoundingClientRect();
+              const metaRect = meta.getBoundingClientRect();
+              const proseRect = prose.getBoundingClientRect();
+              return {
+                wsBottom: wr.bottom,
+                drawerBottom: dr.bottom,
+                drawerHeight: dr.height,
+                paddingTop: parseFloat(cs.paddingTop),
+                paddingBottom: parseFloat(cs.paddingBottom),
+                title: { top: titleRect.top, left: titleRect.left, bottom: titleRect.bottom, width: titleRect.width },
+                preview: { top: previewRect.top, bottom: previewRect.bottom, height: previewRect.height },
+                meta: { top: metaRect.top },
+                prose: { top: proseRect.top, left: proseRect.left },
+                capturaAncho: thumbRect ? thumbRect.width : 0,
+                capturaAlto: thumbRect ? thumbRect.height : 0,
+                borderTopWidth: cs.borderTopWidth,
+                borderRadius: cs.borderRadius,
+                drawerDisplay: cs.display,
+                proseColumns: csProse ? csProse.gridTemplateColumns : null,
+                proseDisplay: csProse ? csProse.display : null,
+                proseFlexDirection: csProse ? csProse.flexDirection : null,
+                obraScrollHeight: ws.scrollHeight,
+                obraClientHeight: ws.clientHeight,
+                privado: csPrivado ? {
+                  textTransform: csPrivado.textTransform,
+                  letterSpacing: csPrivado.letterSpacing,
+                  fontFamily: csPrivado.fontFamily,
+                } : null,
+              };
+            }
+            """
         )
 
-    assert_true(
-        datos["capturaAncho"] >= 280,
-        f"Cajon llena: la captura mide {datos['capturaAncho']:.0f}px de ancho, se esperaban al menos 280",
-    )
+        holgura = datos["wsBottom"] - datos["drawerBottom"]
+        assert_true(
+            0 <= holgura <= 16,
+            f"Cajon llena ({titulo}): drawer.bottom {datos['drawerBottom']:.0f} vs ws.bottom {datos['wsBottom']:.0f} (holgura {holgura:.0f}px, esperado 0-16)",
+        )
 
-    assert_true(
-        datos["borderTopWidth"] == "0px",
-        f"Cajon llena: el cajon aun lleva filete (borderTopWidth={datos['borderTopWidth']})",
-    )
-    assert_true(
-        datos["borderRadius"] == "16px",
-        f"Cajon llena: borderRadius del cajon es {datos['borderRadius']!r}, se esperaba '16px'",
-    )
+        es_grid = datos["drawerDisplay"] == "grid"
+        etiqueta_comp = "grid tercera vuelta" if es_grid else "respaldo flex (pre-cuarta-vuelta)"
 
-    privado = datos["privado"]
-    assert_true(privado is not None, "Cajon llena: no se encontro .cae-obra-foot-private (deberia verse con EchoPlan abierto)")
-    if privado is not None:
+        if es_grid:
+            # Tercera vuelta — solo title, preview y meta cuelgan de la fila 1
+            # del grid; la prosa vive DEBAJO del titulo, no a su lado.
+            base_top = datos["title"]["top"]
+            for nombre, valor in {
+                "preview": datos["preview"]["top"],
+                "meta": datos["meta"]["top"],
+            }.items():
+                assert_true(
+                    abs(valor - base_top) < 4,
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): top de '{nombre}' ({valor:.1f}) difiere >4px del de 'title' ({base_top:.1f}) — la fila 1 del grid no cuelga desde arriba",
+                )
+
+            # Tercera vuelta — la prosa esta debajo del titulo, en la misma
+            # columna de texto: mismo left, y su top no invade el titulo.
+            assert_true(
+                abs(datos["prose"]["left"] - datos["title"]["left"]) <= 1,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): prose.left ({datos['prose']['left']:.1f}) difiere de title.left ({datos['title']['left']:.1f}) en mas de 1px — no comparten columna",
+            )
+            assert_true(
+                datos["prose"]["top"] >= datos["title"]["bottom"],
+                f"Cajon llena ({titulo}, {etiqueta_comp}): prose.top ({datos['prose']['top']:.1f}) queda por encima de title.bottom ({datos['title']['bottom']:.1f}) — se solapan",
+            )
+
+            # Tercera vuelta — la columna de texto (titulo/prosa) mide al
+            # menos 320px de ancho (minmax(320px, 1fr) del
+            # grid-template-columns).
+            assert_true(
+                datos["title"]["width"] >= 320,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): la columna de texto mide {datos['title']['width']:.0f}px de ancho, se esperaban al menos 320",
+            )
+        else:
+            # Respaldo flex (composicion de antes de la cuarta vuelta,
+            # reproducida de `git show c1017b9`): title, preview y meta son
+            # columnas de la MISMA fila (los tres arrancan al mismo top,
+            # align-items: flex-start), y la prosa es OTRA columna de esa
+            # fila, a la derecha de meta, no debajo del titulo.
+            base_top = datos["title"]["top"]
+            for nombre, valor in {
+                "preview": datos["preview"]["top"],
+                "meta": datos["meta"]["top"],
+                "prose": datos["prose"]["top"],
+            }.items():
+                assert_true(
+                    abs(valor - base_top) < 4,
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): top de '{nombre}' ({valor:.1f}) difiere >4px del de 'title' ({base_top:.1f}) — la fila del flex no cuelga desde arriba",
+                )
+            assert_true(
+                datos["prose"]["left"] > datos["title"]["left"],
+                f"Cajon llena ({titulo}, {etiqueta_comp}): prose.left ({datos['prose']['left']:.1f}) no queda a la derecha de title.left ({datos['title']['left']:.1f}) — se esperaba columna propia, no debajo del titulo",
+            )
+            # Respaldo flex — columna de texto (titulo) segun c1017b9
+            # (flex: 0 0 230px), menor que el minimo de 320 del grid: aqui
+            # se pide solo que no colapse (>=200).
+            assert_true(
+                datos["title"]["width"] >= 200,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): la columna de texto mide {datos['title']['width']:.0f}px de ancho, se esperaban al menos 200 (respaldo flex, columna fija 230)",
+            )
+
         assert_true(
-            privado["textTransform"] == "none",
-            f"Cajon llena: textTransform de la nota privada es {privado['textTransform']!r}, se esperaba 'none'",
+            datos["capturaAncho"] >= 280,
+            f"Cajon llena ({titulo}, {etiqueta_comp}): la captura mide {datos['capturaAncho']:.0f}px de ancho, se esperaban al menos 280",
+        )
+
+        assert_true(
+            datos["borderTopWidth"] == "0px",
+            f"Cajon llena ({titulo}, {etiqueta_comp}): el cajon aun lleva filete (borderTopWidth={datos['borderTopWidth']})",
         )
         assert_true(
-            privado["letterSpacing"] == "normal",
-            f"Cajon llena: letterSpacing de la nota privada es {privado['letterSpacing']!r}, se esperaba 'normal'",
+            datos["borderRadius"] == "16px",
+            f"Cajon llena ({titulo}, {etiqueta_comp}): borderRadius del cajon es {datos['borderRadius']!r}, se esperaba '16px'",
         )
+
+        if es_grid:
+            # Cuarta vuelta — la captura llena la altura del cajon (interior =
+            # alto del cajon menos el padding vertical, ahora expuesto via
+            # `container-type: size` + `cqh`), y la banda vacia bajo ella (la
+            # pieza mas alta del cajon, no el maximo de las cuatro) es minima.
+            interior = datos["drawerHeight"] - datos["paddingTop"] - datos["paddingBottom"]
+            assert_true(
+                datos["preview"]["height"] >= interior - 4,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): preview.height ({datos['preview']['height']:.0f}) no llena el interior del cajon ({interior:.0f})",
+            )
+            assert_true(
+                datos["preview"]["height"] <= 450 + 1,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): preview.height ({datos['preview']['height']:.0f}) supera el tope de 450",
+            )
+            banda_vacia = datos["drawerBottom"] - datos["paddingBottom"] - datos["preview"]["bottom"]
+            assert_true(
+                banda_vacia <= 12,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): banda vacia bajo la captura de {banda_vacia:.0f}px (drawer.bottom {datos['drawerBottom']:.0f} - paddingBottom {datos['paddingBottom']:.0f} - preview.bottom {datos['preview']['bottom']:.0f}), se esperaban <=12",
+            )
+
+            assert_true(
+                datos["capturaAlto"] >= 300,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): la captura mide {datos['capturaAlto']:.0f}px de alto, se esperaban al menos 300",
+            )
+            if datos["capturaAlto"] > 0:
+                ratio = datos["capturaAncho"] / datos["capturaAlto"]
+                assert_true(
+                    1.55 <= ratio <= 1.65,
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): relacion ancho/alto de la captura {ratio:.2f} (ancho {datos['capturaAncho']:.0f}, alto {datos['capturaAlto']:.0f}), se esperaba entre 1.55 y 1.65",
+                )
+        else:
+            # Respaldo flex — la composicion de c1017b9 NO llenaba la altura
+            # del cajon con la captura (era `flex: 0 0 300px` de ANCHO en una
+            # fila, alto por aspect-ratio); solo se pide el ratio, no el
+            # llenado ni la banda vacia bajo ella.
+            if datos["capturaAlto"] > 0:
+                ratio = datos["capturaAncho"] / datos["capturaAlto"]
+                assert_true(
+                    1.55 <= ratio <= 1.65,
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): relacion ancho/alto de la captura {ratio:.2f} (ancho {datos['capturaAncho']:.0f}, alto {datos['capturaAlto']:.0f}), se esperaba entre 1.55 y 1.65",
+                )
+
+        # #obra sigue sin scroll interno, con esta tarjeta abierta, al
+        # viewport oficial del arnes (1440x900). medir_cabe ya lo comprueba
+        # una vez (contenido del carril vs ventana, con la tarjeta por
+        # defecto abierta); esto lo repite para las cinco, leyendo
+        # scrollHeight/clientHeight de #obra en si.
         assert_true(
-            "Martian" not in privado["fontFamily"],
-            f"Cajon llena: fontFamily de la nota privada sigue en Martian Mono ({privado['fontFamily']!r})",
+            datos["obraScrollHeight"] == datos["obraClientHeight"],
+            f"Cajon llena ({titulo}, {etiqueta_comp}): #obra desborda (scrollHeight {datos['obraScrollHeight']:.0f} vs clientHeight {datos['obraClientHeight']:.0f})",
         )
+
+        # La prosa Problema/Solucion en una sola columna — salvo en el
+        # respaldo flex, donde c1017b9 la deja en DOS (grid-template-columns:
+        # 1fr 1fr), dicho explicitamente en la etiqueta del fallo.
+        columnas = [c for c in (datos["proseColumns"] or "").split(" ") if c]
+        if es_grid:
+            una_columna = (len(columnas) == 1) or (
+                datos["proseDisplay"] == "flex" and datos["proseFlexDirection"] == "column"
+            )
+            assert_true(
+                una_columna,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): .cae-obra-prose no esta en una sola columna (gridTemplateColumns={datos['proseColumns']!r}, display={datos['proseDisplay']!r}, flexDirection={datos['proseFlexDirection']!r})",
+            )
+        else:
+            dos_columnas = len(columnas) == 2
+            assert_true(
+                dos_columnas,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): .cae-obra-prose deberia estar en DOS columnas en el respaldo flex (gridTemplateColumns={datos['proseColumns']!r})",
+            )
+
+        privado = datos["privado"]
+        if esperado["private"]:
+            assert_true(privado is not None, f"Cajon llena ({titulo}, {etiqueta_comp}): no se encontro .cae-obra-foot-private (deberia verse, proyecto privado)")
+            if privado is not None:
+                assert_true(
+                    privado["textTransform"] == "none",
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): textTransform de la nota privada es {privado['textTransform']!r}, se esperaba 'none'",
+                )
+                assert_true(
+                    privado["letterSpacing"] == "normal",
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): letterSpacing de la nota privada es {privado['letterSpacing']!r}, se esperaba 'normal'",
+                )
+                assert_true(
+                    "Martian" not in privado["fontFamily"],
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): fontFamily de la nota privada sigue en Martian Mono ({privado['fontFamily']!r})",
+                )
+        else:
+            assert_true(privado is None, f"Cajon llena ({titulo}, {etiqueta_comp}): se encontro .cae-obra-foot-private en un proyecto NO privado")
 
 
 def check_vice_hyprland_intactos(browser, base: str) -> None:
@@ -711,12 +889,22 @@ def main() -> int:
         check_stack_marcas(page)
         check_contraste(page)
         check_foco_visible(page)
-        # check_cajon_llena necesita la nota "privado", que solo pinta
-        # EchoPlan (tarjeta 0) — check_foco_visible dejo abierta TesisFar.
-        page.evaluate("document.querySelectorAll('.cae-obra-card')[0].click()")
-        page.wait_for_timeout(400)
-        check_cajon_llena(page)
+        # check_cajon_llena recorre las cinco tarjetas por su cuenta (segunda
+        # vuelta 2026-09-05); no necesita que quede una en concreto abierta.
+        # Cuarta vuelta: corre en el viewport oficial (1440x900, ya abierto
+        # arriba) y ademas en el portatil (1366x768, panel #obra de 616 en
+        # vez de 748) — el fallo que origino esta vuelta solo se ve en el
+        # segundo.
+        check_cajon_llena(page, "1440x900")
         page.close()
+
+        viewport_portatil = {"width": 1366, "height": 768}
+        page_portatil = browser.new_page(viewport=viewport_portatil)
+        page_portatil.goto(f"{args.base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page_portatil.wait_for_timeout(2000)
+        ir_a_obra(page_portatil)
+        check_cajon_llena(page_portatil, "1366x768")
+        page_portatil.close()
 
         check_movimiento_reducido(browser, args.base)
         check_vice_hyprland_intactos(browser, args.base)
