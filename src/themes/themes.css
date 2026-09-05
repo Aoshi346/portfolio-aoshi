@@ -4862,16 +4862,17 @@
  *
  * EL SELECTOR UNIVERSAL `*` NO ALCANZA A LOS PSEUDO-ELEMENTOS. Se pago en B2
  * con `.ficha-k::before`, que siguio animando bajo la guarda generica. Cada
- * pseudo-elemento que anime va nombrado aqui, uno por uno.
+ * pseudo-elemento que ANIME va nombrado aqui, uno por uno.
+ *
+ * Aqui hoy no anima ninguno: `.cae-fundido-troquel::before` llevaba su propia
+ * guarda y se quito tras comprobar que su regla base —la unica que lo declara
+ * en toda la hoja— no tiene ni `transition` ni `animation`. Apagar algo que
+ * nadie enciende no protege nada y hace creer que si. Lo unico que anima por
+ * CSS en esta escena es el relleno del ojo (`transition: fill 0.3s`).
  */
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="caelestia"] .cae-dino-ojo {
     transition: none;
-  }
-
-  :root[data-theme="caelestia"] .cae-fundido-troquel::before {
-    transition: none;
-    animation: none;
   }
 }
 

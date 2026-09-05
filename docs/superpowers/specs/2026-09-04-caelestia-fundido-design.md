@@ -286,7 +286,11 @@ fuera hasta inundar, otra naciendo dentro. Es un iris de cine, no dos efectos su
 
 **El factor de crecimiento no es un numero a ojo.** Sale de la distancia del centro de la figura a
 la esquina mas lejana de la ventana, dividida entre el **radio minimo** de la figura (los valles,
-no las crestas), con un 4 % de margen: **6,34**. Con menos, el lienzo asoma por una esquina.
+no las crestas), con un 4 % de margen. Contra el build real da **6,3807** (el 6,34 que llevaba
+este parrafo se calculo sobre la caja del troquel antes de que sangrara al canto: mover el ancla
+de `-0.625rem` a `-3.875rem` corre el centro de la figura y con el la esquina mas lejana). Es un
+valor DERIVADO en tiempo de ejecucion, no una constante en el codigo — el numero de aqui
+documenta lo medido a 1440x900. Con menos, el lienzo asoma por una esquina.
 
 **Todo lo que aparece se traza de izquierda a derecha** — filetes, suelo del troquel, frase y los
 cuatro canales. Un gesto repetido, en vez de tres maneras distintas de aparecer.
@@ -452,7 +456,11 @@ El arnes nuevo, `scripts/measure-caelestia-fundido.py`, tiene que comprobar al m
    `--cae-display-axes`. Es la mitad del defecto del diagnostico y no la caza ningun gate de tamano.
 3. **La ocupacion**, con el extremo derecho del texto medido con `Range` — con cajas de bloque hoy
    da «0 px muertos» y el gate pasaria en falso sobre un 78 % vacio.
-4. **Sin scroll interno**: `scrollHeight === clientHeight`, en 1440 y en 390.
+4. **Sin scroll interno**, en 1440 y en 390. **No con `scrollHeight === clientHeight`**: el campo
+   de color crece con `transform: scale(...)`, y ese desbordamiento sigue contando en
+   `scrollHeight` aunque el `overflow: clip` lo contenga y no haya nada que desplazar (medido:
+   1813 contra un `clientHeight` de 748). Se comprueba que la ventana **responda** a un scroll
+   programatico, y que el documento no gane barra horizontal.
 5. **Los cuatro canales siguen accionables**: `mailto:` bien formado, `tel:` sin espacios ni
    guiones, externos con las dos palabras de `rel`.
 6. **El dato se lee sin hover.** Cuidado: un `MouseEvent` sintetico **no dispara `:hover`** — trampa
@@ -468,6 +476,11 @@ El arnes nuevo, `scripts/measure-caelestia-fundido.py`, tiene que comprobar al m
 11. **390 px**: titular en su paso exacto, la linea mas larga cabe en la medida util, ningun blanco
     baja de 48 × 48, el sello es **cuadrado** y no sangra.
 12. **Vice y Hyprland no se alteran**: `contacto.ts` es compartido.
+13. **El fundido interrumpido aterriza del todo.** Irse de la escena a media pasada y volver:
+    el bicho en su sitio, la nube visible, el horizonte entero, troquel y campo a escala 1, la
+    escena sin desplazar, los ejes en linea del titular retirados y la zancada parada. Es el
+    unico camino que los doce anteriores no miraban, y el que dejaba el sello roto para el
+    resto de la visita (`fundidoVisto` ya es `true`: el fundido no vuelve a sonar).
 
 ### Ninguno se acepta sin haberlo visto dar rojo
 
@@ -476,7 +489,7 @@ tautologicos. Estos son los sabotajes que ya se ejecutaron durante el maquetado,
 
 | gate | sabotaje | rojo obtenido |
 |---|---|---|
-| el lienzo no asoma | factor de crecimiento 6,34 → 5,07 | `['lienzo','campo','lienzo','campo']` |
+| el lienzo no asoma | factor de crecimiento 6,38 → 5,07 | `['lienzo','campo','lienzo','campo']` |
 | el fundido no suena dos veces | quitar la guarda `destino === origen` | `pulsar el workspace activo dispara la entrada` + `cuenta una visita` |
 | el bicho mira de donde vienes | sentido fijado a constante | `el ojo no mira hacia el 4: x=24, esperado 23` |
 | la profundidad del lobulo | comparar el mando contra el `clip-path` pintado | verde solo si coinciden a 0,3 px |
@@ -588,7 +601,7 @@ Dos hallazgos, ninguno bloqueante para B5:
   es el dock de acceso rapido del escritorio.
 
 **`vera-art-director`: BLOCK, 6,59/10 contra el gate de 7,5 — sin aceptar, pendiente de decision.**
-Corrio en vivo el arnes de los doce gates (12/12 en verde) y anadio su propia sesion de Playwright
+Corrio en vivo el arnes de los gates de entonces (12/12 en verde) y anadio su propia sesion de Playwright
 —dia/noche por zona horaria real, hover en los cuatro canales, foco por teclado, reduced-motion,
 reentrada desde Creditos, 390×844— para cazar lo que un arnes de aserciones puntuales no ve. Confirma
 con medida propia lo que el spec afirma: la jerarquia del cierre queda exactamente arreglada
@@ -600,7 +613,9 @@ superficie, y el foco de teclado real y visible.
 El score no llega al gate por tres hallazgos, dos de ellos fuera del alcance de los doce gates
 existentes:
 
-- **F-3 (P0 por recurrencia).** Dentro de la propia escena conviven tres tamanos de letra casi
+- **F-3 (P0 por recurrencia) — ARREGLADO** (`f6423c1`). Se declaro **`--t-0: 9px`** (12 / 1,333,
+  el paso que faltaba por debajo del suelo de la escala) y los tres literales pasaron a salir de la
+  escala. El hallazgo, tal como se recibio: dentro de la propia escena convivian tres tamanos casi
   identicos sin token compartido: `.cae-fundido-corn` 10 px, `.contacto-estado` 9,5 px,
   `.contacto-bar-label` 9 px. Es la **sexta aparicion cross-proyecto** del hallazgo «no hay escala
   tipografica» — la misma familia de deuda que `## Caelestia no tiene una escala tipografica`
@@ -612,8 +627,17 @@ existentes:
   unico cambio es el `cursor: pointer` por defecto del navegador. El mismo `.contacto-bar` compartido
   **si tiene hover rico en Vice e Hyprland**; Caelestia es la unica de las tres pieles cuya CTA
   primaria no reacciona al raton.
-- **F-2 (P1).** A 390 px, la caja del valor de LinkedIn (partido en tres lineas, deuda ya conocida,
-  punto 4 de este registro) se solapa verticalmente con la caja de GitHub —confirmado con
+- **F-2 (P1, y peor de lo reportado) — ARREGLADO** (`f6423c1`). Verificado antes de tocar nada:
+  no eran dos cajas, eran tres pares solapados (correo x telefono 350x18, linkedin x telefono
+  168x17, linkedin x github 30x56) y tocar dentro de la caja de LinkedIn, en (183, 701), ABRIA
+  GITHUB. Con eso deja de ser apretujon estetico y pasa a ser un enlace que lleva a otro sitio, asi
+  que se revoco el Ruling T, que lo habia aparcado como deuda cosmetica. **La causa no era el
+  tamano de letra**: el truco de area tactil ampliada (relleno mas margen negativo del mismo valor)
+  esta calibrado contra el `gap: 3.5rem` de escritorio, y la rejilla de movil tiene 4/10 px, asi que
+  la caja pintada invadia a la vecina; ademas un intento anterior de arreglo habia perdido un
+  desempate de especificidad y nunca llegaba a aplicarse. Medido despues: cero solapes y 20/20
+  toques al canal correcto. El hallazgo, tal como se recibio: a 390 px la caja del valor de LinkedIn
+  se solapa verticalmente con la caja de GitHub —confirmado con
   `getBoundingClientRect`, `y: 626.75–720.75` contra `y: 664.75–720.75`—, el mismo sintoma que el
   spec ya uso para **descartar** la disposicion C («el enlace de LinkedIn parte en dos renglones»,
   `## Los cuatro canales`), reapareciendo como caso de borde dentro de la disposicion B elegida. Los
@@ -634,7 +658,7 @@ decision se tome con el veredicto completo delante.
 
 ## Registro de implementacion
 
-Los doce gates de `scripts/measure-caelestia-fundido.py` se vieron dar rojo contra el sabotaje que
+Los trece gates de `scripts/measure-caelestia-fundido.py` se vieron dar rojo contra el sabotaje que
 cada uno dice cazar (ver `## Los gates`), y despues verdes contra el build de produccion. `npm run
 lint` y `npm run build` limpios. `lidia-naive-tester` da verde (7,1/10); `vera-art-director` da
 **BLOCK** (6,59/10 contra 7,5), sin aceptar todavia — el detalle de los dos veredictos esta en
@@ -670,17 +694,26 @@ forma que la fase A y B2: un numero que se negaba a moverse.
 
 ### Deuda conocida, no defectos a perseguir
 
-4. **A 390 px el valor de LinkedIn («Aoshi Blanco Sanz») se parte en tres lineas.** El spec de
-   movil (`## Movil`) especifico el paso del titular, el tamano del sello y la profundidad del
-   lobulo, pero nunca el tratamiento del texto de un valor de destino largo contra una columna de
-   168 px. El area accionable (168 × 94, gate 11) sigue por encima del suelo de 48 × 48 y el dato se
-   sigue leyendo entero — es una fealdad tipografica, no un canal roto.
-5. **Si el visitante abandona `#contacto` antes de los 1900 ms del fundido y no vuelve, la
-   timeline se agota sola, en segundo plano.** Deliberado: el carril de la fase A no tiene un gancho
-   de salida de escena y anadir uno tocaria la coreografia de las cinco, que es territorio de otra
-   fase. `destroy()` si mata la timeline (llamado en `pagehide`), asi que el unico caso que queda
-   vivo es cambiar de workspace sin cerrar la pestana — no consume recursos indefinidamente, solo
-   corre sin publico.
+4. ~~**A 390 px el valor de LinkedIn («Aoshi Blanco Sanz») se parte en tres lineas.**~~
+   **Resuelto en `f6423c1`**, junto con F-2. El diagnostico de esta entrada era ademas equivocado:
+   el nombre no se partia por el tamano de letra, sino porque rotulo y valor son hermanos flex en
+   una fila y el valor se encogia a `min-content`. Se deja escrito porque la leccion es esa — se
+   dio por sentada una causa que no se midio.
+5. **Si el visitante abandona `#contacto` a media pasada del fundido y NO vuelve, la timeline se
+   agota sola, en segundo plano.** Si vuelve, `entrar()` la mata y aterriza la escena, que es el
+   caso que de verdad se veia y que quedo cerrado en `4bf1870`.
+   **Correccion a lo que esta entrada decia antes:** afirmaba que «`destroy()` si mata la timeline
+   (llamado en `pagehide`)». **Es falso, y se apoyo en el sin comprobarlo.** `montarFundido()`
+   devuelve un handle con `destroy()`, pero nadie lo guarda: `Choreography` devuelve `void`,
+   `caelestia.choreography.ts` no retiene el handle y el `pagehide` de `main.ts` no lo toca. Ese
+   `destroy()` no lo llama nadie hoy.
+   **La via limpia y barata, si se quiere cerrar** (se reporta, no se implementa aqui: toca la
+   coreografia, que es territorio de la fase A): que `caelestia.choreography.ts` guarde el handle
+   que ya recibe de `montarFundido()` y lo encadene al `destroy()` que ese modulo ya expone y que
+   `main.ts` ya llama en `pagehide` — no hace falta gancho nuevo ni tocar el carril, solo dejar de
+   tirar una referencia que ya existe.
+   La leccion, escrita entera porque es la que mas cara salio de esta ronda: **se acepto un
+   residual apoyandose en una llamada que nunca se comprobo que existiera.**
 6. **Hallazgo de producto, de fase A, no de B5.** El primer aviso del escritorio
    (`notificar(...)`, `src/components/caelestiaShell.ts:175`, disparado a los 900 ms de cargar
    cualquier escena) tapa el valor de GitHub del colofon durante los segundos que tarda en
@@ -715,7 +748,11 @@ forma que la fase A y B2: un numero que se negaba a moverse.
    mal calibrada: puesto el valor que el propio spec (`## Color y contraste`) documenta como
    insuficiente (0,68, que mide 3,81:1 de verdad), el ratio calculado por el instrumento no se movia
    ni un decimal. El arnes final compone el color pintado multiplicando por la opacidad efectiva del
-   nodo (la propia mas la heredada) antes de calcular el contraste. Van **once** instrumentos rotos
+   nodo antes de calcular el contraste — **la propia Y la de los ancestros**, acumulada hasta el que
+   pinta el fondo (de ese hacia arriba, texto y fondo se atenuan juntos y el ratio no se mueve).
+   Durante un tiempo este parrafo prometia la heredada y el codigo solo leia la del nodo: una
+   `opacity: 0.35` puesta un nivel mas arriba dejaba el ratio clavado en 7,67 cuando de verdad
+   pintaba a 2,33. Medido y corregido — es el mismo modo de fallo un piso mas alto. Van **once** instrumentos rotos
    documentados en este tema entre la fase A, B2 y B5 — la cuenta que ya llevaba la fase A sigue
    subiendo, y la familia es siempre la misma: un instrumento que lee una propiedad que no es la que
    pinta.
@@ -736,9 +773,11 @@ forma que la fase A y B2: un numero que se negaba a moverse.
     verde. El sabotaje real tiene que mover algo con `transform` — que no reserva espacio en el
     flujo y por tanto no deberia contar como scroll — y el hallazgo fue que `scrollHeight` **si**
     cuenta ese desbordamiento aunque nada se pueda desplazar de verdad con la rueda o el dedo: el
-    numero sube, la pagina no se mueve. El gate final compara `scrollHeight` **y** comprueba que un
-    `scrollTo` real no cambia `scrollTop`, para no confundir «el numero crecio» con «hay algo que
-    desplazar».
+    numero sube, la pagina no se mueve. Por eso el gate final **no compara `scrollHeight`**: seria
+    rojo permanente por un dato que no significa lo que el gate quiere saber. Comprueba que un
+    `scrollTo` real no mueva `scrollTop`/`scrollLeft`, y que el documento no gane barra horizontal —
+    «hay algo que desplazar», no «el numero crecio». (El punto 4 de `## Los gates` pedia el
+    instrumento equivocado y queda corregido alli.)
 12. **El propio entorno de la sandbox dispara frames a 200–400 ms, no a los ~16 ms de un frame
     real** (medido con `--use-gl=swiftshader`, el mismo flag que fuerza el arnes). Un cronometro
     basado en cuantos frames pasaron antes de ver un cambio mide el atasco de la maquina, no la
@@ -749,3 +788,55 @@ forma que la fase A y B2: un numero que se negaba a moverse.
     distingue los tres estados posibles por su valor exacto: `reproducir()` arranca en `scale(0)`,
     `entrar()` en `scale(0.965)`, y «nada disparado» deja el troquel en su valor aterrizado
     (`scale(1)`). Tres lecturas sincronas en vez de una carrera contra el reloj de la sandbox.
+13. **Un cronometro no sirve para cortar una animacion por la mitad en esta sandbox.** El gate 13
+    tenia que interrumpir el fundido a media pasada, y la primera version usaba `setTimeout(250)`
+    dentro de la pagina. Medido: con `--use-gl=swiftshader` ese `setTimeout` llega con cientos de ms
+    de retraso y de forma irregular, asi que el mismo gate salia **rojo bajo carga y verde en
+    vacio** — con la maquina ocupada corria el fundido justo hasta el punto que el gate queria, y
+    con la maquina libre lo dejaba casi terminado. Es el punto 12 otra vez, un nivel mas abajo: el
+    instrumento medira el atasco de la maquina siempre que se le pida una hora. La salida es
+    **anclar el corte al ESTADO y no al reloj**: se mira cada frame hasta que la escena esta de
+    verdad donde se quiere cortar (el bicho a media entrada; el titular con un `wght` intermedio en
+    linea) y solo entonces se pulsa. Y si ese punto **no llega** en 6 s, el gate FALLA en vez de
+    medir otra cosa — sin esa ultima clausula el ancla se convierte en el proximo instrumento que no
+    puede ponerse rojo.
+14. **Un solo corte hacia inaseverable la mitad del gate.** Con el unico corte «a media entrada del
+    bicho», la asercion sobre los ejes variables del titular no podia ponerse roja nunca: el tween
+    de los ejes no arranca hasta 520 ms. Se corta **dos veces**, en dos paginas frescas, una por
+    familia de sintoma. Es la misma leccion que el cursor de Hyprland ya dejo escrita — un gate para
+    dos familias solo puede exigir lo que valga para ambas, que es nada.
+
+### La ronda de cierre — los dos Criticos y lo que arrastraban
+
+La revision de rama entera dejo dos Criticos, los dos en el camino interrumpido, los dos cerrados en
+`4bf1870` con el gate 13 **visto en rojo antes** (cuatro fallos, exactamente los cuatro sintomas):
+
+- **`aterrizado()` mantenia a mano la lista de lo que devolver, y se desincronizo.** Le faltaban el
+  bicho, la nube y el suelo. Ya no hay lista: `anotar()` lee las dianas de la partitura misma al
+  construirla y `aterrizado()` limpia ese conjunto. Cubre de paso `tlEntrada`, que dejaba la escena
+  desplazada por el mismo motivo, y que nadie habia mirado. Se anota al CONSTRUIR y no al aterrizar
+  a proposito: `aterrizado()` corre despues del `kill()`, y que una timeline muerta conserve sus
+  hijos es detalle interno de gsap, no contrato.
+- **`kill()` no dispara `onComplete`,** y `pararZancada()` era el `onComplete` del tween del bicho:
+  el reloj de fotogramas se quedaba encendido y el dino corria en el sitio para siempre. Lo llama
+  ahora `aterrizado()`.
+- El efecto colateral util: al salir `lead` de la lista, los ejes variables que el `onUpdate` escribe
+  DIRECTAMENTE en `style` dejaron de limpiarse solos — `clearProps` no los alcanza porque no los
+  puso gsap. Se retiran explicitamente, y el sabotaje lo confirma (`"wght" 310` en linea sin la
+  linea, vacio con ella).
+
+Y tres limpiezas menores de la misma ronda:
+
+- **El filete del encabezado corrido ya se traza.** El spec prometia «filetes» en plural en
+  `## El fundido`; el de abajo entraba con `barras`, que lo lleva en su propia caja, y el de arriba
+  se pintaba de golpe. Ahora entra a 0,44 s con el mismo barrido que todo lo demas.
+- **`alturaMapa()` y `MAPAS` borrados** de `caelestia.dino.ts`: codigo muerto, exportado «para que
+  las pruebas puedan comprobarlas» y que ninguna prueba usa — el arnes lee el DOM.
+- **La guarda de movimiento reducido de `.cae-fundido-troquel::before` retirada** tras comprobar que
+  su regla base, la unica que lo declara en toda la hoja, no tiene ni `transition` ni `animation`.
+  Apagar algo que nadie enciende no protege nada y hace creer que si. La leccion de B2 sigue en el
+  comentario, que es donde sirve: el `*` no alcanza a los pseudo-elementos, y el unico que anima por
+  CSS en esta escena es el relleno del ojo.
+- **La demostracion de la trampa del gate 3 dejo de ser una `comprobar()`.** Comparar la caja de
+  bloque contra si misma da 0 px muertos siempre, por construccion: engordaba la cuenta de verdes sin
+  vigilar nada. Se imprime, para el lector, y ya no se asevera.

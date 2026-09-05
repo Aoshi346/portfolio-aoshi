@@ -220,12 +220,6 @@ function tiras(mapa: readonly string[]): string {
 
 export type Fotograma = "quieto" | "carrera1" | "carrera2";
 
-const MAPAS: Record<Fotograma, readonly string[]> = {
-  quieto: QUIETO,
-  carrera1: CARRERA_1,
-  carrera2: CARRERA_2,
-};
-
 /** Las tres corridas, calculadas una vez: la zancada cambia 12 veces al entrar. */
 const DIBUJOS: Record<Fotograma, string> = {
   quieto: tiras(QUIETO),
@@ -269,9 +263,4 @@ export function svgHorizonte(tramo = HORIZONTE[0].length): string {
     `<svg viewBox="${desde} 0 ${ancho} ${HORIZONTE.length}" shape-rendering="crispEdges" ` +
     `aria-hidden="true">${tiras(HORIZONTE)}</svg>`
   );
-}
-
-/** Las lineas por fotograma, para que las pruebas puedan comprobarlas. */
-export function alturaMapa(fotograma: Fotograma): number {
-  return MAPAS[fotograma].length;
 }

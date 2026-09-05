@@ -283,6 +283,17 @@ export function montarFundido(
     tl.fromTo(troquel, { scale: 0 }, { scale: 1, duration: 0.52, ease: "power3.out" }, 0.38);
     // Todo lo que aparece se traza de izquierda a derecha: un gesto repetido,
     // no tres maneras distintas de aparecer.
+    //
+    // El encabezado corrido va PRIMERO, antes que la frase: es el filete de
+    // arriba, y el spec promete «filetes» en plural. El de abajo entra con
+    // `barras`, que lo lleva en su propia caja; este no colgaba de nada y se
+    // pintaba de golpe mientras el resto se trazaba.
+    tl.fromTo(
+      corn,
+      { clipPath: "inset(-12% 100% -12% -2%)" },
+      { clipPath: "inset(-12% -6% -12% -2%)", duration: 0.5, ease: "power2.inOut" },
+      0.44,
+    );
     tl.fromTo(
       lineas,
       { clipPath: "inset(-12% 100% -12% -2%)" },

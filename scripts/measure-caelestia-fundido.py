@@ -73,10 +73,20 @@ CONTRASTE_JS = """({ sel, pseudo }) => {
     // El fondo REAL: se sube por los ancestros hasta el primero que pinte
     // algo. Comparar contra el rol teorico es como se colo que el reloj de
     // la barra estuviera bajo AA cuatro horas al dia.
-    let nodo = el, fondo = null;
+    // De paso se ACUMULA la opacidad: un ancestro con `opacity` atenua a su
+    // descendiente igual que la propia, y leer solo la del nodo deja pasar
+    // cualquier atenuacion puesta un nivel mas arriba -- el mismo modo de
+    // fallo que la trampa de `getComputedStyle().color`, un piso mas alto. Se
+    // multiplica desde el elemento HASTA el que pinta el fondo, sin incluirlo:
+    // de ese hacia arriba, texto y fondo se atenuan juntos y el ratio no se
+    // mueve.
+    let nodo = el, fondo = null, alfaAcum = 1;
     while (nodo && fondo === null) {
-        const bg = getComputedStyle(nodo).backgroundColor;
-        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") fondo = bg;
+        const cs = getComputedStyle(nodo);
+        const bg = cs.backgroundColor;
+        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") { fondo = bg; break; }
+        const o = parseFloat(cs.opacity);
+        if (!Number.isNaN(o)) alfaAcum *= o;
         nodo = nodo.parentElement;
     }
     const bFondo = bytes(fondo || "rgb(255,255,255)", [255, 255, 255]);
@@ -90,7 +100,7 @@ CONTRASTE_JS = """({ sel, pseudo }) => {
     // pintan a `opacity: var(--fundido-dim)`, y sin blanquear el color con esa
     // opacidad contra el fondo, el gate mide el texto a opacidad 1 SIEMPRE,
     // sea cual sea `--fundido-dim` -- un gate que no puede fallar.
-    const alfa = parseFloat(csEl.opacity);
+    const alfa = alfaAcum;
     if (!Number.isNaN(alfa) && alfa < 1) {
         bTexto = [0, 1, 2].map((i) => Math.round(alfa * bTexto[i] + (1 - alfa) * bFondo[i]));
     }
