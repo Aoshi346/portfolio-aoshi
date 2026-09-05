@@ -8,7 +8,7 @@ el puerto 4193 (Ruling H) — el 4173 sirve OTRO repositorio de otra sesion.
     npm run build
     python3 scripts/measure-caelestia-fundido.py --base http://localhost:4193
 
-Los trece gates (ver el spec, seccion `## Los gates`):
+Los catorce gates (ver el spec, seccion `## Los gates`):
   1. jerarquia tipografica (el titular > acto > destino, valor exacto)
   2. los ejes de cierre, no los del cartel
   3. la ocupacion, medida con Range (no con la caja de bloque)
@@ -22,6 +22,7 @@ Los trece gates (ver el spec, seccion `## Los gates`):
   11. 390 px: paso exacto, ocupacion, blancos >= 48x48, sello cuadrado
   12. Vice y Hyprland no se alteran (`contacto.ts` es compartido)
   13. el fundido interrumpido aterriza del todo (bicho, nube, suelo, zancada)
+  14. rozar responde y el teclado llega a lo mismo (el P1 de `vera-art-director`)
 """
 import argparse
 import pathlib
@@ -80,16 +81,36 @@ CONTRASTE_JS = """({ sel, pseudo }) => {
     // multiplica desde el elemento HASTA el que pinta el fondo, sin incluirlo:
     // de ese hacia arriba, texto y fondo se atenuan juntos y el ratio no se
     // mueve.
-    let nodo = el, fondo = null, alfaAcum = 1;
-    while (nodo && fondo === null) {
+    //
+    // Y NO SE PARA EN EL PRIMERO QUE PINTE: se para en el primero que pinte
+    // OPACO, apilando por el camino los que pintan a medias. Pararse en el
+    // primero valia mientras nada pintaba translucido; en cuanto los canales
+    // ganaron su capa de estado (`currentColor` al 10 %), el gate componia esa
+    // capa sobre BLANCO —el fondo por defecto del lienzo— y devolvia 1,03:1
+    // para un texto que en pantalla se lee perfectamente. El instrumento, otra
+    // vez: media la capa contra un fondo que no existe.
+    const pila = [];
+    let nodo = el, alfaAcum = 1, opaco = null;
+    while (nodo && opaco === null) {
         const cs = getComputedStyle(nodo);
         const bg = cs.backgroundColor;
-        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") { fondo = bg; break; }
+        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+            const m = bg.match(/[\\d.]+/g);
+            // Sin cuarto canal es opaco; `color(srgb ...)` y `oklab(...)` lo
+            // llevan al final igual que `rgba()`.
+            const a = m && m.length >= 4 ? parseFloat(m[m.length - 1]) : 1;
+            if (a >= 0.999) { opaco = bg; break; }
+            pila.push(bg);
+        }
         const o = parseFloat(cs.opacity);
         if (!Number.isNaN(o)) alfaAcum *= o;
         nodo = nodo.parentElement;
     }
-    const bFondo = bytes(fondo || "rgb(255,255,255)", [255, 255, 255]);
+    // Se compone de abajo arriba: el opaco primero, y encima las capas a
+    // medias en el orden en que las ve el pintor (la mas lejana del texto
+    // primero, que es el final de la pila).
+    let bFondo = bytes(opaco || "rgb(255,255,255)", [255, 255, 255]);
+    for (let i = pila.length - 1; i >= 0 && bFondo; i--) bFondo = bytes(pila[i], bFondo);
     let bTexto = bytes(csEl.color, bFondo);
     if (!bFondo || !bTexto) return null;
     // `getComputedStyle(...).color` NO SE MUEVE CON `opacity`: sigue devolviendo
@@ -783,6 +804,113 @@ def main() -> int:
                       f"en 1,8 s (medidos {d['dibujosDistintos']})")
             errores_totales += errores
             ctx.close()
+
+        # ================================================================
+        # [14] Rozar responde, y el teclado llega a lo mismo
+        # ================================================================
+        print("\n[14] Rozar responde, y el teclado llega a lo mismo")
+        # `vera-art-director` lo levanto como P1 y era cierto: Caelestia era la
+        # unica de las tres pieles cuya llamada a la accion principal no
+        # reaccionaba al raton — `background`, `color`, `transform` y
+        # `text-decoration` identicos antes y despues, y el unico cambio el
+        # `cursor: pointer` del navegador.
+        #
+        # Con `hover()` DE VERDAD, nunca un `MouseEvent` sintetico: no dispara
+        # `:hover`. Trampa ya pagada en B2 y en B4.
+        LEE_ESTADO_JS = """(sel) => {
+            const a = document.querySelector(sel);
+            const et = a.querySelector('.contacto-bar-label');
+            const v = a.querySelector('.contacto-bar-value');
+            return {
+                fondo: getComputedStyle(a).backgroundColor,
+                rotuloOp: parseFloat(getComputedStyle(et).opacity),
+                valorColor: getComputedStyle(v).color,
+                enfocado: document.activeElement === a,
+            };
+        }"""
+        # `rgba(..., 0)` y `transparent` son el mismo pixel: no pinta nada.
+        def pinta(color: str) -> bool:
+            n = re.findall(r"[\d.]+", color or "")
+            if color in (None, "", "transparent"):
+                return False
+            return len(n) < 4 or float(n[3]) > 0.01
+
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        # Cada barra se marca con un atributo propio y se apunta a el: el
+        # colofon reordena con `order`, asi que `nth-of-type` no dice lo mismo
+        # que el orden que se ve.
+        cuantas = pg.evaluate("""() => {
+            const bs = [...document.querySelectorAll('.contacto-bar')];
+            bs.forEach((a, i) => a.setAttribute('data-medida', String(i)));
+            return bs.length;
+        }""")
+        canales_sel = [f'[data-medida="{i}"]' for i in range(cuantas)]
+
+        for sel in canales_sel:
+            reposo = pg.evaluate(LEE_ESTADO_JS, sel)
+            pg.hover(sel)
+            pg.wait_for_timeout(400)   # la capa de estado funde en 180 ms
+            rozado = pg.evaluate(LEE_ESTADO_JS, sel)
+            # Se despega el raton para no contaminar la barra siguiente.
+            pg.mouse.move(2, 2)
+            pg.wait_for_timeout(300)
+            print(f"       {sel}: fondo {reposo['fondo']} -> {rozado['fondo']} · "
+                  f"rotulo {reposo['rotuloOp']} -> {rozado['rotuloOp']}")
+            comprobar(not pinta(reposo["fondo"]),
+                      f"{sel} no pinta caja en reposo ({reposo['fondo']})")
+            comprobar(pinta(rozado["fondo"]),
+                      f"{sel} PINTA su caja accionable al rozar ({rozado['fondo']}) — el P1 de "
+                      f"`vera-art-director`: era la unica piel sin respuesta al raton")
+            comprobar(rozado["rotuloOp"] > reposo["rotuloOp"] + 0.05,
+                      f"{sel} enciende su rotulo al rozar ({reposo['rotuloOp']} -> "
+                      f"{rozado['rotuloOp']})")
+            # El contraste del dato NO puede caer de AA por la capa de estado:
+            # se mide sobre el fondo que de verdad se pinta debajo, ya rozado.
+            pg.hover(sel)
+            pg.wait_for_timeout(400)
+            c = pg.evaluate(CONTRASTE_JS, {"sel": f"{sel} .contacto-bar-value", "pseudo": None})
+            print(f"       {sel} rozado: contraste del dato {c['ratio']:.2f}:1")
+            comprobar(c["ratio"] >= 4.5,
+                      f"{sel} mantiene AA con la capa de estado puesta ({c['ratio']:.2f}:1)")
+            pg.mouse.move(2, 2)
+            pg.wait_for_timeout(300)
+
+        # El teclado llega a LO MISMO. Con `Tab` de verdad, no `el.focus()`:
+        # `:focus-visible` depende de como se llego al elemento.
+        alcanzados = 0
+        for _ in range(40):
+            pg.keyboard.press("Tab")
+            # La capa de estado funde en 180 ms: leer en el mismo instante del
+            # `Tab` devuelve el fotograma de arranque, con alfa ~0, y el gate
+            # acusa al CSS de un fallo que es del cronometro. Visto: la barra 1
+            # daba `oklab(0 0 0 / 0)` —el valor a mitad de transicion— mientras
+            # las otras tres, leidas mas tarde por el bucle, daban la capa ya
+            # puesta.
+            pg.wait_for_timeout(400)
+            est = pg.evaluate("""() => {
+                const a = document.activeElement;
+                if (!a || !a.classList || !a.classList.contains('contacto-bar')) return null;
+                const et = a.querySelector('.contacto-bar-label');
+                return {
+                    sel: a.getAttribute('data-medida'),
+                    fondo: getComputedStyle(a).backgroundColor,
+                    rotuloOp: parseFloat(getComputedStyle(et).opacity),
+                };
+            }""")
+            if est is None:
+                continue
+            alcanzados += 1
+            print(f"       teclado -> barra {est['sel']}: fondo {est['fondo']} · "
+                  f"rotulo {est['rotuloOp']}")
+            comprobar(pinta(est["fondo"]),
+                      f"la barra {est['sel']} pinta la MISMA caja con el foco de teclado "
+                      f"({est['fondo']}) — raton y teclado no pueden divergir")
+            if alcanzados == len(canales_sel):
+                break
+        comprobar(alcanzados == len(canales_sel),
+                  f"el tabulador alcanza los cuatro canales ({alcanzados} de {len(canales_sel)})")
+        ctx.close()
 
         # ================================================================
         # Consola limpia en todas las paginas abiertas

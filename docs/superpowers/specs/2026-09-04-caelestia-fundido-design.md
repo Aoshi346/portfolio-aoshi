@@ -476,6 +476,10 @@ El arnes nuevo, `scripts/measure-caelestia-fundido.py`, tiene que comprobar al m
 11. **390 px**: titular en su paso exacto, la linea mas larga cabe en la medida util, ningun blanco
     baja de 48 × 48, el sello es **cuadrado** y no sangra.
 12. **Vice y Hyprland no se alteran**: `contacto.ts` es compartido.
+14. **Rozar responde, y el teclado llega a lo mismo.** Los cuatro canales pintan al rozar la caja
+    accionable que su relleno ya crea, el rotulo sale de su atenuacion, el foco de teclado alcanza
+    exactamente lo mismo, y el dato mantiene AA **con la capa de estado puesta**. Con `hover()` de
+    verdad: un `MouseEvent` sintetico no dispara `:hover` (trampa de B2 y B4).
 13. **El fundido interrumpido aterriza del todo.** Irse de la escena a media pasada y volver:
     el bicho en su sitio, la nube visible, el horizonte entero, troquel y campo a escala 1, la
     escena sin desplazar, los ejes en linea del titular retirados y la zancada parada. Es el
@@ -622,7 +626,9 @@ existentes:
   documenta para el resto del tema, reapareciendo *dentro* de la escena que se supone la arregla.
   Contradice la propia narrativa de este spec: B5 corrige los diez pasos que faltaban bajo Caelestia
   (correccion 3, arriba) pero introduce tres literales sueltos nuevos en el mismo bloque.
-- **F-1 (P1).** Cero feedback de hover en los cuatro canales: `background`, `color`, `transform` y
+- **F-1 (P1) — ARREGLADO.** Rozar (y enfocar con el teclado) pinta ahora la caja accionable del
+  canal y enciende su rotulo. Ver `## El gesto de rozar`, abajo. El hallazgo, tal como se recibio:
+  cero feedback de hover en los cuatro canales: `background`, `color`, `transform` y
   `text-decoration` identicos antes y despues de posar el raton, medido con `getComputedStyle` — el
   unico cambio es el `cursor: pointer` por defecto del navegador. El mismo `.contacto-bar` compartido
   **si tiene hover rico en Vice e Hyprland**; Caelestia es la unica de las tres pieles cuya CTA
@@ -646,7 +652,36 @@ existentes:
 - **F-4 (P2, smell test).** El dino de Chrome es un activo de marca de Google — riesgo ya aceptado
   por Aoshi explicitamente y por escrito, dos veces, en `## El troquel`. Anotado, no bloqueante.
 
-**No se acepta este BLOCK dentro de esta tarea.** El pliego de Task 9 limita mi alcance a
+### El gesto de rozar — como se resolvio F-1
+
+**Rozar ensena la caja, y eso no es decoracion.** El relleno con margen negativo de cada canal ya
+crea un area accionable mas grande que su texto —es lo que le da al acto sus 85 px de alto contra
+los 42 del destino, y es la caja que hubo que recalibrar a 390 px cuando invadia a la vecina— y
+hasta ahora **no pintaba nada**. El gesto pinta exactamente esa caja: responde a «¿donde tengo que
+pulsar?», que es la pregunta real en la escena que existe para que te escriban, en vez de anadir un
+subrayado o un desplazamiento que no dirian nada.
+
+- **`color-mix(in srgb, currentColor 10%, transparent)`**, no un token nuevo. El color del texto de
+  la escena ya sigue al reloj del visitante, asi que la capa camina con el matiz de las 24 h sin
+  declarar nada. Es la capa de estado de Material 3, con su valor.
+- **`:hover` y `:focus-visible` en la MISMA regla**, no en dos: el teclado tiene que llegar a lo
+  mismo que el raton, y separarlas es exactamente como se desincronizan. El anillo de foco del tema
+  sigue encima; esto no lo sustituye.
+- **Nada de `transform`.** Regla dura del repo: un `transform` en linea de gsap le gana siempre a
+  uno de CSS, y estas barras son dianas de la partitura.
+- **Bajo `prefers-reduced-motion` el cambio sigue ocurriendo; lo que se apaga es el fundido entre
+  estados.** Quitar el hover entero seria quitarle la respuesta al visitante, no la animacion.
+- Medido con la capa puesta: el dato mantiene **5,93:1**, holgadamente sobre AA.
+
+**El instrumento se rompio otra vez, y de la misma familia.** `CONTRASTE_JS` se paraba en el primer
+ancestro que pintara **algo**; en cuanto los canales ganaron una capa translucida, componia esa capa
+sobre **blanco** —el fondo por defecto del lienzo de 1x1— y devolvia **1,03:1** para un texto que en
+pantalla se lee perfectamente. Ahora se para en el primero que pinte **opaco** y apila por el camino
+las capas a medias, componiendolas de abajo arriba. Y una segunda, mas tonta: leer el estado en el
+mismo instante del `Tab` devolvia el fotograma de arranque de la transicion (`oklab(0 0 0 / 0)`) y
+el gate acusaba al CSS de un fallo del cronometro. Van **trece**.
+
+**No se acepto este BLOCK dentro de la tarea que lo levanto.** El pliego de Task 9 limita mi alcance a
 construccion, capturas y spec — no a tocar CSS de produccion. F-3 (el P0 por recurrencia) es una
 correccion barata y de un ambito ya poseido por B5 (unificar tres literales del propio bloque
 `[data-theme="caelestia"] [data-scene="contacto"]` a un solo token), pero decidir si se corrige

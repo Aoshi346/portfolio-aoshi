@@ -4867,11 +4867,19 @@
  * Aqui hoy no anima ninguno: `.cae-fundido-troquel::before` llevaba su propia
  * guarda y se quito tras comprobar que su regla base —la unica que lo declara
  * en toda la hoja— no tiene ni `transition` ni `animation`. Apagar algo que
- * nadie enciende no protege nada y hace creer que si. Lo unico que anima por
- * CSS en esta escena es el relleno del ojo (`transition: fill 0.3s`).
+ * nadie enciende no protege nada y hace creer que si. Lo que anima por CSS en
+ * esta escena son dos cosas: el relleno del ojo y la capa de estado de los
+ * canales al rozar. Las dos se apagan aqui; el CAMBIO sigue ocurriendo, lo que
+ * se quita es el fundido entre estados — un hover que desaparece bajo
+ * movimiento reducido seria quitarle la respuesta al visitante, no la
+ * animacion.
  */
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="caelestia"] .cae-dino-ojo {
+    transition: none;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar {
     transition: none;
   }
 }
@@ -4957,6 +4965,42 @@
   text-decoration: none;
   color: inherit;
   border-radius: 0.5rem;
+  background: transparent;
+  transition:
+    background-color 0.18s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.18s;
+}
+
+/*
+ * ROZAR ENSENA LA CAJA. Caelestia era la unica de las tres pieles cuya llamada
+ * a la accion principal no reaccionaba al raton: `background`, `color`,
+ * `transform` y `text-decoration` identicos antes y despues, medido — el unico
+ * cambio era el `cursor: pointer` del navegador. En una escena que existe para
+ * que te escriban, eso pesa mas que en las otras cuatro.
+ *
+ * El gesto NO es decoracion: pinta EXACTAMENTE la caja accionable que el
+ * relleno con margen negativo ya crea y que hasta ahora no pintaba nada — la
+ * misma caja que hubo que recalibrar a 390 px cuando invadia a la vecina. Rozar
+ * responde a «¿donde tengo que pulsar?», que es la pregunta real aqui.
+ *
+ * `currentColor` y no un token nuevo: el color del texto de la escena ya sigue
+ * al reloj del visitante, asi que la capa de estado camina con el matiz de las
+ * 24 h sin declarar nada. Es la capa de estado de Material 3, con su valor.
+ *
+ * `:focus-visible` entra en la MISMA regla, no en una aparte: el teclado tiene
+ * que llegar a lo mismo que el raton, y separarlas es como se desincronizan.
+ * El anillo de foco del tema sigue encima, no lo sustituye esto.
+ */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar:hover,
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar:focus-visible {
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* El rotulo sale de su atenuacion al rozar: el canal entero se enciende, no
+   solo su caja. Un unico gesto en dos capas, no dos efectos sueltos. */
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar:hover .contacto-bar-label,
+:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar:focus-visible .contacto-bar-label {
+  opacity: 1;
 }
 
 /*
