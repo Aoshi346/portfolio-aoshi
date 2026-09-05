@@ -1,9 +1,9 @@
 # Spec de Caelestia — Fundido: la contraportada del escritorio
 
-Estado: disenado, sin implementar
+Estado: hecho — gate de `vera-art-director` en BLOCK (6,59/10 contra 7,5), sin aceptar; ver `## Gates de critica`
 Fecha: 2026-09-04
 Agenda de maquetado: `docs/superpowers/plans/2026-09-04-caelestia-fundido-maquetado.md`
-Plan de implementacion: pendiente — `docs/superpowers/plans/2026-09-04-caelestia-fundido.md`
+Plan de implementacion: `docs/superpowers/plans/2026-09-04-caelestia-fundido.md`
 Alcance: la **fase B5**, ultima de las seis del rediseno de Caelestia y la que lo cierra. La escena
 `#contacto` dentro del workspace 5. Toca el bloque `:root[data-theme="caelestia"]` de
 `src/themes/themes.css`, anade un modulo de coreografia propio para la escena y **no toca
@@ -81,6 +81,13 @@ Hallazgo derivado: **el token declarado y el que se usa de verdad no son el mism
 `--cae-display-axes` dice `wght 900`, pero B1 y B2 escriben `"opsz" 9, "wght" 700, "SOFT" 0,
 "WONK" 1` a mano en tres reglas (`themes.css` 3949, 3991, 4104). Nadie usa el token.
 
+**La causa raiz de los 14 de 16, encontrada al implementar: `:root[data-theme="caelestia"]` nunca
+declaraba `--t-1` … `--t-10`.** Los diez pasos existen en el repo, pero solo bajo Vice e Hyprland —
+Caelestia hereda el bloque `:root` general, que no los define, asi que cualquier regla de esta piel
+que pidiera un paso de la escala pedia una variable que no existia. Declararlos es el arreglo (Task
+4): las cuatro escenas anteriores a B5 quedan pixel-identicas, porque ningun literal cambia — la
+diferencia es que ahora los ocho pasos existen para que la quinta escena pueda usarlos de verdad.
+
 ### Lo que ya funciona y no se toca
 
 - **Los cuatro canales son enlaces reales y accionables**: `mailto:`, `tel:` con el numero limpio de
@@ -144,7 +151,7 @@ disposiciones de informacion, no composiciones: sin cursiva, sin figura, sin sol
 │                                                              │
 │   Cuéntame                                    ╭─────────╮    │  frase --t-10 (159,66)
 │   tu idea.                                    │ troquel │    │  italic, SOFT 100
-│                                               ╰─────────╯    │  460 px, sangra al canto
+│                                               ╰─────────╯    │  460 px, sangra 10px al canto
 │ ──────────────────────────────────────────────────────────── │
 │ ESCRÍBEME              LLÁMAME        LINKEDIN ·  GITHUB     │  el pie de imprenta
 │ a.blanco1501@…         +58 424 …      Aoshi B.S.  Aoshi346   │
@@ -387,7 +394,7 @@ se deja implicito, el que venga detras asume la exencion**, que es lo que ha pas
 
 | | escritorio | 390 |
 |---|---|---|
-| titular | `--t-10` · 159,66 | `--t-8` · 89,85 |
+| titular | `--t-10` · 159,66 | `--t-7` · 67,4 |
 | valor del acto | `--t-4` · 28,43 | `--t-3` · 21,33 |
 | valor del destino | `--t-2` · 16 | `--t-2` · 16 |
 | los cuatro canales | 2 actos + 2 destinos al canto | 2 actos en fila entera + 2 destinos a mitades |
@@ -395,8 +402,11 @@ se deja implicito, el que venga detras asume la exencion**, que es lo que ha pas
 | figura del troquel | galleta · 12 lobulos | **sol · 8 lobulos** |
 | profundidad del lobulo | 24,9 px | 20,6 px |
 
-**`--t-8` es el paso mas grande que cabe**, no un tamano elegido a ojo: `--t-9` deja «Cuentame» en
-398 px sobre una medida util de 322 y se sale; `--t-8` la deja en 299.
+**`--t-7` es el paso mas grande que cabe**, no un tamano elegido a ojo: `--t-9` deja «Cuentame» en
+398 px sobre una medida util de 322 y se sale. **La maqueta M8 midio `--t-8` en 299 px y daba por
+bueno ese paso — estaba equivocada**: el mismo texto contra el build real da 330 px, 32 px por
+encima de los 322 utiles. La discrepancia era la maqueta, no el build; el paso que de verdad cabe,
+medido con `Range` contra el build de produccion, es `--t-7` (67,4 px).
 
 **El troquel deja de sangrar.** Sangrar 208 px en una ventana de 362 se come mas de la mitad y lo
 que queda no deja completar la figura: se lee como una mancha, no como una forma recortada.
@@ -551,3 +561,191 @@ B5 cierra el **diseno** de las seis fases, no el tema:
   aprobado antes de cerrar la fase.
 - **La deuda de escala tipografica** queda documentada aqui con numero por primera vez (16 tamanos,
   2 en la escala). B5 arregla su escena; **el resto del tema sigue con diez literales sueltos.**
+
+---
+
+## Gates de critica
+
+**`lidia-naive-tester`: verde.** 7,1/10, «contactaria, con matices», cero P0 nuevo dentro de lo que
+construye B5. En cuanto entra al workspace 5 la escena cumple lo que promete: «Hablemos» y «Cuentame
+tu idea.» dejan claro que es la seccion para escribir, los cuatro canales estan a la vista con el
+dato completo (no solo un icono), y nada en el hover de los canales huele a anuncio. Verifico ademas
+lo tecnico, no solo lo visual: los cuatro `href` bien formados, `aria-label` correcto en el dock
+movil, cero errores de consola, `prefers-reduced-motion` respetado, y sin overflow de pagina en
+movil (844 = 844).
+
+Dos hallazgos, ninguno bloqueante para B5:
+- **P0 reconfirmado, pero fuera de alcance de esta fase.** La pastilla del carril superior sigue
+  llamandose «Fundido», no «Contacto» — lo viene senalando desde v4, cruzando los tres temas. Es
+  contenido de `content.ts` y de la barra de la fase A (cerrada), no algo que B5 escriba o pueda
+  arreglar sin tocar esa fase.
+- **P1, nuevo.** El sello con el dino de Chrome «sin conexion» puede leerse en el primer instante
+  como un fallo de carga en vez de un gesto decorativo — no hay ninguna pista textual que lo
+  desambigue. Coincide con el riesgo de marca que el spec ya adjunta al sprite (`## El troquel`),
+  visto ahora desde el lado de quien no sabe que es un chiste de navegador.
+- **P2, nuevo.** Los iconos del dock de contacto en movil miden 38×38 px, por debajo del suelo
+  comodo de toque (~44 px) — no es el area accionable de los cuatro canales (esa mide bien, gate 11),
+  es el dock de acceso rapido del escritorio.
+
+**`vera-art-director`: BLOCK, 6,59/10 contra el gate de 7,5 — sin aceptar, pendiente de decision.**
+Corrio en vivo el arnes de los doce gates (12/12 en verde) y anadio su propia sesion de Playwright
+—dia/noche por zona horaria real, hover en los cuatro canales, foco por teclado, reduced-motion,
+reentrada desde Creditos, 390×844— para cazar lo que un arnes de aserciones puntuales no ve. Confirma
+con medida propia lo que el spec afirma: la jerarquia del cierre queda exactamente arreglada
+(159,66 > 28,43 > 16, con el eje `--cae-display-axes-cierre`, no el del cartel ni el del shell),
+contraste AA solido en los dos esquemas (peor caso 5,64:1, con las mismas dos exclusiones que el
+spec documenta: el ojo de dia y las nubes), `--fundido-dim` calibrado y comentado contra su
+superficie, y el foco de teclado real y visible.
+
+El score no llega al gate por tres hallazgos, dos de ellos fuera del alcance de los doce gates
+existentes:
+
+- **F-3 (P0 por recurrencia).** Dentro de la propia escena conviven tres tamanos de letra casi
+  identicos sin token compartido: `.cae-fundido-corn` 10 px, `.contacto-estado` 9,5 px,
+  `.contacto-bar-label` 9 px. Es la **sexta aparicion cross-proyecto** del hallazgo «no hay escala
+  tipografica» — la misma familia de deuda que `## Caelestia no tiene una escala tipografica`
+  documenta para el resto del tema, reapareciendo *dentro* de la escena que se supone la arregla.
+  Contradice la propia narrativa de este spec: B5 corrige los diez pasos que faltaban bajo Caelestia
+  (correccion 3, arriba) pero introduce tres literales sueltos nuevos en el mismo bloque.
+- **F-1 (P1).** Cero feedback de hover en los cuatro canales: `background`, `color`, `transform` y
+  `text-decoration` identicos antes y despues de posar el raton, medido con `getComputedStyle` — el
+  unico cambio es el `cursor: pointer` por defecto del navegador. El mismo `.contacto-bar` compartido
+  **si tiene hover rico en Vice e Hyprland**; Caelestia es la unica de las tres pieles cuya CTA
+  primaria no reacciona al raton.
+- **F-2 (P1).** A 390 px, la caja del valor de LinkedIn (partido en tres lineas, deuda ya conocida,
+  punto 4 de este registro) se solapa verticalmente con la caja de GitHub —confirmado con
+  `getBoundingClientRect`, `y: 626.75–720.75` contra `y: 664.75–720.75`—, el mismo sintoma que el
+  spec ya uso para **descartar** la disposicion C («el enlace de LinkedIn parte en dos renglones»,
+  `## Los cuatro canales`), reapareciendo como caso de borde dentro de la disposicion B elegida. Los
+  gates 4 y 11 miden area minima y ausencia de sangrado, no colision entre canales vecinos, asi que
+  no lo cazan.
+- **F-4 (P2, smell test).** El dino de Chrome es un activo de marca de Google — riesgo ya aceptado
+  por Aoshi explicitamente y por escrito, dos veces, en `## El troquel`. Anotado, no bloqueante.
+
+**No se acepta este BLOCK dentro de esta tarea.** El pliego de Task 9 limita mi alcance a
+construccion, capturas y spec — no a tocar CSS de produccion. F-3 (el P0 por recurrencia) es una
+correccion barata y de un ambito ya poseido por B5 (unificar tres literales del propio bloque
+`[data-theme="caelestia"] [data-scene="contacto"]` a un solo token), pero decidir si se corrige
+ahora, se acepta como deuda igual que el resto del tema, o se trata distinto por ser la escena de
+cierre, es una decision de Aoshi — no mia. Queda registrado aqui, sin resolver, para que esa
+decision se tome con el veredicto completo delante.
+
+---
+
+## Registro de implementacion
+
+Los doce gates de `scripts/measure-caelestia-fundido.py` se vieron dar rojo contra el sabotaje que
+cada uno dice cazar (ver `## Los gates`), y despues verdes contra el build de produccion. `npm run
+lint` y `npm run build` limpios. `lidia-naive-tester` da verde (7,1/10); `vera-art-director` da
+**BLOCK** (6,59/10 contra 7,5), sin aceptar todavia — el detalle de los dos veredictos esta en
+`## Gates de critica`, justo arriba. Este registro cubre lo otro: tres correcciones al propio spec,
+tres piezas de deuda conocida, y seis trampas de medida nuevas — la mayoria encontradas de la misma
+forma que la fase A y B2: un numero que se negaba a moverse.
+
+### Lo que el spec decia mal
+
+1. **El titular de movil es `--t-7` (67,4 px), no `--t-8`.** La tabla de M8 (`## Movil`) llevaba
+   `--t-8` desde el maquetado, con la maqueta M8 dando «Cuentame» en 299 px sobre una medida util de
+   322 — pasaba de sobra. Contra el build real, el mismo texto en `--t-8` mide **330 px**, 32 px por
+   encima del hueco: se sale. La maqueta media contra su propia hoja de estilos, no contra la
+   tipografia real cargada en el sitio, y la diferencia entre las dos —treinta y un pixeles— no
+   aparecia en ningun sitio hasta pedirle a `Range` que midiera el texto de verdad. `--t-7` (67,4 px)
+   es el paso que de verdad cabe. Corregido en la tabla y en el parrafo que lo justifica.
+2. **El troquel de escritorio no sangraba**, aunque el spec decia «460 px, sangra al canto». La
+   causa estaba en el propio pliego: el troquel se ancla con `right: -0.625rem` contra
+   `.contacto-band`, y el canto de `.contacto-band` **no es el canto de la ventana** — coincide con
+   el borde interior del relleno de escena, 52 px hacia dentro. Con ese ancla, «sangrar 10 px» y
+   «pegarse al padding interior menos 10 px» son dos cosas distintas, y el troquel se quedaba corto
+   exactamente esos 52 px. Corregido a `right: -3.875rem` (52 + 10), con el recorte del eje X sobre
+   el propio `.cae-fundido-campo` para que la figura sangre los **10 px exactos** que el spec pedia,
+   sin generar una barra de scroll horizontal por el desbordamiento. El diagrama de `## Composicion`
+   queda anotado con el numero.
+3. **`:root[data-theme="caelestia"]` nunca declaraba `--t-1` … `--t-10`.** Era la causa raiz de lo
+   que `## Caelestia no tiene una escala tipografica` describe como «14 de 16 tamanos fuera de la
+   escala»: los diez pasos existen en el repo pero solo bajo Vice e Hyprland, y cualquier regla de
+   Caelestia que pidiera un paso pedia una variable sin definir. Declarados los diez bajo el `:root`
+   de Caelestia (Task 4); las cuatro escenas anteriores (Titulo, Quien soy, Obra, Creditos) quedan
+   pixel-identicas porque ningun literal cambio de valor — lo unico que cambio es que ahora la
+   variable que esos literales deberian haber usado desde el principio existe.
+
+### Deuda conocida, no defectos a perseguir
+
+4. **A 390 px el valor de LinkedIn («Aoshi Blanco Sanz») se parte en tres lineas.** El spec de
+   movil (`## Movil`) especifico el paso del titular, el tamano del sello y la profundidad del
+   lobulo, pero nunca el tratamiento del texto de un valor de destino largo contra una columna de
+   168 px. El area accionable (168 × 94, gate 11) sigue por encima del suelo de 48 × 48 y el dato se
+   sigue leyendo entero — es una fealdad tipografica, no un canal roto.
+5. **Si el visitante abandona `#contacto` antes de los 1900 ms del fundido y no vuelve, la
+   timeline se agota sola, en segundo plano.** Deliberado: el carril de la fase A no tiene un gancho
+   de salida de escena y anadir uno tocaria la coreografia de las cinco, que es territorio de otra
+   fase. `destroy()` si mata la timeline (llamado en `pagehide`), asi que el unico caso que queda
+   vivo es cambiar de workspace sin cerrar la pestana — no consume recursos indefinidamente, solo
+   corre sin publico.
+6. **Hallazgo de producto, de fase A, no de B5.** El primer aviso del escritorio
+   (`notificar(...)`, `src/components/caelestiaShell.ts:175`, disparado a los 900 ms de cargar
+   cualquier escena) tapa el valor de GitHub del colofon durante los segundos que tarda en
+   desvanecerse, y **sigue animandose bajo `prefers-reduced-motion`** — la guarda de la fase A no lo
+   cubre. Se dejo intacto: tocarlo es reabrir un modulo de una fase cerrada y fusionada, y la
+   decision de si el aviso debe respetar el movimiento reducido o dejar de tapar el colofon es de
+   Aoshi, no de esta tarea. Registrado aqui para que quien capture la escena sepa que **hay que
+   dejarlo morir antes de disparar el obturador**, o el aviso sale encima del colofon en la imagen.
+
+### Trampas de medida nuevas — la mayoria de la misma familia: un instrumento que no podia fallar
+
+7. **Cronometrar desde fuera de la pagina mide la latencia del puente, no la animacion.** Una
+   primera version del arnes llamaba a `page.evaluate()`/`page.click()` de Playwright y leia el
+   reloj del sistema operativo antes y despues; en este entorno ese viaje de ida y vuelta cuesta
+   100–300 ms, mas que el margen entre la entrada (440 ms) y el deslizamiento del carril (520 ms).
+   La medicion se contradecia consigo misma entre corridas — a veces 440 < 520, a veces no— y la
+   primera hipotesis fue culpar al refresco del navegador. No era el navegador: era el cronometro.
+   Se mide desde dentro de la pagina (`window.performance.now()` en el propio contexto) o leyendo la
+   timeline de GSAP (`timeline.time()`), que avanza por tiempo real transcurrido y no por cuantas
+   veces el puente de Playwright decidio hacer una ronda.
+8. **`elementFromPoint` no ve lo que lleva `pointer-events: none`.** La prueba de impacto de un
+   gate anterior atravesaba en silencio cualquier elemento con `pointer-events: none` y declaraba
+   libre un punto que en realidad estaba tapado — sin excepcion, sin aviso. Costo tres instrumentos
+   distintos, cada uno descartando una hipotesis equivocada, llegar hasta el aviso del punto 6: el
+   primero midio contraste, el segundo midio geometria del colofon, y solo el tercero, leyendo
+   `document.elementsFromPoint` (con «s», la lista completa en ese punto, no solo el primero) en vez
+   de confiar en que «libre» significa «libre», encontro al culpable real tapando el dato.
+9. **`getComputedStyle().color` no se mueve con `opacity`.** El primer borrador del gate de
+   contraste (M7) leia el color calculado del texto del colofon, que **siempre es el color opaco**
+   aunque el elemento se pinte atenuado por `opacity` — CSS no funde el canal alfa en el valor que
+   `getComputedStyle` devuelve. Con eso, el gate **no podia fallar nunca** por una `--fundido-dim`
+   mal calibrada: puesto el valor que el propio spec (`## Color y contraste`) documenta como
+   insuficiente (0,68, que mide 3,81:1 de verdad), el ratio calculado por el instrumento no se movia
+   ni un decimal. El arnes final compone el color pintado multiplicando por la opacidad efectiva del
+   nodo (la propia mas la heredada) antes de calcular el contraste. Van **once** instrumentos rotos
+   documentados en este tema entre la fase A, B2 y B5 — la cuenta que ya llevaba la fase A sigue
+   subiendo, y la familia es siempre la misma: un instrumento que lee una propiedad que no es la que
+   pinta.
+10. **Una comparacion de quietud se contamina con lo que anima fuera de tu alcance.** El gate de
+    `prefers-reduced-motion` compara dos capturas separadas por un intervalo y exige diferencia
+    cero; con el aviso del punto 6 en pantalla (sigue animandose bajo movimiento reducido, por ser
+    de otra fase), la comparacion daba **falso** de forma repetible, y durante un rato el sospechoso
+    fue la propia guarda de B5. Solo tras dejar morir el aviso de la fase A antes de tomar las dos
+    capturas el gate empezo a medir lo que dice medir. Sin identificar al culpable correcto, esta
+    tarea se habria cerrado arreglando un `fromTo` que ya estaba bien, y persiguiendo un rojo que no
+    era suyo.
+11. **Un sabotaje que no enrojece prueba que la aserción no mide el mecanismo, no que el codigo
+    este bien.** De los cuatro sabotajes de la tabla en `## Los gates`, dos de los escritos en el
+    plan de maquetado no producian rojo por construccion la primera vez que se ejecutaron:
+    investigar por que llevo a cambiar tanto el sabotaje como el instrumento en los dos casos. El
+    mas instructivo fue el de «sin scroll interno» (gate 4): el sabotaje original agrandaba el
+    troquel con `width`/`height`, que el layout absorbe sin generar overflow, y el gate seguia en
+    verde. El sabotaje real tiene que mover algo con `transform` — que no reserva espacio en el
+    flujo y por tanto no deberia contar como scroll — y el hallazgo fue que `scrollHeight` **si**
+    cuenta ese desbordamiento aunque nada se pueda desplazar de verdad con la rueda o el dedo: el
+    numero sube, la pagina no se mueve. El gate final compara `scrollHeight` **y** comprueba que un
+    `scrollTo` real no cambia `scrollTop`, para no confundir «el numero crecio» con «hay algo que
+    desplazar».
+12. **El propio entorno de la sandbox dispara frames a 200–400 ms, no a los ~16 ms de un frame
+    real** (medido con `--use-gl=swiftshader`, el mismo flag que fuerza el arnes). Un cronometro
+    basado en cuantos frames pasaron antes de ver un cambio mide el atasco de la maquina, no la
+    coreografia — es la misma familia que el punto 7, un nivel mas abajo. La salida: GSAP renderiza
+    el valor de arranque de cada tween de una timeline **de forma sincrona** en cuanto se crea y se
+    reproduce, sin esperar a ningun frame, asi que el gate 8 (el fundido suena una vez) lee el
+    estilo computado en la misma vuelta de `evaluate()` que dispara el clic — sin ningun `wait` — y
+    distingue los tres estados posibles por su valor exacto: `reproducir()` arranca en `scale(0)`,
+    `entrar()` en `scale(0.965)`, y «nada disparado» deja el troquel en su valor aterrizado
+    (`scale(1)`). Tres lecturas sincronas en vez de una carrera contra el reloj de la sandbox.
