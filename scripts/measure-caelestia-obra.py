@@ -576,6 +576,96 @@ def check_foco_visible(page) -> None:
         assert_true(estilo_outline != "none", f"Foco visible: outlineStyle del enlace es 'none' (sin anillo de foco)")
 
 
+def check_cajon_llena(page) -> None:
+    """Decision de Aoshi, repaso de interfaces 2026-09-05. Antes el cajon
+    media 249px de alto (326-575) dentro de un workspace #obra de 596, con
+    89px vacios debajo, y sus columnas flotaban centradas con ~60px de aire
+    arriba y abajo. Ahora el cajon llena el resto de la ventana y sus
+    columnas cuelgan desde arriba. `#obra` ES `[data-obra-rail]`
+    (`obraRail.id = "obra"` en `src/main.ts`)."""
+    # Card 0 (EchoPlan, privado) esta abierta por defecto al llegar a Obra.
+    datos = page.evaluate(
+        """
+        () => {
+          const ws = document.querySelector('#obra');
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const title = document.querySelector('.cae-obra-drawer-title');
+          const preview = document.querySelector('.cae-obra-drawer-preview');
+          const thumb = preview ? preview.querySelector('.cae-obra-thumb') : null;
+          const meta = document.querySelector('.cae-obra-drawer-meta');
+          const prose = document.querySelector('.cae-obra-prose');
+          const privado = document.querySelector('.cae-obra-foot-private');
+          const wr = ws.getBoundingClientRect();
+          const dr = drawer.getBoundingClientRect();
+          const cs = getComputedStyle(drawer);
+          const csPrivado = privado ? getComputedStyle(privado) : null;
+          return {
+            wsBottom: wr.bottom,
+            drawerBottom: dr.bottom,
+            tops: {
+              title: title.getBoundingClientRect().top,
+              preview: preview.getBoundingClientRect().top,
+              meta: meta.getBoundingClientRect().top,
+              prose: prose.getBoundingClientRect().top,
+            },
+            capturaAncho: thumb ? thumb.getBoundingClientRect().width : 0,
+            borderTopWidth: cs.borderTopWidth,
+            borderRadius: cs.borderRadius,
+            privado: csPrivado ? {
+              textTransform: csPrivado.textTransform,
+              letterSpacing: csPrivado.letterSpacing,
+              fontFamily: csPrivado.fontFamily,
+            } : null,
+          };
+        }
+        """
+    )
+
+    holgura = datos["wsBottom"] - datos["drawerBottom"]
+    assert_true(
+        0 <= holgura <= 16,
+        f"Cajon llena: drawer.bottom {datos['drawerBottom']:.0f} vs ws.bottom {datos['wsBottom']:.0f} (holgura {holgura:.0f}px, esperado 0-16)",
+    )
+
+    tops = datos["tops"]
+    base_top = tops["title"]
+    for nombre, valor in tops.items():
+        assert_true(
+            abs(valor - base_top) < 4,
+            f"Cajon llena: top de '{nombre}' ({valor:.1f}) difiere >4px del de 'title' ({base_top:.1f}) — las columnas no cuelgan desde arriba",
+        )
+
+    assert_true(
+        datos["capturaAncho"] >= 280,
+        f"Cajon llena: la captura mide {datos['capturaAncho']:.0f}px de ancho, se esperaban al menos 280",
+    )
+
+    assert_true(
+        datos["borderTopWidth"] == "0px",
+        f"Cajon llena: el cajon aun lleva filete (borderTopWidth={datos['borderTopWidth']})",
+    )
+    assert_true(
+        datos["borderRadius"] == "16px",
+        f"Cajon llena: borderRadius del cajon es {datos['borderRadius']!r}, se esperaba '16px'",
+    )
+
+    privado = datos["privado"]
+    assert_true(privado is not None, "Cajon llena: no se encontro .cae-obra-foot-private (deberia verse con EchoPlan abierto)")
+    if privado is not None:
+        assert_true(
+            privado["textTransform"] == "none",
+            f"Cajon llena: textTransform de la nota privada es {privado['textTransform']!r}, se esperaba 'none'",
+        )
+        assert_true(
+            privado["letterSpacing"] == "normal",
+            f"Cajon llena: letterSpacing de la nota privada es {privado['letterSpacing']!r}, se esperaba 'normal'",
+        )
+        assert_true(
+            "Martian" not in privado["fontFamily"],
+            f"Cajon llena: fontFamily de la nota privada sigue en Martian Mono ({privado['fontFamily']!r})",
+        )
+
+
 def check_vice_hyprland_intactos(browser, base: str) -> None:
     """4h. El unico invariante que establece la CSS de la Task 1: el carril
     clasico (`[data-obra-track]`) sigue visible en Vice/Hyprland y solo se
@@ -621,6 +711,11 @@ def main() -> int:
         check_stack_marcas(page)
         check_contraste(page)
         check_foco_visible(page)
+        # check_cajon_llena necesita la nota "privado", que solo pinta
+        # EchoPlan (tarjeta 0) — check_foco_visible dejo abierta TesisFar.
+        page.evaluate("document.querySelectorAll('.cae-obra-card')[0].click()")
+        page.wait_for_timeout(400)
+        check_cajon_llena(page)
         page.close()
 
         check_movimiento_reducido(browser, args.base)

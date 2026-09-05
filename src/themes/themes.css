@@ -3674,7 +3674,11 @@
 
 :root[data-theme="caelestia"] .obra-rail {
   overflow: visible;
-  height: auto;
+  /* height: auto quitado: .obra-rail ES el panel (main[data-cae-track] > *),
+     que trae height: 100% de la fase A. Con auto el panel se encogia al
+     contenido y el flex column de abajo no tenia donde crecer. */
+  display: flex;
+  flex-direction: column;
 }
 
 :root[data-theme="caelestia"] .cae-obra-row {
@@ -3682,6 +3686,7 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 18px;
   padding: 15px 0;
+  flex: 0 0 auto;
 }
 
 :root[data-theme="caelestia"] .cae-obra-card {
@@ -3775,15 +3780,24 @@
   opacity: 0;
 }
 
+/*
+ * Decision de Aoshi, repaso de interfaces 2026-09-05. Antes: el cajon
+ * media 249px de alto (326-575) dentro de un workspace de 596, con 89px
+ * vacios debajo; las columnas flotaban centradas con ~60px de aire arriba
+ * y abajo. Ahora el cajon llena el resto de la ventana y sus columnas
+ * cuelgan desde arriba, en vez de flotar en el centro.
+ */
 :root[data-theme="caelestia"] .cae-obra-drawer {
   margin-top: 14px;
+  margin-bottom: 14px;
   padding: 20px 24px;
-  border-radius: 18px;
-  border: 1px solid var(--cae-outline);
+  border-radius: 16px;
   background: var(--cae-surface-container);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 26px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-title {
@@ -3808,13 +3822,13 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-lead {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--cae-on-surface-variant);
   line-height: 1.4;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-preview {
-  flex: 0 0 200px;
+  flex: 0 0 300px;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-meta {
@@ -3891,7 +3905,7 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-prose p {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--cae-on-surface);
   margin: 0;
@@ -3930,10 +3944,15 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-foot-private {
+  /* Decision de Aoshi, repaso de interfaces 2026-09-05: la nota pasa a la
+     voz de los valores (los `dd` de metadatos, Hanken Grotesk heredada del
+     cuerpo), no la de las etiquetas Martian Mono del pie — que aqui hay que
+     sobreescribir explicitamente. */
+  font-family: var(--font-body, "Hanken Grotesk", sans-serif);
   color: var(--cae-on-surface-variant);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
   display: inline-flex;
   align-items: center;
   gap: 8px;
