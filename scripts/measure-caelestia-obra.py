@@ -8,7 +8,9 @@ Uso:
     python3 scripts/measure-caelestia-obra.py --base http://localhost:4173
 """
 import argparse
+import re
 import sys
+import time
 
 from playwright.sync_api import sync_playwright
 
@@ -844,6 +846,220 @@ def check_cajon_llena(page, etiqueta_viewport: str) -> None:
             assert_true(privado is None, f"Cajon llena ({titulo}, {etiqueta_comp}): se encontro .cae-obra-foot-private en un proyecto NO privado")
 
 
+def _leer_relevo(page) -> dict:
+    """Lee el estado pintado de las piezas que releva `abrir()`, mas el
+    cajon en si (para el gate 4, que comprueba que ese no se mueve)."""
+    return page.evaluate(
+        """
+        () => {
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const kick = document.querySelector('.cae-obra-drawer-kick');
+          const h3 = document.querySelector('[data-cae-obra-h3]');
+          const preview = document.querySelector('.cae-obra-drawer-preview');
+          const prosa = document.querySelector('.cae-obra-prose > div');
+          const dcs = getComputedStyle(drawer);
+          return {
+            drawerOpacity: parseFloat(dcs.opacity),
+            drawerTransform: dcs.transform,
+            kickOpacity: parseFloat(getComputedStyle(kick).opacity),
+            h3Clip: getComputedStyle(h3).clipPath,
+            h3WghtInline: h3.style.fontVariationSettings,
+            h3WghtComputado: getComputedStyle(h3).fontVariationSettings,
+            previewOpacity: parseFloat(getComputedStyle(preview).opacity),
+            prosaOpacity: parseFloat(getComputedStyle(prosa).opacity),
+          };
+        }
+        """
+    )
+
+
+def check_relevo(page, browser, base: str) -> None:
+    """Repaso de interfaces 2026-09-05, segunda parte: el relieve del cajon
+    (fondo distinto de la ventana, sombra ambiental por esquema) y el
+    relevo por capas al cambiar de tarjeta seleccionada (kick, titulo con
+    clip-path + ablande de peso 800->640, captura, prosa) -- el cajon EN SI
+    no se anima, es la hoja.
+
+    El primer fotograma se lee en la MISMA evaluate que dispara el click:
+    GSAP renderiza el estado inicial de un fromTo de forma sincrona al
+    crearse, y el reloj de esta sandbox (rAF/setTimeout a 200-400ms) miente
+    si se usa para cazar un fotograma concreto. El aterrizaje, en cambio,
+    se ancla a ESTADO con un tope de reloj de pared (15s), nunca a un
+    numero fijo de milisegundos."""
+    # 1. Relieve: el cajon pinta un fondo distinto de la ventana y lleva
+    # sombra (sin filete, sin brillo interior -- eso no se comprueba aqui
+    # porque no se declaro ninguno, y una asercion sobre su ausencia seria
+    # tautologica).
+    relieve = page.evaluate(
+        """
+        () => {
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const ventana = document.querySelector('[data-obra-rail]').closest('[data-cae-track] > *')
+            || document.querySelector('[data-obra-rail]').parentElement;
+          return {
+            drawerBg: getComputedStyle(drawer).backgroundColor,
+            ventanaBg: getComputedStyle(ventana).backgroundColor,
+            shadow: getComputedStyle(drawer).boxShadow,
+          };
+        }
+        """
+    )
+    assert_true(
+        relieve["drawerBg"] != relieve["ventanaBg"],
+        f"Relieve: el cajon pinta el mismo fondo que la ventana ({relieve['drawerBg']})",
+    )
+    assert_true(relieve["shadow"] != "none", "Relieve: el cajon no tiene sombra (boxShadow: none)")
+
+    # Las marcas del stack no comparten fondo con la hoja del cajon. No hay
+    # token --cae-surface-container-highest (no se crea): en vez de subir
+    # la marca, se hunde a --cae-elev-1 (el tono de la ventana). EchoPlan
+    # (tarjeta 0) tiene iconos de stack (Python, Django, TS, React, ...).
+    page.evaluate('document.querySelector(\'[data-obra-card="0"]\').click()')
+    page.wait_for_timeout(600)
+    marcas = page.evaluate(
+        """
+        () => {
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const marca = drawer.querySelector('.obra-marca');
+          return {
+            drawerBg: getComputedStyle(drawer).backgroundColor,
+            marcaBg: marca ? getComputedStyle(marca).backgroundColor : null,
+          };
+        }
+        """
+    )
+    assert_true(
+        marcas["marcaBg"] is not None,
+        "Relieve: no se encontro .obra-marca en el cajon (EchoPlan deberia tener iconos de stack)",
+    )
+    if marcas["marcaBg"] is not None:
+        assert_true(
+            marcas["marcaBg"] != marcas["drawerBg"],
+            f"Relieve: la marca del stack pinta el mismo fondo que la hoja del cajon ({marcas['marcaBg']})",
+        )
+
+    # Deja una tarjeta distinta de la 2 seleccionada para que el click de
+    # abajo dispare un cambio de seleccion de verdad (si el arnes hereda la
+    # 2 ya seleccionada de un check anterior, el click de abrir() no hace
+    # nada -- index === seleccionado).
+    page.evaluate('document.querySelector(\'[data-obra-card="0"]\').click()')
+    page.wait_for_timeout(600)
+
+    # 2. Relevo, primer fotograma: click y lectura en la MISMA evaluate.
+    primer = page.evaluate(
+        """
+        () => {
+          document.querySelector('[data-obra-card="2"]').click();
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const kick = document.querySelector('.cae-obra-drawer-kick');
+          const h3 = document.querySelector('[data-cae-obra-h3]');
+          const preview = document.querySelector('.cae-obra-drawer-preview');
+          const prosa = document.querySelector('.cae-obra-prose > div');
+          const dcs = getComputedStyle(drawer);
+          return {
+            drawerOpacity: parseFloat(dcs.opacity),
+            drawerTransform: dcs.transform,
+            kickOpacity: parseFloat(getComputedStyle(kick).opacity),
+            h3Clip: getComputedStyle(h3).clipPath,
+            h3WghtInline: h3.style.fontVariationSettings,
+            previewOpacity: parseFloat(getComputedStyle(preview).opacity),
+            prosaOpacity: parseFloat(getComputedStyle(prosa).opacity),
+          };
+        }
+        """
+    )
+    assert_true(primer["kickOpacity"] < 1, f"Relevo primer fotograma: kick opacity {primer['kickOpacity']} (se esperaba < 1)")
+    assert_true("100%" in primer["h3Clip"], f"Relevo primer fotograma: h3 clipPath {primer['h3Clip']!r} (se esperaba con 100%)")
+    coincide = re.search(r'"wght"\s*([\d.]+)', primer["h3WghtInline"] or "")
+    peso = float(coincide.group(1)) if coincide else None
+    assert_true(peso is not None and peso > 640, f"Relevo primer fotograma: h3 wght inline {primer['h3WghtInline']!r} (se esperaba > 640)")
+    assert_true(primer["previewOpacity"] < 1, f"Relevo primer fotograma: captura opacity {primer['previewOpacity']} (se esperaba < 1)")
+    assert_true(primer["prosaOpacity"] < 1, f"Relevo primer fotograma: prosa opacity {primer['prosaOpacity']} (se esperaba < 1)")
+
+    # 4 (parte 1 -- en el mismo instante del click de arriba): el cajon no
+    # se mueve durante el relevo.
+    assert_true(
+        abs(primer["drawerOpacity"] - 1) < 0.01,
+        f"Cajon quieto (en el click): opacity {primer['drawerOpacity']} (se esperaba 1)",
+    )
+    assert_true(
+        primer["drawerTransform"] in ("none", "matrix(1, 0, 0, 1, 0, 0)"),
+        f"Cajon quieto (en el click): transform {primer['drawerTransform']!r} (se esperaba identidad)",
+    )
+
+    # 3. Aterriza: bucle anclado a ESTADO, tope de reloj de pared 15s. Si no
+    # llega, el gate FALLA (no se inventa otra cosa que medir).
+    limite = time.time() + 15
+    estado = None
+    while time.time() < limite:
+        estado = _leer_relevo(page)
+        listo = (
+            estado["kickOpacity"] >= 0.99
+            and "100%" not in estado["h3Clip"]
+            and estado["h3WghtInline"] == ""
+            and estado["previewOpacity"] >= 0.99
+            and estado["prosaOpacity"] >= 0.99
+        )
+        if listo:
+            break
+        page.wait_for_timeout(200)
+
+    assert_true(estado is not None, "Relevo aterriza: no se pudo leer el estado")
+    if estado is not None:
+        assert_true(estado["kickOpacity"] >= 0.99, f"Relevo aterriza: kick opacity {estado['kickOpacity']} (se esperaba >= 0.99)")
+        assert_true("100%" not in estado["h3Clip"], f"Relevo aterriza: h3 clipPath sigue en {estado['h3Clip']!r}")
+        assert_true(estado["h3WghtInline"] == "", f"Relevo aterriza: h3 sigue con wght inline {estado['h3WghtInline']!r} (deberia mandar el CSS)")
+        assert_true("640" in (estado["h3WghtComputado"] or ""), f"Relevo aterriza: h3 wght computado {estado['h3WghtComputado']!r} (se esperaba 640)")
+        assert_true(estado["previewOpacity"] >= 0.99, f"Relevo aterriza: captura opacity {estado['previewOpacity']} (se esperaba >= 0.99)")
+        assert_true(estado["prosaOpacity"] >= 0.99, f"Relevo aterriza: prosa opacity {estado['prosaOpacity']} (se esperaba >= 0.99)")
+
+        # 4 (parte 2 -- tras aterrizar): el cajon sigue quieto.
+        assert_true(abs(estado["drawerOpacity"] - 1) < 0.01, f"Cajon quieto (aterrizado): opacity {estado['drawerOpacity']} (se esperaba 1)")
+        assert_true(
+            estado["drawerTransform"] in ("none", "matrix(1, 0, 0, 1, 0, 0)"),
+            f"Cajon quieto (aterrizado): transform {estado['drawerTransform']!r} (se esperaba identidad)",
+        )
+
+    # 6. Sin scroll interno tras el relevo: reutiliza el mismo criterio
+    # geometrico que `medir_cabe` (contenido vs ventana), no
+    # `scrollHeight === clientHeight` -- la trampa que documenta B5 con un
+    # `transform: scale()` desbordando dentro de `overflow: clip`.
+    medir_cabe(page)
+
+    # 5. Movimiento reducido: cambio instantaneo, sin timeline -- leido en
+    # la MISMA evaluate que el click, igual que el resto del gate.
+    contexto = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+    page_reducido = contexto.new_page()
+    page_reducido.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+    page_reducido.wait_for_timeout(2000)
+    page_reducido.click('[data-cae-ws="obra"]')
+    page_reducido.wait_for_timeout(300)
+    reducido = page_reducido.evaluate(
+        """
+        () => {
+          document.querySelector('[data-obra-card="3"]').click();
+          const kick = document.querySelector('.cae-obra-drawer-kick');
+          const h3 = document.querySelector('[data-cae-obra-h3]');
+          const preview = document.querySelector('.cae-obra-drawer-preview');
+          const prosa = document.querySelector('.cae-obra-prose > div');
+          return {
+            kickOpacity: parseFloat(getComputedStyle(kick).opacity),
+            h3Clip: getComputedStyle(h3).clipPath,
+            h3WghtInline: h3.style.fontVariationSettings,
+            previewOpacity: parseFloat(getComputedStyle(preview).opacity),
+            prosaOpacity: parseFloat(getComputedStyle(prosa).opacity),
+          };
+        }
+        """
+    )
+    assert_true(reducido["kickOpacity"] >= 0.99, f"Relevo reducido: kick opacity {reducido['kickOpacity']} (deberia nacer en 1)")
+    assert_true("100%" not in reducido["h3Clip"], f"Relevo reducido: h3 clipPath {reducido['h3Clip']!r} (no deberia recortar)")
+    assert_true(reducido["h3WghtInline"] == "", f"Relevo reducido: h3 con wght inline {reducido['h3WghtInline']!r} (no deberia animar el peso)")
+    assert_true(reducido["previewOpacity"] >= 0.99, f"Relevo reducido: captura opacity {reducido['previewOpacity']} (deberia nacer en 1)")
+    assert_true(reducido["prosaOpacity"] >= 0.99, f"Relevo reducido: prosa opacity {reducido['prosaOpacity']} (deberia nacer en 1)")
+    contexto.close()
+
+
 def check_vice_hyprland_intactos(browser, base: str) -> None:
     """4h. El unico invariante que establece la CSS de la Task 1: el carril
     clasico (`[data-obra-track]`) sigue visible en Vice/Hyprland y solo se
@@ -896,6 +1112,7 @@ def main() -> int:
         # vez de 748) — el fallo que origino esta vuelta solo se ve en el
         # segundo.
         check_cajon_llena(page, "1440x900")
+        check_relevo(page, browser, args.base)
         page.close()
 
         viewport_portatil = {"width": 1366, "height": 768}

@@ -3834,7 +3834,17 @@
   margin-bottom: 14px;
   padding: 20px 24px;
   border-radius: 16px;
-  background: var(--cae-surface-container);
+  /* Repaso de interfaces 2026-09-05, el relieve: antes era
+     --cae-surface-container, que es EXACTAMENTE --cae-elev-1, el mismo
+     tono que la ventana (.scene-surface usa --cae-elev-1) -- el cajon no
+     se leia como una pieza sobre el panel, era del mismo color que el.
+     Pasa al escalon que ya usan la barra y el dock. */
+  background: var(--cae-elev-2);
+  /* Sombra ambiental, sin filete ni brillo interior. Este valor (dia) se
+     calibro contra --cae-surface-container-high CLARO; el esquema de
+     noche tiene su propia regla mas abajo, calibrada contra el oscuro --
+     no se reutiliza el mismo numero entre esquemas. */
+  box-shadow: 0 14px 34px -16px rgb(0 0 0 / 0.22);
   display: grid;
   grid-template-areas:
     "texto captura meta"
@@ -3854,6 +3864,13 @@
      `height: 100%`), asi que la contencion no lo cambia — solo lo
      expone como eje de consulta. */
   container-type: size;
+}
+
+/* Sombra de noche: calibrada contra --cae-surface-container-high OSCURO,
+   no el mismo numero que el dia (una sombra no se recicla entre esquemas,
+   igual que la opacidad del derrame del cursor). */
+:root[data-theme="caelestia"][data-cae-esquema="noche"] .cae-obra-drawer {
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.55);
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-title {
@@ -3975,6 +3992,17 @@
   border-radius: 7px;
   background: var(--cae-surface-container-high);
   color: var(--cae-on-surface-variant);
+}
+
+/* Decision de Aoshi, repaso de interfaces 2026-09-05: la hoja del cajon es
+   --cae-elev-2 y las marcas del stack tambien pintaban --cae-elev-2 -- se
+   fundian. No hay token --cae-surface-container-highest (no se crea): en
+   vez de subir la marca, se hunde un escalon a --cae-elev-1 (el tono de la
+   ventana), que Material 3 permite dentro de un contenedor mas alto -- se
+   lee como un recorte en la hoja, no como una pieza flotando encima. */
+:root[data-theme="caelestia"] .cae-obra-drawer .obra-marca,
+:root[data-theme="caelestia"] .cae-obra-drawer .cae-obra-stack-text {
+  background: var(--cae-elev-1);
 }
 
 :root[data-theme="caelestia"] .cae-obra-prose {
