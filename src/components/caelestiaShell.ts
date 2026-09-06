@@ -159,6 +159,10 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
     if (!(evento instanceof CustomEvent)) return;
     const detalle: unknown = evento.detail;
     if (typeof detalle !== "object" || detalle === null || !("oscuro" in detalle)) return;
+    // Un vistazo (el arrastre del dino) fuerza la hora sin que el visitante
+    // haya vivido ningun cambio real: no abre el aviso, que diria "el
+    // escritorio ha cambiado" de algo que no cambio de verdad.
+    if ("vistazo" in detalle && Boolean((detalle as { vistazo: unknown }).vistazo)) return;
     const oscuro = Boolean((detalle as { oscuro: unknown }).oscuro);
     notificar(
       oscuro ? "El escritorio ha cambiado a modo noche" : "El escritorio ha vuelto a modo día",
