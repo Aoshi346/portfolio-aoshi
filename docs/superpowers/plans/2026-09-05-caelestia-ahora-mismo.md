@@ -811,17 +811,17 @@ python3 scripts/verify.py --url http://127.0.0.1:4183                          #
 ```
 Capturas 1440×900 de `?theme=caelestia` a las 13:00 y 23:00, y de `?theme=vice` y `?theme=hyprland` (no deben cambiar: `.cae-widget` sigue `display: none` fuera de Caelestia en `style.css`). Escuchar `pageerror` y `console` error en todas.
 
-- [ ] **Step 3: Gates de crítica**
+- [x] **Step 3: Gates de crítica**
 
 Lanzar `lidia-naive-tester` y `vera-art-director` sobre el hero de Caelestia (brief: solo la tarjeta y su entrada; prohibido editar producción). Registrar resultados en el spec (§ «Gates de crítica»). Un P0 se arregla antes de cerrar; los P1 se anotan.
 
-- [>] **Step 4: Cerrar el spec y la documentación** (parcial: solo el `## Registro de implementación` del spec, ejecutado por el worker de la Task 6; `Estado:` sigue `en ejecucion` y `.claude/rules/verification.md`/memoria quedan para el orquestador tras los gates de crítica del Step 3)
+- [x] **Step 4: Cerrar el spec y la documentación** (el registro lo escribió el worker de la Task 6; los gates de crítica, `Estado: implementado`, `verification.md` y la memoria, el orquestador el 2026-09-06)
 
 - Spec: `Estado: implementado`, más una sección `## Registro de implementación` con: lo que rompió cada gate en rojo, medidas finales (ancho del primero con `Range`, peor contraste del barrido, radios del brote), y las desviaciones respecto al spec si las hubo.
 - `.claude/rules/verification.md`, fila de `measure-caelestia-titulo.py`: añadir «la tarjeta “Ahora mismo”: orden y columnas fechadas, sin caja (surface-container-high, sin borde), primero a opsz 60 en una línea medida con `Range`, la luz respira solo con movimiento, la figura viva de 240 vértices cambia sola y queda quieta con reduce, la entrada brota de la luz (`circle()` de radio < 20 leído durante la entrada, sin `clip-path` inline al aterrizar) y el contraste de sus cinco pares en las 24 horas con la capa de estado puesta (hover real)».
 - Memoria: actualizar `caelestia-carga-paso-a-paso.md` (el widget ya no está pendiente).
 
-- [ ] **Step 5: Commit y cierre de rama**
+- [x] **Step 5: Commit y cierre de rama**
 
 ```bash
 git add scripts/measure-caelestia-titulo.py docs/superpowers/specs/2026-09-05-caelestia-ahora-mismo-design.md

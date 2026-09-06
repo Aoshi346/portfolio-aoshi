@@ -1,6 +1,6 @@
 # Caelestia — la tarjeta «Ahora mismo», rediseño
 
-Estado: en ejecucion
+Estado: implementado
 Fecha: 2026-09-05
 Rama de trabajo: `fix/repaso-interfaces` (se abrirá rama propia `design/caelestia-ahora-mismo` al planificar)
 Origen: sesión de repaso de interfaces con Aoshi. Reabre una pieza cerrada en
@@ -363,3 +363,46 @@ figura/tarjeta a las 21:30: 2.42:1 (piso 2,0)`.
 Al cerrar: `lidia-naive-tester` (¿se lee en dos segundos qué es y si está disponible?) y
 `vera-art-director` (jerarquía, rejilla 4/8, tokens). Como en B1, un BLOCK de Vera con P0 se
 arregla; los P1 se registran.
+
+### Resultado (2026-09-06, build `2400783` en el puerto 4193, viewport 1440x900)
+
+**`vera-art-director`: 6,6/10 contra el gate de 7,5, BLOCK aceptado como residual** (mismo
+patrón que Vice, el shell, B1 y B4). Sin P0 propio de la tarjeta. Positivos verificados por
+medida: anti-mock limpio, orden y columnas exactos al spec, brote `circle(0px)` a `circle(419.9px)`
+y sin `clip-path` al aterrizar, reduce-motion correcto, peor par 5,01:1 coincidente con el
+registro. Hallazgos:
+
+- **P1, la figura viva casi no se distinguía** (1,10:1 de día, 1,21:1 de noche contra la
+  tarjeta). **Arreglado antes de cerrar** (`2cb1b50`, ver «Hallazgo cerrado» arriba): 2,39:1 y
+  2,42:1, con gate `tarjeta_figura_visible` visto en rojo.
+- **P0 por recurrencia (6.ª vez en el proyecto), la escala tipográfica y el espaciado fuera de
+  la rejilla 4/8** (cinco tamaños ad hoc, siete valores de espaciado). Es la misma deuda
+  sistémica que B1 dejó registrada como conocida; no se corrige en esta pieza porque una escala
+  por componente no arregla una escala de proyecto. Queda abierta a nivel de tema.
+- **P2, el brote tarda en llegar** (~7,7 s tras el `commit` en la sandbox). Es la posición del
+  widget en la timeline del hero (`-=0.2` tras las cifras) medida con el rAF de swiftshader a
+  200-400 ms por fotograma; en un navegador real la entrada entera dura ~4 s. Decisión de ritmo,
+  no defecto.
+
+**`lidia-naive-tester` (Marta Ruiz): 6,4/10.** La tarjeta se lee en el orden previsto y a las
+dos horas; rol y disponibilidad se pillan al vuelo. Hallazgos:
+
+- **P1 (reconfirmado de B1, no nuevo): la tabla de dos columnas mezcla estudios y trabajo sin
+  rótulo.** Los rótulos son los literales de `content.ts` (`10.º semestre`, `Ago 2025 — May 2026`)
+  y la columna es la decisión «fechada» del brainstorming (§ «Orden y jerarquía»). Queda
+  registrado; cambiarlo es una decisión de contenido de Aoshi, no de esta pieza.
+- **P2 (nuevo): la pastilla «Disponible para proyectos» parece un botón y es inerte.** Es un
+  `<span>` sin cursor ni hover. Registrado; el spec la eligió a propósito como chapa de estado.
+- **P1 fuera del encargo, descartado como artefacto del instrumento:** «el titular se pierde de
+  noche». En su captura el reloj de la barra marca 19:42 (hora real), el shell está en esquema
+  oscuro y el fondo generativo en claro. Causa: `__CAE_SET_MINUTOS__` fuerza los tokens del DOM,
+  pero en esta rama el fondo (`caelestiaFiguras.ts`) y el reloj de la barra leían `new Date()`
+  por su cuenta, así que forzar las 23:00 a las 19:42 reales produce un estado que ningún
+  visitante puede ver. El arnés de Título barre el contraste del titular las 24 horas y está en
+  verde. Desde `4fcdd42` (rama `fix/repaso-interfaces`, «el fondo generativo sigue el vistazo del
+  dino») el fondo escucha la hora efectiva del motor y el artefacto desaparece también de las
+  capturas de los arneses.
+
+**Regresión cazada por el orquestador al mirar las capturas, no por los críticos:** a 1366x768
+la tarjeta nueva pisaba la cifra «2021» por 22 px (la vieja dejaba 27 px de aire). Arreglada
+(`9212af0`) con gate `tarjeta_portatil` visto en rojo. Ver «Hallazgo cerrado» arriba.
