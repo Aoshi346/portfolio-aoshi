@@ -25,10 +25,14 @@ Los catorce gates (ver el spec, seccion `## Los gates`):
   14. rozar responde y el teclado llega a lo mismo (el P1 de `vera-art-director`)
   15. el dino es un juguete: salta al pulsar, mira al cursor, y el arrastre es
       un vistazo a otra hora que no notifica el cambio de esquema al soltar
-      (15e: mientras arrastra, el troquel GIRA con la hora del vistazo — el
-      bicho no gira, y al soltar el troquel vuelve a su figura de reposo)
+      (15e: mientras arrastra, el troquel GIRA con la hora del vistazo con
+      retraso de muelle -- sigue moviendose fotogramas despues de que el
+      raton se pare --, los lobulos respiran con la velocidad angular, y al
+      soltar vuelve a su figura de reposo con un muelle elastico, no de golpe
+      -- el bicho no gira)
 """
 import argparse
+import math
 import pathlib
 import re
 import sys
@@ -1198,15 +1202,45 @@ def main() -> int:
         comprobar(despues_d == antes_d, f"--cae-hue no cambia con un clic sin arrastre ({antes_d} == {despues_d})")
         ctx.close()
 
-        # --- 15e. El troquel gira con la hora del vistazo -----------------
-        print("\n[15e] El troquel gira con la hora del vistazo")
+        # --- 15e. El troquel gira con retraso de muelle y respira ----------
+        print("\n[15e] El troquel gira con retraso de muelle y respira con la velocidad")
         ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
         errores_totales += err
         reposo_e = pg.evaluate(
             "() => getComputedStyle(document.querySelector('.cae-fundido-troquel')).clipPath"
         )
         pares_reposo = re.findall(r"(-?[\d.]+)%\s+(-?[\d.]+)%", reposo_e)
-        print(f"       troquel en reposo: {len(pares_reposo)} pares · primer par {pares_reposo[0] if pares_reposo else None}")
+
+        def radio_medio(pares: list[tuple[str, str]]) -> float:
+            if not pares:
+                return 0.0
+            return sum(math.hypot(float(x) - 50, float(y) - 50) for x, y in pares) / len(pares)
+
+        radio_reposo = radio_medio(pares_reposo)
+        print(f"       troquel en reposo: {len(pares_reposo)} pares · primer par "
+              f"{pares_reposo[0] if pares_reposo else None} · radio medio {radio_reposo:.3f}")
+
+        # Grabador continuo: cada fotograma anota el clipPath COMPUTADO y el
+        # inline (`element.style.clipPath`), con marca de tiempo. Vive en la
+        # pagina desde antes del arrastre hasta despues de soltar, asi que
+        # ninguna de las aserciones siguientes depende de un `wait_for_timeout`
+        # a ciegas -- todas leen de esta misma cinta.
+        pg.evaluate("""() => {
+            window.__grab = [];
+            window.__grabActivo = true;
+            const troquel = document.querySelector('.cae-fundido-troquel');
+            const paso = () => {
+                if (!window.__grabActivo || window.__grab.length > 600) return;
+                window.__grab.push({
+                    t: performance.now(),
+                    clip: getComputedStyle(troquel).clipPath,
+                    inline: troquel.style.clipPath,
+                });
+                requestAnimationFrame(paso);
+            };
+            requestAnimationFrame(paso);
+        }""")
+
         bicho_box_e = pg.evaluate("""() => {
             const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
             return { x: b.left + b.width / 2, y: b.top + b.height / 2, left: b.left };
@@ -1217,15 +1251,54 @@ def main() -> int:
             # 20px por paso, 6 pasos = 120px = 4h de vistazo = 60 grados.
             pg.mouse.move(bicho_box_e["x"] + i * 20, bicho_box_e["y"], steps=1)
             pg.wait_for_timeout(40)
-        # Ancla a ESTADO, no a un temporizador: espera a que el clipPath
-        # computado difiera del de reposo, con tope de 5s.
+        marca_fin_moves = pg.evaluate("() => performance.now()")
+        x_dino_durante = pg.evaluate(
+            "() => document.querySelector('.cae-fundido-bicho').getBoundingClientRect().left"
+        )
+
+        # --- c. Los lobulos respiran con la velocidad -----------------------
+        # Se mide ANTES de esperar al asentado: son los fotogramas del propio
+        # arrastre, con el raton todavia en movimiento.
+        durante_arrastre = pg.evaluate(
+            "([marca]) => window.__grab.filter((f) => f.t <= marca).map((f) => f.clip)",
+            [marca_fin_moves],
+        )
+        radios_durante = [
+            radio_medio(re.findall(r"(-?[\d.]+)%\s+(-?[\d.]+)%", c)) for c in durante_arrastre
+        ]
+        radio_max = max(radios_durante) if radios_durante else radio_reposo
+        print(f"       radio medio durante el arrastre: maximo {radio_max:.3f} vs reposo {radio_reposo:.3f} "
+              f"({len(radios_durante)} fotogramas)")
+        comprobar(radio_max > radio_reposo * 1.01,
+                  f"al menos un fotograma respira mas de un 1% sobre el radio de reposo "
+                  f"({radio_max:.3f} vs {radio_reposo * 1.01:.3f})")
+
+        # --- girado, tras el muelle: se ancla a ESTADO, no a un temporizador.
+        # Esta sandbox dispara `requestAnimationFrame` cada 200-400ms en vez
+        # de cada ~16ms (ver el registro de B5 en el CLAUDE.md del proyecto),
+        # asi que un `wait_for_timeout` fijo no da tiempo fiable ni al angulo
+        # ni al factor de respiracion para asentar. Se espera a que el radio
+        # medio vuelva a estar cerca del de reposo, con tope de 3s -- el
+        # raton sigue pulsado, asi que el angulo no se mueve mientras tanto.
         girado = pg.evaluate(
-            """([reposo]) => new Promise((resolve) => {
+            """([reposoRadio]) => new Promise((resolve) => {
                 const troquel = document.querySelector('.cae-fundido-troquel');
+                const radioDe = (clip) => {
+                    const pares = [...clip.matchAll(/(-?[\\d.]+)%\\s+(-?[\\d.]+)%/g)];
+                    if (!pares.length) return 0;
+                    let suma = 0;
+                    for (const p of pares) {
+                        const x = parseFloat(p[1]) - 50;
+                        const y = parseFloat(p[2]) - 50;
+                        suma += Math.hypot(x, y);
+                    }
+                    return suma / pares.length;
+                };
                 const t0 = performance.now();
                 const mirar = () => {
                     const clip = getComputedStyle(troquel).clipPath;
-                    if (clip !== reposo || performance.now() - t0 > 5000) {
+                    const radio = radioDe(clip);
+                    if (Math.abs(radio - reposoRadio) <= reposoRadio * 0.002 || performance.now() - t0 > 3000) {
                         resolve(clip);
                         return;
                     }
@@ -1233,33 +1306,68 @@ def main() -> int:
                 };
                 mirar();
             })""",
-            [reposo_e],
+            [radio_reposo],
         )
+
+        # --- a. Sigue moviendose despues de que el raton se para -----------
+        # La cinta sigue corriendo durante TODA la espera del poll anterior,
+        # asi que esta ventana cubre el asentado real, sea cual sea su
+        # duracion en esta maquina -- no un hueco fijo que la maquina lenta
+        # puede vaciar de fotogramas.
+        tras_parar = pg.evaluate(
+            "([marca]) => window.__grab.filter((f) => f.t > marca).map((f) => f.clip)",
+            [marca_fin_moves],
+        )
+        distintos_tras_parar = len({c for c in tras_parar})
+        print(f"       fotogramas tras soltar el raton (antes de `mouse.up`): {len(tras_parar)} · "
+              f"valores distintos: {distintos_tras_parar}")
+        comprobar(distintos_tras_parar >= 3,
+                  f"el clipPath sigue cambiando varios fotogramas despues de que el raton se para "
+                  f"({distintos_tras_parar} valores distintos, se pedian >= 3)")
+
         pares_girado = re.findall(r"(-?[\d.]+)%\s+(-?[\d.]+)%", girado)
-        x_dino_durante = pg.evaluate(
-            "() => document.querySelector('.cae-fundido-bicho').getBoundingClientRect().left"
-        )
-        print(f"       durante el arrastre (4h, 60 grados): {len(pares_girado)} pares · "
-              f"primer par {pares_girado[0] if pares_girado else None} · "
+        radio_asentado = radio_medio(pares_girado)
+        print(f"       tras el muelle (asentado, 60 grados): {len(pares_girado)} pares · "
+              f"primer par {pares_girado[0] if pares_girado else None} · radio {radio_asentado:.3f} · "
               f"x del bicho antes {bicho_box_e['left']:.2f} durante {x_dino_durante:.2f}")
         comprobar(girado != reposo_e, "el clipPath computado del troquel cambia mientras se arrastra")
         comprobar(len(pares_girado) == 240,
                   f"el troquel girado sigue siendo un polygon() de 240 pares ({len(pares_girado)})")
-        comprobar(pares_reposo and pares_girado and pares_reposo[0] != pares_girado[0],
-                  "el primer par ha girado de verdad, no solo se ha reescrito igual "
-                  f"(reposo {pares_reposo[0] if pares_reposo else None} vs girado "
-                  f"{pares_girado[0] if pares_girado else None})")
         comprobar(abs(x_dino_durante - bicho_box_e["left"]) < 0.5,
                   f"el bicho NO gira ni se desplaza en x mientras el troquel gira "
                   f"({bicho_box_e['left']:.2f} -> {x_dino_durante:.2f})")
+        comprobar(abs(radio_asentado - radio_reposo) <= radio_reposo * 0.003,
+                  f"asentado el muelle, los lobulos vuelven a respirar al radio de reposo "
+                  f"({radio_asentado:.3f} vs {radio_reposo:.3f})")
+
+        # --- d. El primer par gira de verdad, esperado con tolerancia -------
+        # Como el angulo ya no es inmediato, se ancla a ESTADO (tope 3s) en
+        # vez de leerlo justo tras el ultimo `mouse.move`.
+        if pares_reposo:
+            rad60 = math.radians(60)
+            x0, y0 = float(pares_reposo[0][0]), float(pares_reposo[0][1])
+            dx0, dy0 = x0 - 50, y0 - 50
+            esperado_x = dx0 * math.cos(rad60) - dy0 * math.sin(rad60) + 50
+            esperado_y = dx0 * math.sin(rad60) + dy0 * math.cos(rad60) + 50
+            obtenido_x, obtenido_y = (float(pares_girado[0][0]), float(pares_girado[0][1])) if pares_girado else (None, None)
+            distancia = math.hypot(obtenido_x - esperado_x, obtenido_y - esperado_y) if obtenido_x is not None else None
+            print(f"       primer par esperado a 60 grados: ({esperado_x:.2f}, {esperado_y:.2f}) · "
+                  f"obtenido {pares_girado[0] if pares_girado else None} · distancia {distancia}")
+            comprobar(distancia is not None and distancia <= 1.5,
+                      f"el primer par ha girado de verdad hasta acercarse al objetivo esperado "
+                      f"(distancia {distancia}, tolerancia 1.5)")
+
         pg.mouse.up()
+        marca_soltar = pg.evaluate("() => performance.now()")
+
+        # --- b. Al soltar asienta con muelle, no corta de golpe -------------
         vuelto = pg.evaluate(
             """([reposo]) => new Promise((resolve) => {
                 const troquel = document.querySelector('.cae-fundido-troquel');
                 const t0 = performance.now();
                 const mirar = () => {
                     const clip = getComputedStyle(troquel).clipPath;
-                    if (clip === reposo || performance.now() - t0 > 5000) {
+                    if (clip === reposo || performance.now() - t0 > 3000) {
                         resolve(clip);
                         return;
                     }
@@ -1269,10 +1377,31 @@ def main() -> int:
             })""",
             [reposo_e],
         )
-        print(f"       tras soltar: {'igual al reposo' if vuelto == reposo_e else 'DISTINTO del reposo'}")
+        pg.evaluate("() => { window.__grabActivo = false; }")
+        inline_final = pg.evaluate(
+            "() => document.querySelector('.cae-fundido-troquel').style.clipPath"
+        )
+        tras_soltar = pg.evaluate(
+            "([marca]) => window.__grab.filter((f) => f.t > marca).map((f) => f.clip)",
+            [marca_soltar],
+        )
+        distintos_de_reposo_antes_de_volver = 0
+        for c in tras_soltar:
+            if c == reposo_e:
+                break
+            if c != reposo_e:
+                distintos_de_reposo_antes_de_volver += 1
+        print(f"       tras soltar: {'igual al reposo' if vuelto == reposo_e else 'DISTINTO del reposo'} · "
+              f"fotogramas distintos del reposo antes de volver: {distintos_de_reposo_antes_de_volver} · "
+              f"inline final: {inline_final!r}")
+        comprobar(distintos_de_reposo_antes_de_volver >= 2,
+                  f"al soltar hay al menos 2 fotogramas con el clipPath distinto del reposo antes de "
+                  f"volver a el ({distintos_de_reposo_antes_de_volver}), en vez de cortar de golpe")
         comprobar(vuelto == reposo_e,
                   "al soltar, el clipPath computado del troquel vuelve a ser igual al de reposo "
-                  "(el inline queda vacio)")
+                  "tras el muelle elastico")
+        comprobar(inline_final == "",
+                  f"al asentar el muelle de vuelta, el inline queda vacio (era {inline_final!r})")
         ctx.close()
 
         print("\n[15e-reduce] Sin giro con movimiento reducido")
