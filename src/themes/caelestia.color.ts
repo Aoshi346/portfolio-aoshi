@@ -148,6 +148,12 @@ export interface CaelestiaColorHandle {
  */
 export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
   let oscuroActual: boolean | null = null;
+  // El ultimo esquema REAL (no de vistazo) que se le anuncio al visitante.
+  // Separado de `oscuroActual` a proposito: durante un vistazo (el arrastre
+  // del dino) `oscuroActual` puede cambiar varias veces sin que el visitante
+  // haya vivido ningun cambio real, y al volver al reloj real no hay que
+  // notificar un cambio que nunca sucedio.
+  let ultimoRealAnunciado: boolean | null = null;
   let temporizador = 0;
   // Ventana de 60ms del corte de esquema (`cae-corte`). Guardado para poder
   // cancelarlo en `destroy()`: sin esto, un desmontaje que cae dentro de esa
@@ -158,7 +164,16 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
   // `aplicar()` siempre lee el reloj real salvo que el arnes la use.
   let minutosForzados: number | null = null;
 
-  const aplicar = (): void => {
+  /*
+   * `vistazoParam` se puede pasar explicito, pero por defecto se deduce de
+   * `minutosForzados`: mientras el dino esta forzando la hora (el arrastre)
+   * cualquier llamada a `aplicar()` -incluido el temporizador de 60s si el
+   * arrastre dura tanto- es un vistazo. Al volver a `null` el defecto se
+   * ajusta solo, sin que cada punto de llamada tenga que acordarse de
+   * pasarlo.
+   */
+  const aplicar = (vistazoParam?: boolean): void => {
+    const vistazo = vistazoParam ?? minutosForzados !== null;
     const ahora = new Date();
     const minutos = minutosForzados !== null ? minutosForzados : ahora.getHours() * 60 + ahora.getMinutes();
     const oscuro = isDarkAt(minutos);
@@ -167,11 +182,19 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
       root.classList.add("cae-corte");
       window.clearTimeout(corteTimeout);
       corteTimeout = window.setTimeout(() => root.classList.remove("cae-corte"), 60);
-      root.dispatchEvent(
-        new CustomEvent("caelestia:esquema", { detail: { oscuro }, bubbles: true }),
-      );
+      // Durante un vistazo, todo cambio se anuncia como vistazo. Al volver al
+      // reloj real (`vistazo === false`) solo se anuncia si el esquema real
+      // de verdad difiere del ultimo real anunciado -- si no, el visitante
+      // nunca vivio ese cambio y notificarlo seria falso.
+      const notificar = vistazo || ultimoRealAnunciado !== oscuro;
+      if (notificar) {
+        root.dispatchEvent(
+          new CustomEvent("caelestia:esquema", { detail: { oscuro, vistazo }, bubbles: true }),
+        );
+      }
     }
     oscuroActual = oscuro;
+    if (!vistazo) ultimoRealAnunciado = oscuro;
     root.dataset.caeEsquema = oscuro ? "noche" : "dia";
 
     const cromo = document.querySelector('meta[name="theme-color"]');
@@ -180,6 +203,25 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
     for (const [nombre, valor] of Object.entries(caelestiaTokens(minutos))) {
       root.style.setProperty(nombre, valor);
     }
+
+    /*
+     * El motor de color es la UNICA fuente de la hora efectiva. El fondo
+     * generativo (`caelestiaFiguras.ts`) leia `new Date()` por su cuenta, asi
+     * que durante un vistazo (el arrastre del dino en `caelestia.fundido.ts`)
+     * lo que asomaba por el troquel se quedaba con la hora real mientras los
+     * tokens de arriba ya habian saltado. Se publica sin condicion -- a
+     * diferencia de `caelestia:esquema`, que solo avisa en el cruce de
+     * esquema -- porque el matiz del fondo se mueve en CADA minuto, no solo
+     * cuando cambia dia/noche. `dataset.caeMinutos` es la lectura
+     * sincronica de arranque (por si el fondo monta antes que este modulo
+     * despache su primer evento); el evento es la via reactiva para
+     * responder al instante durante el arrastre, sin esperar al intervalo
+     * de refresco del fondo.
+     */
+    root.dataset.caeMinutos = String(minutos);
+    root.dispatchEvent(
+      new CustomEvent("caelestia:hora", { detail: { minutos, vistazo }, bubbles: true }),
+    );
   };
 
   aplicar();
@@ -195,8 +237,14 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
   // `src/main.ts`. Sin esta via, el barrido de 24 horas es inalcanzable por
   // construccion y el gate que lo mide es tautologico (el fallo del "reloj
   // congelado" ya pagado en la fase A).
+  //
+  // Tambien la usa el vistazo del dino (`caelestia.fundido.ts`): un numero
+  // fuerza la hora del arrastre, `null` la suelta y vuelve al reloj real. La
+  // firma numerica NO cambia -- `measure-caelestia-hora.py` y
+  // `measure-caelestia-creditos.py` siguen llamando con un numero, que sigue
+  // forzando exactamente igual que antes.
   Object.defineProperty(window, "__CAE_SET_MINUTOS__", {
-    value: (minutos: number) => {
+    value: (minutos: number | null) => {
       minutosForzados = minutos;
       aplicar();
     },

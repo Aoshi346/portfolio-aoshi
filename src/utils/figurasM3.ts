@@ -148,3 +148,22 @@ export function radioInscritoDe(slug: string): number {
   if (!def) return 1;
   return Math.min(...encaja(radios(def, 1)).map(([x, y]) => Math.hypot(x, y)));
 }
+
+/**
+ * Figura parametrica para piezas que morfan en tiempo real (la tarjeta "Ahora
+ * mismo" de Caelestia): misma cuenta de VERTICES que las de la tabla, asi
+ * que un `polygon()` de esta funcion interpola con cualquiera de las otras.
+ * `n` lobulos, `a` amplitud (como la tabla), `relieve` 0..1 (0 = circulo,
+ * lo usa la entrada), `fase` en radianes gira los lobulos sin girar la caja.
+ * Sin cache: cambia cada fotograma y la clave seria el propio resultado.
+ */
+export function figuraParametrica(n: number, a: number, relieve: number, fase: number): string {
+  const amp = -a * relieve;
+  const seg = a * 0.18 * relieve;
+  const rs: number[] = [];
+  for (let i = 0; i < VERTICES; i += 1) {
+    const t = (i * 2 * Math.PI) / VERTICES;
+    rs.push(1 + amp * Math.cos(n * (t + fase)) + seg * Math.cos(2 * n * (t + fase)));
+  }
+  return poly(encaja(rs));
+}

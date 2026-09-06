@@ -15,6 +15,7 @@ el HMR de Vite corrompe las medidas.
 """
 import argparse
 import sys
+import time
 
 from playwright.sync_api import sync_playwright
 
@@ -285,6 +286,7 @@ def main():
                   pastillas: b.querySelectorAll('[data-cae-ws]').length,
                   reloj: (b.querySelector('[data-cae-clock]') || {}).textContent,
                   activa: b.querySelectorAll('[data-cae-ws][aria-current="true"]').length,
+                  sinAvail: b.querySelector('.cae-avail') === null,
                 };
             }"""
         )
@@ -297,6 +299,10 @@ def main():
                 fallos.append("el reloj marca %r, esperado '11:00'" % barra["reloj"])
             if barra["activa"] != 1:
                 fallos.append("pastillas activas: %d, esperada 1" % barra["activa"])
+            if not barra["sinAvail"]:
+                fallos.append(
+                    "la barra no lleva chapa de disponible (vive en la tarjeta del hero)"
+                )
         ctx.close()
 
         # ---- 6. los otros dos temas NO montan el shell
@@ -342,32 +348,106 @@ def main():
                 fallos.append("%d accesos del dock sin icono" % dock["sinIcono"])
         ctx.close()
 
-        # ---- 8. la notificacion de disponibilidad aparece y no roba el foco
+        # ---- 8. la notificacion ya NO salta al entrar; solo al cambio de esquema
+        #
+        # Decision de Aoshi (repaso de interfaces 2026-09-05): el aviso de
+        # entrada a los 900ms se pisaba con la entrada de Titulo y con el
+        # widget "Ahora mismo", que ya dice lo mismo. Se quita el disparo de
+        # entrada y se queda solo el de `caelestia:esquema`.
+        #
+        # El corte se ancla al ESTADO (que la entrada de Titulo haya
+        # aterrizado: `#hero .cae-term-typed` con "whoami" y
+        # `#hero .cae-firma` con opacidad computada >= 0.99), nunca a un
+        # cronometro fijo -- en esta sandbox rAF/setTimeout van a 200-400ms,
+        # asi que un `wait_for_timeout` corto podria leer el toast ANTES de
+        # que el disparo de 900ms (si siguiera vivo) llegara a abrirlo, y el
+        # gate mentiria en verde. Se muestrea desde el `commit` cada ~50ms
+        # hasta el aterrizaje y se exige que el toast NO haya estado
+        # `is-open` en NINGUNA muestra: es la asercion que caza el disparo de
+        # 900ms aunque se hubiera cerrado ya (4200ms de vida) antes de que la
+        # entrada aterrizara.
         ctx = nav.new_context(viewport={"width": 1440, "height": 900})
         page = ctx.new_page()
-        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(3000)
-        aviso = page.evaluate(
-            """() => {
-                const t = document.querySelector('[data-cae-toast]');
-                if (!t) return null;
-                return {
-                  visible: t.classList.contains('is-open'),
-                  live: t.getAttribute('aria-live'),
-                  robaFoco: document.activeElement === t || t.contains(document.activeElement),
-                };
-            }"""
-        )
-        if aviso is None:
+        page.goto(args.base + "/?theme=caelestia", wait_until="commit", timeout=30000)
+
+        # El shell (barra/dock/toast) monta via `import()` diferido, igual que
+        # el resto de modulos de tema: no existe todavia en el instante del
+        # `commit`, asi que su presencia se comprueba DESPUES del muestreo,
+        # no antes -- comprobarla en caliente aqui confundiria "aun no ha
+        # montado" con "no existe".
+        LEE_ESTADO = """() => {
+            const t = document.querySelector('[data-cae-toast]');
+            const typed = document.querySelector('#hero .cae-term-typed');
+            const firma = document.querySelector('#hero .cae-firma');
+            const csFirma = firma ? getComputedStyle(firma) : null;
+            return {
+              toastExiste: !!t,
+              toastOpen: t ? t.classList.contains('is-open') : false,
+              typed: typed ? typed.textContent : null,
+              firmaOp: csFirma ? parseFloat(csFirma.opacity) : null,
+            };
+        }"""
+
+        t0 = time.monotonic()
+        vistoAbiertoAntes = False
+        vistoToast = False
+        aterrizo = None
+        while time.monotonic() - t0 < 30:
+            try:
+                m = page.evaluate(LEE_ESTADO)
+            except Exception:
+                m = None
+            if m is not None:
+                if m["toastExiste"]:
+                    vistoToast = True
+                if m["toastOpen"]:
+                    vistoAbiertoAntes = True
+                if (
+                    m["typed"] == "whoami"
+                    and m["firmaOp"] is not None
+                    and m["firmaOp"] >= 0.99
+                ):
+                    aterrizo = m
+                    break
+            page.wait_for_timeout(50)
+
+        if aterrizo is None:
+            fallos.append("la entrada no aterrizo, no se puede juzgar la notificacion")
+            ctx.close()
+        elif not (vistoToast or aterrizo["toastExiste"]):
             fallos.append("no existe [data-cae-toast]")
+            ctx.close()
         else:
+            if vistoAbiertoAntes or aterrizo["toastOpen"]:
+                fallos.append(
+                    "la notificacion se abrio al cargar (debe quedar muda hasta el cambio de esquema)"
+                )
+
+            # El disparo por cambio de esquema sigue vivo.
+            page.evaluate(
+                "document.documentElement.dispatchEvent("
+                "new CustomEvent('caelestia:esquema', {detail: {oscuro: true}}))"
+            )
+            page.wait_for_timeout(200)
+            aviso = page.evaluate(
+                """() => {
+                    const t = document.querySelector('[data-cae-toast]');
+                    return {
+                      visible: t.classList.contains('is-open'),
+                      live: t.getAttribute('aria-live'),
+                      robaFoco: document.activeElement === t || t.contains(document.activeElement),
+                    };
+                }"""
+            )
             if not aviso["visible"]:
-                fallos.append("la notificacion de disponibilidad no llego a mostrarse")
+                fallos.append("el cambio de esquema no abre la notificacion")
             if aviso["live"] != "polite":
-                fallos.append("la notificacion tiene aria-live=%r, esperado 'polite'" % aviso["live"])
+                fallos.append(
+                    "la notificacion tiene aria-live=%r, esperado 'polite'" % aviso["live"]
+                )
             if aviso["robaFoco"]:
                 fallos.append("la notificacion roba el foco")
-        ctx.close()
+            ctx.close()
 
         # ---- 9. cambio de workspace: la pagina no desplaza, el carril si
         ctx = nav.new_context(viewport={"width": 1440, "height": 900})
@@ -593,6 +673,159 @@ def main():
                         "el contorno de foco no usa el color del ancla: %s vs %s (dist %.1f)"
                         % (cb, ab, dist)
                     )
+        ctx.close()
+
+        # ---- 14. la barra baja y el dock sube (y con movimiento reducido no)
+        #
+        # Decision de Aoshi (repaso de interfaces 2026-09-05): la barra y el
+        # dock aparecian de golpe. Ahora la barra ENTRA desde arriba
+        # (`caeShellBaja`) y el dock desde abajo (`caeShellSube`), 0.4s,
+        # `animation-fill-mode: both`.
+        #
+        # El shell monta via `import()` diferido (igual que el toast de la
+        # seccion 8), asi que no existe en el instante del `commit` -- se
+        # muestrea desde ahi, sin `wait_for_timeout` entre lecturas para no
+        # perderse el fotograma intermedio con opacidad < 1 (la cadencia de un
+        # `evaluate()` de ida y vuelta ya basta de por si). El corte de "ha
+        # terminado" se ancla al ESTADO de `getAnimations()`
+        # (`playState === 'finished'`), nunca a un cronometro: en esta sandbox
+        # rAF/setTimeout van a 200-400ms, muy por encima de los 400ms
+        # declarados, con lo que un plazo fijo mide la carga de la maquina, no
+        # la animacion.
+        ctx = nav.new_context(viewport={"width": 1440, "height": 900})
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="commit", timeout=30000)
+
+        LEE_ENTRADA_SHELL = """() => {
+            const leer = (el) => {
+                if (!el) return null;
+                const anims = el.getAnimations();
+                const r = el.getBoundingClientRect();
+                return {
+                    opacity: parseFloat(getComputedStyle(el).opacity),
+                    nombres: anims.map(a => a.animationName),
+                    terminadas: anims.length > 0 && anims.every(a => a.playState === 'finished'),
+                    top: r.top,
+                    bottom: r.bottom,
+                };
+            };
+            return {
+                barra: leer(document.querySelector('[data-cae-bar]')),
+                dock: leer(document.querySelector('[data-cae-dock]')),
+            };
+        }"""
+
+        t0 = time.monotonic()
+        primeraExistB = None
+        primeraExistD = None
+        nombresVistosB = set()
+        nombresVistosD = set()
+        vistoOpMenorB = False
+        vistoOpMenorD = False
+        final = None
+        while time.monotonic() - t0 < 30:
+            m = page.evaluate(LEE_ENTRADA_SHELL)
+            ahora = time.monotonic()
+            b, d = m["barra"], m["dock"]
+            if b is not None:
+                if primeraExistB is None:
+                    primeraExistB = ahora
+                nombresVistosB.update(b["nombres"])
+                if b["opacity"] < 0.99:
+                    vistoOpMenorB = True
+            if d is not None:
+                if primeraExistD is None:
+                    primeraExistD = ahora
+                nombresVistosD.update(d["nombres"])
+                if d["opacity"] < 0.99:
+                    vistoOpMenorD = True
+            if b is not None and d is not None and b["terminadas"] and d["terminadas"]:
+                final = m
+                break
+            # corte de seguridad: existen desde hace >2s y jamas hubo animacion
+            if (
+                b is not None and d is not None
+                and not b["nombres"] and not d["nombres"]
+                and primeraExistB is not None and ahora - primeraExistB > 2
+                and primeraExistD is not None and ahora - primeraExistD > 2
+            ):
+                final = m
+                break
+
+        if final is None:
+            fallos.append("la entrada de la barra/dock no aterrizo en 30s")
+        else:
+            if "caeShellBaja" not in nombresVistosB:
+                fallos.append(
+                    "la barra no llevo la animacion caeShellBaja (vistas: %s)" % nombresVistosB
+                )
+            if "caeShellSube" not in nombresVistosD:
+                fallos.append(
+                    "el dock no llevo la animacion caeShellSube (vistas: %s)" % nombresVistosD
+                )
+            if final["barra"]["opacity"] < 0.99:
+                fallos.append("la barra no termino a opacity 1: %.2f" % final["barra"]["opacity"])
+            if final["dock"]["opacity"] < 0.99:
+                fallos.append("el dock no termino a opacity 1: %.2f" % final["dock"]["opacity"])
+            if final["barra"]["top"] < 0 or final["barra"]["bottom"] > 900:
+                fallos.append(
+                    "la barra queda fuera del viewport al aterrizar: %s"
+                    % [final["barra"]["top"], final["barra"]["bottom"]]
+                )
+            if final["dock"]["top"] < 0 or final["dock"]["bottom"] > 900:
+                fallos.append(
+                    "el dock queda fuera del viewport al aterrizar: %s"
+                    % [final["dock"]["top"], final["dock"]["bottom"]]
+                )
+            if not vistoOpMenorB:
+                fallos.append(
+                    "nunca se vio la barra con opacity < 1 (aparece de golpe, no baja)"
+                )
+            if not vistoOpMenorD:
+                fallos.append(
+                    "nunca se vio el dock con opacity < 1 (aparece de golpe, no sube)"
+                )
+        ctx.close()
+
+        # ---- 14b. con movimiento reducido no hay animacion de entrada
+        ctx = nav.new_context(
+            viewport={"width": 1440, "height": 900}, reduced_motion="reduce"
+        )
+        page = ctx.new_page()
+        page.goto(args.base + "/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+
+        t0 = time.monotonic()
+        reducido = None
+        while time.monotonic() - t0 < 15:
+            r = page.evaluate(
+                """() => {
+                    const b = document.querySelector('[data-cae-bar]');
+                    const d = document.querySelector('[data-cae-dock]');
+                    if (!b || !d) return null;
+                    return {
+                        barraAnims: b.getAnimations().length,
+                        dockAnims: d.getAnimations().length,
+                        barraOp: parseFloat(getComputedStyle(b).opacity),
+                        dockOp: parseFloat(getComputedStyle(d).opacity),
+                    };
+                }"""
+            )
+            if r is not None:
+                reducido = r
+                break
+            page.wait_for_timeout(50)
+
+        if reducido is None:
+            fallos.append("movimiento reducido: la barra/dock nunca llegaron a existir")
+        else:
+            if reducido["barraAnims"] or reducido["dockAnims"]:
+                fallos.append(
+                    "movimiento reducido: quedan animaciones activas: %r" % reducido
+                )
+            if reducido["barraOp"] < 0.99 or reducido["dockOp"] < 0.99:
+                fallos.append(
+                    "movimiento reducido: opacity distinta de 1: %r" % reducido
+                )
         ctx.close()
 
         nav.close()

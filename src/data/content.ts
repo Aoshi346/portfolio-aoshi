@@ -43,7 +43,7 @@ export const identity: Identity = {
   linkedin: "https://www.linkedin.com/in/aoshi-blanco-sanz-14119b2b7",
   githubAvatar: "https://avatars.githubusercontent.com/u/137179835?v=4",
   availability: "Disponible para proyectos",
-  now: "Freelancer",
+  now: "Full Stack Developer",
   since: "2021",
   invitation: "Cuéntame tu idea.",
 };
@@ -391,10 +391,12 @@ export interface SceneEntry {
   blurb: string;
 }
 
+// "Stack" y "Contacto" sustituyen a "Créditos" y "Fundido" por decisión de
+// Aoshi (repaso de interfaces 2026-09-05).
 export const sceneIndex: SceneEntry[] = [
   { id: "hero", label: "Título", blurb: "Desarrollador full stack" },
   { id: "quien-es", label: "Quién soy", blurb: "Trayectoria y cifras" },
   { id: "obra", label: "Obra", blurb: "Cinco proyectos" },
-  { id: "creditos", label: "Créditos", blurb: "Con qué construyo" },
-  { id: "contacto", label: "Fundido", blurb: "Contacto" },
+  { id: "creditos", label: "Stack", blurb: "Con qué construyo" },
+  { id: "contacto", label: "Contacto", blurb: "Hablemos de tu proyecto" },
 ];

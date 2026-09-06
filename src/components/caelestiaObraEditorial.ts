@@ -42,6 +42,7 @@ export async function mountCaelestiaObraEditorial(
 
   let seleccionado = -1;
   let tl: ReturnType<typeof gsap.timeline> | null = null;
+  let tlSel: ReturnType<typeof gsap.timeline> | null = null;
 
   function refsCajon(): {
     h3: HTMLElement | null;
@@ -81,18 +82,108 @@ export async function mountCaelestiaObraEditorial(
     drawer.replaceChildren(titleBlock, preview, meta, prose);
   }
 
+  /**
+   * Repaso de interfaces 2026-09-05: cambiar de tarjeta ya no funde el
+   * cajon entero (opacity 0->1, y 14->0) — asi no se leia como una pieza
+   * nueva, era un parpadeo del panel. Ahora es un relevo por capas, la
+   * misma gramatica que `jugarEntrada`, comprimida: el titulo entra por
+   * descubrimiento (clip-path) mientras la firma en Fraunces ablanda su
+   * peso de 800 a 640 EN PARALELO, la captura llega con un leve zoom hacia
+   * atras, y metadatos/prosa entran en cascada. El cajon en si no se mueve
+   * ni cambia de opacidad: es la hoja, lo que se releva es lo escrito en
+   * ella.
+   */
   function abrir(index: number): void {
     if (index === seleccionado) return;
     cards[seleccionado]?.classList.remove("is-sel");
     seleccionado = index;
     cards[seleccionado]?.classList.add("is-sel");
+
+    if (reduce) {
+      poblarCajon(index);
+      return;
+    }
+
+    // Si se pulsa otra tarjeta antes de que termine el relevo anterior: se
+    // mata la timeline. No hace falta limpiar el inline del h3 anterior a
+    // mano, `poblarCajon` lo reemplaza entero (nodo nuevo).
+    tlSel?.kill();
     poblarCajon(index);
-    if (reduce) return;
-    gsap.fromTo(
-      drawer,
-      { opacity: 0, y: 14 },
-      { opacity: 1, y: 0, duration: 0.3, ease: "cubic-bezier(0.7,0,0.2,1)" },
-    );
+
+    const { h3, kick, lead, foot, preview, rows, blocks } = refsCajon();
+
+    // Arranca en 800 escrito a mano (no solo dentro del tween) para que el
+    // primer fotograma, leido en la misma evaluate que dispara el click,
+    // ya lo vea por encima de 640.
+    if (h3) h3.style.fontVariationSettings = '"opsz" 60, "wght" 800';
+    const pesoFirma = { w: 800 };
+
+    tlSel = gsap.timeline();
+    if (kick) {
+      tlSel.fromTo(
+        kick,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" },
+      );
+    }
+    if (h3) {
+      tlSel.fromTo(
+        h3,
+        { clipPath: "inset(0 100% 0 0)" },
+        { clipPath: "inset(0 0% 0 0)", duration: 0.32, ease: "power2.inOut" },
+        "-=0.08",
+      );
+      tlSel.fromTo(
+        pesoFirma,
+        { w: 800 },
+        {
+          w: 640,
+          duration: 0.36,
+          ease: "power3.out",
+          onUpdate: () => {
+            h3.style.fontVariationSettings = `"opsz" 60, "wght" ${pesoFirma.w.toFixed(0)}`;
+          },
+          onComplete: () => {
+            // Limpia el inline: manda el CSS ("opsz" 60, "wght" 640).
+            h3.style.fontVariationSettings = "";
+          },
+        },
+        "<",
+      );
+    }
+    if (preview) {
+      tlSel.fromTo(
+        preview,
+        { opacity: 0, scale: 1.02 },
+        { opacity: 1, scale: 1, duration: 0.26, ease: "power2.out", transformOrigin: "center" },
+        "-=0.24",
+      );
+    }
+    const leadFoot = [lead, foot].filter((n): n is HTMLElement => n !== null);
+    if (leadFoot.length) {
+      tlSel.fromTo(
+        leadFoot,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.18, ease: "power2.out", stagger: 0.05 },
+        "-=0.16",
+      );
+    }
+    if (rows.length) {
+      tlSel.fromTo(
+        rows,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.2, ease: "power2.out", stagger: 0.04 },
+        "-=0.1",
+      );
+    }
+    if (blocks.length) {
+      tlSel.fromTo(
+        blocks,
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.22, ease: "power2.out", stagger: 0.06 },
+        "-=0.1",
+      );
+    }
   }
 
   cards.forEach((card, index) => {
@@ -198,6 +289,12 @@ export async function mountCaelestiaObraEditorial(
     destroy: () => {
       document.documentElement.removeEventListener("caelestia:workspace", alCambiarWorkspace);
       tl?.kill();
+      tlSel?.kill();
+      const { h3, kick, lead, foot, preview, rows, blocks } = refsCajon();
+      const dianasCajon = [h3, kick, lead, foot, preview, ...rows, ...blocks].filter(
+        (n): n is HTMLElement => n !== null,
+      );
+      if (dianasCajon.length) gsap.killTweensOf(dianasCajon);
       gsap.killTweensOf([...cards, drawer]);
       row.remove();
       drawer.remove();

@@ -123,6 +123,111 @@ export function montarFundido(
   banda.append(troquel);
 
   /*
+   * La figura de reposo del troquel, leida UNA VEZ del CSS (nunca se toca el
+   * `clip-path` de la hoja de estilos). `figurasM3.ts` (`poly`) escribe los
+   * 240 pares como `polygon(x1% y1%, x2% y2%, ...)`; se parsean a numeros
+   * aqui para poder rotarlos alrededor de (50, 50) mientras se arrastra.
+   *
+   * Si algun dia deja de ser un `polygon()` de 240 pares -- otra figura, otro
+   * generador -- esto falla en silencio y el troquel deja de girar en vez de
+   * escribir un clip roto: girar una figura a medio parsear es peor que no
+   * girarla.
+   */
+  // defensive: figura ausente o con otro conteo de puntos no debe romper el clip
+  const figuraReposo: Array<[number, number]> | null = (() => {
+    const m = window.getComputedStyle(troquel).clipPath.match(/^polygon\((.+)\)$/);
+    if (!m) return null;
+    const pares = [...m[1].matchAll(/(-?[\d.]+)%\s+(-?[\d.]+)%/g)].map(
+      (par): [number, number] => [Number(par[1]), Number(par[2])],
+    );
+    return pares.length === 240 ? pares : null;
+  })();
+
+  /*
+   * El estado del giro: no se escribe el angulo del arrastre directamente en
+   * el clip, se persigue con un muelle. `grados` es el angulo actual (no el
+   * objetivo) y `factor` la escala de los lobulos alrededor del centro (50,
+   * 50) — 1 en reposo, hasta 1,04 cuando el vistazo va rapido. Los dos viven
+   * en el MISMO objeto porque los dos tweens (persecucion y vuelta) tienen
+   * que poder pisarse entre si con `overwrite: "auto"`.
+   */
+  const estadoTroquel = { grados: 0, factor: 1 };
+  let anguloAnterior = 0;
+  let instanteAnterior = 0;
+
+  /**
+   * Escala la figura de reposo por `estadoTroquel.factor` alrededor de su
+   * centro y despues la rota `estadoTroquel.grados`, escribiendola como
+   * `clip-path` en linea con el mismo formato de dos decimales que
+   * `figurasM3.ts`. El dino, el horizonte y la nube NO giran ni escalan:
+   * solo se transforma el recorte.
+   */
+  const pintarTroquel = (): void => {
+    if (!figuraReposo) return;
+    const rad = (estadoTroquel.grados * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const factor = estadoTroquel.factor;
+    const puntos = figuraReposo.map(([x, y]) => {
+      const dx = (x - 50) * factor;
+      const dy = (y - 50) * factor;
+      const rx = (dx * cos - dy * sin + 50).toFixed(2);
+      const ry = (dx * sin + dy * cos + 50).toFixed(2);
+      return `${rx}% ${ry}%`;
+    });
+    troquel.style.clipPath = `polygon(${puntos.join(", ")})`;
+  };
+
+  /*
+   * Los lobulos respiran con la velocidad angular del PROPIO muelle: se mide
+   * cuanto avanza `estadoTroquel.grados` entre dos fotogramas, se persigue
+   * un factor objetivo acotado a 1,04 y se suaviza hacia el (nunca se salta
+   * de golpe, que se notaria como un parpadeo de tamano).
+   *
+   * Vive en el ticker de gsap (`gsap.ticker.add`), NO en el `onUpdate` del
+   * tween de persecucion: un `onUpdate` solo se dispara mientras ESE tween
+   * sigue vivo, y con el puntero quieto la persecucion termina a los 0,55s
+   * de su ULTIMA llamada -- ahi se apaga el `onUpdate` y el factor se queda
+   * congelado en lo que le diera tiempo a suavizar durante esa ventana, para
+   * siempre, aunque el objetivo (factor 1, velocidad 0) siga sin alcanzar.
+   * El ticker de gsap no tiene ese limite: sigue corriendo mientras
+   * `arrastrando` sea `true`, ya sea porque el puntero se sigue moviendo o
+   * porque se quedo quieto a mitad del muelle -- que es justo cuando mas
+   * falta hace terminar de asentar la respiracion.
+   */
+  const respirarTroquel = (): void => {
+    if (!figuraReposo || !arrastrando) return;
+    const ahora = performance.now();
+    const dt = (ahora - instanteAnterior) / 1000;
+    if (dt > 0) {
+      const velocidad = (estadoTroquel.grados - anguloAnterior) / dt;
+      const objetivo = 1 + Math.min(0.04, Math.abs(velocidad) / 900);
+      estadoTroquel.factor += (objetivo - estadoTroquel.factor) * 0.2;
+    }
+    anguloAnterior = estadoTroquel.grados;
+    instanteAnterior = ahora;
+    pintarTroquel();
+  };
+  gsap.ticker.add(respirarTroquel);
+
+  /**
+   * Lanza el muelle hacia `objetivo` grados. Se llama como mucho una vez por
+   * fotograma (la programa `programarArrastre`) y cada llamada relanza el
+   * tween con `overwrite: "auto"`: la persecucion nunca escribe el angulo de
+   * golpe, sigue corriendo fotogramas despues de que el puntero se pare. El
+   * pintado en si va por `respirarTroquel()`, que corre en el mismo ticker.
+   */
+  const girarTroquel = (objetivo: number): void => {
+    if (!figuraReposo) return;
+    gsap.to(estadoTroquel, {
+      grados: objetivo,
+      duration: 0.55,
+      ease: "power3.out",
+      overwrite: "auto",
+    });
+  };
+
+  /*
    * El estado baja bajo el colofon. En el DOM compartido vive dentro de
    * `.contacto-band` —encima de las barras— y la contraportada lo quiere
    * abajo, con el pie de imprenta. Se mueve AQUI y no en `contacto.ts`
@@ -198,7 +303,36 @@ export function montarFundido(
      * intermedio en linea, ganandole al token.
      */
     lead.style.fontVariationSettings = "";
-    if (ojo) ojo.setAttribute("x", String(OJO_DINO[0]));
+    if (ojo) {
+      ojo.setAttribute("x", String(OJO_DINO[0]));
+      ojo.setAttribute("y", String(OJO_DINO[1]));
+    }
+    /*
+     * Los tres gestos del juguete, aterrizados tambien: si la escena se
+     * abandona a media pasada de cualquiera de ellos, no deben quedarse
+     * congelados (el salto en el aire, el reloj forzado por el arrastre).
+     */
+    if (tlSalto) tlSalto.kill();
+    saltando = false;
+    if (arrastrando) {
+      arrastrando = false;
+      const gancho = ganchoMinutos();
+      if (gancho) gancho(null);
+    }
+    /*
+     * El muelle del troquel (persecucion o vuelta) tambien se mata aqui,
+     * SIEMPRE, no solo `if (arrastrando)`: la vuelta elastica sigue corriendo
+     * 1,1s despues de soltar, con `arrastrando` ya en `false` -- justo el
+     * hueco que dejaba congelado el sello a medio muelle si la escena se
+     * abandonaba en ese tramo. `kill()` no dispara `onComplete`, asi que el
+     * inline y el estado se reponen a mano, igual que hace `soltarArrastre()`
+     * en el camino normal.
+     */
+    gsap.killTweensOf(estadoTroquel);
+    troquel.style.clipPath = "";
+    estadoTroquel.grados = 0;
+    estadoTroquel.factor = 1;
+    bajando = false;
   };
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -209,6 +343,12 @@ export function montarFundido(
    * dividida entre el radio MINIMO de la figura — los VALLES, no las crestas —
    * con un 4% de margen. Con el radio maximo se queda corto y el escritorio
    * asoma por una esquina.
+   *
+   * Lee el `clip-path` COMPUTADO, que durante un arrastre es el inline que
+   * escribe `girarTroquel()`. No desvia nada: al soltar ya queda vacio
+   * (`soltarArrastre()`/`aterrizado()`), y el fundido (`linea()`, la unica
+   * que llama a esto) nunca corre a mitad de un arrastre -- para llegar a
+   * "contacto" hay que cambiar de workspace, y eso ya suelta el puntero.
    */
   const factorCrecimiento = (): number => {
     const v = escena.getBoundingClientRect();
@@ -275,6 +415,192 @@ export function montarFundido(
     corriendo = false;
     ponFotograma("quieto");
   };
+
+  /*
+   * EL DINO ES UN JUGUETE. Tres gestos, ninguno entra en el orden de
+   * tabulacion (no `tabindex`, no `role`): los cuatro canales siguen siendo
+   * las unicas paradas. Pero si es pulsable -- `cursor: pointer` y
+   * `pointer-events: auto` los pone el CSS.
+   */
+
+  // --- 1. Salta al pulsar -------------------------------------------------
+  let saltando = false;
+  let tlSalto: ReturnType<Gsap["timeline"]> | null = null;
+
+  const salto = (): void => {
+    if (reduce || saltando) return;
+    saltando = true;
+    const tl = gsap.timeline({ onComplete: () => { saltando = false; } });
+    tl.fromTo(bicho, { y: 0 }, { y: -70, duration: 0.26, ease: "power2.out" }, 0);
+    tl.to(bicho, { y: 0, duration: 0.26, ease: "power2.in" }, 0.26);
+    if (svgBicho) {
+      tl.fromTo(
+        svgBicho,
+        { scaleY: 1 },
+        { scaleY: 0.9, duration: 0.08, transformOrigin: "50% 100%" },
+        0.52,
+      );
+      tl.to(svgBicho, { scaleY: 1, duration: 0.12, ease: "power2.out", transformOrigin: "50% 100%" }, 0.6);
+    }
+    tlSalto = anotar(tl);
+  };
+
+  // --- 2. Los ojos siguen al cursor ---------------------------------------
+  // Distancia maxima a la que el bicho se fija en el cursor.
+  const DISTANCIA_MIRADA = 260;
+  // El cursor mueve el ojo, como mucho, 1 unidad del lienzo de 40x43 en cada
+  // eje -- pixel art, sin fraccion. 130 es el radio a partir del cual ya se
+  // satura al maximo (dx/130 >= 1).
+  const RADIO_MIRADA = 130;
+
+  const alMoverPuntero = (e: PointerEvent): void => {
+    if (!ojo) return;
+    // No pisa la mirada de `entrar()`, que fija `x` durante su propio tramo.
+    if (tlEntrada && tlEntrada.isActive()) return;
+    // El ojo movible solo existe de pie: en zancada es el hueco del sprite.
+    if (corriendo) return;
+    const r = bicho.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    if (Math.hypot(dx, dy) < DISTANCIA_MIRADA) {
+      const dox = Math.round(Math.max(-1, Math.min(1, dx / RADIO_MIRADA)));
+      const doy = Math.round(Math.max(-1, Math.min(1, dy / RADIO_MIRADA)));
+      ojo.setAttribute("x", String(OJO_DINO[0] + dox));
+      ojo.setAttribute("y", String(OJO_DINO[1] + doy));
+    } else {
+      ojo.setAttribute("x", String(OJO_DINO[0]));
+      ojo.setAttribute("y", String(OJO_DINO[1]));
+    }
+  };
+  if (!reduce) escena.addEventListener("pointermove", alMoverPuntero);
+
+  // --- 3. El arrastre es un vistazo ---------------------------------------
+  // Los 30px por hora y el `<< 4px es un clic` son los umbrales del diseno.
+  const PX_POR_HORA = 30;
+  const UMBRAL_ARRASTRE = 4;
+
+  interface VentanaConGancho {
+    __CAE_SET_MINUTOS__?: (minutos: number | null) => void;
+  }
+  const ganchoMinutos = (): ((minutos: number | null) => void) | undefined =>
+    (window as unknown as VentanaConGancho).__CAE_SET_MINUTOS__;
+
+  let bajando = false;
+  let arrastrando = false;
+  let inicioX = 0;
+  let inicioY = 0;
+  let minutosInicio = 0;
+  // El gancho se llama como mucho una vez por fotograma: sin este cerrojo,
+  // cada `pointermove` (varios por fotograma en un raton de verdad) llamaria
+  // a `aplicar()` -- que reescribe TODOS los tokens de color -- de mas. El
+  // giro del troquel viaja en el MISMO rAF: son 240 puntos por fotograma,
+  // solo mientras se arrastra, y no hace falta un segundo reloj para eso.
+  let rafPendiente = false;
+  let minutosPendientes: number | null = null;
+  let gradosPendientes: number | null = null;
+
+  const programarArrastre = (minutos: number, grados: number): void => {
+    minutosPendientes = minutos;
+    gradosPendientes = grados;
+    if (rafPendiente) return;
+    rafPendiente = true;
+    requestAnimationFrame(() => {
+      rafPendiente = false;
+      const gancho = ganchoMinutos();
+      if (gancho && minutosPendientes !== null) gancho(minutosPendientes);
+      // Con movimiento reducido el reloj se sigue moviendo (ya lo hacia antes
+      // de este gesto) pero el troquel se queda quieto.
+      if (!reduce && gradosPendientes !== null) girarTroquel(gradosPendientes);
+    });
+  };
+
+  const soltarArrastre = (): void => {
+    if (!arrastrando) return;
+    arrastrando = false;
+    const gancho = ganchoMinutos();
+    // El color SI corta de golpe al soltar: solo la forma asienta con
+    // muelle. Es el mismo reparto que ya tenia el gesto, no uno nuevo.
+    if (gancho) gancho(null);
+    pararZancada();
+    if (reduce || !figuraReposo) {
+      // Sin muelle que animar, la vuelta es la de siempre: directa.
+      troquel.style.clipPath = "";
+      estadoTroquel.grados = 0;
+      estadoTroquel.factor = 1;
+      return;
+    }
+    // De la figura girada a la de reposo con un rebote, no de golpe: el
+    // `onComplete` es quien limpia el inline, para no dejar un fotograma
+    // intermedio del muelle leyendo ya la regla del CSS (angulo 0 seco).
+    gsap.to(estadoTroquel, {
+      grados: 0,
+      factor: 1,
+      duration: 1.1,
+      ease: "elastic.out(1, 0.55)",
+      overwrite: "auto",
+      onUpdate: pintarTroquel,
+      onComplete: () => {
+        troquel.style.clipPath = "";
+      },
+    });
+  };
+
+  const alBajarPuntero = (e: PointerEvent): void => {
+    bicho.setPointerCapture(e.pointerId);
+    bajando = true;
+    arrastrando = false;
+    inicioX = e.clientX;
+    inicioY = e.clientY;
+    const ahora = new Date();
+    minutosInicio = ahora.getHours() * 60 + ahora.getMinutes();
+  };
+
+  const alMoverArrastre = (e: PointerEvent): void => {
+    if (!bajando) return;
+    const dx = e.clientX - inicioX;
+    const dy = e.clientY - inicioY;
+    if (!arrastrando) {
+      if (Math.hypot(dx, dy) <= UMBRAL_ARRASTRE) return;
+      arrastrando = true;
+      // Arranca la respiracion desde el angulo actual (0 salvo que un
+      // vistazo anterior no llegara a asentar del todo): sin este reinicio,
+      // el primer fotograma de `respirarTroquel()` mediria una velocidad
+      // inventada contra el estado de la ULTIMA vez que se arrastro.
+      anguloAnterior = estadoTroquel.grados;
+      instanteAnterior = performance.now();
+      if (!reduce && !corriendo) arrancarZancada();
+    }
+    const horas = Math.round(dx / PX_POR_HORA);
+    const minutos = (((minutosInicio + horas * 60) % 1440) + 1440) % 1440;
+    // 15 grados por hora de vistazo (360 en 24h), mismo sentido que la hora.
+    programarArrastre(minutos, horas * 15);
+  };
+
+  const alSoltarPuntero = (e: PointerEvent): void => {
+    if (bicho.hasPointerCapture(e.pointerId)) bicho.releasePointerCapture(e.pointerId);
+    if (!bajando) return;
+    bajando = false;
+    if (arrastrando) {
+      soltarArrastre();
+    } else {
+      // Un pointerdown/up sin mas de 4px de recorrido es un clic: salta.
+      salto();
+    }
+  };
+
+  const alCancelarPuntero = (e: PointerEvent): void => {
+    if (bicho.hasPointerCapture(e.pointerId)) bicho.releasePointerCapture(e.pointerId);
+    if (!bajando) return;
+    bajando = false;
+    soltarArrastre();
+  };
+
+  bicho.addEventListener("pointerdown", alBajarPuntero);
+  bicho.addEventListener("pointermove", alMoverArrastre);
+  bicho.addEventListener("pointerup", alSoltarPuntero);
+  bicho.addEventListener("pointercancel", alCancelarPuntero);
 
   const linea = (): ReturnType<Gsap["timeline"]> => {
     const crece = factorCrecimiento();
@@ -458,9 +784,26 @@ export function montarFundido(
   return {
     destroy: () => {
       window.removeEventListener("resize", pintarSuelo);
+      escena.removeEventListener("pointermove", alMoverPuntero);
+      bicho.removeEventListener("pointerdown", alBajarPuntero);
+      bicho.removeEventListener("pointermove", alMoverArrastre);
+      bicho.removeEventListener("pointerup", alSoltarPuntero);
+      bicho.removeEventListener("pointercancel", alCancelarPuntero);
       gsap.ticker.remove(tic);
+      gsap.ticker.remove(respirarTroquel);
       if (tlFundido) tlFundido.kill();
       if (tlEntrada) tlEntrada.kill();
+      if (tlSalto) tlSalto.kill();
+      if (arrastrando) {
+        const gancho = ganchoMinutos();
+        if (gancho) gancho(null);
+      }
+      // Mismo motivo que en `aterrizado()`: el muelle de vuelta puede seguir
+      // corriendo con `arrastrando` ya en `false`.
+      gsap.killTweensOf(estadoTroquel);
+      troquel.style.clipPath = "";
+      estadoTroquel.grados = 0;
+      estadoTroquel.factor = 1;
     },
     reproducir: () => {
       if (tlFundido) tlFundido.kill();

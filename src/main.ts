@@ -40,6 +40,24 @@ if (!prefersReducedMotion && theme.motion.style === "cinematic") {
 }
 
 /*
+ * Entrada de Titulo (solo Caelestia). Clase y timeout PROPIOS, no `.js-intro`
+ * (esa es solo de Vice y su CSS esta acotado a `[data-theme="vice"]`): un
+ * fallo en una entrada no debe poder apagar la otra. Las piezas de `#hero`
+ * (terminal, trazo, firma, cifras, widget) necesitan quedar ocultas ANTES
+ * del primer pintado -- si no, se ven en su estado FINAL durante los ~2,9 s
+ * que tardan en llegar los tres `import()` encadenados de la coreografia
+ * (reveal.ts -> gsap -> ScrollTrigger -> caelestia.titulo.ts) y luego saltan
+ * de golpe a su estado inicial cuando `montarEntrada` por fin corre. La via
+ * normal es esa misma funcion, que retira la clase en cuanto ha escrito los
+ * estados iniciales con `gsap.set` (sincrono, antes de construir la
+ * timeline); este timeout es solo el seguro por si el chunk no llega nunca.
+ */
+if (!prefersReducedMotion && theme.id === "caelestia") {
+  document.documentElement.classList.add("js-cae-entrada");
+  window.setTimeout(() => document.documentElement.classList.remove("js-cae-entrada"), 3000);
+}
+
+/*
  * Leader de apertura (solo Vice). Clase y timeout PROPIOS, no los de
  * `.js-intro`: aquella solo oculta el nombre del hero, mientras que el leader
  * tapa la pantalla entera. Si compartieran mecanismo, un fallo pasaria de "el

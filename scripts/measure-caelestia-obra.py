@@ -8,7 +8,9 @@ Uso:
     python3 scripts/measure-caelestia-obra.py --base http://localhost:4173
 """
 import argparse
+import re
 import sys
+import time
 
 from playwright.sync_api import sync_playwright
 
@@ -47,6 +49,7 @@ PROYECTOS = [
         ),
         "private": True,
         "link_href": None,
+        "stack": ["Python", "Django", "TypeScript", "React", "Vite"],
     },
     {
         "title": "TesisFar",
@@ -66,6 +69,7 @@ PROYECTOS = [
         ),
         "private": False,
         "link_href": "https://github.com/Aoshi346/teg-web-app",
+        "stack": ["TypeScript", "Next.js"],
     },
     {
         "title": "HyprFinance",
@@ -88,6 +92,7 @@ PROYECTOS = [
         ),
         "private": True,
         "link_href": None,
+        "stack": ["TypeScript", "React", "RxDB", "GSAP", "Zustand"],
     },
     {
         "title": "WatchDog",
@@ -108,6 +113,7 @@ PROYECTOS = [
         ),
         "private": False,
         "link_href": "https://github.com/Aoshi346/Proyecto-CiberSeg",
+        "stack": ["JavaScript", "Electron", "Python"],
     },
     {
         "title": "Editor de texto",
@@ -127,6 +133,7 @@ PROYECTOS = [
         ),
         "private": False,
         "link_href": "https://github.com/Aoshi346/Text-Editor-Application",
+        "stack": ["C", "GTK4"],
     },
 ]
 
@@ -331,6 +338,44 @@ def check_extremos(page) -> None:
             assert_true(d["dentro"], f"Extremos ({titulo}): parrafo se sale del carril por abajo")
 
 
+def check_stack_marcas(page) -> None:
+    """4i. Todas las tecnologias del Stack pintan marca, ninguna cae a texto.
+    Abre cada una de las cinco tarjetas y comprueba que TODAS las entradas
+    del `dl.cae-obra-drawer-meta` bajo `dd.cae-obra-stack` son `.obra-marca`
+    con un `<svg>` que se pinta de verdad (`getClientRects().length > 0`),
+    y que no queda ningun `.cae-obra-stack-text` (la version sin marca)."""
+    for i, esperado in enumerate(PROYECTOS):
+        page.evaluate(f"document.querySelectorAll('.cae-obra-card')[{i}].click()")
+        page.wait_for_timeout(400)
+        datos = page.evaluate(
+            """
+            () => {
+              const stack = document.querySelector('.cae-obra-drawer .cae-obra-stack');
+              const entradas = Array.from(stack.children);
+              return entradas.map(e => {
+                const svg = e.querySelector('svg');
+                return {
+                  esMarca: e.classList.contains('obra-marca'),
+                  esTexto: e.classList.contains('cae-obra-stack-text'),
+                  tieneSvg: !!svg,
+                  svgPintado: svg ? svg.getClientRects().length > 0 : false,
+                  titulo: e.getAttribute('title'),
+                };
+              });
+            }
+            """
+        )
+        assert_true(len(datos) == len(esperado["stack"]), f"Stack marcas ({esperado['title']}): se esperaban {len(esperado['stack'])} entradas, hay {len(datos)}")
+        for d in datos:
+            assert_true(d["esMarca"], f"Stack marcas ({esperado['title']}): entrada '{d['titulo']}' no es .obra-marca")
+            assert_true(not d["esTexto"], f"Stack marcas ({esperado['title']}): entrada '{d['titulo']}' cayo a .cae-obra-stack-text")
+            assert_true(d["tieneSvg"], f"Stack marcas ({esperado['title']}): entrada '{d['titulo']}' no tiene <svg>")
+            assert_true(d["svgPintado"], f"Stack marcas ({esperado['title']}): el <svg> de '{d['titulo']}' no se pinta (getClientRects vacio)")
+
+        hay_texto = page.evaluate("!!document.querySelector('.cae-obra-drawer .cae-obra-stack-text')")
+        assert_true(not hay_texto, f"Stack marcas ({esperado['title']}): no deberia quedar ningun .cae-obra-stack-text")
+
+
 def _oklab_to_srgb255(l: float, a_: float, b_: float) -> tuple[float, float, float]:
     """OKLab -> sRGB (0..255). Mismas matrices que `scripts/verify.py`
     (Bjorn Ottosson)."""
@@ -533,6 +578,488 @@ def check_foco_visible(page) -> None:
         assert_true(estilo_outline != "none", f"Foco visible: outlineStyle del enlace es 'none' (sin anillo de foco)")
 
 
+def check_cajon_llena(page, etiqueta_viewport: str) -> None:
+    """Decision de Aoshi, repaso de interfaces 2026-09-05, primera vuelta.
+    Antes el cajon media 249px de alto (326-575) dentro de un workspace
+    #obra de 596, con 89px vacios debajo, y sus columnas flotaban centradas
+    con ~60px de aire arriba y abajo. Se hizo que el cajon llenara el resto
+    de la ventana y sus columnas colgaran desde arriba. `#obra` ES
+    `[data-obra-rail]` (`obraRail.id = "obra"` en `src/main.ts`).
+
+    Segunda vuelta, mismo dia: con el cajon ya lleno (top 325.75, bottom 650,
+    padding 20 -> interior de ~284px) la columna mas alta (metadatos, ~207px)
+    no llegaba al fondo y dejaba una banda vacia de ~120px. Aoshi decidio que
+    la captura pasara a ocupar TODA la altura del cajon y que la prosa
+    Problema/Solucion bajara de dos columnas a una.
+
+    Tercera vuelta, mismo dia: la fila de cuatro columnas (flex) no aguantaba
+    esa composicion — a 1440x900 la captura estirada a toda la altura dejaba
+    apenas 164px a la prosa, y HyprFinance desbordaba. El cajon paso a grid
+    de tres columnas y dos filas (texto/prosa comparten columna, captura y
+    metadatos cruzan las dos filas), asi que las aserciones de "columnas
+    colgando desde arriba" y "banda vacia" cambian de forma: solo title,
+    preview y meta estan en la fila 1 (la prosa esta DEBAJO del titulo, en
+    la misma columna, no a su lado), y la banda vacia se mide bajo la
+    CAPTURA (la pieza mas alta), no bajo el maximo de las cuatro. Se
+    comprueba para las CINCO tarjetas (los textos son distintos; el mas
+    largo manda), no solo la que esta abierta por defecto.
+
+    Cuarta vuelta, mismo dia: el grid de la tercera vuelta cabia a 1440x900
+    pero desbordaba 22px a 1366x768 con HyprFinance — la captura sacaba su
+    alto del AREA de grid, que crecia con las filas, que crecian con el
+    texto (circulo). Se paso el cajon a `container-type: size` y la captura
+    a `calc(100cqh - 40px)`, asi que su alto ya no depende de las filas.
+    Esta funcion corre ahora en DOS viewports (parametro `etiqueta_viewport`,
+    p.ej. "1440x900" o "1366x768") y DETECTA la composicion realmente
+    pintada leyendo `getComputedStyle(drawer).display`: si sigue en grid,
+    aplica las aserciones de la tercera vuelta; si el respaldo de la cuarta
+    vuelta tuvo que volver al flex en fila de columnas fijas (reproducido de
+    antes de hoy, `git show c1017b9`), aplica las aserciones equivalentes de
+    esa composicion (prosa en DOS columnas, titulo y captura como columnas
+    propias en la misma fila que la prosa, no una encima de otra)."""
+    for i, esperado in enumerate(PROYECTOS):
+        page.evaluate(f"document.querySelectorAll('.cae-obra-card')[{i}].click()")
+        page.wait_for_timeout(400)
+        titulo = f"{esperado['title']} @ {etiqueta_viewport}"
+
+        datos = page.evaluate(
+            """
+            () => {
+              const ws = document.querySelector('#obra');
+              const drawer = document.querySelector('.cae-obra-drawer');
+              const title = document.querySelector('.cae-obra-drawer-title');
+              const preview = document.querySelector('.cae-obra-drawer-preview');
+              const thumb = preview ? preview.querySelector('.cae-obra-thumb') : null;
+              const meta = document.querySelector('.cae-obra-drawer-meta');
+              const prose = document.querySelector('.cae-obra-prose');
+              const privado = document.querySelector('.cae-obra-foot-private');
+              const wr = ws.getBoundingClientRect();
+              const dr = drawer.getBoundingClientRect();
+              const cs = getComputedStyle(drawer);
+              const csPrivado = privado ? getComputedStyle(privado) : null;
+              const csProse = prose ? getComputedStyle(prose) : null;
+              const thumbRect = thumb ? thumb.getBoundingClientRect() : null;
+              const titleRect = title.getBoundingClientRect();
+              const previewRect = preview.getBoundingClientRect();
+              const metaRect = meta.getBoundingClientRect();
+              const proseRect = prose.getBoundingClientRect();
+              return {
+                wsBottom: wr.bottom,
+                drawerBottom: dr.bottom,
+                drawerHeight: dr.height,
+                paddingTop: parseFloat(cs.paddingTop),
+                paddingBottom: parseFloat(cs.paddingBottom),
+                title: { top: titleRect.top, left: titleRect.left, bottom: titleRect.bottom, width: titleRect.width },
+                preview: { top: previewRect.top, bottom: previewRect.bottom, height: previewRect.height },
+                meta: { top: metaRect.top },
+                prose: { top: proseRect.top, left: proseRect.left },
+                capturaAncho: thumbRect ? thumbRect.width : 0,
+                capturaAlto: thumbRect ? thumbRect.height : 0,
+                borderTopWidth: cs.borderTopWidth,
+                borderRadius: cs.borderRadius,
+                drawerDisplay: cs.display,
+                proseColumns: csProse ? csProse.gridTemplateColumns : null,
+                proseDisplay: csProse ? csProse.display : null,
+                proseFlexDirection: csProse ? csProse.flexDirection : null,
+                obraScrollHeight: ws.scrollHeight,
+                obraClientHeight: ws.clientHeight,
+                privado: csPrivado ? {
+                  textTransform: csPrivado.textTransform,
+                  letterSpacing: csPrivado.letterSpacing,
+                  fontFamily: csPrivado.fontFamily,
+                } : null,
+              };
+            }
+            """
+        )
+
+        holgura = datos["wsBottom"] - datos["drawerBottom"]
+        assert_true(
+            0 <= holgura <= 16,
+            f"Cajon llena ({titulo}): drawer.bottom {datos['drawerBottom']:.0f} vs ws.bottom {datos['wsBottom']:.0f} (holgura {holgura:.0f}px, esperado 0-16)",
+        )
+
+        es_grid = datos["drawerDisplay"] == "grid"
+        etiqueta_comp = "grid tercera vuelta" if es_grid else "respaldo flex (pre-cuarta-vuelta)"
+
+        if es_grid:
+            # Tercera vuelta — solo title, preview y meta cuelgan de la fila 1
+            # del grid; la prosa vive DEBAJO del titulo, no a su lado.
+            base_top = datos["title"]["top"]
+            for nombre, valor in {
+                "preview": datos["preview"]["top"],
+                "meta": datos["meta"]["top"],
+            }.items():
+                assert_true(
+                    abs(valor - base_top) < 4,
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): top de '{nombre}' ({valor:.1f}) difiere >4px del de 'title' ({base_top:.1f}) — la fila 1 del grid no cuelga desde arriba",
+                )
+
+            # Tercera vuelta — la prosa esta debajo del titulo, en la misma
+            # columna de texto: mismo left, y su top no invade el titulo.
+            assert_true(
+                abs(datos["prose"]["left"] - datos["title"]["left"]) <= 1,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): prose.left ({datos['prose']['left']:.1f}) difiere de title.left ({datos['title']['left']:.1f}) en mas de 1px — no comparten columna",
+            )
+            assert_true(
+                datos["prose"]["top"] >= datos["title"]["bottom"],
+                f"Cajon llena ({titulo}, {etiqueta_comp}): prose.top ({datos['prose']['top']:.1f}) queda por encima de title.bottom ({datos['title']['bottom']:.1f}) — se solapan",
+            )
+
+            # Tercera vuelta — la columna de texto (titulo/prosa) mide al
+            # menos 320px de ancho (minmax(320px, 1fr) del
+            # grid-template-columns).
+            assert_true(
+                datos["title"]["width"] >= 320,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): la columna de texto mide {datos['title']['width']:.0f}px de ancho, se esperaban al menos 320",
+            )
+        else:
+            # Respaldo flex (composicion de antes de la cuarta vuelta,
+            # reproducida de `git show c1017b9`): title, preview y meta son
+            # columnas de la MISMA fila (los tres arrancan al mismo top,
+            # align-items: flex-start), y la prosa es OTRA columna de esa
+            # fila, a la derecha de meta, no debajo del titulo.
+            base_top = datos["title"]["top"]
+            for nombre, valor in {
+                "preview": datos["preview"]["top"],
+                "meta": datos["meta"]["top"],
+                "prose": datos["prose"]["top"],
+            }.items():
+                assert_true(
+                    abs(valor - base_top) < 4,
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): top de '{nombre}' ({valor:.1f}) difiere >4px del de 'title' ({base_top:.1f}) — la fila del flex no cuelga desde arriba",
+                )
+            assert_true(
+                datos["prose"]["left"] > datos["title"]["left"],
+                f"Cajon llena ({titulo}, {etiqueta_comp}): prose.left ({datos['prose']['left']:.1f}) no queda a la derecha de title.left ({datos['title']['left']:.1f}) — se esperaba columna propia, no debajo del titulo",
+            )
+            # Respaldo flex — columna de texto (titulo) segun c1017b9
+            # (flex: 0 0 230px), menor que el minimo de 320 del grid: aqui
+            # se pide solo que no colapse (>=200).
+            assert_true(
+                datos["title"]["width"] >= 200,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): la columna de texto mide {datos['title']['width']:.0f}px de ancho, se esperaban al menos 200 (respaldo flex, columna fija 230)",
+            )
+
+        assert_true(
+            datos["capturaAncho"] >= 280,
+            f"Cajon llena ({titulo}, {etiqueta_comp}): la captura mide {datos['capturaAncho']:.0f}px de ancho, se esperaban al menos 280",
+        )
+
+        assert_true(
+            datos["borderTopWidth"] == "0px",
+            f"Cajon llena ({titulo}, {etiqueta_comp}): el cajon aun lleva filete (borderTopWidth={datos['borderTopWidth']})",
+        )
+        assert_true(
+            datos["borderRadius"] == "16px",
+            f"Cajon llena ({titulo}, {etiqueta_comp}): borderRadius del cajon es {datos['borderRadius']!r}, se esperaba '16px'",
+        )
+
+        if es_grid:
+            # Cuarta vuelta — la captura llena la altura del cajon (interior =
+            # alto del cajon menos el padding vertical, ahora expuesto via
+            # `container-type: size` + `cqh`), y la banda vacia bajo ella (la
+            # pieza mas alta del cajon, no el maximo de las cuatro) es minima.
+            interior = datos["drawerHeight"] - datos["paddingTop"] - datos["paddingBottom"]
+            assert_true(
+                datos["preview"]["height"] >= interior - 4,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): preview.height ({datos['preview']['height']:.0f}) no llena el interior del cajon ({interior:.0f})",
+            )
+            assert_true(
+                datos["preview"]["height"] <= 450 + 1,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): preview.height ({datos['preview']['height']:.0f}) supera el tope de 450",
+            )
+            banda_vacia = datos["drawerBottom"] - datos["paddingBottom"] - datos["preview"]["bottom"]
+            assert_true(
+                banda_vacia <= 12,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): banda vacia bajo la captura de {banda_vacia:.0f}px (drawer.bottom {datos['drawerBottom']:.0f} - paddingBottom {datos['paddingBottom']:.0f} - preview.bottom {datos['preview']['bottom']:.0f}), se esperaban <=12",
+            )
+
+            assert_true(
+                datos["capturaAlto"] >= 300,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): la captura mide {datos['capturaAlto']:.0f}px de alto, se esperaban al menos 300",
+            )
+            if datos["capturaAlto"] > 0:
+                ratio = datos["capturaAncho"] / datos["capturaAlto"]
+                assert_true(
+                    1.55 <= ratio <= 1.65,
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): relacion ancho/alto de la captura {ratio:.2f} (ancho {datos['capturaAncho']:.0f}, alto {datos['capturaAlto']:.0f}), se esperaba entre 1.55 y 1.65",
+                )
+        else:
+            # Respaldo flex — la composicion de c1017b9 NO llenaba la altura
+            # del cajon con la captura (era `flex: 0 0 300px` de ANCHO en una
+            # fila, alto por aspect-ratio); solo se pide el ratio, no el
+            # llenado ni la banda vacia bajo ella.
+            if datos["capturaAlto"] > 0:
+                ratio = datos["capturaAncho"] / datos["capturaAlto"]
+                assert_true(
+                    1.55 <= ratio <= 1.65,
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): relacion ancho/alto de la captura {ratio:.2f} (ancho {datos['capturaAncho']:.0f}, alto {datos['capturaAlto']:.0f}), se esperaba entre 1.55 y 1.65",
+                )
+
+        # #obra sigue sin scroll interno, con esta tarjeta abierta, al
+        # viewport oficial del arnes (1440x900). medir_cabe ya lo comprueba
+        # una vez (contenido del carril vs ventana, con la tarjeta por
+        # defecto abierta); esto lo repite para las cinco, leyendo
+        # scrollHeight/clientHeight de #obra en si.
+        assert_true(
+            datos["obraScrollHeight"] == datos["obraClientHeight"],
+            f"Cajon llena ({titulo}, {etiqueta_comp}): #obra desborda (scrollHeight {datos['obraScrollHeight']:.0f} vs clientHeight {datos['obraClientHeight']:.0f})",
+        )
+
+        # La prosa Problema/Solucion en una sola columna — salvo en el
+        # respaldo flex, donde c1017b9 la deja en DOS (grid-template-columns:
+        # 1fr 1fr), dicho explicitamente en la etiqueta del fallo.
+        columnas = [c for c in (datos["proseColumns"] or "").split(" ") if c]
+        if es_grid:
+            una_columna = (len(columnas) == 1) or (
+                datos["proseDisplay"] == "flex" and datos["proseFlexDirection"] == "column"
+            )
+            assert_true(
+                una_columna,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): .cae-obra-prose no esta en una sola columna (gridTemplateColumns={datos['proseColumns']!r}, display={datos['proseDisplay']!r}, flexDirection={datos['proseFlexDirection']!r})",
+            )
+        else:
+            dos_columnas = len(columnas) == 2
+            assert_true(
+                dos_columnas,
+                f"Cajon llena ({titulo}, {etiqueta_comp}): .cae-obra-prose deberia estar en DOS columnas en el respaldo flex (gridTemplateColumns={datos['proseColumns']!r})",
+            )
+
+        privado = datos["privado"]
+        if esperado["private"]:
+            assert_true(privado is not None, f"Cajon llena ({titulo}, {etiqueta_comp}): no se encontro .cae-obra-foot-private (deberia verse, proyecto privado)")
+            if privado is not None:
+                assert_true(
+                    privado["textTransform"] == "none",
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): textTransform de la nota privada es {privado['textTransform']!r}, se esperaba 'none'",
+                )
+                assert_true(
+                    privado["letterSpacing"] == "normal",
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): letterSpacing de la nota privada es {privado['letterSpacing']!r}, se esperaba 'normal'",
+                )
+                assert_true(
+                    "Martian" not in privado["fontFamily"],
+                    f"Cajon llena ({titulo}, {etiqueta_comp}): fontFamily de la nota privada sigue en Martian Mono ({privado['fontFamily']!r})",
+                )
+        else:
+            assert_true(privado is None, f"Cajon llena ({titulo}, {etiqueta_comp}): se encontro .cae-obra-foot-private en un proyecto NO privado")
+
+
+def _leer_relevo(page) -> dict:
+    """Lee el estado pintado de las piezas que releva `abrir()`, mas el
+    cajon en si (para el gate 4, que comprueba que ese no se mueve)."""
+    return page.evaluate(
+        """
+        () => {
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const kick = document.querySelector('.cae-obra-drawer-kick');
+          const h3 = document.querySelector('[data-cae-obra-h3]');
+          const preview = document.querySelector('.cae-obra-drawer-preview');
+          const prosa = document.querySelector('.cae-obra-prose > div');
+          const dcs = getComputedStyle(drawer);
+          return {
+            drawerOpacity: parseFloat(dcs.opacity),
+            drawerTransform: dcs.transform,
+            kickOpacity: parseFloat(getComputedStyle(kick).opacity),
+            h3Clip: getComputedStyle(h3).clipPath,
+            h3WghtInline: h3.style.fontVariationSettings,
+            h3WghtComputado: getComputedStyle(h3).fontVariationSettings,
+            previewOpacity: parseFloat(getComputedStyle(preview).opacity),
+            prosaOpacity: parseFloat(getComputedStyle(prosa).opacity),
+          };
+        }
+        """
+    )
+
+
+def check_relevo(page, browser, base: str) -> None:
+    """Repaso de interfaces 2026-09-05, segunda parte: el relieve del cajon
+    (fondo distinto de la ventana, sombra ambiental por esquema) y el
+    relevo por capas al cambiar de tarjeta seleccionada (kick, titulo con
+    clip-path + ablande de peso 800->640, captura, prosa) -- el cajon EN SI
+    no se anima, es la hoja.
+
+    El primer fotograma se lee en la MISMA evaluate que dispara el click:
+    GSAP renderiza el estado inicial de un fromTo de forma sincrona al
+    crearse, y el reloj de esta sandbox (rAF/setTimeout a 200-400ms) miente
+    si se usa para cazar un fotograma concreto. El aterrizaje, en cambio,
+    se ancla a ESTADO con un tope de reloj de pared (15s), nunca a un
+    numero fijo de milisegundos."""
+    # 1. Relieve: el cajon pinta un fondo distinto de la ventana y lleva
+    # sombra (sin filete, sin brillo interior -- eso no se comprueba aqui
+    # porque no se declaro ninguno, y una asercion sobre su ausencia seria
+    # tautologica).
+    relieve = page.evaluate(
+        """
+        () => {
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const ventana = document.querySelector('[data-obra-rail]').closest('[data-cae-track] > *')
+            || document.querySelector('[data-obra-rail]').parentElement;
+          return {
+            drawerBg: getComputedStyle(drawer).backgroundColor,
+            ventanaBg: getComputedStyle(ventana).backgroundColor,
+            shadow: getComputedStyle(drawer).boxShadow,
+          };
+        }
+        """
+    )
+    assert_true(
+        relieve["drawerBg"] != relieve["ventanaBg"],
+        f"Relieve: el cajon pinta el mismo fondo que la ventana ({relieve['drawerBg']})",
+    )
+    assert_true(relieve["shadow"] != "none", "Relieve: el cajon no tiene sombra (boxShadow: none)")
+
+    # Las marcas del stack no comparten fondo con la hoja del cajon. No hay
+    # token --cae-surface-container-highest (no se crea): en vez de subir
+    # la marca, se hunde a --cae-elev-1 (el tono de la ventana). EchoPlan
+    # (tarjeta 0) tiene iconos de stack (Python, Django, TS, React, ...).
+    page.evaluate('document.querySelector(\'[data-obra-card="0"]\').click()')
+    page.wait_for_timeout(600)
+    marcas = page.evaluate(
+        """
+        () => {
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const marca = drawer.querySelector('.obra-marca');
+          return {
+            drawerBg: getComputedStyle(drawer).backgroundColor,
+            marcaBg: marca ? getComputedStyle(marca).backgroundColor : null,
+          };
+        }
+        """
+    )
+    assert_true(
+        marcas["marcaBg"] is not None,
+        "Relieve: no se encontro .obra-marca en el cajon (EchoPlan deberia tener iconos de stack)",
+    )
+    if marcas["marcaBg"] is not None:
+        assert_true(
+            marcas["marcaBg"] != marcas["drawerBg"],
+            f"Relieve: la marca del stack pinta el mismo fondo que la hoja del cajon ({marcas['marcaBg']})",
+        )
+
+    # Deja una tarjeta distinta de la 2 seleccionada para que el click de
+    # abajo dispare un cambio de seleccion de verdad (si el arnes hereda la
+    # 2 ya seleccionada de un check anterior, el click de abrir() no hace
+    # nada -- index === seleccionado).
+    page.evaluate('document.querySelector(\'[data-obra-card="0"]\').click()')
+    page.wait_for_timeout(600)
+
+    # 2. Relevo, primer fotograma: click y lectura en la MISMA evaluate.
+    primer = page.evaluate(
+        """
+        () => {
+          document.querySelector('[data-obra-card="2"]').click();
+          const drawer = document.querySelector('.cae-obra-drawer');
+          const kick = document.querySelector('.cae-obra-drawer-kick');
+          const h3 = document.querySelector('[data-cae-obra-h3]');
+          const preview = document.querySelector('.cae-obra-drawer-preview');
+          const prosa = document.querySelector('.cae-obra-prose > div');
+          const dcs = getComputedStyle(drawer);
+          return {
+            drawerOpacity: parseFloat(dcs.opacity),
+            drawerTransform: dcs.transform,
+            kickOpacity: parseFloat(getComputedStyle(kick).opacity),
+            h3Clip: getComputedStyle(h3).clipPath,
+            h3WghtInline: h3.style.fontVariationSettings,
+            previewOpacity: parseFloat(getComputedStyle(preview).opacity),
+            prosaOpacity: parseFloat(getComputedStyle(prosa).opacity),
+          };
+        }
+        """
+    )
+    assert_true(primer["kickOpacity"] < 1, f"Relevo primer fotograma: kick opacity {primer['kickOpacity']} (se esperaba < 1)")
+    assert_true("100%" in primer["h3Clip"], f"Relevo primer fotograma: h3 clipPath {primer['h3Clip']!r} (se esperaba con 100%)")
+    coincide = re.search(r'"wght"\s*([\d.]+)', primer["h3WghtInline"] or "")
+    peso = float(coincide.group(1)) if coincide else None
+    assert_true(peso is not None and peso > 640, f"Relevo primer fotograma: h3 wght inline {primer['h3WghtInline']!r} (se esperaba > 640)")
+    assert_true(primer["previewOpacity"] < 1, f"Relevo primer fotograma: captura opacity {primer['previewOpacity']} (se esperaba < 1)")
+    assert_true(primer["prosaOpacity"] < 1, f"Relevo primer fotograma: prosa opacity {primer['prosaOpacity']} (se esperaba < 1)")
+
+    # 4 (parte 1 -- en el mismo instante del click de arriba): el cajon no
+    # se mueve durante el relevo.
+    assert_true(
+        abs(primer["drawerOpacity"] - 1) < 0.01,
+        f"Cajon quieto (en el click): opacity {primer['drawerOpacity']} (se esperaba 1)",
+    )
+    assert_true(
+        primer["drawerTransform"] in ("none", "matrix(1, 0, 0, 1, 0, 0)"),
+        f"Cajon quieto (en el click): transform {primer['drawerTransform']!r} (se esperaba identidad)",
+    )
+
+    # 3. Aterriza: bucle anclado a ESTADO, tope de reloj de pared 15s. Si no
+    # llega, el gate FALLA (no se inventa otra cosa que medir).
+    limite = time.time() + 15
+    estado = None
+    while time.time() < limite:
+        estado = _leer_relevo(page)
+        listo = (
+            estado["kickOpacity"] >= 0.99
+            and "100%" not in estado["h3Clip"]
+            and estado["h3WghtInline"] == ""
+            and estado["previewOpacity"] >= 0.99
+            and estado["prosaOpacity"] >= 0.99
+        )
+        if listo:
+            break
+        page.wait_for_timeout(200)
+
+    assert_true(estado is not None, "Relevo aterriza: no se pudo leer el estado")
+    if estado is not None:
+        assert_true(estado["kickOpacity"] >= 0.99, f"Relevo aterriza: kick opacity {estado['kickOpacity']} (se esperaba >= 0.99)")
+        assert_true("100%" not in estado["h3Clip"], f"Relevo aterriza: h3 clipPath sigue en {estado['h3Clip']!r}")
+        assert_true(estado["h3WghtInline"] == "", f"Relevo aterriza: h3 sigue con wght inline {estado['h3WghtInline']!r} (deberia mandar el CSS)")
+        assert_true("640" in (estado["h3WghtComputado"] or ""), f"Relevo aterriza: h3 wght computado {estado['h3WghtComputado']!r} (se esperaba 640)")
+        assert_true(estado["previewOpacity"] >= 0.99, f"Relevo aterriza: captura opacity {estado['previewOpacity']} (se esperaba >= 0.99)")
+        assert_true(estado["prosaOpacity"] >= 0.99, f"Relevo aterriza: prosa opacity {estado['prosaOpacity']} (se esperaba >= 0.99)")
+
+        # 4 (parte 2 -- tras aterrizar): el cajon sigue quieto.
+        assert_true(abs(estado["drawerOpacity"] - 1) < 0.01, f"Cajon quieto (aterrizado): opacity {estado['drawerOpacity']} (se esperaba 1)")
+        assert_true(
+            estado["drawerTransform"] in ("none", "matrix(1, 0, 0, 1, 0, 0)"),
+            f"Cajon quieto (aterrizado): transform {estado['drawerTransform']!r} (se esperaba identidad)",
+        )
+
+    # 6. Sin scroll interno tras el relevo: reutiliza el mismo criterio
+    # geometrico que `medir_cabe` (contenido vs ventana), no
+    # `scrollHeight === clientHeight` -- la trampa que documenta B5 con un
+    # `transform: scale()` desbordando dentro de `overflow: clip`.
+    medir_cabe(page)
+
+    # 5. Movimiento reducido: cambio instantaneo, sin timeline -- leido en
+    # la MISMA evaluate que el click, igual que el resto del gate.
+    contexto = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+    page_reducido = contexto.new_page()
+    page_reducido.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+    page_reducido.wait_for_timeout(2000)
+    page_reducido.click('[data-cae-ws="obra"]')
+    page_reducido.wait_for_timeout(300)
+    reducido = page_reducido.evaluate(
+        """
+        () => {
+          document.querySelector('[data-obra-card="3"]').click();
+          const kick = document.querySelector('.cae-obra-drawer-kick');
+          const h3 = document.querySelector('[data-cae-obra-h3]');
+          const preview = document.querySelector('.cae-obra-drawer-preview');
+          const prosa = document.querySelector('.cae-obra-prose > div');
+          return {
+            kickOpacity: parseFloat(getComputedStyle(kick).opacity),
+            h3Clip: getComputedStyle(h3).clipPath,
+            h3WghtInline: h3.style.fontVariationSettings,
+            previewOpacity: parseFloat(getComputedStyle(preview).opacity),
+            prosaOpacity: parseFloat(getComputedStyle(prosa).opacity),
+          };
+        }
+        """
+    )
+    assert_true(reducido["kickOpacity"] >= 0.99, f"Relevo reducido: kick opacity {reducido['kickOpacity']} (deberia nacer en 1)")
+    assert_true("100%" not in reducido["h3Clip"], f"Relevo reducido: h3 clipPath {reducido['h3Clip']!r} (no deberia recortar)")
+    assert_true(reducido["h3WghtInline"] == "", f"Relevo reducido: h3 con wght inline {reducido['h3WghtInline']!r} (no deberia animar el peso)")
+    assert_true(reducido["previewOpacity"] >= 0.99, f"Relevo reducido: captura opacity {reducido['previewOpacity']} (deberia nacer en 1)")
+    assert_true(reducido["prosaOpacity"] >= 0.99, f"Relevo reducido: prosa opacity {reducido['prosaOpacity']} (deberia nacer en 1)")
+    contexto.close()
+
+
 def check_vice_hyprland_intactos(browser, base: str) -> None:
     """4h. El unico invariante que establece la CSS de la Task 1: el carril
     clasico (`[data-obra-track]`) sigue visible en Vice/Hyprland y solo se
@@ -575,9 +1102,26 @@ def main() -> int:
         check_capturas_no_cortadas(page, viewport)
         check_anti_mock(page)
         check_extremos(page)
+        check_stack_marcas(page)
         check_contraste(page)
         check_foco_visible(page)
+        # check_cajon_llena recorre las cinco tarjetas por su cuenta (segunda
+        # vuelta 2026-09-05); no necesita que quede una en concreto abierta.
+        # Cuarta vuelta: corre en el viewport oficial (1440x900, ya abierto
+        # arriba) y ademas en el portatil (1366x768, panel #obra de 616 en
+        # vez de 748) — el fallo que origino esta vuelta solo se ve en el
+        # segundo.
+        check_cajon_llena(page, "1440x900")
+        check_relevo(page, browser, args.base)
         page.close()
+
+        viewport_portatil = {"width": 1366, "height": 768}
+        page_portatil = browser.new_page(viewport=viewport_portatil)
+        page_portatil.goto(f"{args.base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        page_portatil.wait_for_timeout(2000)
+        ir_a_obra(page_portatil)
+        check_cajon_llena(page_portatil, "1366x768")
+        page_portatil.close()
 
         check_movimiento_reducido(browser, args.base)
         check_vice_hyprland_intactos(browser, args.base)

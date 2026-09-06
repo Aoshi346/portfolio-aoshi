@@ -23,8 +23,19 @@ Los catorce gates (ver el spec, seccion `## Los gates`):
   12. Vice y Hyprland no se alteran (`contacto.ts` es compartido)
   13. el fundido interrumpido aterriza del todo (bicho, nube, suelo, zancada)
   14. rozar responde y el teclado llega a lo mismo (el P1 de `vera-art-director`)
+  15. el dino es un juguete: salta al pulsar, mira al cursor, y el arrastre es
+      un vistazo a otra hora que no notifica el cambio de esquema al soltar
+      (15e: mientras arrastra, el troquel GIRA con la hora del vistazo con
+      retraso de muelle -- sigue moviendose fotogramas despues de que el
+      raton se pare --, los lobulos respiran con la velocidad angular, y al
+      soltar vuelve a su figura de reposo con un muelle elastico, no de golpe
+      -- el bicho no gira; 15f: el fondo generativo (`caelestiaFiguras.ts`)
+      sigue la MISMA hora que los tokens de color durante el vistazo, no el
+      reloj real por su cuenta -- leido con el mismo hook de pixel WebGL que
+      `measure-caelestia-hora.py` gate 10)
 """
 import argparse
+import math
 import pathlib
 import re
 import sys
@@ -41,6 +52,53 @@ def comprobar(condicion: bool, etiqueta: str) -> None:
     print(("  OK   " if condicion else "  FALLO") + f"  {etiqueta}")
     if not condicion:
         FALLOS.append(etiqueta)
+
+
+# Mirror exacto de HOOK_PIXEL / _matiz_oklab_deg / _dist_angular en
+# `measure-caelestia-hora.py` (gate 10, "el fondo sigue la hora"): lee el
+# pixel (1,1) del canvas DENTRO del propio `gl.drawArrays`, antes de que el
+# navegador intercambie el buffer -- `preserveDrawingBuffer` es false en
+# `shaderBackground.ts` a proposito, asi que leer despues del hecho (un
+# `page.screenshot` normal, o un `readPixels` fuera del hook) devuelve
+# basura. Sirve para el gate 15f: durante el vistazo (arrastre del dino) el
+# fondo generativo de Caelestia tiene que seguir la MISMA hora que los
+# tokens de color, no el reloj real por su cuenta.
+HOOK_PIXEL = """() => {
+  window.__caePixel = null;
+  const proto = WebGLRenderingContext.prototype;
+  const orig = proto.drawArrays;
+  proto.drawArrays = function(...args) {
+    const r = orig.apply(this, args);
+    try {
+      const px = new Uint8Array(4);
+      this.readPixels(1, 1, 1, 1, this.RGBA, this.UNSIGNED_BYTE, px);
+      window.__caePixel = Array.from(px);
+    } catch (e) { /* swiftshader a veces tira en el primer frame, se reintenta */ }
+    return r;
+  };
+}"""
+
+
+def _srgb_a_lineal(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _matiz_oklab_deg(rgb255):
+    """RGB 0-255 (sRGB, gamma) -> matiz OkLab en grados. Round-trip completo
+    (EOTF sRGB -> lineal -> LMS -> OkLab), matrices canonicas de Bjorn Ottosson."""
+    r, g, b = (_srgb_a_lineal(v / 255.0) for v in rgb255[:3])
+    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    l_, m_, s_ = (max(x, 0.0) ** (1 / 3) for x in (l, m, s))
+    a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    b_ = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    return math.degrees(math.atan2(b_, a)) % 360
+
+
+def _dist_angular(h1, h2):
+    d = abs(h1 - h2) % 360
+    return min(d, 360 - d)
 
 
 # El fondo del pixel real, no el rol teorico: convertir `oklch()` leyendolo
@@ -133,13 +191,20 @@ CONTRASTE_JS = """({ sel, pseudo }) => {
 }"""
 
 
-def nueva_pagina_en_contacto(navegador, base, *, viewport=None, timezone_id=None, reduced_motion=None):
+def nueva_pagina_en_contacto(
+    navegador, base, *, viewport=None, timezone_id=None, reduced_motion=None, init_scripts=None
+):
     """Abre una pagina fresca en Caelestia y lleva el carril a «contacto».
 
     Es la primera visita al workspace SIEMPRE (contexto nuevo, `fundidoVisto`
     empieza en `false`), asi que dispara `reproducir()`. Se espera a que el
     fundido de 1900 ms termine del todo antes de devolver el control: medir
     antes de eso es medir un fotograma a medio fundir.
+
+    `init_scripts`: lista de scripts JS que se inyectan ANTES de cualquier
+    codigo de la pagina (via `add_init_script`) -- por ejemplo `HOOK_PIXEL`,
+    que tiene que parchear `WebGLRenderingContext.prototype.drawArrays` antes
+    de que `shaderBackground.ts` cree el contexto.
     """
     kwargs = {"viewport": viewport or {"width": 1440, "height": 900}}
     if timezone_id:
@@ -147,6 +212,8 @@ def nueva_pagina_en_contacto(navegador, base, *, viewport=None, timezone_id=None
     if reduced_motion:
         kwargs["reduced_motion"] = reduced_motion
     ctx = navegador.new_context(**kwargs)
+    for script in init_scripts or []:
+        ctx.add_init_script(script)
     errores: list[str] = []
     pg = ctx.new_page()
     pg.on("pageerror", lambda e: errores.append(str(e)))
@@ -910,6 +977,557 @@ def main() -> int:
                 break
         comprobar(alcanzados == len(canales_sel),
                   f"el tabulador alcanza los cuatro canales ({alcanzados} de {len(canales_sel)})")
+        ctx.close()
+
+        # ================================================================
+        # [15] El dino es un juguete: salto, mirada, vistazo
+        # ================================================================
+        print("\n[15] El dino es un juguete")
+        dino_src = (RAIZ / "src" / "themes" / "caelestia.dino.ts").read_text(encoding="utf-8")
+        m_ojo = re.search(r"OJO_DINO\s*=\s*\[([^\]]+)\]", dino_src)
+        assert m_ojo is not None, "OJO_DINO no se encuentra en caelestia.dino.ts"
+        ojo_vals = [int(x.strip()) for x in m_ojo.group(1).split(",")]
+        ox0, oy0 = ojo_vals[0], ojo_vals[1]
+        print(f"       OJO_DINO leido de caelestia.dino.ts: x={ox0} y={oy0}")
+
+        def matriz_a_numeros(matriz):
+            if not matriz or matriz == "none":
+                return None
+            return [float(n) for n in re.findall(r"-?[\d.]+", matriz)]
+
+        # --- 15a. Salto al pulsar ---------------------------------------
+        print("\n[15a] Salto al pulsar")
+        # OJO DE INSTRUMENTO: en esta maquina el `requestAnimationFrame` bajo
+        # `--use-gl=swiftshader` no llega cada ~16ms sino cada 200-400ms, y a
+        # veces en rafagas mucho mas rapidas -- medido al construir este gate,
+        # el mismo salto (0,52s de vuelo + 0,2s de aplaste) unas veces se
+        # captura en la 3a lectura y otras se salta entero en una ventana de
+        # grabacion de 1s. Una ventana corta mide el jitter de la maquina, no
+        # el gesto. Se graba durante 3s (>4x la duracion real del gesto) y NO
+        # se para al primer avistamiento: as{i} un salto lento en esta
+        # sandbox tiene hueco de sobra para dejar al menos una lectura con
+        # ty<-10.
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        pg.evaluate("""() => {
+            window.__ultimoY = [];
+            let activo = true;
+            const bicho = document.querySelector('.cae-fundido-bicho');
+            const marcar = () => {
+                if (!activo) return;
+                window.__ultimoY.push(getComputedStyle(bicho).transform);
+                requestAnimationFrame(marcar);
+            };
+            requestAnimationFrame(marcar);
+            setTimeout(() => { activo = false; }, 3000);
+        }""")
+        pg.click(".cae-fundido-bicho")
+        pg.wait_for_function("window.__ultimoY && window.__ultimoY.length >= 3", timeout=4000)
+        pg.wait_for_timeout(3100)
+        lecturas = pg.evaluate("() => window.__ultimoY")
+        tys = []
+        for m in lecturas:
+            n = matriz_a_numeros(m)
+            tys.append(n[5] if n and len(n) >= 6 else 0.0)
+        print(f"       lecturas: {len(lecturas)} · ty minimo {min(tys) if tys else None}")
+        comprobar(len(lecturas) >= 3, f"se grabaron >=3 lecturas durante el salto ({len(lecturas)})")
+        comprobar(any(t < -10 for t in tys),
+                  f"alguna lectura tiene traslacion Y negativa: el salto ocurre (ty min {min(tys) if tys else None})")
+        volvio = pg.evaluate("""async () => {
+            const frame = () => new Promise(r => requestAnimationFrame(r));
+            const bicho = document.querySelector('.cae-fundido-bicho');
+            const t0 = performance.now();
+            while (performance.now() - t0 < 5000) {
+                const t = getComputedStyle(bicho).transform;
+                if (t === 'none' || /^matrix\\(1,\\s*0,\\s*0,\\s*1,\\s*0,\\s*0\\)$/.test(t)) return true;
+                await frame();
+            }
+            return false;
+        }""")
+        comprobar(volvio, "al final el bicho vuelve a su sitio (transform identidad o none, tope 5s)")
+        ctx.close()
+
+        # --- 15a-reduce. Sin salto con movimiento reducido --------------
+        print("\n[15a-reduce] Sin salto con movimiento reducido")
+        ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+        pg = ctx.new_page()
+        errores = []
+        pg.on("pageerror", lambda e: errores.append(str(e)))
+        pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+        pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(3000)
+        pg.click('[data-cae-ws="contacto"]')
+        pg.wait_for_timeout(200)
+        errores_totales += errores
+        pg.evaluate("""() => {
+            window.__ultimoYReduce = [];
+            let activo = true;
+            const bicho = document.querySelector('.cae-fundido-bicho');
+            const marcar = () => {
+                if (!activo) return;
+                window.__ultimoYReduce.push(getComputedStyle(bicho).transform);
+                requestAnimationFrame(marcar);
+            };
+            requestAnimationFrame(marcar);
+            setTimeout(() => { activo = false; }, 2000);
+        }""")
+        pg.click(".cae-fundido-bicho")
+        pg.wait_for_timeout(2100)
+        lecturas_reduce = pg.evaluate("() => window.__ultimoYReduce")
+        tys_reduce = []
+        for m in lecturas_reduce:
+            n = matriz_a_numeros(m)
+            tys_reduce.append(n[5] if n and len(n) >= 6 else 0.0)
+        print(f"       lecturas reducidas: {len(lecturas_reduce)} · ty minimo "
+              f"{min(tys_reduce) if tys_reduce else None}")
+        comprobar(all(t > -1 for t in tys_reduce),
+                  f"con movimiento reducido ninguna lectura salta (ty min {min(tys_reduce) if tys_reduce else None})")
+        ctx.close()
+
+        # --- 15b. Los ojos siguen al cursor ------------------------------
+        print("\n[15b] La mirada sigue al cursor")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        centro = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.mouse.move(centro["x"] - 120, centro["y"] - 120)
+        pg.wait_for_timeout(80)
+        ojo_cerca = pg.evaluate("""() => {
+            const o = document.querySelector('[data-dino-ojo]');
+            return { x: Number(o.getAttribute('x')), y: Number(o.getAttribute('y')) };
+        }""")
+        print(f"       cerca (120,120 arriba-izq): {ojo_cerca}")
+        comprobar(ojo_cerca["x"] == ox0 - 1 and ojo_cerca["y"] == oy0 - 1,
+                  f"cerca del bicho el ojo se desplaza -1,-1 desde OJO_DINO (medido {ojo_cerca}, "
+                  f"esperado x={ox0 - 1} y={oy0 - 1})")
+        # 400px de distancia, pero en diagonal arriba-izquierda: a la derecha
+        # el centro del bicho ya esta cerca del canto de un viewport de
+        # 1440px (medido ~1206px), y +400px cae fuera de la ventana -- un
+        # `mouse.move` a un punto sin ventana real detras no dispara
+        # `pointermove` en la pagina. -283,-283 (hipotenusa ~400) cae dentro.
+        pg.mouse.move(centro["x"] - 283, centro["y"] - 283)
+        pg.wait_for_timeout(80)
+        ojo_lejos = pg.evaluate("""() => {
+            const o = document.querySelector('[data-dino-ojo]');
+            return { x: Number(o.getAttribute('x')), y: Number(o.getAttribute('y')) };
+        }""")
+        print(f"       lejos (400px, diagonal arriba-izq dentro del viewport): {ojo_lejos}")
+        comprobar(ojo_lejos["x"] == ox0 and ojo_lejos["y"] == oy0,
+                  f"lejos del bicho el ojo vuelve a OJO_DINO (medido {ojo_lejos}, esperado x={ox0} y={oy0})")
+        ctx.close()
+
+        print("\n[15b-reduce] Sin mirada con movimiento reducido")
+        ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+        pg = ctx.new_page()
+        errores = []
+        pg.on("pageerror", lambda e: errores.append(str(e)))
+        pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+        pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(3000)
+        pg.click('[data-cae-ws="contacto"]')
+        pg.wait_for_timeout(500)
+        errores_totales += errores
+        centro_r = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.mouse.move(centro_r["x"] - 120, centro_r["y"] - 120)
+        pg.wait_for_timeout(80)
+        ojo_reduce = pg.evaluate("""() => {
+            const o = document.querySelector('[data-dino-ojo]');
+            return { x: Number(o.getAttribute('x')), y: Number(o.getAttribute('y')) };
+        }""")
+        print(f"       con reduce: {ojo_reduce}")
+        comprobar(ojo_reduce["x"] == ox0 and ojo_reduce["y"] == oy0,
+                  f"con movimiento reducido el ojo no sigue al cursor (medido {ojo_reduce})")
+        ctx.close()
+
+        # --- 15c. El arrastre es un vistazo ------------------------------
+        print("\n[15c] El arrastre es un vistazo")
+        # ANCLA DE VERDAD, no un `__CAE_SET_MINUTOS__(13*60)` desde fuera:
+        # ese gancho fuerza el motor de color, pero el arrastre lee el reloj
+        # REAL (`new Date()`) en el `pointerdown` -- llamarlo antes del
+        # arrastre solo pone un decorado que la propia logica de arrastre
+        # ignora, y el "antes" que se compara ya no es el punto de partida
+        # real del gesto. Visto en rojo al construir este gate: con esa
+        # forma el "antes" y el "despues" no eran comparables y el gate
+        # fallaba por una razon que no era la real. La ZONA HORARIA del
+        # contexto de Playwright, como en el Gate 7, hace que `new Date()`
+        # LEA de verdad las 13:00 sin tocar produccion.
+        ahora_utc_15c = datetime.now(timezone.utc)
+        delta_horas = (13 - (ahora_utc_15c.hour + ahora_utc_15c.minute / 60)) % 24
+        if delta_horas > 12:
+            delta_horas -= 24
+        offset_horas = round(delta_horas)
+        # Etc/GMT invierte el signo: Etc/GMT-5 es UTC+5.
+        zona_13h = "UTC" if offset_horas == 0 else f"Etc/GMT{'-' if offset_horas > 0 else '+'}{abs(offset_horas)}"
+        ctx, pg, err = nueva_pagina_en_contacto(
+            navegador, base, timezone_id=zona_13h, init_scripts=["(%s)()" % HOOK_PIXEL]
+        )
+        errores_totales += err
+        hora_real = pg.evaluate("() => new Date().getHours() + ':' + new Date().getMinutes()")
+        print(f"       zona horaria anclada: {zona_13h} (hora local real en la pagina: {hora_real})")
+
+        def _leer_estado():
+            estado = pg.evaluate("""() => ({
+                hue: getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim(),
+                esquema: document.documentElement.dataset.caeEsquema,
+            })""")
+            estado["pixel"] = pg.evaluate("() => window.__caePixel")
+            return estado
+
+        antes = _leer_estado()
+        print(f"       antes del arrastre (ancladas a las 13:00): {antes}")
+        bicho_box = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.mouse.move(bicho_box["x"], bicho_box["y"])
+        pg.mouse.down()
+        toasts = []
+        for i in range(1, 11):
+            pg.mouse.move(bicho_box["x"] + i * 45, bicho_box["y"], steps=1)
+            toasts.append(pg.evaluate("""() => {
+                const t = document.querySelector('[data-cae-toast]');
+                return t ? t.classList.contains('is-open') : false;
+            }"""))
+            pg.wait_for_timeout(40)
+        durante = _leer_estado()
+        print(f"       durante el arrastre (450px, 15h despues): {durante}")
+        print(f"       toast abierto en alguna muestra: {any(toasts)} ({toasts})")
+        pg.mouse.up()
+        pg.wait_for_timeout(300)
+        despues = _leer_estado()
+        print(f"       tras soltar: {despues}")
+        comprobar(durante["hue"] != antes["hue"],
+                  f"--cae-hue cambia durante el arrastre ({antes['hue']} -> {durante['hue']})")
+        comprobar(durante["esquema"] != antes["esquema"],
+                  f"el esquema cruza a noche durante el arrastre de 15h ({antes['esquema']} -> "
+                  f"{durante['esquema']})")
+        comprobar(not any(toasts), f"el aviso de esquema NO se abre durante el arrastre ({toasts})")
+        # Tolerancia de 1 grado: el reloj REAL sigue corriendo durante el
+        # propio arrastre (0,25 grados/minuto, ver `caelestiaTokens`), asi
+        # que unos segundos de ejecucion del gate ya mueven el hue "real" un
+        # poco -- no es que el vistazo no vuelva, es que el reloj de verdad
+        # no se ha detenido mientras se medía.
+        deriva_hue = abs(float(despues["hue"]) - float(antes["hue"]))
+        comprobar(deriva_hue <= 1.0,
+                  f"--cae-hue vuelve (con margen de deriva del reloj real) al valor de antes del "
+                  f"arrastre al soltar ({antes['hue']} -> {despues['hue']}, deriva {deriva_hue:.2f})")
+        comprobar(despues["esquema"] == antes["esquema"],
+                  f"el esquema vuelve al de antes del arrastre al soltar ({antes['esquema']} == "
+                  f"{despues['esquema']})")
+
+        # --- 15f. El fondo generativo sigue la MISMA hora que el vistazo ---
+        # `caelestiaFiguras.ts` leia `new Date()` por su cuenta: durante el
+        # arrastre los tokens de color saltaban 15h (via
+        # `__CAE_SET_MINUTOS__`) pero lo que asomaba por el troquel se
+        # quedaba con la hora real. Se lee el pixel (1,1) del canvas WebGL
+        # (HOOK_PIXEL, el mismo mecanismo que `measure-caelestia-hora.py`
+        # gate 10) en los tres mismos instantes que ya miden los tokens, y se
+        # compara el matiz del fondo contra `--cae-hue` -- no contra un
+        # `hueAt(minutos)` recalculado aqui, que duplicaria el espejo y
+        # podria divergir en silencio de lo que el propio token ya dejo
+        # medido arriba.
+        TOLERANCIA_GRADOS_BG = 30
+        for nombre, estado in (("antes", antes), ("durante", durante), ("despues", despues)):
+            if not estado["pixel"]:
+                comprobar(False, f"el fondo generativo: no se pudo leer el pixel del canvas ({nombre})")
+                continue
+            hue_bg = _matiz_oklab_deg(estado["pixel"])
+            hue_token = float(estado["hue"])
+            d = _dist_angular(hue_bg, hue_token)
+            estado["hue_bg"] = hue_bg
+            comprobar(
+                d <= TOLERANCIA_GRADOS_BG,
+                f"el fondo generativo sigue la hora efectiva ({nombre}): matiz del fondo {hue_bg:.1f}, "
+                f"token --cae-hue {hue_token:.1f} (distancia {d:.1f}, tolerancia {TOLERANCIA_GRADOS_BG})",
+            )
+        if antes.get("hue_bg") is not None and durante.get("hue_bg") is not None:
+            d_bg = _dist_angular(antes["hue_bg"], durante["hue_bg"])
+            comprobar(
+                d_bg > 5,
+                f"el matiz del fondo generativo CAMBIA durante el vistazo "
+                f"({antes['hue_bg']:.1f} -> {durante['hue_bg']:.1f}, distancia {d_bg:.1f})",
+            )
+        ctx.close()
+
+        # --- 15d. Clic sin arrastre sigue siendo un salto -----------------
+        print("\n[15d] Clic sin arrastre: salta, no cambia la hora")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        antes_d = pg.evaluate(
+            "() => getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim()"
+        )
+        bicho_box_d = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.evaluate("""() => {
+            window.__ultimoYClic = [];
+            let activo = true;
+            const bicho = document.querySelector('.cae-fundido-bicho');
+            const marcar = () => {
+                if (!activo) return;
+                window.__ultimoYClic.push(getComputedStyle(bicho).transform);
+                requestAnimationFrame(marcar);
+            };
+            requestAnimationFrame(marcar);
+            setTimeout(() => { activo = false; }, 3000);
+        }""")
+        pg.mouse.move(bicho_box_d["x"], bicho_box_d["y"])
+        pg.mouse.down()
+        pg.mouse.up()
+        pg.wait_for_timeout(3100)
+        lecturas_d = pg.evaluate("() => window.__ultimoYClic")
+        tys_d = []
+        for m in lecturas_d:
+            n = matriz_a_numeros(m)
+            tys_d.append(n[5] if n and len(n) >= 6 else 0.0)
+        despues_d = pg.evaluate(
+            "() => getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim()"
+        )
+        print(f"       ty min tras clic sin arrastre: {min(tys_d) if tys_d else None} · "
+              f"hue {antes_d} -> {despues_d}")
+        comprobar(any(t < -10 for t in tys_d),
+                  f"un pointerdown/up sin mover mas de 4px salta igual que un click ({min(tys_d) if tys_d else None})")
+        comprobar(despues_d == antes_d, f"--cae-hue no cambia con un clic sin arrastre ({antes_d} == {despues_d})")
+        ctx.close()
+
+        # --- 15e. El troquel gira con retraso de muelle y respira ----------
+        print("\n[15e] El troquel gira con retraso de muelle y respira con la velocidad")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        reposo_e = pg.evaluate(
+            "() => getComputedStyle(document.querySelector('.cae-fundido-troquel')).clipPath"
+        )
+        pares_reposo = re.findall(r"(-?[\d.]+)%\s+(-?[\d.]+)%", reposo_e)
+
+        def radio_medio(pares: list[tuple[str, str]]) -> float:
+            if not pares:
+                return 0.0
+            return sum(math.hypot(float(x) - 50, float(y) - 50) for x, y in pares) / len(pares)
+
+        radio_reposo = radio_medio(pares_reposo)
+        print(f"       troquel en reposo: {len(pares_reposo)} pares · primer par "
+              f"{pares_reposo[0] if pares_reposo else None} · radio medio {radio_reposo:.3f}")
+
+        # Grabador continuo: cada fotograma anota el clipPath COMPUTADO y el
+        # inline (`element.style.clipPath`), con marca de tiempo. Vive en la
+        # pagina desde antes del arrastre hasta despues de soltar, asi que
+        # ninguna de las aserciones siguientes depende de un `wait_for_timeout`
+        # a ciegas -- todas leen de esta misma cinta.
+        pg.evaluate("""() => {
+            window.__grab = [];
+            window.__grabActivo = true;
+            const troquel = document.querySelector('.cae-fundido-troquel');
+            const paso = () => {
+                if (!window.__grabActivo || window.__grab.length > 600) return;
+                window.__grab.push({
+                    t: performance.now(),
+                    clip: getComputedStyle(troquel).clipPath,
+                    inline: troquel.style.clipPath,
+                });
+                requestAnimationFrame(paso);
+            };
+            requestAnimationFrame(paso);
+        }""")
+
+        bicho_box_e = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2, left: b.left };
+        }""")
+        pg.mouse.move(bicho_box_e["x"], bicho_box_e["y"])
+        pg.mouse.down()
+        for i in range(1, 7):
+            # 20px por paso, 6 pasos = 120px = 4h de vistazo = 60 grados.
+            pg.mouse.move(bicho_box_e["x"] + i * 20, bicho_box_e["y"], steps=1)
+            pg.wait_for_timeout(40)
+        marca_fin_moves = pg.evaluate("() => performance.now()")
+        x_dino_durante = pg.evaluate(
+            "() => document.querySelector('.cae-fundido-bicho').getBoundingClientRect().left"
+        )
+
+        # --- c. Los lobulos respiran con la velocidad -----------------------
+        # Se mide ANTES de esperar al asentado: son los fotogramas del propio
+        # arrastre, con el raton todavia en movimiento.
+        durante_arrastre = pg.evaluate(
+            "([marca]) => window.__grab.filter((f) => f.t <= marca).map((f) => f.clip)",
+            [marca_fin_moves],
+        )
+        radios_durante = [
+            radio_medio(re.findall(r"(-?[\d.]+)%\s+(-?[\d.]+)%", c)) for c in durante_arrastre
+        ]
+        radio_max = max(radios_durante) if radios_durante else radio_reposo
+        print(f"       radio medio durante el arrastre: maximo {radio_max:.3f} vs reposo {radio_reposo:.3f} "
+              f"({len(radios_durante)} fotogramas)")
+        comprobar(radio_max > radio_reposo * 1.01,
+                  f"al menos un fotograma respira mas de un 1% sobre el radio de reposo "
+                  f"({radio_max:.3f} vs {radio_reposo * 1.01:.3f})")
+
+        # --- girado, tras el muelle: se ancla a ESTADO, no a un temporizador.
+        # Esta sandbox dispara `requestAnimationFrame` cada 200-400ms en vez
+        # de cada ~16ms (ver el registro de B5 en el CLAUDE.md del proyecto),
+        # asi que un `wait_for_timeout` fijo no da tiempo fiable ni al angulo
+        # ni al factor de respiracion para asentar. Se espera a que el radio
+        # medio vuelva a estar cerca del de reposo, con tope de 3s -- el
+        # raton sigue pulsado, asi que el angulo no se mueve mientras tanto.
+        girado = pg.evaluate(
+            """([reposoRadio]) => new Promise((resolve) => {
+                const troquel = document.querySelector('.cae-fundido-troquel');
+                const radioDe = (clip) => {
+                    const pares = [...clip.matchAll(/(-?[\\d.]+)%\\s+(-?[\\d.]+)%/g)];
+                    if (!pares.length) return 0;
+                    let suma = 0;
+                    for (const p of pares) {
+                        const x = parseFloat(p[1]) - 50;
+                        const y = parseFloat(p[2]) - 50;
+                        suma += Math.hypot(x, y);
+                    }
+                    return suma / pares.length;
+                };
+                const t0 = performance.now();
+                const mirar = () => {
+                    const clip = getComputedStyle(troquel).clipPath;
+                    const radio = radioDe(clip);
+                    if (Math.abs(radio - reposoRadio) <= reposoRadio * 0.002 || performance.now() - t0 > 3000) {
+                        resolve(clip);
+                        return;
+                    }
+                    requestAnimationFrame(mirar);
+                };
+                mirar();
+            })""",
+            [radio_reposo],
+        )
+
+        # --- a. Sigue moviendose despues de que el raton se para -----------
+        # La cinta sigue corriendo durante TODA la espera del poll anterior,
+        # asi que esta ventana cubre el asentado real, sea cual sea su
+        # duracion en esta maquina -- no un hueco fijo que la maquina lenta
+        # puede vaciar de fotogramas.
+        tras_parar = pg.evaluate(
+            "([marca]) => window.__grab.filter((f) => f.t > marca).map((f) => f.clip)",
+            [marca_fin_moves],
+        )
+        distintos_tras_parar = len({c for c in tras_parar})
+        print(f"       fotogramas tras soltar el raton (antes de `mouse.up`): {len(tras_parar)} · "
+              f"valores distintos: {distintos_tras_parar}")
+        comprobar(distintos_tras_parar >= 3,
+                  f"el clipPath sigue cambiando varios fotogramas despues de que el raton se para "
+                  f"({distintos_tras_parar} valores distintos, se pedian >= 3)")
+
+        pares_girado = re.findall(r"(-?[\d.]+)%\s+(-?[\d.]+)%", girado)
+        radio_asentado = radio_medio(pares_girado)
+        print(f"       tras el muelle (asentado, 60 grados): {len(pares_girado)} pares · "
+              f"primer par {pares_girado[0] if pares_girado else None} · radio {radio_asentado:.3f} · "
+              f"x del bicho antes {bicho_box_e['left']:.2f} durante {x_dino_durante:.2f}")
+        comprobar(girado != reposo_e, "el clipPath computado del troquel cambia mientras se arrastra")
+        comprobar(len(pares_girado) == 240,
+                  f"el troquel girado sigue siendo un polygon() de 240 pares ({len(pares_girado)})")
+        comprobar(abs(x_dino_durante - bicho_box_e["left"]) < 0.5,
+                  f"el bicho NO gira ni se desplaza en x mientras el troquel gira "
+                  f"({bicho_box_e['left']:.2f} -> {x_dino_durante:.2f})")
+        comprobar(abs(radio_asentado - radio_reposo) <= radio_reposo * 0.003,
+                  f"asentado el muelle, los lobulos vuelven a respirar al radio de reposo "
+                  f"({radio_asentado:.3f} vs {radio_reposo:.3f})")
+
+        # --- d. El primer par gira de verdad, esperado con tolerancia -------
+        # Como el angulo ya no es inmediato, se ancla a ESTADO (tope 3s) en
+        # vez de leerlo justo tras el ultimo `mouse.move`.
+        if pares_reposo:
+            rad60 = math.radians(60)
+            x0, y0 = float(pares_reposo[0][0]), float(pares_reposo[0][1])
+            dx0, dy0 = x0 - 50, y0 - 50
+            esperado_x = dx0 * math.cos(rad60) - dy0 * math.sin(rad60) + 50
+            esperado_y = dx0 * math.sin(rad60) + dy0 * math.cos(rad60) + 50
+            obtenido_x, obtenido_y = (float(pares_girado[0][0]), float(pares_girado[0][1])) if pares_girado else (None, None)
+            distancia = math.hypot(obtenido_x - esperado_x, obtenido_y - esperado_y) if obtenido_x is not None else None
+            print(f"       primer par esperado a 60 grados: ({esperado_x:.2f}, {esperado_y:.2f}) · "
+                  f"obtenido {pares_girado[0] if pares_girado else None} · distancia {distancia}")
+            comprobar(distancia is not None and distancia <= 1.5,
+                      f"el primer par ha girado de verdad hasta acercarse al objetivo esperado "
+                      f"(distancia {distancia}, tolerancia 1.5)")
+
+        pg.mouse.up()
+        marca_soltar = pg.evaluate("() => performance.now()")
+
+        # --- b. Al soltar asienta con muelle, no corta de golpe -------------
+        vuelto = pg.evaluate(
+            """([reposo]) => new Promise((resolve) => {
+                const troquel = document.querySelector('.cae-fundido-troquel');
+                const t0 = performance.now();
+                const mirar = () => {
+                    const clip = getComputedStyle(troquel).clipPath;
+                    if (clip === reposo || performance.now() - t0 > 3000) {
+                        resolve(clip);
+                        return;
+                    }
+                    requestAnimationFrame(mirar);
+                };
+                mirar();
+            })""",
+            [reposo_e],
+        )
+        pg.evaluate("() => { window.__grabActivo = false; }")
+        inline_final = pg.evaluate(
+            "() => document.querySelector('.cae-fundido-troquel').style.clipPath"
+        )
+        tras_soltar = pg.evaluate(
+            "([marca]) => window.__grab.filter((f) => f.t > marca).map((f) => f.clip)",
+            [marca_soltar],
+        )
+        distintos_de_reposo_antes_de_volver = 0
+        for c in tras_soltar:
+            if c == reposo_e:
+                break
+            if c != reposo_e:
+                distintos_de_reposo_antes_de_volver += 1
+        print(f"       tras soltar: {'igual al reposo' if vuelto == reposo_e else 'DISTINTO del reposo'} · "
+              f"fotogramas distintos del reposo antes de volver: {distintos_de_reposo_antes_de_volver} · "
+              f"inline final: {inline_final!r}")
+        comprobar(distintos_de_reposo_antes_de_volver >= 2,
+                  f"al soltar hay al menos 2 fotogramas con el clipPath distinto del reposo antes de "
+                  f"volver a el ({distintos_de_reposo_antes_de_volver}), en vez de cortar de golpe")
+        comprobar(vuelto == reposo_e,
+                  "al soltar, el clipPath computado del troquel vuelve a ser igual al de reposo "
+                  "tras el muelle elastico")
+        comprobar(inline_final == "",
+                  f"al asentar el muelle de vuelta, el inline queda vacio (era {inline_final!r})")
+        ctx.close()
+
+        print("\n[15e-reduce] Sin giro con movimiento reducido")
+        ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+        pg = ctx.new_page()
+        errores = []
+        pg.on("pageerror", lambda e: errores.append(str(e)))
+        pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+        pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(3000)
+        pg.click('[data-cae-ws="contacto"]')
+        pg.wait_for_timeout(200)
+        errores_totales += errores
+        reposo_er = pg.evaluate(
+            "() => getComputedStyle(document.querySelector('.cae-fundido-troquel')).clipPath"
+        )
+        bicho_box_er = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.mouse.move(bicho_box_er["x"], bicho_box_er["y"])
+        pg.mouse.down()
+        for i in range(1, 7):
+            pg.mouse.move(bicho_box_er["x"] + i * 20, bicho_box_er["y"], steps=1)
+            pg.wait_for_timeout(40)
+        durante_er = pg.evaluate(
+            "() => getComputedStyle(document.querySelector('.cae-fundido-troquel')).clipPath"
+        )
+        pg.mouse.up()
+        print(f"       con reduce, durante el arrastre: {'igual al reposo' if durante_er == reposo_er else 'DISTINTO'}")
+        comprobar(durante_er == reposo_er,
+                  "con movimiento reducido el clipPath del troquel no cambia durante el arrastre")
         ctx.close()
 
         # ================================================================

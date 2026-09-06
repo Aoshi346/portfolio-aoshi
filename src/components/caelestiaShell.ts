@@ -1,4 +1,4 @@
-import { contactChannels, identity, sceneIndex, type ContactChannel } from "../data/content";
+import { contactChannels, sceneIndex, type ContactChannel } from "../data/content";
 import { el, elFromMarkup } from "../utils/dom";
 
 /**
@@ -70,13 +70,13 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
   const navegacion = el("nav", "cae-ws-list", pastillas);
   navegacion.setAttribute("aria-label", "Escenas");
 
-  const punto = el("i", "cae-dot");
-  const disponible = el("span", "cae-avail", [punto, "Disponible"]);
+  // La chapa de disponible se quito de aqui (decision de Aoshi, repaso de
+  // interfaces 2026-09-05: la disponibilidad la dice la tarjeta del hero).
 
   const reloj = el("span", "cae-clock", [formatoHora(new Date())]);
   reloj.dataset.caeClock = "";
 
-  const bandeja = el("span", "cae-tray", [disponible, reloj]);
+  const bandeja = el("span", "cae-tray", [reloj]);
   const marca = el("span", "cae-mark", ["caelestia"]);
 
   const barra = el("header", "cae-bar", [marca, navegacion, bandeja]);
@@ -159,6 +159,10 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
     if (!(evento instanceof CustomEvent)) return;
     const detalle: unknown = evento.detail;
     if (typeof detalle !== "object" || detalle === null || !("oscuro" in detalle)) return;
+    // Un vistazo (el arrastre del dino) fuerza la hora sin que el visitante
+    // haya vivido ningun cambio real: no abre el aviso, que diria "el
+    // escritorio ha cambiado" de algo que no cambio de verdad.
+    if ("vistazo" in detalle && Boolean((detalle as { vistazo: unknown }).vistazo)) return;
     const oscuro = Boolean((detalle as { oscuro: unknown }).oscuro);
     notificar(
       oscuro ? "El escritorio ha cambiado a modo noche" : "El escritorio ha vuelto a modo día",
@@ -170,15 +174,12 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
     document.documentElement.removeEventListener("caelestia:esquema", alCambiarEsquema),
   );
 
-  // Primer aviso: el estado, que es lo que un reclutador viene a saber.
-  const primerAviso = window.setTimeout(() => {
-    notificar(identity.availability, `${identity.now} · ${identity.location}`);
-  }, 900);
+  // La notificacion ya no salta al entrar (decision de Aoshi, repaso de interfaces 2026-09-05:
+  // se pisaba con la entrada de Titulo y el widget "Ahora mismo", que ya lo dice). Su unico disparo es el cambio de esquema.
 
   return {
     destroy: () => {
       window.clearInterval(tic);
-      window.clearTimeout(primerAviso);
       window.clearTimeout(cierre);
       for (const limpiar of limpiadores) limpiar();
       barra.remove();

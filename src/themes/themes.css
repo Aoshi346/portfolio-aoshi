@@ -3592,6 +3592,11 @@
    */
   --cae-display-axes-texto: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
 
+  /* El primero de la tarjeta "Ahora mismo" (spec 2026-09-05): a 27 px, el
+     tamano optico 9 del token de texto da remates pesados; el 60 es el que ya
+     usa el titulo del cajon de Obra. Un token, no un literal repetido. */
+  --cae-display-axes-ficha: "opsz" 60, "wght" 700, "SOFT" 0, "WONK" 1;
+
   /*
    * La voz de CIERRE, y solo se usa en un sitio de todo el sitio: la frase de
    * «Fundido» (B5). `SOFT` a 100 redondea los angulos de los remates — la
@@ -3674,7 +3679,11 @@
 
 :root[data-theme="caelestia"] .obra-rail {
   overflow: visible;
-  height: auto;
+  /* height: auto quitado: .obra-rail ES el panel (main[data-cae-track] > *),
+     que trae height: 100% de la fase A. Con auto el panel se encogia al
+     contenido y el flex column de abajo no tenia donde crecer. */
+  display: flex;
+  flex-direction: column;
 }
 
 :root[data-theme="caelestia"] .cae-obra-row {
@@ -3682,6 +3691,7 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 18px;
   padding: 15px 0;
+  flex: 0 0 auto;
 }
 
 :root[data-theme="caelestia"] .cae-obra-card {
@@ -3775,19 +3785,101 @@
   opacity: 0;
 }
 
+/*
+ * Decision de Aoshi, repaso de interfaces 2026-09-05, primera vuelta. Antes:
+ * el cajon media 249px de alto (326-575) dentro de un workspace de 596, con
+ * 89px vacios debajo; las columnas flotaban centradas con ~60px de aire
+ * arriba y abajo. Se hizo que el cajon llenara el resto de la ventana y sus
+ * columnas colgaran desde arriba, en vez de flotar en el centro.
+ *
+ * Segunda vuelta, mismo dia: con el cajon ya lleno (top 325.75, bottom 650,
+ * padding 20 -> interior de ~284px), la columna mas alta (metadatos, ~207px)
+ * no llegaba al fondo y dejaba una banda vacia de ~120px en la parte baja
+ * del cajon. Decision de Aoshi: la captura pasa a ocupar TODA la altura del
+ * cajon (columna .cae-obra-drawer-preview, ver mas abajo) y la prosa
+ * Problema/Solucion baja de dos columnas a una.
+ *
+ * Tercera vuelta, mismo dia: la fila de cuatro columnas (flex) no aguantaba
+ * la composicion de la segunda vuelta. Medido al viewport oficial 1440x900,
+ * panel #obra 1412x748, cajon 1412x473, interior 436: la captura estirada a
+ * toda la altura media 692x433 y dejaba la prosa en apenas 164px de ancho
+ * — HyprFinance desbordaba (scrollHeight 766 contra 748). Cuatro columnas
+ * en fila no llenan 436px de alto sin romper la prosa. Decision de Aoshi:
+ * el cajon pasa a grid de tres columnas y dos filas, sin tocar el DOM (los
+ * cuatro hijos siguen en el mismo orden: titulo, captura, metadatos,
+ * prosa). El titulo y la prosa comparten columna (una encima de otra); la
+ * captura y los metadatos son columnas propias que cruzan las dos filas.
+ *
+ * Cuarta vuelta, repaso de interfaces 2026-09-05: la tercera vuelta cabia a
+ * 1440x900 pero desbordaba 22px a 1366x768 (panel #obra 616 de alto en vez
+ * de 748) con HyprFinance. Causa, un circulo: `.cae-obra-thumb` sacaba su
+ * alto de `height: 100%` sobre el AREA de grid `captura`, y esa area no
+ * tiene alto propio — lo saca de las FILAS del grid, que crecen con el
+ * texto de la prosa. Mas texto -> fila mas alta -> area mas alta -> captura
+ * (100%) mas alta -> captura mas ancha por su aspect-ratio -> menos ancho
+ * libre para la prosa -> prosa mas alta todavia. El alto del CAJON en si
+ * nunca fue el problema: es definido, viene de flex (`flex: 1 1 auto`
+ * dentro de `.obra-rail`, columna con `height: 100%`), pero nada dentro del
+ * grid podia leerlo directamente. Arreglo: `container-type: size` en este
+ * mismo `.cae-obra-drawer` convierte su alto (ya definido) en el eje de
+ * consulta `cqh` para sus descendientes, sea cual sea el tamano de las
+ * filas del grid. `.cae-obra-thumb` pasa a `height: 100cqh` (ver su regla
+ * mas abajo — el porque de NO restar el padding ahi, y el descarte de un
+ * primer intento que si lo restaba, queda documentado en esa misma regla).
+ * Con eso, 1366x768 pasa a interior fijo de 310px para la captura, y el
+ * ancho que le sobra a la prosa deja de depender de cuanto crezca su propio
+ * texto. Aviso para quien vuelva a tocar esto: si un futuro contenido
+ * desborda de todos modos, el respaldo documentado es reproducir la
+ * composicion flex de antes de esta vuelta (`git show c1017b9`) dentro de
+ * un `@media (max-height: 800px)` — NO recortar mas la fuente de la prosa,
+ * que ya bajo una vez a 13.5px/1.45 en esa misma media query.
+ */
 :root[data-theme="caelestia"] .cae-obra-drawer {
   margin-top: 14px;
+  margin-bottom: 14px;
   padding: 20px 24px;
-  border-radius: 18px;
-  border: 1px solid var(--cae-outline);
-  background: var(--cae-surface-container);
-  display: flex;
-  align-items: center;
-  gap: 26px;
+  border-radius: 16px;
+  /* Repaso de interfaces 2026-09-05, el relieve: antes era
+     --cae-surface-container, que es EXACTAMENTE --cae-elev-1, el mismo
+     tono que la ventana (.scene-surface usa --cae-elev-1) -- el cajon no
+     se leia como una pieza sobre el panel, era del mismo color que el.
+     Pasa al escalon que ya usan la barra y el dock. */
+  background: var(--cae-elev-2);
+  /* Sombra ambiental, sin filete ni brillo interior. Este valor (dia) se
+     calibro contra --cae-surface-container-high CLARO; el esquema de
+     noche tiene su propia regla mas abajo, calibrada contra el oscuro --
+     no se reutiliza el mismo numero entre esquemas. */
+  box-shadow: 0 14px 34px -16px rgb(0 0 0 / 0.22);
+  display: grid;
+  grid-template-areas:
+    "texto captura meta"
+    "prosa captura meta";
+  grid-template-columns: minmax(320px, 1fr) auto 200px;
+  grid-template-rows: auto 1fr;
+  column-gap: 26px;
+  row-gap: 18px;
+  align-items: start;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Cuarta vuelta 2026-09-05: el cajon pasa a contenedor de tamano
+     (`container-type: size`) para que la captura pueda leer SU alto en
+     unidades `cqh` en vez del `100%` que arrastraba el circulo descrito
+     abajo. El alto del cajon ya es definido (hijo flexible de
+     `.obra-rail`, `flex: 1 1 auto` dentro de una columna con
+     `height: 100%`), asi que la contencion no lo cambia — solo lo
+     expone como eje de consulta. */
+  container-type: size;
+}
+
+/* Sombra de noche: calibrada contra --cae-surface-container-high OSCURO,
+   no el mismo numero que el dia (una sombra no se recicla entre esquemas,
+   igual que la opacidad del derrame del cursor). */
+:root[data-theme="caelestia"][data-cae-esquema="noche"] .cae-obra-drawer {
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.55);
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-title {
-  flex: 0 0 230px;
+  grid-area: texto;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-kick {
@@ -3808,17 +3900,51 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-lead {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--cae-on-surface-variant);
   line-height: 1.4;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-preview {
-  flex: 0 0 200px;
+  /* Cuarta vuelta 2026-09-05: ya no hace falta `align-self: stretch` —
+     el alto de la captura sale de `cqh` (ver `.cae-obra-thumb` mas abajo),
+     no de estirar esta columna. `align-self: start` deja que el grid la
+     coloque como al resto de columnas de la fila 1. */
+  grid-area: captura;
+  align-self: start;
+  min-height: 0;
+}
+
+:root[data-theme="caelestia"] .cae-obra-drawer-preview .cae-obra-thumb {
+  /* Cuarta vuelta 2026-09-05 — el circulo que rompia 1366x768: `height: 100%`
+     lee el alto del AREA de grid de la captura, y esa area de grid no tiene
+     alto propio — lo saca de las FILAS del grid, que a su vez crecen con el
+     texto (HyprFinance alarga la prosa, la prosa alarga la fila, la fila
+     alarga el area, el area alarga la captura al 100%, la captura mas ancha
+     dejaba menos sitio a la prosa. Cierra el circulo).
+     `container-type: size` en `.cae-obra-drawer` (ver arriba) expone el alto
+     REAL del cajon como `cqh` — pero `cqh` ya resuelve contra el CONTENT BOX
+     del contenedor de tamano (el padding ya esta descontado por la
+     contencion misma), asi que `100cqh` ES el interior (alto del cajon
+     menos su padding vertical), no el borde exterior. Un primer intento
+     resto 40px OTRA VEZ (`calc(100cqh - 40px)`) y media 393 contra un
+     interior de 433 a 1440x900 — descontaba el padding dos veces. `100cqh`
+     a secas, sin resta: 433 a 1440x900 (verificado: 692x433, el mismo
+     numero que la segunda vuelta cuando la captura SI llenaba el cajon) y
+     310 a 1366x768, fijo, sin depender de cuanto crezcan las filas del
+     grid — eso es lo que cierra el circulo. `width: auto` + `aspect-ratio`
+     calculan el ancho a partir de ese alto; `max-height` sigue topando
+     pantallas muy altas (1920x1080). `.cae-obra-thumb` base fija ancho 100%
+     y alto por aspect-ratio (fila de tarjetas) — esto solo se invierte
+     dentro del cajon. */
+  width: auto;
+  height: 100cqh;
+  aspect-ratio: 16 / 10;
+  max-height: 450px;
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-meta {
-  flex: 0 0 200px;
+  grid-area: meta;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -3873,11 +3999,28 @@
   color: var(--cae-on-surface-variant);
 }
 
+/* Decision de Aoshi, repaso de interfaces 2026-09-05: la hoja del cajon es
+   --cae-elev-2 y las marcas del stack tambien pintaban --cae-elev-2 -- se
+   fundian. No hay token --cae-surface-container-highest (no se crea): en
+   vez de subir la marca, se hunde un escalon a --cae-elev-1 (el tono de la
+   ventana), que Material 3 permite dentro de un contenedor mas alto -- se
+   lee como un recorte en la hoja, no como una pieza flotando encima. */
+:root[data-theme="caelestia"] .cae-obra-drawer .obra-marca,
+:root[data-theme="caelestia"] .cae-obra-drawer .cae-obra-stack-text {
+  background: var(--cae-elev-1);
+}
+
 :root[data-theme="caelestia"] .cae-obra-prose {
-  flex: 1 1 auto;
+  /* Segunda vuelta 2026-09-05: de dos columnas a una. Con el ancho de
+     prosa reducido (la captura ahora ocupa mas alto que ancho, pero el
+     cajon entero se quedo sin margen para dos columnas legibles: a dos
+     salian ~176px cada una), una columna da ~50 caracteres por linea.
+     Tercera vuelta: `grid-area: prosa`, misma columna que el titulo
+     (`texto`), debajo de el en la segunda fila del grid del cajon. */
+  grid-area: prosa;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 22px;
+  grid-template-columns: 1fr;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -3891,10 +4034,32 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-prose p {
-  font-size: 13px;
+  /* Tercera vuelta 2026-09-05: con el grid de tres columnas / dos filas,
+     14px/1.5 cabe sin scroll a 1440x900 (panel #obra 1412x748, cajon
+     interior 436, titulo+prosa comparten columna: HyprFinance cabe con
+     margen). A 1366x768 (panel 616 de alto en vez de 748) el titulo mas la
+     prosa a 14px no cabian: se aplico un recorte a 13.5px/1.45 bajo
+     `max-height: 800px` que AUN ASI dejaba HyprFinance desbordando #obra en
+     ~22px, porque el problema real no era el tamano de la fuente — era que
+     la columna de la captura crecia con el propio texto (ver la cuarta
+     vuelta en el comentario de cabecera de `.cae-obra-drawer`, mas arriba).
+     Cuarta vuelta, mismo dia: arreglada la causa (captura con alto fijo via
+     `cqh`), HyprFinance cabe en el mismo cajon SIN este recorte — medido:
+     #obra 616/616 (sin scroll) con `.cae-obra-prose p` en 14px/1.5 en las
+     CINCO tarjetas a 1366x768. El recorte de `max-height: 800px` se deja
+     puesto (no estorba, y cubre portatiles mas bajos aun que 768 de alto que
+     no se han medido), pero HyprFinance a 1366x768 ya no depende de el. */
+  font-size: 14px;
   line-height: 1.5;
   color: var(--cae-on-surface);
   margin: 0;
+}
+
+@media (max-height: 800px) {
+  :root[data-theme="caelestia"] .cae-obra-prose p {
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
 }
 
 /*
@@ -3930,10 +4095,15 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-foot-private {
+  /* Decision de Aoshi, repaso de interfaces 2026-09-05: la nota pasa a la
+     voz de los valores (los `dd` de metadatos, Hanken Grotesk heredada del
+     cuerpo), no la de las etiquetas Martian Mono del pie — que aqui hay que
+     sobreescribir explicitamente. */
+  font-family: var(--font-body, "Hanken Grotesk", sans-serif);
   color: var(--cae-on-surface-variant);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -4077,6 +4247,56 @@
   pointer-events: none;
 }
 
+/*
+ * Estado previo a la entrada de Titulo (tarea de repaso de interfaces): nada
+ * ocultaba estas piezas antes de que llegara el chunk de coreografia (~2,9 s
+ * en la sandbox), asi que el hero se veia ENTERO en su estado FINAL -- firma
+ * a opacidad 1, lineas sin recorte, cifras a 1, terminal visible con
+ * "$ _" vacio y el trazo mostrando el contorno completo del nombre -- y
+ * saltaba de golpe al estado inicial cuando `montarEntrada` por fin corria.
+ *
+ * `visibility`, NO `display: none` ni `opacity`: `justificarTitular` mide el
+ * texto con `Range` y el aterrizaje del trazo mide con
+ * `getBoundingClientRect()`, y las dos necesitan el layout intacto (`display:
+ * none` lo destruye). Y no `opacity` porque GSAP anima esa misma propiedad
+ * inline en estas mismas piezas -- dos fuentes para el mismo valor es
+ * exactamente el tipo de conflicto que el CLAUDE.md del proyecto prohibe
+ * para `transform`, y aqui aplica igual.
+ */
+:root[data-theme="caelestia"].js-cae-entrada .cae-term,
+:root[data-theme="caelestia"].js-cae-entrada .cae-trazo-stage,
+:root[data-theme="caelestia"].js-cae-entrada .cae-firma,
+:root[data-theme="caelestia"].js-cae-entrada .cae-regla,
+:root[data-theme="caelestia"].js-cae-entrada .cae-meta,
+:root[data-theme="caelestia"].js-cae-entrada .cae-tit .cae-ln,
+:root[data-theme="caelestia"].js-cae-entrada .cae-statcol > div,
+:root[data-theme="caelestia"].js-cae-entrada .cae-widget {
+  visibility: hidden;
+}
+
+/*
+ * Cinturon de seguridad: si la clase llegara a quedar puesta con movimiento
+ * reducido (main.ts roto, orden de carga distinto), el contenido no puede
+ * depender de una animacion que nunca va a correr para revelarse -- mismo
+ * patron que `style.css` hace con `.js-intro`. Sin `!important`: el selector
+ * es IDENTICO al de arriba (misma especificidad) y esta regla va DESPUES en
+ * el fichero, asi que gana por orden de cascada sola -- comprobado leyendo
+ * `visibility` de `.cae-firma` con `prefers-reduced-motion: reduce` emulado
+ * y la clase forzada a mano: sale `visible` sin necesidad de `!important`.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="caelestia"].js-cae-entrada .cae-term,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-trazo-stage,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-firma,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-regla,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-meta,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-tit .cae-ln,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-statcol > div,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-widget {
+    visibility: visible;
+  }
+}
+
 :root[data-theme="caelestia"] .cae-term {
   z-index: 60;
 }
@@ -4116,9 +4336,11 @@
 }
 
 /*
- * El widget "Ahora mismo": tarjeta flotante en la esquina superior derecha
- * de la escena Titulo. Hermano de `.cae-head`, no hijo — vive sobre el
- * fondo directamente, con su propia superficie tonal.
+ * La tarjeta "Ahora mismo" (spec 2026-09-05-caelestia-ahora-mismo): mismo
+ * sitio y ancho que antes, pero superficie tonal SIN borde (el escalon de la
+ * barra y el dock), un primero claro, dos columnas fechadas y la pastilla al
+ * pie. Sombra por esquema: 0,22 calibrado contra surface-container-high
+ * claro; 0,5 contra el oscuro (abajo).
  */
 :root[data-theme="caelestia"] .cae-widget {
   display: block;
@@ -4126,60 +4348,187 @@
   top: 30px;
   right: 48px;
   width: 316px;
-  padding: 20px 22px;
+  padding: 18px 22px 18px;
   border-radius: 24px;
-  background: var(--cae-surface-container);
-  border: 1px solid var(--cae-outline);
+  background: var(--cae-surface-container-high);
+  box-shadow: 0 14px 36px -20px rgb(0 0 0 / 0.22);
+  color: var(--cae-on-surface);
 }
-
+:root[data-theme="caelestia"][data-cae-esquema="noche"] .cae-widget {
+  box-shadow: 0 14px 36px -20px rgb(0 0 0 / 0.5);
+}
+/* Capa de estado M3 al rozar: 6 % del primario (M3 pide 8 %; aqui el fondo ya
+   es tonal y con 8 la tarjeta viraba de tono, medido en los dos esquemas). El
+   levantamiento y apartar el fondo ya los hace montarRoce: no se duplican. */
+:root[data-theme="caelestia"] .cae-widget::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--cae-primary);
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+:root[data-theme="caelestia"] .cae-widget:hover::after {
+  opacity: 0.06;
+}
+:root[data-theme="caelestia"] .cae-wcab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  margin-bottom: 6px;
+}
 :root[data-theme="caelestia"] .cae-whd {
-  margin: 0 0 10px;
+  margin: 0;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 9.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
 }
+/*
+ * Repaso de interfaces 2026-09-06 (hallazgo B de Vera): `--cae-primary-container`
+ * sobre la propia tarjeta (`surface-container-high`) da 1,08:1 de dia y
+ * 1,21:1 de noche (medido con `scripts/measure-caelestia-titulo.py`,
+ * `_ratio` sobre las dos superficies) -- la figura era pura decoracion
+ * invisible, sobre todo de noche. `--cae-primary` a secas si resuelve
+ * (5,25:1 / 6,42:1) pero es el mismo color que la pastilla del pie y a
+ * bloque solido de 40px grita para ser un acento decorativo. `color-mix`
+ * con la propia superficie da un tono intermedio, calibrado POR ESQUEMA
+ * porque el mismo porcentaje no rinde igual en los dos (la superficie de
+ * noche es mucho mas oscura que `--cae-primary` claro, asi que un mismo %
+ * separa mas contraste alli): 55% de dia sobre `surface-container-high`
+ * CLARO da el peor caso 2,39:1 (barrido 09:30/13:30/18:30); 45% de noche
+ * sobre el OSCURO da 2,42:1 (21:30/01:30/05:30). Los dos con margen sobre
+ * el piso de 2,0:1 pedido para un acento (no es texto: no aplica el piso
+ * AA de 4,5:1).
+ */
+:root[data-theme="caelestia"] .cae-wfig {
+  display: block;
+  width: 40px;
+  height: 40px;
+  background: color-mix(in oklch, var(--cae-primary) 55%, var(--cae-surface-container-high));
+  /* la forma la pone montarFiguraViva con clip-path (240 vertices) */
+}
+:root[data-theme="caelestia"][data-cae-esquema="noche"] .cae-wfig {
+  background: color-mix(in oklch, var(--cae-primary) 45%, var(--cae-surface-container-high));
+}
+:root[data-theme="caelestia"] .cae-wnow {
+  margin: 0;
+  font-family: var(--font-display);
+  font-variation-settings: var(--cae-display-axes-ficha);
+  font-size: 27px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+:root[data-theme="caelestia"] .cae-wsub {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--cae-on-surface-variant);
+}
+:root[data-theme="caelestia"] .cae-wdos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in oklch, var(--cae-outline) 45%, transparent);
+}
+:root[data-theme="caelestia"] .cae-wfecha {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--cae-on-surface-variant);
+  margin-bottom: 3px;
+  white-space: nowrap;
+}
+:root[data-theme="caelestia"] .cae-wnombre {
+  display: block;
+  font-weight: 500;
+  font-size: 12.5px;
+  line-height: 1.25;
+}
+:root[data-theme="caelestia"] .cae-wpie {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in oklch, var(--cae-outline) 45%, transparent);
+}
+
+/*
+ * Repaso de interfaces 2026-09-06 (hallazgo A de Vera): a 1366x768 la
+ * tarjeta pisaba la columna de cifras -- `.cae-widget` acababa en bottom=366
+ * y `.cae-statcol` empezaba en top=344 (22px de solape con "2021"). Mismo
+ * patron que el cajon de Obra un poco mas arriba en este fichero
+ * (`.cae-obra-prose p`): un `@media (max-height: 800px)` que aprieta
+ * paddings y margenes entre filas SIN tocar `.cae-statcol` (es de B1) ni el
+ * tamano del primero (`tarjeta_superficie` exige que sea el texto mas
+ * grande de la tarjeta y `>= 26px`; bajarlo a 24 rompia ese gate, que corre
+ * con la MISMA ventana de 748 de alto del resto del arnes -- esta media
+ * query tambien se activa ahi, a proposito). Medido: bottom pasa de 366 a
+ * 326, hueco con `.cae-statcol` de -22px a +18px.
+ */
+@media (max-height: 800px) {
+  :root[data-theme="caelestia"] .cae-widget {
+    padding: 12px 22px 12px;
+  }
+  :root[data-theme="caelestia"] .cae-wcab {
+    margin-bottom: 4px;
+  }
+  :root[data-theme="caelestia"] .cae-wsub {
+    margin: 3px 0 0;
+  }
+  :root[data-theme="caelestia"] .cae-wdos {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  :root[data-theme="caelestia"] .cae-wpie {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+}
 
 :root[data-theme="caelestia"] .cae-pilla {
-  display: inline-block;
-  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 12px 0 10px;
   border-radius: 999px;
   background: var(--cae-anchor);
   color: var(--cae-on-anchor);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-}
-
-:root[data-theme="caelestia"] .cae-wnow {
-  margin: 12px 0 2px;
-  font-family: var(--font-display);
-  font-variation-settings: var(--cae-display-axes-texto);
-  font-size: 20px;
-  line-height: 1.15;
-}
-
-:root[data-theme="caelestia"] .cae-wsub {
-  margin: 0 0 14px;
-  font-size: 13px;
-  color: var(--cae-on-surface-variant);
-}
-
-:root[data-theme="caelestia"] .cae-wfila {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--cae-outline);
-  font-size: 12px;
-}
-
-:root[data-theme="caelestia"] .cae-wn {
-  color: var(--cae-on-surface-variant);
-  text-align: right;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
   white-space: nowrap;
+}
+:root[data-theme="caelestia"] .cae-wluz {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cae-on-anchor);
+  display: block;
+}
+/* La luz respira: SOLO con movimiento. Es un ::after, asi que el `*` de la
+   guardia generica de reduced-motion no lo alcanzaria; por eso vive entero
+   dentro de no-preference y con reduce no existe. */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-theme="caelestia"] .cae-wluz::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 1.5px solid var(--cae-on-anchor);
+    animation: caeLuzRespira 2.4s ease-in-out infinite;
+  }
+  @keyframes caeLuzRespira {
+    0%, 100% { transform: scale(0.6); opacity: 0; }
+    50% { transform: scale(1); opacity: 0.6; }
+  }
 }
 
 :root[data-theme="caelestia"] .chip {
@@ -4397,7 +4746,7 @@
 }
 
 /* La disponibilidad se dice como la dice el sistema: punto de azufre y texto,
-   igual que `.cae-avail` / `.cae-dot` en la barra. Una pastilla rellena es un
+   igual que `.cae-dot` en el aviso de la barra. Una pastilla rellena es un
    dialecto distinto para la misma frase, y le pelea el primer plano al nombre.
    Lo que la hace segunda parada de lectura es el SITIO, no el color. */
 :root[data-theme="caelestia"] .ficha-estado {
@@ -5215,6 +5564,17 @@
 :root[data-theme="caelestia"] .cae-fundido-suelo svg { width: 100%; height: auto; display: block; fill: var(--cae-on-surface-variant); }
 :root[data-theme="caelestia"] .cae-fundido-bicho { left: 50%; bottom: 30%; width: 13.125rem; margin-left: -6.5625rem; }
 :root[data-theme="caelestia"] .cae-fundido-bicho svg { width: 100%; height: auto; display: block; }
+/* El bicho es un juguete: pulsable, aunque hoy nada lo apague. Se deja
+   escrito para que un futuro `pointer-events: none` en el troquel (aunque
+   lleve `aria-hidden`) no se lo lleve por delante sin darse cuenta. NO entra
+   en el orden de tabulacion: sin `tabindex` ni `role`, los cuatro canales
+   siguen siendo las unicas paradas. `touch-action: none` es tecnico, no de
+   diseno: sin el, arrastrar en tactil tambien desplaza la pagina. */
+:root[data-theme="caelestia"] .cae-fundido-bicho {
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+}
 :root[data-theme="caelestia"] .cae-dino-cuerpo { fill: var(--cae-on-surface); }
 :root[data-theme="caelestia"] .cae-dino-ojo { fill: var(--cae-surface); transition: fill 0.3s; }
 
@@ -5744,14 +6104,6 @@
   gap: 0.5625rem;
 }
 
-:root[data-theme="caelestia"] .cae-avail {
-  display: flex;
-  align-items: center;
-  gap: 0.3125rem;
-  font-size: 0.625rem;
-  color: var(--cae-on-surface-variant);
-}
-
 :root[data-theme="caelestia"] .cae-dot {
   width: 0.375rem;
   height: 0.375rem;
@@ -5799,8 +6151,7 @@
     margin-right: 0;
   }
 
-  :root[data-theme="caelestia"] .cae-mark,
-  :root[data-theme="caelestia"] .cae-avail {
+  :root[data-theme="caelestia"] .cae-mark {
     display: none;
   }
 
@@ -5851,6 +6202,65 @@
    */
   box-shadow: 0 14px 34px -22px rgb(0 0 0 / 0.55);
   transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/*
+ * Decision de Aoshi (repaso de interfaces 2026-09-05): la barra y el dock
+ * aparecian de golpe. Reabre la frase del spec de B1 "el shell ya esta
+ * puesto, y lo unico que se anima es el escritorio" -- ahora el shell
+ * tambien entra, antes de que llegue la coreografia de Titulo (el modulo
+ * del shell monta via `import()` diferido, asi que su entrada corre primero
+ * solo por orden de carga).
+ *
+ * La barra baja desde arriba y el dock sube desde abajo, 0.4s,
+ * `cubic-bezier(0.22, 1, 0.36, 1)` -- la misma curva que `caeCredInstala`
+ * usa mas abajo en este fichero.
+ *
+ * Posicionamiento comprobado antes de tocar nada: `.cae-bar` (arriba) NO
+ * lleva `transform` propio, asi que anima `transform` sin conflicto. `.cae-dock`
+ * SI lleva `transform: translateX(-50%)` para centrarse -- animar `transform`
+ * ahi pisaria ese centrado y lo desplazaria. Por eso el dock anima la
+ * propiedad CSS `translate` (individual, se compone con `transform` sin
+ * sustituirlo) en vez de `transform`.
+ *
+ * Ninguno de los dos tiene `transition` sobre `opacity`/`transform`/`translate`
+ * que pueda pelear con la animacion (sus unicas `transition` son sobre
+ * `background`).
+ *
+ * Todo dentro de `no-preference`: bajo movimiento reducido no existe
+ * animacion ninguna (rama obligatoria de este proyecto), y aqui no hace
+ * falta guardia aparte para pseudo-elementos porque no se anima ninguno.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes caeShellBaja {
+    from {
+      transform: translateY(-0.75rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes caeShellSube {
+    from {
+      translate: 0 0.75rem;
+      opacity: 0;
+    }
+    to {
+      translate: 0 0;
+      opacity: 1;
+    }
+  }
+
+  :root[data-theme="caelestia"] .cae-bar {
+    animation: caeShellBaja 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  :root[data-theme="caelestia"] .cae-dock {
+    animation: caeShellSube 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 :root[data-theme="caelestia"] .cae-dock-item {
