@@ -4388,12 +4388,32 @@
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
 }
+/*
+ * Repaso de interfaces 2026-09-06 (hallazgo B de Vera): `--cae-primary-container`
+ * sobre la propia tarjeta (`surface-container-high`) da 1,08:1 de dia y
+ * 1,21:1 de noche (medido con `scripts/measure-caelestia-titulo.py`,
+ * `_ratio` sobre las dos superficies) -- la figura era pura decoracion
+ * invisible, sobre todo de noche. `--cae-primary` a secas si resuelve
+ * (5,25:1 / 6,42:1) pero es el mismo color que la pastilla del pie y a
+ * bloque solido de 40px grita para ser un acento decorativo. `color-mix`
+ * con la propia superficie da un tono intermedio, calibrado POR ESQUEMA
+ * porque el mismo porcentaje no rinde igual en los dos (la superficie de
+ * noche es mucho mas oscura que `--cae-primary` claro, asi que un mismo %
+ * separa mas contraste alli): 55% de dia sobre `surface-container-high`
+ * CLARO da el peor caso 2,39:1 (barrido 09:30/13:30/18:30); 45% de noche
+ * sobre el OSCURO da 2,42:1 (21:30/01:30/05:30). Los dos con margen sobre
+ * el piso de 2,0:1 pedido para un acento (no es texto: no aplica el piso
+ * AA de 4,5:1).
+ */
 :root[data-theme="caelestia"] .cae-wfig {
   display: block;
   width: 40px;
   height: 40px;
-  background: var(--cae-primary-container);
+  background: color-mix(in oklch, var(--cae-primary) 55%, var(--cae-surface-container-high));
   /* la forma la pone montarFiguraViva con clip-path (240 vertices) */
+}
+:root[data-theme="caelestia"][data-cae-esquema="noche"] .cae-wfig {
+  background: color-mix(in oklch, var(--cae-primary) 45%, var(--cae-surface-container-high));
 }
 :root[data-theme="caelestia"] .cae-wnow {
   margin: 0;

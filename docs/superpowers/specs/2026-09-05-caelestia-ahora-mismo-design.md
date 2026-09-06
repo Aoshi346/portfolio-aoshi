@@ -314,6 +314,50 @@ viewport 1366×768, el resto del arnés sigue usando 1412×748): visto en rojo c
 hay >=8px entre el pie de la tarjeta y la columna de cifras (widget.bottom=326, statcol.top=344,
 hueco=18px)`.
 
+### Hallazgo cerrado, repaso de interfaces 2026-09-06: la figura viva no se distinguía
+
+Hallazgo B de Vera: `.cae-wfig` pintaba `--cae-primary-container` sobre la propia tarjeta
+(`surface-container-high`), casi el mismo tono en los dos esquemas — medido **1,08:1 de día**
+(09:30/13:30/18:30) y **1,21:1 de noche** (21:30/01:30/05:30), muy por debajo del piso de acento
+(2,0:1; no aplica el piso de texto AA de 4,5:1, es decoración). `--cae-primary` a secas resuelve de
+sobra (5,25:1 / 6,42:1) pero es el mismo color exacto de la pastilla del pie y a bloque sólido de
+40px grita para ser un acento — así que se mezcla con la propia superficie vía `color-mix(in oklch,
+...)`, calibrado POR ESQUEMA porque el mismo porcentaje no rinde igual en los dos esquemas (la
+superficie de noche es mucho más oscura que `--cae-primary` claro, así que el mismo % separa más
+contraste allí): **55% de `--cae-primary` de día** sobre `surface-container-high` CLARO, **45% de
+noche** sobre el OSCURO. La claridad de estos tokens no se mueve con la hora (solo el matiz), así
+que basta muestrear tres horas por esquema.
+
+Medido antes/después (peor caso del barrido, `_parse_rgb`/`_ratio` ya existentes en el arnés):
+
+```
+antes:   dia 1.08:1 (09:30)   noche 1.21:1 (21:30)
+despues: dia 2.39:1 (09:30)   noche 2.42:1 (21:30)
+```
+
+Gate nuevo `tarjeta_figura_visible`: visto en rojo contra el CSS anterior — `FALLO esquema dia:
+peor ratio figura/tarjeta a las 09:30: 1.08:1 (piso 2,0)` y `FALLO esquema noche: peor ratio
+figura/tarjeta a las 21:30: 1.21:1 (piso 2,0)` — y en verde tras el arreglo — `OK esquema dia:
+peor ratio figura/tarjeta a las 09:30: 2.39:1 (piso 2,0)` y `OK esquema noche: peor ratio
+figura/tarjeta a las 21:30: 2.42:1 (piso 2,0)`.
+
+### Verificación final del repaso de interfaces (2026-09-06)
+
+- `npm run build`: exit 0. `npm run lint`: exit 0.
+- `measure-caelestia-titulo.py` completo (incluidos los dos gates nuevos de este repaso): **0
+  fallo(s)**.
+- `scripts/verify.py --url http://127.0.0.1:4193`: `TODO OK — 12 fallos conocidos, 0 nuevos
+  (verify-baseline.json)`.
+- Capturas 1440×900 a las 13:00 y 23:00, y 1366×768 a las 13:00, todas con
+  `window.__CAE_SET_MINUTOS__` y la tarjeta ya aterrizada: la figura se distingue del fondo de la
+  tarjeta en los dos esquemas y a 1366×768 la tarjeta ya no pisa la columna de cifras.
+- Aviso de entorno, no de este cambio: `entrada()` (fuga previa a la entrada) salió roja de forma
+  intermitente contra código SIN TOCAR (script y CSS de antes de este repaso, mismo build, mismo
+  servidor) — 2 de 3 repeticiones en verde, 1 en rojo con exactamente el mismo código. Es carga
+  compartida de la sandbox (otro `vite preview` de otra sesión corriendo en paralelo llegó a hacer
+  que el OOM killer matara a mitad de una corrida el proceso `node` de este mismo preview), no una
+  regresión de los dos arreglos de este repaso — no se tocó `hero.ts` ni la coreografía de entrada.
+
 ## Gates de crítica
 
 Al cerrar: `lidia-naive-tester` (¿se lee en dos segundos qué es y si está disponible?) y

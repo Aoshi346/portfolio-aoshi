@@ -526,6 +526,43 @@ def tarjeta_portatil(pg, base: str) -> None:
     ctx.close()
 
 
+def tarjeta_figura_visible(pg, base: str) -> None:
+    """Repaso de interfaces 2026-09-06 (hallazgo B de Vera): `.cae-wfig`
+    pintaba `--cae-primary-container` sobre la propia tarjeta
+    (`surface-container-high`), 1,10:1 de dia y 1,21:1 de noche -- la figura
+    viva, pensada como acento, era invisible. El piso pedido es de acento
+    decorativo (2,0:1), no de texto (4,5:1 AA). La claridad de los tokens no
+    se mueve con la hora (solo el matiz), asi que basta muestrear tres horas
+    por esquema."""
+    print("\n[tarjeta] la figura viva se distingue del fondo de la tarjeta (>=2,0:1)")
+    LEE = """() => {
+      const f = document.querySelector('#hero .cae-wfig');
+      const w = document.querySelector('#hero .cae-widget');
+      if (!f || !w) return null;
+      return { fig: getComputedStyle(f).backgroundColor, tarjeta: getComputedStyle(w).backgroundColor };
+    }"""
+    for esquema, horas in (("dia", ("09:30", "13:30", "18:30")), ("noche", ("21:30", "01:30", "05:30"))):
+        peor = (99.0, "")
+        for h in horas:
+            abrir(pg, base, h)
+            d = pg.evaluate(LEE)
+            assert_que(d is not None, f"existe .cae-wfig a las {h}")
+            if d is None:
+                continue
+            fig = _parse_rgb(d["fig"])
+            tarjeta = _parse_rgb(d["tarjeta"])
+            if not fig or not tarjeta:
+                assert_que(False, f"no se pudo parsear el color de la figura ({d['fig']} / {d['tarjeta']})")
+                continue
+            r = _ratio(fig[:3], tarjeta[:3])
+            if r < peor[0]:
+                peor = (r, h)
+        assert_que(
+            peor[0] >= 2.0,
+            f"esquema {esquema}: peor ratio figura/tarjeta a las {peor[1]}: {peor[0]:.2f}:1 (piso 2,0)",
+        )
+
+
 def entrada(pg, base: str) -> None:
     print("\n[entrada] el trazo existe y el movimiento reducido lo salta")
     abrir(pg, base, "13:00")
@@ -842,6 +879,7 @@ def main() -> int:
         tarjeta_figura(pg, args.base)
         tarjeta_contraste(pg, args.base)
         tarjeta_portatil(pg, args.base)
+        tarjeta_figura_visible(pg, args.base)
         entrada(pg, args.base)
         roce(pg, args.base)
 
