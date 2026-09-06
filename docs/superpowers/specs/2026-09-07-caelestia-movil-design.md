@@ -3,6 +3,7 @@
 Estado: pendiente de plan
 Fecha: 2026-09-07
 Rama de trabajo: `design/caelestia-movil` (worktree `portfolio-aoshi-movil`), desde `main` (`1f41e6c`)
+Plan: `docs/superpowers/plans/2026-09-07-caelestia-movil.md`
 Origen: Aoshi miró Caelestia en su teléfono al cerrar el repaso de interfaces
 (`2026-09-05-caelestia-repaso-interfaces.md`) y las escenas 1 a 4 no se veían. No es una
 regresión: B1, B2, B3 y B4 dejaron el móvil fuera de alcance a propósito. Aoshi reabre esa
