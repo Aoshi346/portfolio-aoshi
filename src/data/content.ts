@@ -43,7 +43,7 @@ export const identity: Identity = {
   linkedin: "https://www.linkedin.com/in/aoshi-blanco-sanz-14119b2b7",
   githubAvatar: "https://avatars.githubusercontent.com/u/137179835?v=4",
   availability: "Disponible para proyectos",
-  now: "Freelancer",
+  now: "Full Stack Developer",
   since: "2021",
   invitation: "Cuéntame tu idea.",
 };

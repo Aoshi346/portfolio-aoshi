@@ -1,6 +1,6 @@
 # Caelestia — la tarjeta «Ahora mismo», rediseño
 
-Estado: en ejecucion
+Estado: implementado
 Fecha: 2026-09-05
 Rama de trabajo: `design/caelestia-ahora-mismo` (worktree `portfolio-aoshi-ahora-mismo`), desde `fix/repaso-interfaces`
 Plan: `docs/superpowers/plans/2026-09-05-caelestia-ahora-mismo.md`
@@ -214,8 +214,196 @@ Cada uno tiene que verse en **rojo** contra el código actual antes de aceptarse
    texto de la pastilla sobre `--cae-anchor`, **con la capa de estado puesta** (hover real con
    `page.hover()`, nunca un `MouseEvent` sintético). AA en todos.
 
+## Registro de implementación
+
+Cada gate se vio en rojo contra el código anterior antes de aceptarse. Lo que rompía cada uno,
+literal, y las medidas finales:
+
+- **Task 1 — literal `identity.now`.** Rojo esperado y visto: `FALLO el widget dice 'Freelancer',
+  literal de content.ts` (el arnés llevaba el literal viejo a mano). Verde tras leer `content.ts`
+  con regex: `OK el widget dice 'Full Stack Developer', literal de content.ts`. Se comprobó además
+  que el literal nuevo llega a la ficha `neofetch` de «Quién soy» sin tocar `about.ts`.
+
+- **Task 2 — orden y columnas.** Rojo: el DOM viejo (`cae-whd`, `cae-pilla`, `cae-wnow`, `cae-wsub`,
+  `cae-wfila`, `cae-wfila`) no cumplía ni el orden de hijos ni las dos columnas fechadas. Verde tras
+  reescribir `hero.ts`: hijos directos en orden `cae-wcab`/`cae-wnow`/`cae-wsub`/`cae-wdos`/`cae-wpie`,
+  y con el CSS de la Task 3 puesto, `grid-template-columns` midió **`117.766px 140.234px`** (dos
+  pistas, ninguna igual — la fecha por columna no reserva el mismo ancho que el nombre).
+
+- **Task 3 — superficie, tipografía, luz.** Rojo: borde `1px`, fondo `surface-container` (el de la
+  ventana, no el de la barra), tamaño óptico `opsz 9` y el anillo de la luz en `none` (no respiraba).
+  Verde: `borde 0px`; fondo `oklch(0.925 0.026 255)` — igual al de `.cae-bar`, distinto del de
+  `#hero`; el primero mide **27px**, es el texto más grande de la tarjeta y **cabe en una línea: 256
+  de 272px de caja** (medido con `Range`, no con la caja de bloque del `<span>`); ejes
+  `"opsz" 60, "wght" 700`; el anillo anima como `caeLuzRespira` y con movimiento reducido es `none`.
+
+- **Task 4 — la figura viva.** Rojo: `clip-path: none` en `.cae-wfig` (0 pares, sin figura). Verde:
+  `polygon()` de **240 pares** siempre, cambia de forma sola en el barrido con tope de 6s (anclado a
+  estado, no a un tiempo fijo), y con movimiento reducido queda fija tras una sola pintura.
+
+- **Task 5 — la entrada brota de la luz.** Rojo: la tarjeta entraba con un `fromTo` de opacidad, sin
+  ningún `circle(` en su `clip-path` durante el muestreo. Verde: se registró un `circle()` con radio
+  mínimo de **0.0px** (arranca en el punto de la luz y crece hasta 420px, `power3.inOut`), y al
+  aterrizar la tarjeta **no** conserva `clip-path` inline (`''`). Con movimiento reducido nunca
+  aparece `clip-path`.
+
+- **Task 6 — contraste con la capa de estado.** Sabotaje (`.cae-wfecha { color: var(--cae-outline) }`,
+  build, correr): **`FALLO peor par de la tarjeta fecha a las 06:30: 1.19:1 (piso AA 4.5)`** — la
+  `outline` de noche cae muy por debajo de AA, el mismo fallo real que ya se pagó en B4. Revertido,
+  build, correr: **`OK peor par de la tarjeta ubicacion a las 12:30: 5.01:1 (piso AA 4.5)`**. El
+  barrido de las 24 horas con hover real (`pg.hover`, nunca un `MouseEvent` sintético) y la capa de
+  estado apilada sobre el fondo antes de medir dejó el arnés completo en **0 fallo(s)**.
+
+### Verificación final (Task 6, Step 2)
+
+- `npm run build`: exit 0. `npm run lint`: exit 0.
+- `measure-caelestia-titulo.py`: **0 fallo(s)** (peor par 5.01:1, ver arriba).
+- `measure-caelestia-hora.py`: `OK — motor de color de Caelestia en verde` (el shell de la fase A
+  sigue intacto).
+- `measure-caelestia-quien-soy.py`: `TODO VERDE` (peor par 5.72:1, la ficha con el literal nuevo).
+- `scripts/verify.py --url http://127.0.0.1:4193`: `TODO OK — 12 fallos conocidos, 0 nuevos
+  (verify-baseline.json)` — la línea base no cambió, ningún fallo nuevo, ninguno resuelto sin
+  quitar de la base.
+- Capturas 1440×900 de `?theme=caelestia` a las 13:00 y 23:00, y de `?theme=vice` y `?theme=hyprland`:
+  las cuatro con cero errores de consola/`pageerror`. Vice e Hyprland se ven igual que antes de la
+  Task 6 (`.cae-widget` sigue sin pintarse fuera de Caelestia).
+
+### Hallazgo abierto, no arreglado en esta tarea: 1366×768
+
+A esa resolución (portátil habitual, fuera del viewport oficial 1440×900 del tema) la pastilla
+`.cae-pilla` se solapa con la primera fila de la columna de cifras (`.cae-statcol`), medido con
+`getBoundingClientRect()`:
+
+```
+widget:  { top: 98,  left: 988,  right: 1304, bottom: 366, width: 316, height: 268 }
+statcol: { top: 344, left: 1136, right: 1304, bottom: 588, width: 168, height: 244 }
+overlap: true
+```
+
+La tarjeta no cambia de posición/ancho con el viewport (ambos son `absolute` con coordenadas fijas
+en `px`), así que por debajo de cierta altura de página la tarjeta y la columna de cifras siempre
+van a coincidir en Y. No estaba en el alcance de esta tarea arreglarlo — el spec fija el viewport
+oficial en 1440×900 y deja 390px fuera de alcance, pero no dice nada de 1366×768 — así que queda
+registrado como hallazgo, no como regresión introducida por el rediseño (la tarjeta ya vivía en esa
+misma posición antes del rediseño de la Task 6).
+
+### Hallazgo cerrado, repaso de interfaces 2026-09-06: 1366×768
+
+El hallazgo de arriba (dejado abierto al cerrar la Task 6) es el hallazgo A del repaso de
+interfaces de Vera. Arreglo: un `@media (max-height: 800px)` en `.cae-widget`/`.cae-wcab`/
+`.cae-wsub`/`.cae-wdos`/`.cae-wpie` (mismo patrón que `.cae-obra-drawer`/`.cae-obra-prose p` un poco
+más arriba en `themes.css`) que aprieta paddings y márgenes entre filas sin tocar `.cae-statcol`
+(es de B1) ni el tamaño del primero (bajarlo de 27 a 24px rompía la aserción `tarjeta_superficie`
+de que el primero es el texto más grande de la tarjeta y mide `>= 26px` — esa aserción corre con la
+MISMA ventana de 748px de alto del resto del arnés, así que la media query también se activa ahí, a
+propósito, y se verificó que sigue en verde).
+
+Medido antes/después con `getBoundingClientRect()` a 1366×768, 13:00:
+
+```
+antes:   widget.bottom=366  statcol.top=344  hueco=-22px (solape)
+despues: widget.bottom=326  statcol.top=344  hueco=18px
+```
+
+A 1440×900 no cambia nada (`widget.bottom=366` en los dos casos, `max-height: 800px` no se activa
+a 900 de alto).
+
+Gate nuevo `tarjeta_portatil` en `measure-caelestia-titulo.py` (contexto/página propios con
+viewport 1366×768, el resto del arnés sigue usando 1412×748): visto en rojo contra el CSS anterior
+— `FALLO a 1366x768 hay >=8px entre el pie de la tarjeta y la columna de cifras
+(widget.bottom=366, statcol.top=344, hueco=-22px)` — y en verde tras el arreglo — `OK a 1366x768
+hay >=8px entre el pie de la tarjeta y la columna de cifras (widget.bottom=326, statcol.top=344,
+hueco=18px)`.
+
+### Hallazgo cerrado, repaso de interfaces 2026-09-06: la figura viva no se distinguía
+
+Hallazgo B de Vera: `.cae-wfig` pintaba `--cae-primary-container` sobre la propia tarjeta
+(`surface-container-high`), casi el mismo tono en los dos esquemas — medido **1,08:1 de día**
+(09:30/13:30/18:30) y **1,21:1 de noche** (21:30/01:30/05:30), muy por debajo del piso de acento
+(2,0:1; no aplica el piso de texto AA de 4,5:1, es decoración). `--cae-primary` a secas resuelve de
+sobra (5,25:1 / 6,42:1) pero es el mismo color exacto de la pastilla del pie y a bloque sólido de
+40px grita para ser un acento — así que se mezcla con la propia superficie vía `color-mix(in oklch,
+...)`, calibrado POR ESQUEMA porque el mismo porcentaje no rinde igual en los dos esquemas (la
+superficie de noche es mucho más oscura que `--cae-primary` claro, así que el mismo % separa más
+contraste allí): **55% de `--cae-primary` de día** sobre `surface-container-high` CLARO, **45% de
+noche** sobre el OSCURO. La claridad de estos tokens no se mueve con la hora (solo el matiz), así
+que basta muestrear tres horas por esquema.
+
+Medido antes/después (peor caso del barrido, `_parse_rgb`/`_ratio` ya existentes en el arnés):
+
+```
+antes:   dia 1.08:1 (09:30)   noche 1.21:1 (21:30)
+despues: dia 2.39:1 (09:30)   noche 2.42:1 (21:30)
+```
+
+Gate nuevo `tarjeta_figura_visible`: visto en rojo contra el CSS anterior — `FALLO esquema dia:
+peor ratio figura/tarjeta a las 09:30: 1.08:1 (piso 2,0)` y `FALLO esquema noche: peor ratio
+figura/tarjeta a las 21:30: 1.21:1 (piso 2,0)` — y en verde tras el arreglo — `OK esquema dia:
+peor ratio figura/tarjeta a las 09:30: 2.39:1 (piso 2,0)` y `OK esquema noche: peor ratio
+figura/tarjeta a las 21:30: 2.42:1 (piso 2,0)`.
+
+### Verificación final del repaso de interfaces (2026-09-06)
+
+- `npm run build`: exit 0. `npm run lint`: exit 0.
+- `measure-caelestia-titulo.py` completo (incluidos los dos gates nuevos de este repaso): **0
+  fallo(s)**.
+- `scripts/verify.py --url http://127.0.0.1:4193`: `TODO OK — 12 fallos conocidos, 0 nuevos
+  (verify-baseline.json)`.
+- Capturas 1440×900 a las 13:00 y 23:00, y 1366×768 a las 13:00, todas con
+  `window.__CAE_SET_MINUTOS__` y la tarjeta ya aterrizada: la figura se distingue del fondo de la
+  tarjeta en los dos esquemas y a 1366×768 la tarjeta ya no pisa la columna de cifras.
+- Aviso de entorno, no de este cambio: `entrada()` (fuga previa a la entrada) salió roja de forma
+  intermitente contra código SIN TOCAR (script y CSS de antes de este repaso, mismo build, mismo
+  servidor) — 2 de 3 repeticiones en verde, 1 en rojo con exactamente el mismo código. Es carga
+  compartida de la sandbox (otro `vite preview` de otra sesión corriendo en paralelo llegó a hacer
+  que el OOM killer matara a mitad de una corrida el proceso `node` de este mismo preview), no una
+  regresión de los dos arreglos de este repaso — no se tocó `hero.ts` ni la coreografía de entrada.
+
 ## Gates de crítica
 
 Al cerrar: `lidia-naive-tester` (¿se lee en dos segundos qué es y si está disponible?) y
 `vera-art-director` (jerarquía, rejilla 4/8, tokens). Como en B1, un BLOCK de Vera con P0 se
 arregla; los P1 se registran.
+
+### Resultado (2026-09-06, build `2400783` en el puerto 4193, viewport 1440x900)
+
+**`vera-art-director`: 6,6/10 contra el gate de 7,5, BLOCK aceptado como residual** (mismo
+patrón que Vice, el shell, B1 y B4). Sin P0 propio de la tarjeta. Positivos verificados por
+medida: anti-mock limpio, orden y columnas exactos al spec, brote `circle(0px)` a `circle(419.9px)`
+y sin `clip-path` al aterrizar, reduce-motion correcto, peor par 5,01:1 coincidente con el
+registro. Hallazgos:
+
+- **P1, la figura viva casi no se distinguía** (1,10:1 de día, 1,21:1 de noche contra la
+  tarjeta). **Arreglado antes de cerrar** (`2cb1b50`, ver «Hallazgo cerrado» arriba): 2,39:1 y
+  2,42:1, con gate `tarjeta_figura_visible` visto en rojo.
+- **P0 por recurrencia (6.ª vez en el proyecto), la escala tipográfica y el espaciado fuera de
+  la rejilla 4/8** (cinco tamaños ad hoc, siete valores de espaciado). Es la misma deuda
+  sistémica que B1 dejó registrada como conocida; no se corrige en esta pieza porque una escala
+  por componente no arregla una escala de proyecto. Queda abierta a nivel de tema.
+- **P2, el brote tarda en llegar** (~7,7 s tras el `commit` en la sandbox). Es la posición del
+  widget en la timeline del hero (`-=0.2` tras las cifras) medida con el rAF de swiftshader a
+  200-400 ms por fotograma; en un navegador real la entrada entera dura ~4 s. Decisión de ritmo,
+  no defecto.
+
+**`lidia-naive-tester` (Marta Ruiz): 6,4/10.** La tarjeta se lee en el orden previsto y a las
+dos horas; rol y disponibilidad se pillan al vuelo. Hallazgos:
+
+- **P1 (reconfirmado de B1, no nuevo): la tabla de dos columnas mezcla estudios y trabajo sin
+  rótulo.** Los rótulos son los literales de `content.ts` (`10.º semestre`, `Ago 2025 — May 2026`)
+  y la columna es la decisión «fechada» del brainstorming (§ «Orden y jerarquía»). Queda
+  registrado; cambiarlo es una decisión de contenido de Aoshi, no de esta pieza.
+- **P2 (nuevo): la pastilla «Disponible para proyectos» parece un botón y es inerte.** Es un
+  `<span>` sin cursor ni hover. Registrado; el spec la eligió a propósito como chapa de estado.
+- **P1 fuera del encargo, descartado como artefacto del instrumento:** «el titular se pierde de
+  noche». En su captura el reloj de la barra marca 19:42 (hora real), el shell está en esquema
+  oscuro y el fondo generativo en claro. Causa: `__CAE_SET_MINUTOS__` fuerza los tokens del DOM,
+  pero en esta rama el fondo (`caelestiaFiguras.ts`) y el reloj de la barra leían `new Date()`
+  por su cuenta, así que forzar las 23:00 a las 19:42 reales produce un estado que ningún
+  visitante puede ver. El arnés de Título barre el contraste del titular las 24 horas y está en
+  verde. Desde `4fcdd42` (rama `fix/repaso-interfaces`, «el fondo generativo sigue el vistazo del
+  dino») el fondo escucha la hora efectiva del motor y el artefacto desaparece también de las
+  capturas de los arneses.
+
+**Regresión cazada por el orquestador al mirar las capturas, no por los críticos:** a 1366x768
+la tarjeta nueva pisaba la cifra «2021» por 22 px (la vieja dejaba 27 px de aire). Arreglada
+(`9212af0`) con gate `tarjeta_portatil` visto en rojo. Ver «Hallazgo cerrado» arriba.

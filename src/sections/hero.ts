@@ -147,20 +147,32 @@ export function createHero(): HTMLElement {
    */
   const semestre = education[0].period.match(/\(([^)]+)\)/)?.[1] ?? education[0].period;
 
-  const disponible = el("span", "cae-pilla", [identity.availability]);
+  const luz = el("i", "cae-wluz", []);
+  luz.setAttribute("aria-hidden", "true");
+  const disponible = el("span", "cae-pilla", [luz, identity.availability]);
+  const figura = el("span", "cae-wfig", []);
+  figura.setAttribute("aria-hidden", "true");
   const wnow = el("p", "cae-wnow", [identity.now]);
   const wsub = el("p", "cae-wsub", [`${identity.location} · Desde ${identity.since}`]);
 
-  const wfila = (izq: string, der: string): HTMLElement =>
-    el("div", "cae-wfila", [el("span", "", [izq]), el("span", "cae-wn", [der])]);
+  /*
+   * Dos columnas fechadas, no dos filas de tabla (spec 2026-09-05-caelestia-
+   * ahora-mismo): la fecha va ENCIMA como etiqueta y el nombre debajo, asi
+   * estudios y empresa se leen como dos cosas distintas (hallazgo de Lidia
+   * en B1), no como dos filas iguales.
+   */
+  const wcol = (fecha: string, nombre: string): HTMLElement =>
+    el("div", "cae-wcol", [el("small", "cae-wfecha", [fecha]), el("b", "cae-wnombre", [nombre])]);
 
   const widget = el("div", "cae-widget", [
-    el("p", "cae-whd", ["Ahora mismo"]),
-    disponible,
+    el("div", "cae-wcab", [el("p", "cae-whd", ["Ahora mismo"]), figura]),
     wnow,
     wsub,
-    wfila(education[0].degree, semestre),
-    wfila(experience[0].organization, experience[0].period),
+    el("div", "cae-wdos", [
+      wcol(semestre, education[0].degree),
+      wcol(experience[0].period, experience[0].organization),
+    ]),
+    el("div", "cae-wpie", [disponible]),
   ]);
 
   /*

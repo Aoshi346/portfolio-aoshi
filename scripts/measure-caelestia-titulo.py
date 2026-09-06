@@ -16,8 +16,10 @@ spec. Ninguna se da por buena sin haberla visto dar rojo contra el fallo que
 dice cazar.
 """
 import argparse
+import re
 import sys
 import time
+from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
@@ -253,6 +255,16 @@ def firma_y_cifras(pg, base: str) -> None:
     )
 
 
+def literal_now() -> str:
+    """`identity.now` tal como esta escrito en content.ts. El arnes no puede
+    importar TypeScript, asi que lo lee como texto; si no lo encuentra FALLA en
+    vez de devolver un valor por defecto (un gate que adivina no vigila)."""
+    fuente = (Path(__file__).resolve().parent.parent / "src" / "data" / "content.ts").read_text(encoding="utf-8")
+    m = re.search(r'^\s*now:\s*"([^"]+)",', fuente, re.M)
+    assert m, "no se encuentra `now: \"...\"` en content.ts"
+    return m.group(1)
+
+
 def widget(pg, base: str) -> None:
     print("\n[widget] todo lo que pinta existe en content.ts")
     abrir(pg, base, "13:00")
@@ -261,7 +273,7 @@ def widget(pg, base: str) -> None:
     )
     esperado = [
         "Disponible para proyectos",   # identity.availability
-        "Freelancer",                  # identity.now
+        literal_now(),                 # identity.now, leido de content.ts (Task 1 del plan Ahora mismo)
         "Caracas, Venezuela",          # identity.location
         "2021",                        # identity.since
         "Ingeniería de Sistemas",      # education[0].degree
@@ -276,6 +288,279 @@ def widget(pg, base: str) -> None:
         assert_que(e in texto, f"el widget dice {e!r}, literal de content.ts")
     # El fallo real que hubo: un dato derivado que no existe en ninguna parte.
     assert_que("Repositorios públicos" not in texto, "el widget no inventa datos derivados")
+
+
+def tarjeta_orden(pg, base: str) -> None:
+    print("\n[tarjeta] orden quien / que hace / estado, dos columnas fechadas")
+    abrir(pg, base, "13:00")
+    d = pg.evaluate(
+        """() => {
+          const w = document.querySelector('#hero .cae-widget'); if (!w) return null;
+          const clases = [...w.children].map(c => c.className.split(' ')[0]);
+          const cols = [...w.querySelectorAll('.cae-wdos > .cae-wcol')];
+          const colsOk = cols.length === 2 && cols.every(c => c.children.length === 2
+             && c.children[0].matches('small.cae-wfecha') && c.children[1].matches('b.cae-wnombre'));
+          const luz = w.querySelector('.cae-wpie .cae-pilla > i.cae-wluz');
+          const fig = w.querySelector('.cae-wcab .cae-wfig');
+          return { clases, colsOk, luz: !!luz, fig: !!fig,
+                   gridCols: getComputedStyle(w.querySelector('.cae-wdos') || w).gridTemplateColumns };
+        }"""
+    )
+    assert_que(d is not None, "existe #hero .cae-widget")
+    if d is None:
+        return
+    assert_que(d["clases"] == ["cae-wcab", "cae-wnow", "cae-wsub", "cae-wdos", "cae-wpie"],
+               f"los hijos directos van en orden cabecera/primero/ubicacion/columnas/pie ({d['clases']})")
+    assert_que(d["colsOk"], "dos columnas, cada una con la fecha (small) antes del nombre (b)")
+    assert_que(d["luz"], "la pastilla del pie lleva la luz (i.cae-wluz)")
+    assert_que(d["fig"], "la cabecera lleva el hueco de la figura (.cae-wfig)")
+    assert_que(len(d["gridCols"].split()) == 2, f"las columnas son dos pistas de grid ({d['gridCols']!r})")
+
+
+def tarjeta_superficie(pg, base: str) -> None:
+    print("\n[tarjeta] sin caja, un primero en una linea, la luz respira")
+    abrir(pg, base, "13:00")
+    d = pg.evaluate(
+        """() => {
+          const w = document.querySelector('#hero .cae-widget'), bar = document.querySelector('.cae-bar'), hero = document.querySelector('#hero');
+          const cs = getComputedStyle(w), now = w.querySelector('.cae-wnow');
+          const r = document.createRange(); r.selectNodeContents(now);
+          const tamanos = [...w.querySelectorAll('*')].filter(e => e.textContent.trim() && e.children.length === 0)
+             .map(e => parseFloat(getComputedStyle(e).fontSize));
+          const luz = w.querySelector('.cae-wluz');
+          return {
+            borde: cs.borderTopWidth, fondo: cs.backgroundColor, fondoBar: bar ? getComputedStyle(bar).backgroundColor : null,
+            fondoHero: getComputedStyle(hero).backgroundColor,
+            nowPx: parseFloat(getComputedStyle(now).fontSize), maxPx: Math.max(...tamanos),
+            nowAncho: r.getBoundingClientRect().width, caja: w.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+            nowLineas: r.getClientRects().length,
+            axes: getComputedStyle(now).fontVariationSettings,
+            anillo: luz ? getComputedStyle(luz, '::after').animationName : 'sin-luz',
+          };
+        }"""
+    )
+    assert_que(d["borde"] == "0px", f"la tarjeta no lleva borde ({d['borde']})")
+    assert_que(d["fondo"] == d["fondoBar"] and d["fondo"] != d["fondoHero"], f"la tarjeta es surface-container-high como la barra ({d['fondo']})")
+    assert_que(d["nowPx"] == d["maxPx"] and d["nowPx"] >= 26, f"el primero es el texto mas grande de la tarjeta ({d['nowPx']} px)")
+    assert_que(d["nowAncho"] <= d["caja"] and d["nowLineas"] == 1, f"el primero cabe en una linea ({d['nowAncho']:.0f} de {d['caja']:.0f} px, {d['nowLineas']} lineas)")
+    assert_que('"opsz" 60' in d["axes"], f"el primero va a tamano optico 60 ({d['axes']})")
+    assert_que(d["anillo"] not in ("none", "sin-luz"), f"la luz respira con movimiento ({d['anillo']})")
+
+    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
+    pr = ctx.new_page()
+    abrir(pr, base, "13:00")
+    quieta = pr.evaluate("() => { const l = document.querySelector('#hero .cae-wluz'); return l ? getComputedStyle(l, '::after').animationName : 'sin-luz'; }")
+    assert_que(quieta == "none", f"con movimiento reducido la luz no respira ({quieta})")
+    ctx.close()
+
+
+def tarjeta_figura(pg, base: str) -> None:
+    print("\n[tarjeta] la figura vive: 240 vertices, cambia sola, quieta con movimiento reducido")
+    abrir(pg, base, "13:00")
+    LEE = "() => { const f = document.querySelector('#hero .cae-wfig'); return f ? getComputedStyle(f).clipPath : 'sin-figura'; }"
+    a = pg.evaluate(LEE)
+    pares = a.count("%,") + 1 if a.startswith("polygon(") else 0
+    assert_que(pares == 240, f"la figura es un polygon() de 240 pares ({pares})")
+    # Anclado a ESTADO: se espera a que cambie, con tope; si no cambia, falla.
+    cambio = False
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < 6:
+        if pg.evaluate(LEE) != a:
+            cambio = True
+            break
+        pg.wait_for_timeout(120)
+    assert_que(cambio, "la figura cambia de forma sola (morfa con el tiempo)")
+
+    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
+    pr = ctx.new_page()
+    abrir(pr, base, "13:00")
+    q0 = pr.evaluate(LEE)
+    pr.wait_for_timeout(1500)
+    q1 = pr.evaluate(LEE)
+    assert_que(q0.startswith("polygon(") and q0 == q1, "con movimiento reducido la figura esta y no cambia")
+    ctx.close()
+
+
+def _oklab_to_srgb255(l: float, a_: float, b_: float) -> tuple[float, float, float]:
+    """OKLab -> sRGB (0..255). Mismas matrices que `scripts/verify.py` y
+    `scripts/measure-caelestia-obra.py` (Bjorn Ottosson)."""
+
+    def clamp01(v: float) -> float:
+        return max(0.0, min(1.0, v))
+
+    l_ = l + 0.3963377774 * a_ + 0.2158037573 * b_
+    m_ = l - 0.1055613458 * a_ - 0.0638541728 * b_
+    s_ = l - 0.0894841775 * a_ - 1.2914855480 * b_
+    l3, m3, s3 = l_**3, m_**3, s_**3
+
+    lin_r = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3
+    lin_g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3
+    lin_b = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3
+
+    def to_gamma(c: float) -> float:
+        c = clamp01(c)
+        return 12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1 / 2.4)) - 0.055
+
+    return to_gamma(lin_r) * 255, to_gamma(lin_g) * 255, to_gamma(lin_b) * 255
+
+
+def _parse_rgb(css: str) -> tuple[float, float, float, float] | None:
+    """Parser minimo de color computado: `rgb()`/`rgba()` y `oklch()` (lo que
+    Chromium devuelve para los tokens de Caelestia, resueltos via `oklch()`
+    en `themes.css`). Si no reconoce el formato devuelve `None` y la
+    asercion de contraste lo reporta en vez de fallar en silencio."""
+    css = css.strip()
+
+    if css.startswith("oklch("):
+        inner = css[css.index("(") + 1 : css.rindex(")")]
+        comps, _, alpha_s = inner.partition("/")
+        vals = comps.split()
+        ell, c, h = float(vals[0]), float(vals[1]), float(vals[2])
+        import math
+
+        rad = math.radians(h)
+        a_ = c * math.cos(rad)
+        b_ = c * math.sin(rad)
+        r, g, b = _oklab_to_srgb255(ell, a_, b_)
+        a = float(alpha_s.strip()) if alpha_s.strip() else 1.0
+        return r, g, b, a
+
+    if css.startswith("rgb(") or css.startswith("rgba("):
+        inner = css[css.index("(") + 1 : css.rindex(")")]
+        parts = [p.strip() for p in inner.replace("/", ",").split(",") if p.strip()]
+        if len(parts) < 3:
+            return None
+        r, g, b = float(parts[0]), float(parts[1]), float(parts[2])
+        a = float(parts[3]) if len(parts) > 3 else 1.0
+        return r, g, b, a
+
+    return None
+
+
+def _luminancia(rgb: tuple[float, float, float]) -> float:
+    def canal(c: float) -> float:
+        cs = c / 255
+        return cs / 12.92 if cs <= 0.03928 else ((cs + 0.055) / 1.055) ** 2.4
+
+    r, g, b = rgb
+    return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b)
+
+
+def _ratio(fg: tuple[float, float, float], bg: tuple[float, float, float]) -> float:
+    """Ratio de contraste WCAG. Reusa `contraste()` (ya definido arriba para
+    el barrido del shader), que opera sobre luminancias -- aqui se le pasan
+    las de dos colores parseados en vez de las del canvas."""
+    return contraste(_luminancia(fg), _luminancia(bg))
+
+
+def tarjeta_contraste(pg, base: str) -> None:
+    print("\n[tarjeta] contraste AA de sus pares en las 24 horas, con la capa de estado puesta")
+    PARES = [
+        ("primero", "#hero .cae-wnow"),
+        ("ubicacion", "#hero .cae-wsub"),
+        ("fecha", "#hero .cae-wfecha"),
+        ("nombre", "#hero .cae-wnombre"),
+        ("pastilla", "#hero .cae-pilla"),
+    ]
+    peor = (99.0, "", "")
+    for h in range(0, 24, 3):
+        abrir(pg, base, f"{h:02d}:30")
+        pg.hover("#hero .cae-widget")  # hover REAL: un MouseEvent sintetico no dispara :hover
+        pg.wait_for_timeout(400)  # la capa de estado tiene transition 0.25s
+        for nombre, sel in PARES:
+            d = pg.evaluate(
+                """(sel) => {
+                  const e = document.querySelector(sel); if (!e) return null;
+                  const cs = getComputedStyle(e);
+                  const w = document.querySelector('#hero .cae-widget');
+                  const capa = getComputedStyle(w, '::after');
+                  return { fg: cs.color, bg: sel.includes('pilla') ? cs.backgroundColor : getComputedStyle(w).backgroundColor,
+                           capa: capa.backgroundColor, capaOp: parseFloat(capa.opacity) };
+                }""",
+                sel,
+            )
+            assert_que(d is not None, f"existe {sel}")
+            if d is None:
+                continue
+            fg = _parse_rgb(d["fg"])
+            bg = _parse_rgb(d["bg"])
+            capa = _parse_rgb(d["capa"])
+            if not fg or not bg:
+                assert_que(False, f"no se pudo parsear el color de {nombre} ({d['fg']} / {d['bg']})")
+                continue
+            bg3 = bg[:3]
+            if capa and d["capaOp"] > 0 and "pilla" not in sel:
+                a = d["capaOp"]
+                bg3 = tuple(bg[i] * (1 - a) + capa[i] * a for i in range(3))
+            r = _ratio(fg[:3], bg3)
+            if r < peor[0]:
+                peor = (r, nombre, f"{h:02d}:30")
+    assert_que(peor[0] >= 4.5, f"peor par de la tarjeta {peor[1]} a las {peor[2]}: {peor[0]:.2f}:1 (piso AA 4.5)")
+
+
+def tarjeta_portatil(pg, base: str) -> None:
+    """Repaso de interfaces 2026-09-06 (hallazgo A de Vera): a 1366x768 la
+    tarjeta 'Ahora mismo' pisaba la columna de cifras -- `.cae-widget` acababa
+    en bottom=366 y `.cae-statcol` empezaba en top=344, 22px de solape con la
+    cifra "2021". Contexto/pagina PROPIOS con ese viewport (el resto del
+    arnes usa VENTANA=1412x748): a 1440x900 este gate no corre, y no debe
+    correr -- ese tamano no cambia."""
+    print("\n[tarjeta] a 1366x768 la tarjeta no pisa la columna de cifras")
+    ctx = pg.context.browser.new_context(viewport={"width": 1366, "height": 768})
+    pr = ctx.new_page()
+    abrir(pr, base, "13:00")
+    d = pr.evaluate(
+        """() => {
+          const w = document.querySelector('#hero .cae-widget');
+          const s = document.querySelector('#hero .cae-statcol');
+          const wr = w.getBoundingClientRect(), sr = s.getBoundingClientRect();
+          return { widgetBottom: wr.bottom, statTop: sr.top };
+        }"""
+    )
+    hueco = d["statTop"] - d["widgetBottom"]
+    assert_que(
+        hueco >= 8,
+        f"a 1366x768 hay >=8px entre el pie de la tarjeta y la columna de cifras "
+        f"(widget.bottom={d['widgetBottom']:.0f}, statcol.top={d['statTop']:.0f}, hueco={hueco:.0f}px)",
+    )
+    ctx.close()
+
+
+def tarjeta_figura_visible(pg, base: str) -> None:
+    """Repaso de interfaces 2026-09-06 (hallazgo B de Vera): `.cae-wfig`
+    pintaba `--cae-primary-container` sobre la propia tarjeta
+    (`surface-container-high`), 1,10:1 de dia y 1,21:1 de noche -- la figura
+    viva, pensada como acento, era invisible. El piso pedido es de acento
+    decorativo (2,0:1), no de texto (4,5:1 AA). La claridad de los tokens no
+    se mueve con la hora (solo el matiz), asi que basta muestrear tres horas
+    por esquema."""
+    print("\n[tarjeta] la figura viva se distingue del fondo de la tarjeta (>=2,0:1)")
+    LEE = """() => {
+      const f = document.querySelector('#hero .cae-wfig');
+      const w = document.querySelector('#hero .cae-widget');
+      if (!f || !w) return null;
+      return { fig: getComputedStyle(f).backgroundColor, tarjeta: getComputedStyle(w).backgroundColor };
+    }"""
+    for esquema, horas in (("dia", ("09:30", "13:30", "18:30")), ("noche", ("21:30", "01:30", "05:30"))):
+        peor = (99.0, "")
+        for h in horas:
+            abrir(pg, base, h)
+            d = pg.evaluate(LEE)
+            assert_que(d is not None, f"existe .cae-wfig a las {h}")
+            if d is None:
+                continue
+            fig = _parse_rgb(d["fig"])
+            tarjeta = _parse_rgb(d["tarjeta"])
+            if not fig or not tarjeta:
+                assert_que(False, f"no se pudo parsear el color de la figura ({d['fig']} / {d['tarjeta']})")
+                continue
+            r = _ratio(fig[:3], tarjeta[:3])
+            if r < peor[0]:
+                peor = (r, h)
+        assert_que(
+            peor[0] >= 2.0,
+            f"esquema {esquema}: peor ratio figura/tarjeta a las {peor[1]}: {peor[0]:.2f}:1 (piso 2,0)",
+        )
 
 
 def entrada(pg, base: str) -> None:
@@ -334,6 +619,8 @@ def entrada(pg, base: str) -> None:
         termVis: csTerm ? csTerm.visibility : null,
         termOp: csTerm ? parseFloat(csTerm.opacity) : null,
         typed: typed ? typed.textContent : null,
+        tarjetaClip: (() => { const w = q('#hero .cae-widget'); return w ? (w.style.clipPath || '') : ''; })(),
+        tarjetaOp: (() => { const w = q('#hero .cae-widget'); return w ? parseFloat(getComputedStyle(w).opacity) : null; })(),
       };
     }"""
 
@@ -483,7 +770,10 @@ def entrada(pg, base: str) -> None:
         )
 
         # El widget es la pieza nueva de la timeline: se cubre por separado,
-        # anclado a estado, nunca a un cronometro fijo.
+        # anclado a estado, nunca a un cronometro fijo. Se lee tambien el
+        # clip-path inline de la tarjeta en cada vuelta (Task 5: la entrada
+        # brota de la luz con un circle() en vez de un fundido de opacidad) y
+        # se guarda en `muestras` para que la asercion de "brota" las vea.
         t1 = time.monotonic()
         widget_ok = False
         while time.monotonic() - t1 < 25:
@@ -491,13 +781,30 @@ def entrada(pg, base: str) -> None:
                 "() => { const w = document.querySelector('#hero .cae-widget');"
                 " if (!w) return null;"
                 " const cs = getComputedStyle(w);"
-                " return { op: parseFloat(cs.opacity), vis: cs.visibility }; }"
+                " const hijo = w.lastElementChild;"
+                " return { clip: w.style.clipPath || '', op: hijo ? parseFloat(getComputedStyle(hijo).opacity) : null,"
+                "          vis: cs.visibility }; }"
             )
-            if w and w["op"] >= 0.99 and w["vis"] == "visible":
+            if w:
+                muestras.append({"t": time.monotonic() - t0, "firmaExiste": True, "typed": "whoami", "tarjetaClip": w["clip"], **w})
+            if w and w["clip"] == "" and w["op"] is not None and w["op"] >= 0.99 and w["vis"] == "visible":
                 widget_ok = True
                 break
             pn.wait_for_timeout(30)
         assert_que(widget_ok, "el widget .cae-widget queda puesto al final de la entrada")
+
+        # La tarjeta brota de la luz: hubo un circle() de radio pequeno en
+        # algun momento de la entrada, y al aterrizar no queda clip-path
+        # inline (una mascara viva sobre la tarjeta rompe el hover y la capa
+        # de estado).
+        brota = [m for m in muestras if m.get("tarjetaClip", "").startswith("circle(")]
+        radios: list[float] = []
+        for m in brota:
+            mm = re.search(r"circle\(([\d.]+)px", m["tarjetaClip"])
+            if mm:
+                radios.append(float(mm.group(1)))
+        assert_que(bool(radios) and min(radios) < 20, f"la tarjeta brota de la luz: hubo un circle() de radio < 20 px ({min(radios) if radios else 'ninguno'})")
+        assert_que(not muestras[-1].get("tarjetaClip"), f"al aterrizar la tarjeta no conserva clip-path inline ({muestras[-1].get('tarjetaClip')!r})")
 
     pn.close()
 
@@ -567,6 +874,12 @@ def main() -> int:
         titular(pg, args.base)
         firma_y_cifras(pg, args.base)
         widget(pg, args.base)
+        tarjeta_orden(pg, args.base)
+        tarjeta_superficie(pg, args.base)
+        tarjeta_figura(pg, args.base)
+        tarjeta_contraste(pg, args.base)
+        tarjeta_portatil(pg, args.base)
+        tarjeta_figura_visible(pg, args.base)
         entrada(pg, args.base)
         roce(pg, args.base)
 

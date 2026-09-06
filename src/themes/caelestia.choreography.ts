@@ -1,7 +1,7 @@
 import type { Choreography } from "./choreography";
 import { montarFicha } from "./caelestia.ficha";
 import { montarFundido } from "./caelestia.fundido";
-import { montarEntrada, montarRoce, montarTitulo } from "./caelestia.titulo";
+import { montarEntrada, montarFiguraViva, montarRoce, montarTitulo } from "./caelestia.titulo";
 
 /**
  * La coreografia de Caelestia: las cinco escenas dejan de apilarse en vertical
@@ -180,18 +180,24 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   // patron.
   montarTitulo(root);
 
-  // La entrada (tarea 6): terminal + trazo del nombre, aterrizando sobre
-  // `.cae-firma`. Sin `destroy()` propio por el mismo motivo que el resto de
-  // esta coreografia (ver el comentario "Sin destroy() propio" al final del
-  // fichero) — el handle que devuelve existe para tests/composicion futura.
-  montarEntrada(gsap, root);
-
   // El roce (tarea 7): el fondo se aparta y el elemento se levanta al pasar
   // el raton por encima del widget, las cifras, las pastillas de la barra o
   // el dock. Sin `destroy()` propio por el mismo motivo que el resto de esta
   // coreografia — ver el comentario "Sin destroy() propio" al final del
   // fichero, y el docstring de `montarRoce` en caelestia.titulo.ts.
   montarRoce(gsap, root);
+
+  // La figura viva de la tarjeta "Ahora mismo" (spec 2026-09-05). Sin
+  // destroy() propio por el mismo motivo que montarRoce (ver el comentario
+  // "Sin destroy() propio" al final del fichero); el handle existe para la
+  // entrada (montarEntrada lo recibe) y para tests.
+  const figuraViva = montarFiguraViva(gsap, root);
+
+  // La entrada (tarea 6): terminal + trazo del nombre, aterrizando sobre
+  // `.cae-firma`. Sin `destroy()` propio por el mismo motivo que el resto de
+  // esta coreografia (ver el comentario "Sin destroy() propio" al final del
+  // fichero) — el handle que devuelve existe para tests/composicion futura.
+  montarEntrada(gsap, root, figuraViva);
 
   /*
    * Fase de CAPTURA: los eventos de scroll no burbujean, asi que un oyente en

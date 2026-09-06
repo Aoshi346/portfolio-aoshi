@@ -4,6 +4,7 @@
  * Spec: docs/superpowers/specs/2026-08-26-caelestia-titulo-design.md
  */
 import type { Gsap } from "./choreography";
+import { figuraParametrica } from "../utils/figurasM3";
 
 /**
  * Estira las lineas del titular hasta que todas midan lo mismo.
@@ -107,7 +108,11 @@ const NULO: EntradaHandle = { destroy: () => {} };
  * piezas se verian un fotograma en su estado FINAL antes de que la timeline
  * las lleve a su estado de partida.
  */
-export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
+export function montarEntrada(
+  gsap: Gsap,
+  root: HTMLElement,
+  figura: FiguraVivaHandle = FIGURA_NULA,
+): EntradaHandle {
   const descubrir = (): void => document.documentElement.classList.remove("js-cae-entrada");
 
   const hero = root.querySelector<HTMLElement>("#hero");
@@ -163,7 +168,23 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
   if (bloques.length > 0) {
     gsap.set(bloques, { opacity: 0, rotateX: -82, y: 6, transformPerspective: 600 });
   }
-  if (widget) gsap.set(widget, { opacity: 0, y: 8 });
+  let brote: { cx: number; cy: number } | null = null;
+  if (widget) {
+    // Brota de la luz: el circulo se centra en la luz de la pastilla, medida
+    // AQUI (con la caja ya definitiva; medir al montar daba la caja colapsada,
+    // misma trampa que el aterrizaje del trazo).
+    gsap.set(widget, { opacity: 1, y: 0 });
+    const luz = widget.querySelector<HTMLElement>(".cae-wluz");
+    const wr = widget.getBoundingClientRect();
+    const lr = luz?.getBoundingClientRect();
+    const cx = lr ? lr.left + lr.width / 2 - wr.left : wr.width / 2;
+    const cy = lr ? lr.top + lr.height / 2 - wr.top : wr.height / 2;
+    widget.style.clipPath = `circle(0px at ${cx}px ${cy}px)`;
+    gsap.set(Array.from(widget.children), { opacity: 0, y: 6 });
+    figura.relieve.v = 0;
+    figura.pinta();
+    brote = { cx, cy };
+  }
 
   descubrir();
 
@@ -254,19 +275,46 @@ export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
     );
   }
 
-  // 11. El widget "Ahora mismo": la unica pieza del hero que hasta ahora
-  // entraba de golpe en vez de paso a paso.
-  if (widget) {
-    tl.fromTo(
-      widget,
-      { opacity: 0, y: 8 },
-      { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+  // 11. La tarjeta "Ahora mismo" brota de su luz: el circulo crece desde el
+  // punto de la pastilla, la figura florece de circulo a figura y el texto se
+  // posa. Al terminar se limpia el clip-path inline: una mascara viva sobre
+  // la tarjeta rompe el hover y la capa de estado.
+  if (widget && brote) {
+    const radio = { r: 0 };
+    const { cx, cy } = brote;
+    tl.to(
+      radio,
+      {
+        r: 420,
+        duration: 0.85,
+        ease: "power3.inOut",
+        onUpdate: () => {
+          widget.style.clipPath = `circle(${radio.r.toFixed(1)}px at ${cx}px ${cy}px)`;
+        },
+        onComplete: () => {
+          widget.style.clipPath = "";
+        },
+      },
       "-=0.2",
+    );
+    tl.to(figura.relieve, { v: 1, duration: 0.8, ease: "back.out(1.4)", onUpdate: figura.pinta }, "<");
+    tl.fromTo(
+      Array.from(widget.children),
+      { opacity: 0, y: 6 },
+      { opacity: 1, y: 0, duration: 0.3, ease: "power2.out", stagger: 0.06 },
+      "-=0.5",
     );
   }
 
   return {
-    destroy: () => tl.kill(),
+    destroy: () => {
+      tl.kill();
+      // `kill()` NO dispara `onComplete`: sin esto, matar la timeline a
+      // mitad del brote deja un clip-path a medias sobre la tarjeta.
+      if (widget) widget.style.clipPath = "";
+      figura.relieve.v = 1;
+      figura.pinta();
+    },
   };
 }
 
@@ -364,4 +412,73 @@ export function montarRoce(gsap: Gsap, root: HTMLElement): void {
 
   document.addEventListener("pointerover", alPasar);
   document.addEventListener("pointerout", alSalirDelDocumento);
+}
+
+export interface FiguraVivaHandle {
+  destroy: () => void;
+  /** 0 = circulo, 1 = figura entera. La entrada lo lleva de 0 a 1. */
+  relieve: { v: number };
+  pinta: () => void;
+}
+
+const FIGURA_NULA: FiguraVivaHandle = { destroy: () => {}, relieve: { v: 1 }, pinta: () => {} };
+
+/**
+ * La figura de la tarjeta "Ahora mismo" (spec 2026-09-05-caelestia-ahora-
+ * mismo): morfa con la hora del visitante como las figuras del fondo (los
+ * lobulos avanzan de 5 a 9 a lo largo del dia, la fase gira en un bucle de
+ * 24 s) y se inclina hacia el cursor dentro de la tarjeta. Con movimiento
+ * reducido se pinta una vez, quieta, con los lobulos de la hora.
+ */
+export function montarFiguraViva(gsap: Gsap, root: HTMLElement): FiguraVivaHandle {
+  const tarjeta = root.querySelector<HTMLElement>("#hero .cae-widget");
+  const figura = tarjeta?.querySelector<HTMLElement>(".cae-wfig") ?? null;
+  if (!tarjeta || !figura) return FIGURA_NULA;
+
+  const estado = { fase: 0 };
+  const relieve = { v: 1 };
+  const lobulos = (): number => {
+    const ahora = new Date();
+    const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+    return 5 + Math.floor((minutos / 1440) * 5); // 5..9
+  };
+  const pinta = (): void => {
+    figura.style.clipPath = figuraParametrica(lobulos(), 0.11, relieve.v, estado.fase);
+  };
+  pinta();
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return { destroy: () => {}, relieve, pinta };
+  }
+
+  const bucle = gsap.to(estado, { fase: Math.PI * 2, duration: 24, ease: "none", repeat: -1, onUpdate: pinta });
+
+  const mirar = (e: PointerEvent): void => {
+    const r = figura.getBoundingClientRect();
+    const dx = (e.clientX - (r.left + r.width / 2)) / 40;
+    const dy = (e.clientY - (r.top + r.height / 2)) / 40;
+    gsap.to(figura, {
+      rotateY: Math.max(-18, Math.min(18, dx)),
+      rotateX: Math.max(-18, Math.min(18, -dy)),
+      transformPerspective: 300,
+      duration: 0.4,
+      ease: "power2.out",
+    });
+  };
+  const soltar = (): void => {
+    gsap.to(figura, { rotateX: 0, rotateY: 0, duration: 0.6, ease: "power2.out" });
+  };
+  tarjeta.addEventListener("pointermove", mirar);
+  tarjeta.addEventListener("pointerleave", soltar);
+
+  return {
+    relieve,
+    pinta,
+    destroy: () => {
+      bucle.kill();
+      gsap.killTweensOf(figura);
+      tarjeta.removeEventListener("pointermove", mirar);
+      tarjeta.removeEventListener("pointerleave", soltar);
+    },
+  };
 }

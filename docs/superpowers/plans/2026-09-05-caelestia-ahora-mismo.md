@@ -28,7 +28,7 @@
 
 **Files:** ninguno (git).
 
-- [ ] **Step 1: Crear rama y worktree**
+- [x] **Step 1: Crear rama y worktree**
 
 ```bash
 cd /home/aoshi/proyectos/portfolio-aoshi
@@ -37,11 +37,11 @@ cd ../portfolio-aoshi-ahora-mismo
 ln -s /home/aoshi/proyectos/portfolio-aoshi/node_modules node_modules
 ```
 
-- [ ] **Step 1b: El spec pasa a `en ejecucion`**
+- [x] **Step 1b: El spec pasa a `en ejecucion`**
 
 En `docs/superpowers/specs/2026-09-05-caelestia-ahora-mismo-design.md`, línea 3: `Estado: en ejecucion`. Commit: `git commit -am "docs(hero): el spec de Ahora mismo pasa a en ejecucion"`. (`scripts/verify.py` cruza el estado del spec con las casillas de este plan: un plan a medias con `en ejecucion` es legítimo; `implementado` con casillas sin marcar, no.)
 
-- [ ] **Step 2: Build verde en el punto de partida y arnés de Título verde**
+- [x] **Step 2: Build verde en el punto de partida y arnés de Título verde**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -62,21 +62,21 @@ Expected: `0 fallo(s)`. Si no, parar: el punto de partida está roto y hay que s
 - Produces: `identity.now === "Full Stack Developer"`, leído por `hero.ts:151` y `about.ts:99,329,461` sin tocarlos.
 - Produces en el arnés: `literal_now()` → `str`, que lee `content.ts` con regex.
 
-- [ ] **Step 1: Cambiar el literal**
+- [x] **Step 1: Cambiar el literal**
 
 En `src/data/content.ts`, línea 46:
 ```ts
   now: "Full Stack Developer",
 ```
 
-- [ ] **Step 2: Build y ver el gate `widget` en rojo**
+- [x] **Step 2: Build y ver el gate `widget` en rojo**
 
 ```bash
 npm run build && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A12 "\[widget\]"
 ```
 Expected: `FALLO el widget dice 'Freelancer', literal de content.ts` (la lista `esperado` del arnés lleva el literal viejo a mano).
 
-- [ ] **Step 3: El arnés lee el literal de `content.ts`**
+- [x] **Step 3: El arnés lee el literal de `content.ts`**
 
 En `scripts/measure-caelestia-titulo.py`, encima de `def widget`:
 ```python
@@ -97,14 +97,14 @@ Y en `esperado`, sustituir la línea `"Freelancer",                  # identity.
         literal_now(),                 # identity.now, leido de content.ts (Task 1 del plan Ahora mismo)
 ```
 
-- [ ] **Step 4: Gate verde**
+- [x] **Step 4: Gate verde**
 
 ```bash
 python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A12 "\[widget\]"
 ```
 Expected: `OK   el widget dice 'Full Stack Developer', literal de content.ts` y el resto OK.
 
-- [ ] **Step 5: Ver «Quién soy» con el literal nuevo (no se toca, se mira)**
+- [x] **Step 5: Ver «Quién soy» con el literal nuevo (no se toca, se mira)**
 
 ```bash
 python3 - <<'EOF'
@@ -120,7 +120,7 @@ EOF
 ```
 Expected: al menos 1.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/data/content.ts scripts/measure-caelestia-titulo.py
@@ -138,7 +138,7 @@ git commit -m "feat(hero): identity.now pasa a Full Stack Developer y el arnes l
 **Interfaces:**
 - Produces (clases del DOM, las usan las Tasks 3, 4 y 5): `.cae-widget` > `.cae-wcab` (`.cae-whd` + `.cae-wfig`), `.cae-wnow`, `.cae-wsub`, `.cae-wdos` (2 × `.cae-wcol` > `small.cae-wfecha` + `b.cae-wnombre`), `.cae-wpie` > `.cae-pilla` (> `i.cae-wluz` + texto).
 
-- [ ] **Step 1: Escribir el gate del orden y verlo en rojo**
+- [x] **Step 1: Escribir el gate del orden y verlo en rojo**
 
 En `scripts/measure-caelestia-titulo.py`, nueva función:
 ```python
@@ -174,7 +174,7 @@ python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | 
 ```
 Expected: rojo en orden, columnas, luz y figura (el DOM actual es `cae-whd`, `cae-pilla`, `cae-wnow`, `cae-wsub`, `cae-wfila`, `cae-wfila`).
 
-- [ ] **Step 2: Reescribir el bloque del widget en `hero.ts`**
+- [x] **Step 2: Reescribir el bloque del widget en `hero.ts`**
 
 Sustituir las líneas 150-164 (desde `const disponible = ...` hasta el cierre de `const widget = el(...)`) por:
 ```ts
@@ -208,14 +208,14 @@ Sustituir las líneas 150-164 (desde `const disponible = ...` hasta el cierre de
 ```
 Comprobar que `el(tag, clase, hijos?)` admite `Node | string` en hijos (ver `src/utils/dom.ts`); si `el("i", "cae-wluz")` sin hijos no compila, pasar `[]`.
 
-- [ ] **Step 3: Build, lint y gate**
+- [x] **Step 3: Build, lint y gate**
 
 ```bash
 npm run build && npm run lint && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A8 "\[tarjeta\]"
 ```
 Expected: todo OK salvo `las columnas son dos pistas de grid` (el CSS llega en Task 3; anotarlo y seguir). El gate `[widget]` (anti-mock) sigue verde: los literales no cambian.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/sections/hero.ts scripts/measure-caelestia-titulo.py
@@ -233,7 +233,7 @@ git commit -m "feat(hero): la tarjeta Ahora mismo cambia de orden: quien, que ha
 **Interfaces:**
 - Produces: token `--cae-display-axes-ficha`; clases pintadas de Task 2; `.cae-wfig` con caja 40×40 y fondo `--cae-primary-container` (la Task 4 solo le pone `clip-path`).
 
-- [ ] **Step 1: Gate de superficie, jerarquía y luz, en rojo**
+- [x] **Step 1: Gate de superficie, jerarquía y luz, en rojo**
 
 ```python
 def tarjeta_superficie(pg, base: str) -> None:
@@ -274,7 +274,7 @@ def tarjeta_superficie(pg, base: str) -> None:
 ```
 Llamar a `tarjeta_superficie(pg, args.base)` tras `tarjeta_orden`. Correr y esperar rojo en borde (`1px`), fondo (`surface-container`), tamaño óptico (`opsz 9`) y anillo (`none`).
 
-- [ ] **Step 2: El token y el CSS**
+- [x] **Step 2: El token y el CSS**
 
 Junto a `--cae-display-axes-texto` (themes.css ~3593):
 ```css
@@ -429,14 +429,14 @@ Sustituir el bloque desde `:root[data-theme="caelestia"] .cae-widget {` hasta el
 ```
 Borrar cualquier regla vieja de `.cae-wfila` y `.cae-wn` que quede.
 
-- [ ] **Step 3: Build, lint, gates**
+- [x] **Step 3: Build, lint, gates**
 
 ```bash
 npm run build && npm run lint && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A10 "\[tarjeta\]"
 ```
 Expected: `[tarjeta] orden…` todo OK (ahora sí las dos pistas de grid) y `[tarjeta] sin caja…` todo OK.
 
-- [ ] **Step 4: Captura y mirarla**
+- [x] **Step 4: Captura y mirarla**
 
 ```bash
 python3 - <<'EOF'
@@ -454,7 +454,7 @@ EOF
 ```
 Abrir las dos capturas y comparar con la maqueta `.superpowers/brainstorm/*/content/09-fullstack.html` (tamaño A). Si la tarjeta no se parece, no seguir.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-caelestia-titulo.py
@@ -475,7 +475,7 @@ git commit -m "feat(hero): la tarjeta Ahora mismo sin caja: superficie tonal, pr
 - Produces: `figuraParametrica(n: number, a: number, relieve: number, fase: number): string` (un `polygon()` de 240 pares).
 - Produces: `montarFiguraViva(gsap: Gsap, root: HTMLElement): FiguraVivaHandle` con `{ destroy(): void; relieve: { v: number }; pinta(): void }` — `relieve.v` y `pinta` los usa la Task 5 para que la figura nazca como círculo en la entrada.
 
-- [ ] **Step 1: Gate de la figura, en rojo**
+- [x] **Step 1: Gate de la figura, en rojo**
 
 ```python
 def tarjeta_figura(pg, base: str) -> None:
@@ -506,7 +506,7 @@ def tarjeta_figura(pg, base: str) -> None:
 ```
 (`time` ya está importado en el arnés.) Llamar tras `tarjeta_superficie`. Correr: rojo en «240 pares» (hoy `clip-path: none`).
 
-- [ ] **Step 2: `figuraParametrica` en `figurasM3.ts`**
+- [x] **Step 2: `figuraParametrica` en `figurasM3.ts`**
 
 Al final del fichero:
 ```ts
@@ -530,7 +530,7 @@ export function figuraParametrica(n: number, a: number, relieve: number, fase: n
 }
 ```
 
-- [ ] **Step 3: `montarFiguraViva` en `caelestia.titulo.ts`**
+- [x] **Step 3: `montarFiguraViva` en `caelestia.titulo.ts`**
 
 Importar arriba: `import { figuraParametrica } from "../utils/figurasM3";`. Añadir al final del fichero:
 ```ts
@@ -613,16 +613,16 @@ En `caelestia.choreography.ts`, tras `montarRoce(gsap, root);`:
 ```
 y cambiar la llamada `montarEntrada(gsap, root);` para que quede DESPUÉS y reciba el handle: `montarEntrada(gsap, root, figuraViva);` (la firma se amplía en la Task 5; en esta tarea, añadir a `montarEntrada` un tercer parámetro opcional `figura?: FiguraVivaHandle` sin usarlo todavía, para que compile). Actualizar el `import` de `./caelestia.titulo` con `montarFiguraViva`.
 
-- [ ] **Step 4: Quitar el `border-radius: 50%` provisional de `.cae-wfig`** (Task 3, Step 2): ahora manda el `clip-path`. En themes.css sustituir esa línea por `/* la forma la pone montarFiguraViva con clip-path (240 vertices) */`.
+- [x] **Step 4: Quitar el `border-radius: 50%` provisional de `.cae-wfig`** (Task 3, Step 2): ahora manda el `clip-path`. En themes.css sustituir esa línea por `/* la forma la pone montarFiguraViva con clip-path (240 vertices) */`.
 
-- [ ] **Step 5: Build, lint, gate**
+- [x] **Step 5: Build, lint, gate**
 
 ```bash
 npm run build && npm run lint && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A6 "la figura vive"
 ```
 Expected: 240 pares OK, cambia sola OK, quieta con reduce OK. Comprobar también en la consola del navegador (`pageerror`) que no hay error: `gsap` llega por parámetro, nunca por `import` directo en este fichero.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/utils/figurasM3.ts src/themes/caelestia.titulo.ts src/themes/caelestia.choreography.ts src/themes/themes.css scripts/measure-caelestia-titulo.py
@@ -640,7 +640,7 @@ git commit -m "feat(hero): la figura viva de la tarjeta Ahora mismo morfa con la
 **Interfaces:**
 - Consumes: `FiguraVivaHandle.relieve.v` y `.pinta()` de la Task 4.
 
-- [ ] **Step 1: Gate en rojo**
+- [x] **Step 1: Gate en rojo**
 
 En `LEE_ENTRADA` (dentro de `entrada`), añadir al objeto devuelto:
 ```js
@@ -663,7 +663,7 @@ Y tras la aserción del widget («queda puesto al final»), añadir:
 2. La condición de «puesta» pasa a ser: `w["clip"] == ""` y opacidad del último hijo `>= 0.99` y `visibility` visible. Si no llega en 25 s, FALLA (como ahora).
 Correr: rojo en «brota» (hoy la tarjeta entra con un `fromTo` de opacidad, sin `circle`).
 
-- [ ] **Step 2: La entrada en `montarEntrada`**
+- [x] **Step 2: La entrada en `montarEntrada`**
 
 Firma: `export function montarEntrada(gsap: Gsap, root: HTMLElement, figura: FiguraVivaHandle = FIGURA_NULA): EntradaHandle`.
 
@@ -725,18 +725,18 @@ En la rama de movimiento reducido de `montarEntrada` no hay que tocar nada: no e
 
 Comprobar `destroy`: `tl.kill()` deja el `clip-path` a medias si se mata en mitad del brote. Añadir en `destroy`: `if (widget) widget.style.clipPath = "";` y `figura.relieve.v = 1; figura.pinta();` (kill NO dispara onComplete: trampa documentada del proyecto).
 
-- [ ] **Step 3: Build, lint, arnés entero**
+- [x] **Step 3: Build, lint, arnés entero**
 
 ```bash
 npm run build && npm run lint && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183
 ```
 Expected: `0 fallo(s)`, incluidas las dos aserciones nuevas de `[entrada]` y todas las de `[tarjeta]`.
 
-- [ ] **Step 4: Verlo**
+- [x] **Step 4: Verlo**
 
 Con Playwright, `wait_until="commit"` y muestreo cada 40 ms del `style.clipPath` de la tarjeta hasta el aterrizaje: imprimir la serie de radios (debe ir de ~0 a 420 y luego vacío). Y una captura a mitad del brote si se pilla (anclada: primera muestra con radio entre 60 y 200).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/caelestia.titulo.ts scripts/measure-caelestia-titulo.py
@@ -752,7 +752,7 @@ git commit -m "feat(hero): la tarjeta Ahora mismo brota de su luz al entrar"
 - Modify: `docs/superpowers/specs/2026-09-05-caelestia-ahora-mismo-design.md` (Estado y registro)
 - Modify: `.claude/rules/verification.md` (fila de `measure-caelestia-titulo.py`)
 
-- [ ] **Step 1: Gate de contraste, y verlo en rojo con un sabotaje**
+- [x] **Step 1: Gate de contraste, y verlo en rojo con un sabotaje**
 
 Copiar de `scripts/measure-caelestia-obra.py` las funciones `_oklab_to_srgb255`, `_parse_rgb`, `_luminancia` y `_ratio` (líneas ~334-405) al arnés de Título si no existen ya equivalentes (comprobar con `grep -n "def _ratio\|def contraste" scripts/measure-caelestia-titulo.py`; si existe `contraste(lumA, lumB)` y `luz_texto`, usarlas y solo añadir el parseo de `oklch`). Nueva función:
 ```python
@@ -800,7 +800,7 @@ def tarjeta_contraste(pg, base: str) -> None:
 ```
 Llamar tras `tarjeta_figura`. **Sabotaje obligatorio**: cambiar temporalmente en themes.css `.cae-wfecha { color: var(--cae-outline) }`, build, correr: debe salir rojo (la `outline` da ~1,8:1 de noche, el fallo real de B4). Deshacer el sabotaje, build, correr: verde. Anotar los dos resultados literales en el commit.
 
-- [ ] **Step 2: Verificación completa**
+- [x] **Step 2: Verificación completa**
 
 ```bash
 npm run build && npm run lint
@@ -811,17 +811,17 @@ python3 scripts/verify.py --url http://127.0.0.1:4183                          #
 ```
 Capturas 1440×900 de `?theme=caelestia` a las 13:00 y 23:00, y de `?theme=vice` y `?theme=hyprland` (no deben cambiar: `.cae-widget` sigue `display: none` fuera de Caelestia en `style.css`). Escuchar `pageerror` y `console` error en todas.
 
-- [ ] **Step 3: Gates de crítica**
+- [x] **Step 3: Gates de crítica**
 
 Lanzar `lidia-naive-tester` y `vera-art-director` sobre el hero de Caelestia (brief: solo la tarjeta y su entrada; prohibido editar producción). Registrar resultados en el spec (§ «Gates de crítica»). Un P0 se arregla antes de cerrar; los P1 se anotan.
 
-- [ ] **Step 4: Cerrar el spec y la documentación**
+- [x] **Step 4: Cerrar el spec y la documentación** (el registro lo escribió el worker de la Task 6; los gates de crítica, `Estado: implementado`, `verification.md` y la memoria, el orquestador el 2026-09-06)
 
 - Spec: `Estado: implementado`, más una sección `## Registro de implementación` con: lo que rompió cada gate en rojo, medidas finales (ancho del primero con `Range`, peor contraste del barrido, radios del brote), y las desviaciones respecto al spec si las hubo.
 - `.claude/rules/verification.md`, fila de `measure-caelestia-titulo.py`: añadir «la tarjeta “Ahora mismo”: orden y columnas fechadas, sin caja (surface-container-high, sin borde), primero a opsz 60 en una línea medida con `Range`, la luz respira solo con movimiento, la figura viva de 240 vértices cambia sola y queda quieta con reduce, la entrada brota de la luz (`circle()` de radio < 20 leído durante la entrada, sin `clip-path` inline al aterrizar) y el contraste de sus cinco pares en las 24 horas con la capa de estado puesta (hover real)».
 - Memoria: actualizar `caelestia-carga-paso-a-paso.md` (el widget ya no está pendiente).
 
-- [ ] **Step 5: Commit y cierre de rama**
+- [x] **Step 5: Commit y cierre de rama**
 
 ```bash
 git add scripts/measure-caelestia-titulo.py docs/superpowers/specs/2026-09-05-caelestia-ahora-mismo-design.md
