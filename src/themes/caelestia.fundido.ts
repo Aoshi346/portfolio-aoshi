@@ -198,7 +198,23 @@ export function montarFundido(
      * intermedio en linea, ganandole al token.
      */
     lead.style.fontVariationSettings = "";
-    if (ojo) ojo.setAttribute("x", String(OJO_DINO[0]));
+    if (ojo) {
+      ojo.setAttribute("x", String(OJO_DINO[0]));
+      ojo.setAttribute("y", String(OJO_DINO[1]));
+    }
+    /*
+     * Los tres gestos del juguete, aterrizados tambien: si la escena se
+     * abandona a media pasada de cualquiera de ellos, no deben quedarse
+     * congelados (el salto en el aire, el reloj forzado por el arrastre).
+     */
+    if (tlSalto) tlSalto.kill();
+    saltando = false;
+    if (arrastrando) {
+      arrastrando = false;
+      const gancho = ganchoMinutos();
+      if (gancho) gancho(null);
+    }
+    bajando = false;
   };
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -275,6 +291,155 @@ export function montarFundido(
     corriendo = false;
     ponFotograma("quieto");
   };
+
+  /*
+   * EL DINO ES UN JUGUETE. Tres gestos, ninguno entra en el orden de
+   * tabulacion (no `tabindex`, no `role`): los cuatro canales siguen siendo
+   * las unicas paradas. Pero si es pulsable -- `cursor: pointer` y
+   * `pointer-events: auto` los pone el CSS.
+   */
+
+  // --- 1. Salta al pulsar -------------------------------------------------
+  let saltando = false;
+  let tlSalto: ReturnType<Gsap["timeline"]> | null = null;
+
+  const salto = (): void => {
+    if (reduce || saltando) return;
+    saltando = true;
+    const tl = gsap.timeline({ onComplete: () => { saltando = false; } });
+    tl.fromTo(bicho, { y: 0 }, { y: -70, duration: 0.26, ease: "power2.out" }, 0);
+    tl.to(bicho, { y: 0, duration: 0.26, ease: "power2.in" }, 0.26);
+    if (svgBicho) {
+      tl.fromTo(
+        svgBicho,
+        { scaleY: 1 },
+        { scaleY: 0.9, duration: 0.08, transformOrigin: "50% 100%" },
+        0.52,
+      );
+      tl.to(svgBicho, { scaleY: 1, duration: 0.12, ease: "power2.out", transformOrigin: "50% 100%" }, 0.6);
+    }
+    tlSalto = anotar(tl);
+  };
+
+  // --- 2. Los ojos siguen al cursor ---------------------------------------
+  // Distancia maxima a la que el bicho se fija en el cursor.
+  const DISTANCIA_MIRADA = 260;
+  // El cursor mueve el ojo, como mucho, 1 unidad del lienzo de 40x43 en cada
+  // eje -- pixel art, sin fraccion. 130 es el radio a partir del cual ya se
+  // satura al maximo (dx/130 >= 1).
+  const RADIO_MIRADA = 130;
+
+  const alMoverPuntero = (e: PointerEvent): void => {
+    if (!ojo) return;
+    // No pisa la mirada de `entrar()`, que fija `x` durante su propio tramo.
+    if (tlEntrada && tlEntrada.isActive()) return;
+    // El ojo movible solo existe de pie: en zancada es el hueco del sprite.
+    if (corriendo) return;
+    const r = bicho.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    if (Math.hypot(dx, dy) < DISTANCIA_MIRADA) {
+      const dox = Math.round(Math.max(-1, Math.min(1, dx / RADIO_MIRADA)));
+      const doy = Math.round(Math.max(-1, Math.min(1, dy / RADIO_MIRADA)));
+      ojo.setAttribute("x", String(OJO_DINO[0] + dox));
+      ojo.setAttribute("y", String(OJO_DINO[1] + doy));
+    } else {
+      ojo.setAttribute("x", String(OJO_DINO[0]));
+      ojo.setAttribute("y", String(OJO_DINO[1]));
+    }
+  };
+  if (!reduce) escena.addEventListener("pointermove", alMoverPuntero);
+
+  // --- 3. El arrastre es un vistazo ---------------------------------------
+  // Los 30px por hora y el `<< 4px es un clic` son los umbrales del diseno.
+  const PX_POR_HORA = 30;
+  const UMBRAL_ARRASTRE = 4;
+
+  interface VentanaConGancho {
+    __CAE_SET_MINUTOS__?: (minutos: number | null) => void;
+  }
+  const ganchoMinutos = (): ((minutos: number | null) => void) | undefined =>
+    (window as unknown as VentanaConGancho).__CAE_SET_MINUTOS__;
+
+  let bajando = false;
+  let arrastrando = false;
+  let inicioX = 0;
+  let inicioY = 0;
+  let minutosInicio = 0;
+  // El gancho se llama como mucho una vez por fotograma: sin este cerrojo,
+  // cada `pointermove` (varios por fotograma en un raton de verdad) llamaria
+  // a `aplicar()` -- que reescribe TODOS los tokens de color -- de mas.
+  let rafPendiente = false;
+  let minutosPendientes: number | null = null;
+
+  const programarMinutos = (minutos: number): void => {
+    minutosPendientes = minutos;
+    if (rafPendiente) return;
+    rafPendiente = true;
+    requestAnimationFrame(() => {
+      rafPendiente = false;
+      const gancho = ganchoMinutos();
+      if (gancho && minutosPendientes !== null) gancho(minutosPendientes);
+    });
+  };
+
+  const soltarArrastre = (): void => {
+    if (!arrastrando) return;
+    arrastrando = false;
+    const gancho = ganchoMinutos();
+    if (gancho) gancho(null);
+    pararZancada();
+  };
+
+  const alBajarPuntero = (e: PointerEvent): void => {
+    bicho.setPointerCapture(e.pointerId);
+    bajando = true;
+    arrastrando = false;
+    inicioX = e.clientX;
+    inicioY = e.clientY;
+    const ahora = new Date();
+    minutosInicio = ahora.getHours() * 60 + ahora.getMinutes();
+  };
+
+  const alMoverArrastre = (e: PointerEvent): void => {
+    if (!bajando) return;
+    const dx = e.clientX - inicioX;
+    const dy = e.clientY - inicioY;
+    if (!arrastrando) {
+      if (Math.hypot(dx, dy) <= UMBRAL_ARRASTRE) return;
+      arrastrando = true;
+      if (!reduce && !corriendo) arrancarZancada();
+    }
+    const horas = Math.round(dx / PX_POR_HORA);
+    const minutos = (((minutosInicio + horas * 60) % 1440) + 1440) % 1440;
+    programarMinutos(minutos);
+  };
+
+  const alSoltarPuntero = (e: PointerEvent): void => {
+    if (bicho.hasPointerCapture(e.pointerId)) bicho.releasePointerCapture(e.pointerId);
+    if (!bajando) return;
+    bajando = false;
+    if (arrastrando) {
+      soltarArrastre();
+    } else {
+      // Un pointerdown/up sin mas de 4px de recorrido es un clic: salta.
+      salto();
+    }
+  };
+
+  const alCancelarPuntero = (e: PointerEvent): void => {
+    if (bicho.hasPointerCapture(e.pointerId)) bicho.releasePointerCapture(e.pointerId);
+    if (!bajando) return;
+    bajando = false;
+    soltarArrastre();
+  };
+
+  bicho.addEventListener("pointerdown", alBajarPuntero);
+  bicho.addEventListener("pointermove", alMoverArrastre);
+  bicho.addEventListener("pointerup", alSoltarPuntero);
+  bicho.addEventListener("pointercancel", alCancelarPuntero);
 
   const linea = (): ReturnType<Gsap["timeline"]> => {
     const crece = factorCrecimiento();
@@ -458,9 +623,19 @@ export function montarFundido(
   return {
     destroy: () => {
       window.removeEventListener("resize", pintarSuelo);
+      escena.removeEventListener("pointermove", alMoverPuntero);
+      bicho.removeEventListener("pointerdown", alBajarPuntero);
+      bicho.removeEventListener("pointermove", alMoverArrastre);
+      bicho.removeEventListener("pointerup", alSoltarPuntero);
+      bicho.removeEventListener("pointercancel", alCancelarPuntero);
       gsap.ticker.remove(tic);
       if (tlFundido) tlFundido.kill();
       if (tlEntrada) tlEntrada.kill();
+      if (tlSalto) tlSalto.kill();
+      if (arrastrando) {
+        const gancho = ganchoMinutos();
+        if (gancho) gancho(null);
+      }
     },
     reproducir: () => {
       if (tlFundido) tlFundido.kill();
