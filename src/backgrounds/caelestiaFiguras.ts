@@ -178,21 +178,82 @@ const FRAGMENT_SHADER = /* glsl */ `
 
 const REFRESH_MS = 750;
 
+/**
+ * La hora del reloj real, en minutos. Reserva para cuando el motor de color
+ * (`caelestia.color.ts`) todavia no ha publicado nada -- por ejemplo si este
+ * fondo monta antes de que `mountCaelestiaColor` corra su primer `aplicar()`.
+ */
+function minutosReloj(): number {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+/**
+ * Lee la hora efectiva publicada por el motor de color en `root.dataset`.
+ * `El motor de color es la unica fuente de la hora efectiva` (ver
+ * `caelestia.color.ts`): mientras exista el dataset, manda sobre `new Date()`
+ * -- inclusive el reloj real, que el motor tambien republica ahi cada minuto.
+ */
+function minutosEfectivos(): number {
+  const forzado = document.documentElement.dataset.caeMinutos;
+  if (forzado !== undefined) {
+    const n = Number(forzado);
+    if (Number.isFinite(n)) return n;
+  }
+  return minutosReloj();
+}
+
+interface DetalleHora {
+  minutos: number;
+}
+
 export function mountCaelestiaFiguras(container: HTMLElement): BackgroundHandle {
-  const cache = { min: -1, leido: -Infinity };
+  let ultimoMinuto = -1;
   let fase: Fase = { a: 0, b: 1, s: 0 };
   let rampa = rampaAt(0);
 
+  function actualizar(min: number): void {
+    if (min === ultimoMinuto) return;
+    ultimoMinuto = min;
+    fase = faseAt(min);
+    rampa = rampaAt(min);
+  }
+
+  // Arranque: si el motor de color ya publico un dataset, se usa; si no, el
+  // reloj real hace de reserva hasta que llegue el primer evento.
+  actualizar(minutosEfectivos());
+
+  /*
+   * Via reactiva: durante un vistazo (el arrastre del dino en
+   * `caelestia.fundido.ts`) el motor de color llama a `aplicar()` una vez
+   * por fotograma via `requestAnimationFrame` y despacha este evento cada
+   * vez -- asi que aqui se responde AL INSTANTE, sin esperar `REFRESH_MS`,
+   * y sin trabajo caro por llamada: `actualizar()` sale en el acto si el
+   * minuto no cambio, y si cambio recalcula lo mismo que ya recalculaba por
+   * tramo (`faseAt`/`rampaAt`, unas pocas operaciones trigonometricas: nada
+   * de GPU ni de DOM).
+   */
+  const alCambiarHora = (evento: Event): void => {
+    if (!(evento instanceof CustomEvent)) return;
+    const detalle = evento.detail as Partial<DetalleHora> | undefined;
+    if (!detalle || typeof detalle.minutos !== "number") return;
+    actualizar(detalle.minutos);
+  };
+  document.documentElement.addEventListener("caelestia:hora", alCambiarHora);
+
+  /*
+   * Reserva de reloj real: solo actua si el motor de color NO ha publicado
+   * dataset todavia (arranque muy temprano). En cuanto `caelestia:hora`
+   * despacha una vez, `minutosEfectivos()` deja de caer al `new Date()` de
+   * aqui y esta funcion se vuelve un no-op barato (una lectura de
+   * `dataset` + `performance.now()` por fotograma, sin trig).
+   */
+  const cache = { leido: -Infinity };
   function refresh(): void {
     const ahora = performance.now();
     if (ahora - cache.leido < REFRESH_MS) return;
     cache.leido = ahora;
-    const d = new Date();
-    const min = d.getHours() * 60 + d.getMinutes();
-    if (min === cache.min) return;
-    cache.min = min;
-    fase = faseAt(min);
-    rampa = rampaAt(min);
+    actualizar(minutosEfectivos());
   }
 
   const leer =
@@ -202,7 +263,7 @@ export function mountCaelestiaFiguras(container: HTMLElement): BackgroundHandle 
       return f();
     };
 
-  return mountShaderBackground(container, FRAGMENT_SHADER, {
+  const handle = mountShaderBackground(container, FRAGMENT_SHADER, {
     uMezcla: leer(() => fase.s),
     uFigAn: leer(() => FIGURAS[fase.a][0]),
     uFigAa: leer(() => FIGURAS[fase.a][1]),
@@ -225,4 +286,11 @@ export function mountCaelestiaFiguras(container: HTMLElement): BackgroundHandle 
     uC3: leer(() => rampa[3][1]),
     uH3: leer(() => rampa[3][2]),
   });
+
+  return {
+    destroy: () => {
+      document.documentElement.removeEventListener("caelestia:hora", alCambiarHora);
+      handle.destroy();
+    },
+  };
 }

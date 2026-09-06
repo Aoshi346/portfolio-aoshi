@@ -29,7 +29,10 @@ Los catorce gates (ver el spec, seccion `## Los gates`):
       retraso de muelle -- sigue moviendose fotogramas despues de que el
       raton se pare --, los lobulos respiran con la velocidad angular, y al
       soltar vuelve a su figura de reposo con un muelle elastico, no de golpe
-      -- el bicho no gira)
+      -- el bicho no gira; 15f: el fondo generativo (`caelestiaFiguras.ts`)
+      sigue la MISMA hora que los tokens de color durante el vistazo, no el
+      reloj real por su cuenta -- leido con el mismo hook de pixel WebGL que
+      `measure-caelestia-hora.py` gate 10)
 """
 import argparse
 import math
@@ -49,6 +52,53 @@ def comprobar(condicion: bool, etiqueta: str) -> None:
     print(("  OK   " if condicion else "  FALLO") + f"  {etiqueta}")
     if not condicion:
         FALLOS.append(etiqueta)
+
+
+# Mirror exacto de HOOK_PIXEL / _matiz_oklab_deg / _dist_angular en
+# `measure-caelestia-hora.py` (gate 10, "el fondo sigue la hora"): lee el
+# pixel (1,1) del canvas DENTRO del propio `gl.drawArrays`, antes de que el
+# navegador intercambie el buffer -- `preserveDrawingBuffer` es false en
+# `shaderBackground.ts` a proposito, asi que leer despues del hecho (un
+# `page.screenshot` normal, o un `readPixels` fuera del hook) devuelve
+# basura. Sirve para el gate 15f: durante el vistazo (arrastre del dino) el
+# fondo generativo de Caelestia tiene que seguir la MISMA hora que los
+# tokens de color, no el reloj real por su cuenta.
+HOOK_PIXEL = """() => {
+  window.__caePixel = null;
+  const proto = WebGLRenderingContext.prototype;
+  const orig = proto.drawArrays;
+  proto.drawArrays = function(...args) {
+    const r = orig.apply(this, args);
+    try {
+      const px = new Uint8Array(4);
+      this.readPixels(1, 1, 1, 1, this.RGBA, this.UNSIGNED_BYTE, px);
+      window.__caePixel = Array.from(px);
+    } catch (e) { /* swiftshader a veces tira en el primer frame, se reintenta */ }
+    return r;
+  };
+}"""
+
+
+def _srgb_a_lineal(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _matiz_oklab_deg(rgb255):
+    """RGB 0-255 (sRGB, gamma) -> matiz OkLab en grados. Round-trip completo
+    (EOTF sRGB -> lineal -> LMS -> OkLab), matrices canonicas de Bjorn Ottosson."""
+    r, g, b = (_srgb_a_lineal(v / 255.0) for v in rgb255[:3])
+    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    l_, m_, s_ = (max(x, 0.0) ** (1 / 3) for x in (l, m, s))
+    a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    b_ = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    return math.degrees(math.atan2(b_, a)) % 360
+
+
+def _dist_angular(h1, h2):
+    d = abs(h1 - h2) % 360
+    return min(d, 360 - d)
 
 
 # El fondo del pixel real, no el rol teorico: convertir `oklch()` leyendolo
@@ -141,13 +191,20 @@ CONTRASTE_JS = """({ sel, pseudo }) => {
 }"""
 
 
-def nueva_pagina_en_contacto(navegador, base, *, viewport=None, timezone_id=None, reduced_motion=None):
+def nueva_pagina_en_contacto(
+    navegador, base, *, viewport=None, timezone_id=None, reduced_motion=None, init_scripts=None
+):
     """Abre una pagina fresca en Caelestia y lleva el carril a «contacto».
 
     Es la primera visita al workspace SIEMPRE (contexto nuevo, `fundidoVisto`
     empieza en `false`), asi que dispara `reproducir()`. Se espera a que el
     fundido de 1900 ms termine del todo antes de devolver el control: medir
     antes de eso es medir un fotograma a medio fundir.
+
+    `init_scripts`: lista de scripts JS que se inyectan ANTES de cualquier
+    codigo de la pagina (via `add_init_script`) -- por ejemplo `HOOK_PIXEL`,
+    que tiene que parchear `WebGLRenderingContext.prototype.drawArrays` antes
+    de que `shaderBackground.ts` cree el contexto.
     """
     kwargs = {"viewport": viewport or {"width": 1440, "height": 900}}
     if timezone_id:
@@ -155,6 +212,8 @@ def nueva_pagina_en_contacto(navegador, base, *, viewport=None, timezone_id=None
     if reduced_motion:
         kwargs["reduced_motion"] = reduced_motion
     ctx = navegador.new_context(**kwargs)
+    for script in init_scripts or []:
+        ctx.add_init_script(script)
     errores: list[str] = []
     pg = ctx.new_page()
     pg.on("pageerror", lambda e: errores.append(str(e)))
@@ -1104,14 +1163,22 @@ def main() -> int:
         offset_horas = round(delta_horas)
         # Etc/GMT invierte el signo: Etc/GMT-5 es UTC+5.
         zona_13h = "UTC" if offset_horas == 0 else f"Etc/GMT{'-' if offset_horas > 0 else '+'}{abs(offset_horas)}"
-        ctx, pg, err = nueva_pagina_en_contacto(navegador, base, timezone_id=zona_13h)
+        ctx, pg, err = nueva_pagina_en_contacto(
+            navegador, base, timezone_id=zona_13h, init_scripts=["(%s)()" % HOOK_PIXEL]
+        )
         errores_totales += err
         hora_real = pg.evaluate("() => new Date().getHours() + ':' + new Date().getMinutes()")
         print(f"       zona horaria anclada: {zona_13h} (hora local real en la pagina: {hora_real})")
-        antes = pg.evaluate("""() => ({
-            hue: getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim(),
-            esquema: document.documentElement.dataset.caeEsquema,
-        })""")
+
+        def _leer_estado():
+            estado = pg.evaluate("""() => ({
+                hue: getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim(),
+                esquema: document.documentElement.dataset.caeEsquema,
+            })""")
+            estado["pixel"] = pg.evaluate("() => window.__caePixel")
+            return estado
+
+        antes = _leer_estado()
         print(f"       antes del arrastre (ancladas a las 13:00): {antes}")
         bicho_box = pg.evaluate("""() => {
             const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
@@ -1127,18 +1194,12 @@ def main() -> int:
                 return t ? t.classList.contains('is-open') : false;
             }"""))
             pg.wait_for_timeout(40)
-        durante = pg.evaluate("""() => ({
-            hue: getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim(),
-            esquema: document.documentElement.dataset.caeEsquema,
-        })""")
+        durante = _leer_estado()
         print(f"       durante el arrastre (450px, 15h despues): {durante}")
         print(f"       toast abierto en alguna muestra: {any(toasts)} ({toasts})")
         pg.mouse.up()
         pg.wait_for_timeout(300)
-        despues = pg.evaluate("""() => ({
-            hue: getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim(),
-            esquema: document.documentElement.dataset.caeEsquema,
-        })""")
+        despues = _leer_estado()
         print(f"       tras soltar: {despues}")
         comprobar(durante["hue"] != antes["hue"],
                   f"--cae-hue cambia durante el arrastre ({antes['hue']} -> {durante['hue']})")
@@ -1158,6 +1219,39 @@ def main() -> int:
         comprobar(despues["esquema"] == antes["esquema"],
                   f"el esquema vuelve al de antes del arrastre al soltar ({antes['esquema']} == "
                   f"{despues['esquema']})")
+
+        # --- 15f. El fondo generativo sigue la MISMA hora que el vistazo ---
+        # `caelestiaFiguras.ts` leia `new Date()` por su cuenta: durante el
+        # arrastre los tokens de color saltaban 15h (via
+        # `__CAE_SET_MINUTOS__`) pero lo que asomaba por el troquel se
+        # quedaba con la hora real. Se lee el pixel (1,1) del canvas WebGL
+        # (HOOK_PIXEL, el mismo mecanismo que `measure-caelestia-hora.py`
+        # gate 10) en los tres mismos instantes que ya miden los tokens, y se
+        # compara el matiz del fondo contra `--cae-hue` -- no contra un
+        # `hueAt(minutos)` recalculado aqui, que duplicaria el espejo y
+        # podria divergir en silencio de lo que el propio token ya dejo
+        # medido arriba.
+        TOLERANCIA_GRADOS_BG = 30
+        for nombre, estado in (("antes", antes), ("durante", durante), ("despues", despues)):
+            if not estado["pixel"]:
+                comprobar(False, f"el fondo generativo: no se pudo leer el pixel del canvas ({nombre})")
+                continue
+            hue_bg = _matiz_oklab_deg(estado["pixel"])
+            hue_token = float(estado["hue"])
+            d = _dist_angular(hue_bg, hue_token)
+            estado["hue_bg"] = hue_bg
+            comprobar(
+                d <= TOLERANCIA_GRADOS_BG,
+                f"el fondo generativo sigue la hora efectiva ({nombre}): matiz del fondo {hue_bg:.1f}, "
+                f"token --cae-hue {hue_token:.1f} (distancia {d:.1f}, tolerancia {TOLERANCIA_GRADOS_BG})",
+            )
+        if antes.get("hue_bg") is not None and durante.get("hue_bg") is not None:
+            d_bg = _dist_angular(antes["hue_bg"], durante["hue_bg"])
+            comprobar(
+                d_bg > 5,
+                f"el matiz del fondo generativo CAMBIA durante el vistazo "
+                f"({antes['hue_bg']:.1f} -> {durante['hue_bg']:.1f}, distancia {d_bg:.1f})",
+            )
         ctx.close()
 
         # --- 15d. Clic sin arrastre sigue siendo un salto -----------------

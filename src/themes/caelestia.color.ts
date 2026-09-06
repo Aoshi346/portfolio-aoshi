@@ -203,6 +203,25 @@ export function mountCaelestiaColor(root: HTMLElement): CaelestiaColorHandle {
     for (const [nombre, valor] of Object.entries(caelestiaTokens(minutos))) {
       root.style.setProperty(nombre, valor);
     }
+
+    /*
+     * El motor de color es la UNICA fuente de la hora efectiva. El fondo
+     * generativo (`caelestiaFiguras.ts`) leia `new Date()` por su cuenta, asi
+     * que durante un vistazo (el arrastre del dino en `caelestia.fundido.ts`)
+     * lo que asomaba por el troquel se quedaba con la hora real mientras los
+     * tokens de arriba ya habian saltado. Se publica sin condicion -- a
+     * diferencia de `caelestia:esquema`, que solo avisa en el cruce de
+     * esquema -- porque el matiz del fondo se mueve en CADA minuto, no solo
+     * cuando cambia dia/noche. `dataset.caeMinutos` es la lectura
+     * sincronica de arranque (por si el fondo monta antes que este modulo
+     * despache su primer evento); el evento es la via reactiva para
+     * responder al instante durante el arrastre, sin esperar al intervalo
+     * de refresco del fondo.
+     */
+    root.dataset.caeMinutos = String(minutos);
+    root.dispatchEvent(
+      new CustomEvent("caelestia:hora", { detail: { minutos, vistazo }, bubbles: true }),
+    );
   };
 
   aplicar();
