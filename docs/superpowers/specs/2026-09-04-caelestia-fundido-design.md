@@ -893,3 +893,52 @@ Y tres limpiezas menores de la misma ronda:
 - **La demostracion de la trampa del gate 3 dejo de ser una `comprobar()`.** Comparar la caja de
   bloque contra si misma da 0 px muertos siempre, por construccion: engordaba la cuenta de verdes sin
   vigilar nada. Se imprime, para el lector, y ya no se asevera.
+
+
+---
+
+## Adenda 2026-09-06: el dino es un juguete (repaso de interfaces con Aoshi)
+
+Aoshi pidió en el repaso (`2026-09-05-caelestia-repaso-interfaces.md`) tres gestos que no estaban
+ni en este spec ni en el plan: el dino salta al pulsar, mira al cursor, y arrastrarlo a los lados
+cambia el color «como si se moviese la hora». Lo tercero contradice la ley de la fase A (el reloj
+del visitante gobierna el color y el esquema no se interpola), así que se decidió con Aoshi que
+**el arrastre es un vistazo que se deshace**: al soltar, todo vuelve al reloj real y el shell no
+notifica los cruces de esquema durante el vistazo. Rama `design/caelestia-dino`, fusiones
+`8cdd535`, `2c4458d`, `b0f58b5`; y `4fcdd42` ya en `fix/repaso-interfaces`.
+
+- **Salto** (`cd2bb0a`): 0,52 s de vuelo con aplaste al aterrizar; un `pointerdown`/`up` sin
+  arrastre cuenta como clic; se ignora en el aire. Sin `tabindex`: los cuatro canales siguen siendo
+  las únicas paradas de tabulador.
+- **Mirada**: los ojos siguen al cursor dentro de 260 px, en enteros de -1 a 1 (pixel art), solo
+  de pie y nunca mientras `tlEntrada` lleva la mirada.
+- **Vistazo**: cada 30 px horizontales son una hora, sumada a los minutos reales del
+  `pointerdown` (módulo 1440), llamando a `__CAE_SET_MINUTOS__` como mucho una vez por fotograma;
+  al soltar, `null` devuelve el reloj real. `setPointerCapture` y `touch-action: none` son
+  técnicos, no de diseño. Los tres gestos entran en la misma partitura de limpieza de
+  `aterrizado()`/`destroy()`: abandonar la escena a medio gesto no deja nada congelado.
+- **El motor de color distingue un vistazo de un cambio real** (`9c6f1a1`): `aplicar()` propaga
+  `vistazo` en `caelestia:esquema`, guarda aparte el último esquema REAL anunciado, y
+  `caelestiaShell.ts` ignora los eventos de vistazo. `__CAE_SET_MINUTOS__` acepta `null`.
+- **El troquel gira con la hora del vistazo** (`8fd2f9f`, `e7133cf`): 15 grados por hora, mismo
+  sentido; solo gira el recorte (el dino, el horizonte y la nube no). Persigue el ángulo con un
+  muelle (0,55 s, `power3.out`) en un `gsap.ticker` persistente (un `onUpdate` muere con su tween y
+  congelaba el factor: el gate 15e-c lo cazó en rojo), los lóbulos respiran con la velocidad
+  angular (hasta 1,04) y al soltar vuelve con `elastic.out(1, 0.55)`, 1,1 s; el color corta al
+  instante, solo la forma asienta. Sin giro con movimiento reducido.
+- **El fondo generativo sigue el vistazo** (`4fcdd42`): `aplicar()` publica la hora efectiva
+  (`root.dataset.caeMinutos` y `CustomEvent("caelestia:hora", { minutos, vistazo })`) en cada
+  llamada, y `caelestiaFiguras.ts` la escucha con `new Date()` solo como reserva de arranque,
+  recalculando fase y rampa solo cuando cambia el minuto. Antes leía su propio reloj y lo que
+  asomaba por el troquel se quedaba en la hora real mientras el campo cambiaba. Vice y Hyprland no
+  montan el motor; `shaderBackground.ts` no se tocó.
+- **Gate 15** de `measure-caelestia-fundido.py` (`638b092` y siguientes): 15a salto (y su
+  reduce), 15b mirada (y reduce), 15c vistazo, 15d clic sin arrastre no cambia la hora, 15e giro
+  con muelle y respiración (cuatro familias, anclado a estado por el rAF de 200-400 ms de la
+  sandbox; y reduce), 15f el fondo sigue la hora efectiva (píxel del canvas con el mismo `HOOK_PIXEL`
+  del gate 10 del arnés de hora: rojo con 252,8 contra el token 124,5, verde con 129,3 contra
+  126,3). Todos vistos en rojo antes.
+- **Edge conocido, sin arreglar:** la figura de reposo del troquel se lee una vez al montar; si el
+  viewport cruza los 640 px después y se arrastra, gira la figura del otro tamaño hasta recargar.
+- **Riesgo de marca:** el dino ya era un activo identificable de Google (aceptado dos veces); como
+  juguete lo es más. Aoshi lo sabe.

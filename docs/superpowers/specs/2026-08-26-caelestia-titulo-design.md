@@ -182,6 +182,12 @@ animación y se lee como un error. Si se usa, arrancar en 2000.
 
 ## El widget: «Ahora mismo»
 
+> **Superado el 2026-09-06.** Esta pieza se rediseñó en la sesión de repaso de interfaces:
+> orden «quién, qué hace, estado», sin caja, figura viva de 240 vértices, entrada que brota de
+> la luz y `identity.now` = «Full Stack Developer». Lo que sigue describe la versión de B1; la
+> vigente está en `2026-09-05-caelestia-ahora-mismo-design.md`. La regla anti-mock de abajo sigue
+> en pie y ahora la vigila un gate que lee los literales de `content.ts`.
+
 Flota arriba a la derecha, 316 px de ancho, `surface-container` con `outline`:
 
 - pastilla de `identity.availability` en color ancla (azufre)

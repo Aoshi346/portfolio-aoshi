@@ -41,6 +41,23 @@
   the same way before B5 merged** (verified in a separate worktree against `1f61752`), and the shape
   of the failure (`bg=rgba(0, 0, 0, 0)`) points at its own instrument, not at the CSS. Read each
   phase's block below before touching anything.
+- **Caelestia's interface review with Aoshi (2026-09-05/06) is MERGED into `main`** (`1c246eb`,
+  branch `fix/repaso-interfaces`, not pushed). Nine dictated faults fixed one by one, each with
+  its gate seen red first: the hero no longer paints before the choreography arrives
+  (`js-cae-entrada`), the shell toast no longer fires on load, the terminal leaves before the
+  name is traced, bar and dock enter (CSS, `no-preference`), the Obra drawer fills the window as
+  an elevated sheet with layered text relay, C and Zustand icons from Devicon Plain, scenes 4/5
+  renamed **Stack** and **Contacto**, the "Disponible" chip left the bar. Two design changes came
+  out of it: the **"Ahora mismo" card** was redesigned (`2026-09-05-caelestia-ahora-mismo`, order
+  who/what/status, no box, live 240-vertex figure, entrance blooming from its light; Vera 6.6
+  BLOCK residual, Lidia 6.4) and the **Contacto dino is a toy** (jump, eye follow, and dragging is
+  a *glance* at another hour that undoes itself on release; the troquel spins with a spring and
+  **the generative background follows the glance** via `caelestia:hora`). Full record, including
+  the ten mistakes paid during the session (measuring at 1412x748, a commit claiming
+  `verify.py` green while it was red, subagents stalling on background monitors, OOM with
+  parallel harnesses, the hour hook not reaching the background), in
+  `docs/superpowers/specs/2026-09-05-caelestia-repaso-interfaces.md`. **Do not re-measure the
+  card at 1412x748**: that is the inner window with a 1440x900 page.
 - **Hyprland and Caelestia: IN PROGRESS.** Current focus. They share `shaderBackground.ts` with
   Vice (don't touch that module without confirming Vice still renders) but each has its own
   background (`hyprGradient.ts` / `caelestiaBlobs.ts`), palette, and typography — see `src/themes/themes.css`.
