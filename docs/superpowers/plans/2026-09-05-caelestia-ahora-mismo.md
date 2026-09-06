@@ -28,7 +28,7 @@
 
 **Files:** ninguno (git).
 
-- [ ] **Step 1: Crear rama y worktree**
+- [x] **Step 1: Crear rama y worktree**
 
 ```bash
 cd /home/aoshi/proyectos/portfolio-aoshi
@@ -37,11 +37,11 @@ cd ../portfolio-aoshi-ahora-mismo
 ln -s /home/aoshi/proyectos/portfolio-aoshi/node_modules node_modules
 ```
 
-- [ ] **Step 1b: El spec pasa a `en ejecucion`**
+- [x] **Step 1b: El spec pasa a `en ejecucion`**
 
 En `docs/superpowers/specs/2026-09-05-caelestia-ahora-mismo-design.md`, línea 3: `Estado: en ejecucion`. Commit: `git commit -am "docs(hero): el spec de Ahora mismo pasa a en ejecucion"`. (`scripts/verify.py` cruza el estado del spec con las casillas de este plan: un plan a medias con `en ejecucion` es legítimo; `implementado` con casillas sin marcar, no.)
 
-- [ ] **Step 2: Build verde en el punto de partida y arnés de Título verde**
+- [x] **Step 2: Build verde en el punto de partida y arnés de Título verde**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -62,21 +62,21 @@ Expected: `0 fallo(s)`. Si no, parar: el punto de partida está roto y hay que s
 - Produces: `identity.now === "Full Stack Developer"`, leído por `hero.ts:151` y `about.ts:99,329,461` sin tocarlos.
 - Produces en el arnés: `literal_now()` → `str`, que lee `content.ts` con regex.
 
-- [ ] **Step 1: Cambiar el literal**
+- [x] **Step 1: Cambiar el literal**
 
 En `src/data/content.ts`, línea 46:
 ```ts
   now: "Full Stack Developer",
 ```
 
-- [ ] **Step 2: Build y ver el gate `widget` en rojo**
+- [x] **Step 2: Build y ver el gate `widget` en rojo**
 
 ```bash
 npm run build && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A12 "\[widget\]"
 ```
 Expected: `FALLO el widget dice 'Freelancer', literal de content.ts` (la lista `esperado` del arnés lleva el literal viejo a mano).
 
-- [ ] **Step 3: El arnés lee el literal de `content.ts`**
+- [x] **Step 3: El arnés lee el literal de `content.ts`**
 
 En `scripts/measure-caelestia-titulo.py`, encima de `def widget`:
 ```python
@@ -97,14 +97,14 @@ Y en `esperado`, sustituir la línea `"Freelancer",                  # identity.
         literal_now(),                 # identity.now, leido de content.ts (Task 1 del plan Ahora mismo)
 ```
 
-- [ ] **Step 4: Gate verde**
+- [x] **Step 4: Gate verde**
 
 ```bash
 python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A12 "\[widget\]"
 ```
 Expected: `OK   el widget dice 'Full Stack Developer', literal de content.ts` y el resto OK.
 
-- [ ] **Step 5: Ver «Quién soy» con el literal nuevo (no se toca, se mira)**
+- [x] **Step 5: Ver «Quién soy» con el literal nuevo (no se toca, se mira)**
 
 ```bash
 python3 - <<'EOF'
@@ -120,7 +120,7 @@ EOF
 ```
 Expected: al menos 1.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/data/content.ts scripts/measure-caelestia-titulo.py
@@ -138,7 +138,7 @@ git commit -m "feat(hero): identity.now pasa a Full Stack Developer y el arnes l
 **Interfaces:**
 - Produces (clases del DOM, las usan las Tasks 3, 4 y 5): `.cae-widget` > `.cae-wcab` (`.cae-whd` + `.cae-wfig`), `.cae-wnow`, `.cae-wsub`, `.cae-wdos` (2 × `.cae-wcol` > `small.cae-wfecha` + `b.cae-wnombre`), `.cae-wpie` > `.cae-pilla` (> `i.cae-wluz` + texto).
 
-- [ ] **Step 1: Escribir el gate del orden y verlo en rojo**
+- [x] **Step 1: Escribir el gate del orden y verlo en rojo**
 
 En `scripts/measure-caelestia-titulo.py`, nueva función:
 ```python
@@ -174,7 +174,7 @@ python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | 
 ```
 Expected: rojo en orden, columnas, luz y figura (el DOM actual es `cae-whd`, `cae-pilla`, `cae-wnow`, `cae-wsub`, `cae-wfila`, `cae-wfila`).
 
-- [ ] **Step 2: Reescribir el bloque del widget en `hero.ts`**
+- [x] **Step 2: Reescribir el bloque del widget en `hero.ts`**
 
 Sustituir las líneas 150-164 (desde `const disponible = ...` hasta el cierre de `const widget = el(...)`) por:
 ```ts
