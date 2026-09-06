@@ -213,6 +213,79 @@ Cada uno tiene que verse en **rojo** contra el código actual antes de aceptarse
    texto de la pastilla sobre `--cae-anchor`, **con la capa de estado puesta** (hover real con
    `page.hover()`, nunca un `MouseEvent` sintético). AA en todos.
 
+## Registro de implementación
+
+Cada gate se vio en rojo contra el código anterior antes de aceptarse. Lo que rompía cada uno,
+literal, y las medidas finales:
+
+- **Task 1 — literal `identity.now`.** Rojo esperado y visto: `FALLO el widget dice 'Freelancer',
+  literal de content.ts` (el arnés llevaba el literal viejo a mano). Verde tras leer `content.ts`
+  con regex: `OK el widget dice 'Full Stack Developer', literal de content.ts`. Se comprobó además
+  que el literal nuevo llega a la ficha `neofetch` de «Quién soy» sin tocar `about.ts`.
+
+- **Task 2 — orden y columnas.** Rojo: el DOM viejo (`cae-whd`, `cae-pilla`, `cae-wnow`, `cae-wsub`,
+  `cae-wfila`, `cae-wfila`) no cumplía ni el orden de hijos ni las dos columnas fechadas. Verde tras
+  reescribir `hero.ts`: hijos directos en orden `cae-wcab`/`cae-wnow`/`cae-wsub`/`cae-wdos`/`cae-wpie`,
+  y con el CSS de la Task 3 puesto, `grid-template-columns` midió **`117.766px 140.234px`** (dos
+  pistas, ninguna igual — la fecha por columna no reserva el mismo ancho que el nombre).
+
+- **Task 3 — superficie, tipografía, luz.** Rojo: borde `1px`, fondo `surface-container` (el de la
+  ventana, no el de la barra), tamaño óptico `opsz 9` y el anillo de la luz en `none` (no respiraba).
+  Verde: `borde 0px`; fondo `oklch(0.925 0.026 255)` — igual al de `.cae-bar`, distinto del de
+  `#hero`; el primero mide **27px**, es el texto más grande de la tarjeta y **cabe en una línea: 256
+  de 272px de caja** (medido con `Range`, no con la caja de bloque del `<span>`); ejes
+  `"opsz" 60, "wght" 700`; el anillo anima como `caeLuzRespira` y con movimiento reducido es `none`.
+
+- **Task 4 — la figura viva.** Rojo: `clip-path: none` en `.cae-wfig` (0 pares, sin figura). Verde:
+  `polygon()` de **240 pares** siempre, cambia de forma sola en el barrido con tope de 6s (anclado a
+  estado, no a un tiempo fijo), y con movimiento reducido queda fija tras una sola pintura.
+
+- **Task 5 — la entrada brota de la luz.** Rojo: la tarjeta entraba con un `fromTo` de opacidad, sin
+  ningún `circle(` en su `clip-path` durante el muestreo. Verde: se registró un `circle()` con radio
+  mínimo de **0.0px** (arranca en el punto de la luz y crece hasta 420px, `power3.inOut`), y al
+  aterrizar la tarjeta **no** conserva `clip-path` inline (`''`). Con movimiento reducido nunca
+  aparece `clip-path`.
+
+- **Task 6 — contraste con la capa de estado.** Sabotaje (`.cae-wfecha { color: var(--cae-outline) }`,
+  build, correr): **`FALLO peor par de la tarjeta fecha a las 06:30: 1.19:1 (piso AA 4.5)`** — la
+  `outline` de noche cae muy por debajo de AA, el mismo fallo real que ya se pagó en B4. Revertido,
+  build, correr: **`OK peor par de la tarjeta ubicacion a las 12:30: 5.01:1 (piso AA 4.5)`**. El
+  barrido de las 24 horas con hover real (`pg.hover`, nunca un `MouseEvent` sintético) y la capa de
+  estado apilada sobre el fondo antes de medir dejó el arnés completo en **0 fallo(s)**.
+
+### Verificación final (Task 6, Step 2)
+
+- `npm run build`: exit 0. `npm run lint`: exit 0.
+- `measure-caelestia-titulo.py`: **0 fallo(s)** (peor par 5.01:1, ver arriba).
+- `measure-caelestia-hora.py`: `OK — motor de color de Caelestia en verde` (el shell de la fase A
+  sigue intacto).
+- `measure-caelestia-quien-soy.py`: `TODO VERDE` (peor par 5.72:1, la ficha con el literal nuevo).
+- `scripts/verify.py --url http://127.0.0.1:4193`: `TODO OK — 12 fallos conocidos, 0 nuevos
+  (verify-baseline.json)` — la línea base no cambió, ningún fallo nuevo, ninguno resuelto sin
+  quitar de la base.
+- Capturas 1440×900 de `?theme=caelestia` a las 13:00 y 23:00, y de `?theme=vice` y `?theme=hyprland`:
+  las cuatro con cero errores de consola/`pageerror`. Vice e Hyprland se ven igual que antes de la
+  Task 6 (`.cae-widget` sigue sin pintarse fuera de Caelestia).
+
+### Hallazgo abierto, no arreglado en esta tarea: 1366×768
+
+A esa resolución (portátil habitual, fuera del viewport oficial 1440×900 del tema) la pastilla
+`.cae-pilla` se solapa con la primera fila de la columna de cifras (`.cae-statcol`), medido con
+`getBoundingClientRect()`:
+
+```
+widget:  { top: 98,  left: 988,  right: 1304, bottom: 366, width: 316, height: 268 }
+statcol: { top: 344, left: 1136, right: 1304, bottom: 588, width: 168, height: 244 }
+overlap: true
+```
+
+La tarjeta no cambia de posición/ancho con el viewport (ambos son `absolute` con coordenadas fijas
+en `px`), así que por debajo de cierta altura de página la tarjeta y la columna de cifras siempre
+van a coincidir en Y. No estaba en el alcance de esta tarea arreglarlo — el spec fija el viewport
+oficial en 1440×900 y deja 390px fuera de alcance, pero no dice nada de 1366×768 — así que queda
+registrado como hallazgo, no como regresión introducida por el rediseño (la tarjeta ya vivía en esa
+misma posición antes del rediseño de la Task 6).
+
 ## Gates de crítica
 
 Al cerrar: `lidia-naive-tester` (¿se lee en dos segundos qué es y si está disponible?) y

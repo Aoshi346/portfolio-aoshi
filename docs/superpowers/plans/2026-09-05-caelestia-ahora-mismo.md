@@ -752,7 +752,7 @@ git commit -m "feat(hero): la tarjeta Ahora mismo brota de su luz al entrar"
 - Modify: `docs/superpowers/specs/2026-09-05-caelestia-ahora-mismo-design.md` (Estado y registro)
 - Modify: `.claude/rules/verification.md` (fila de `measure-caelestia-titulo.py`)
 
-- [ ] **Step 1: Gate de contraste, y verlo en rojo con un sabotaje**
+- [x] **Step 1: Gate de contraste, y verlo en rojo con un sabotaje**
 
 Copiar de `scripts/measure-caelestia-obra.py` las funciones `_oklab_to_srgb255`, `_parse_rgb`, `_luminancia` y `_ratio` (líneas ~334-405) al arnés de Título si no existen ya equivalentes (comprobar con `grep -n "def _ratio\|def contraste" scripts/measure-caelestia-titulo.py`; si existe `contraste(lumA, lumB)` y `luz_texto`, usarlas y solo añadir el parseo de `oklch`). Nueva función:
 ```python
@@ -800,7 +800,7 @@ def tarjeta_contraste(pg, base: str) -> None:
 ```
 Llamar tras `tarjeta_figura`. **Sabotaje obligatorio**: cambiar temporalmente en themes.css `.cae-wfecha { color: var(--cae-outline) }`, build, correr: debe salir rojo (la `outline` da ~1,8:1 de noche, el fallo real de B4). Deshacer el sabotaje, build, correr: verde. Anotar los dos resultados literales en el commit.
 
-- [ ] **Step 2: Verificación completa**
+- [x] **Step 2: Verificación completa**
 
 ```bash
 npm run build && npm run lint
@@ -815,7 +815,7 @@ Capturas 1440×900 de `?theme=caelestia` a las 13:00 y 23:00, y de `?theme=vice`
 
 Lanzar `lidia-naive-tester` y `vera-art-director` sobre el hero de Caelestia (brief: solo la tarjeta y su entrada; prohibido editar producción). Registrar resultados en el spec (§ «Gates de crítica»). Un P0 se arregla antes de cerrar; los P1 se anotan.
 
-- [ ] **Step 4: Cerrar el spec y la documentación**
+- [>] **Step 4: Cerrar el spec y la documentación** (parcial: solo el `## Registro de implementación` del spec, ejecutado por el worker de la Task 6; `Estado:` sigue `en ejecucion` y `.claude/rules/verification.md`/memoria quedan para el orquestador tras los gates de crítica del Step 3)
 
 - Spec: `Estado: implementado`, más una sección `## Registro de implementación` con: lo que rompió cada gate en rojo, medidas finales (ancho del primero con `Range`, peor contraste del barrido, radios del brote), y las desviaciones respecto al spec si las hubo.
 - `.claude/rules/verification.md`, fila de `measure-caelestia-titulo.py`: añadir «la tarjeta “Ahora mismo”: orden y columnas fechadas, sin caja (surface-container-high, sin borde), primero a opsz 60 en una línea medida con `Range`, la luz respira solo con movimiento, la figura viva de 240 vértices cambia sola y queda quieta con reduce, la entrada brota de la luz (`circle()` de radio < 20 leído durante la entrada, sin `clip-path` inline al aterrizar) y el contraste de sus cinco pares en las 24 horas con la capa de estado puesta (hover real)».
