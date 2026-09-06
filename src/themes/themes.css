@@ -4437,6 +4437,40 @@
   padding-top: 12px;
   border-top: 1px solid color-mix(in oklch, var(--cae-outline) 45%, transparent);
 }
+
+/*
+ * Repaso de interfaces 2026-09-06 (hallazgo A de Vera): a 1366x768 la
+ * tarjeta pisaba la columna de cifras -- `.cae-widget` acababa en bottom=366
+ * y `.cae-statcol` empezaba en top=344 (22px de solape con "2021"). Mismo
+ * patron que el cajon de Obra un poco mas arriba en este fichero
+ * (`.cae-obra-prose p`): un `@media (max-height: 800px)` que aprieta
+ * paddings y margenes entre filas SIN tocar `.cae-statcol` (es de B1) ni el
+ * tamano del primero (`tarjeta_superficie` exige que sea el texto mas
+ * grande de la tarjeta y `>= 26px`; bajarlo a 24 rompia ese gate, que corre
+ * con la MISMA ventana de 748 de alto del resto del arnes -- esta media
+ * query tambien se activa ahi, a proposito). Medido: bottom pasa de 366 a
+ * 326, hueco con `.cae-statcol` de -22px a +18px.
+ */
+@media (max-height: 800px) {
+  :root[data-theme="caelestia"] .cae-widget {
+    padding: 12px 22px 12px;
+  }
+  :root[data-theme="caelestia"] .cae-wcab {
+    margin-bottom: 4px;
+  }
+  :root[data-theme="caelestia"] .cae-wsub {
+    margin: 3px 0 0;
+  }
+  :root[data-theme="caelestia"] .cae-wdos {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  :root[data-theme="caelestia"] .cae-wpie {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+}
+
 :root[data-theme="caelestia"] .cae-pilla {
   display: inline-flex;
   align-items: center;

@@ -498,6 +498,34 @@ def tarjeta_contraste(pg, base: str) -> None:
     assert_que(peor[0] >= 4.5, f"peor par de la tarjeta {peor[1]} a las {peor[2]}: {peor[0]:.2f}:1 (piso AA 4.5)")
 
 
+def tarjeta_portatil(pg, base: str) -> None:
+    """Repaso de interfaces 2026-09-06 (hallazgo A de Vera): a 1366x768 la
+    tarjeta 'Ahora mismo' pisaba la columna de cifras -- `.cae-widget` acababa
+    en bottom=366 y `.cae-statcol` empezaba en top=344, 22px de solape con la
+    cifra "2021". Contexto/pagina PROPIOS con ese viewport (el resto del
+    arnes usa VENTANA=1412x748): a 1440x900 este gate no corre, y no debe
+    correr -- ese tamano no cambia."""
+    print("\n[tarjeta] a 1366x768 la tarjeta no pisa la columna de cifras")
+    ctx = pg.context.browser.new_context(viewport={"width": 1366, "height": 768})
+    pr = ctx.new_page()
+    abrir(pr, base, "13:00")
+    d = pr.evaluate(
+        """() => {
+          const w = document.querySelector('#hero .cae-widget');
+          const s = document.querySelector('#hero .cae-statcol');
+          const wr = w.getBoundingClientRect(), sr = s.getBoundingClientRect();
+          return { widgetBottom: wr.bottom, statTop: sr.top };
+        }"""
+    )
+    hueco = d["statTop"] - d["widgetBottom"]
+    assert_que(
+        hueco >= 8,
+        f"a 1366x768 hay >=8px entre el pie de la tarjeta y la columna de cifras "
+        f"(widget.bottom={d['widgetBottom']:.0f}, statcol.top={d['statTop']:.0f}, hueco={hueco:.0f}px)",
+    )
+    ctx.close()
+
+
 def entrada(pg, base: str) -> None:
     print("\n[entrada] el trazo existe y el movimiento reducido lo salta")
     abrir(pg, base, "13:00")
@@ -813,6 +841,7 @@ def main() -> int:
         tarjeta_superficie(pg, args.base)
         tarjeta_figura(pg, args.base)
         tarjeta_contraste(pg, args.base)
+        tarjeta_portatil(pg, args.base)
         entrada(pg, args.base)
         roce(pg, args.base)
 

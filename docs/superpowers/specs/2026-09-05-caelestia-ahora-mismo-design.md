@@ -286,6 +286,34 @@ oficial en 1440×900 y deja 390px fuera de alcance, pero no dice nada de 1366×7
 registrado como hallazgo, no como regresión introducida por el rediseño (la tarjeta ya vivía en esa
 misma posición antes del rediseño de la Task 6).
 
+### Hallazgo cerrado, repaso de interfaces 2026-09-06: 1366×768
+
+El hallazgo de arriba (dejado abierto al cerrar la Task 6) es el hallazgo A del repaso de
+interfaces de Vera. Arreglo: un `@media (max-height: 800px)` en `.cae-widget`/`.cae-wcab`/
+`.cae-wsub`/`.cae-wdos`/`.cae-wpie` (mismo patrón que `.cae-obra-drawer`/`.cae-obra-prose p` un poco
+más arriba en `themes.css`) que aprieta paddings y márgenes entre filas sin tocar `.cae-statcol`
+(es de B1) ni el tamaño del primero (bajarlo de 27 a 24px rompía la aserción `tarjeta_superficie`
+de que el primero es el texto más grande de la tarjeta y mide `>= 26px` — esa aserción corre con la
+MISMA ventana de 748px de alto del resto del arnés, así que la media query también se activa ahí, a
+propósito, y se verificó que sigue en verde).
+
+Medido antes/después con `getBoundingClientRect()` a 1366×768, 13:00:
+
+```
+antes:   widget.bottom=366  statcol.top=344  hueco=-22px (solape)
+despues: widget.bottom=326  statcol.top=344  hueco=18px
+```
+
+A 1440×900 no cambia nada (`widget.bottom=366` en los dos casos, `max-height: 800px` no se activa
+a 900 de alto).
+
+Gate nuevo `tarjeta_portatil` en `measure-caelestia-titulo.py` (contexto/página propios con
+viewport 1366×768, el resto del arnés sigue usando 1412×748): visto en rojo contra el CSS anterior
+— `FALLO a 1366x768 hay >=8px entre el pie de la tarjeta y la columna de cifras
+(widget.bottom=366, statcol.top=344, hueco=-22px)` — y en verde tras el arreglo — `OK a 1366x768
+hay >=8px entre el pie de la tarjeta y la columna de cifras (widget.bottom=326, statcol.top=344,
+hueco=18px)`.
+
 ## Gates de crítica
 
 Al cerrar: `lidia-naive-tester` (¿se lee en dos segundos qué es y si está disponible?) y
