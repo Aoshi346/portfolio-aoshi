@@ -286,6 +286,7 @@ def main():
                   pastillas: b.querySelectorAll('[data-cae-ws]').length,
                   reloj: (b.querySelector('[data-cae-clock]') || {}).textContent,
                   activa: b.querySelectorAll('[data-cae-ws][aria-current="true"]').length,
+                  sinAvail: b.querySelector('.cae-avail') === null,
                 };
             }"""
         )
@@ -298,6 +299,10 @@ def main():
                 fallos.append("el reloj marca %r, esperado '11:00'" % barra["reloj"])
             if barra["activa"] != 1:
                 fallos.append("pastillas activas: %d, esperada 1" % barra["activa"])
+            if not barra["sinAvail"]:
+                fallos.append(
+                    "la barra no lleva chapa de disponible (vive en la tarjeta del hero)"
+                )
         ctx.close()
 
         # ---- 6. los otros dos temas NO montan el shell

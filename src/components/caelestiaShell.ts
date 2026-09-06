@@ -70,13 +70,13 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
   const navegacion = el("nav", "cae-ws-list", pastillas);
   navegacion.setAttribute("aria-label", "Escenas");
 
-  const punto = el("i", "cae-dot");
-  const disponible = el("span", "cae-avail", [punto, "Disponible"]);
+  // La chapa de disponible se quito de aqui (decision de Aoshi, repaso de
+  // interfaces 2026-09-05: la disponibilidad la dice la tarjeta del hero).
 
   const reloj = el("span", "cae-clock", [formatoHora(new Date())]);
   reloj.dataset.caeClock = "";
 
-  const bandeja = el("span", "cae-tray", [disponible, reloj]);
+  const bandeja = el("span", "cae-tray", [reloj]);
   const marca = el("span", "cae-mark", ["caelestia"]);
 
   const barra = el("header", "cae-bar", [marca, navegacion, bandeja]);
