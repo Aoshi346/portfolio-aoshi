@@ -290,6 +290,33 @@ def widget(pg, base: str) -> None:
     assert_que("Repositorios públicos" not in texto, "el widget no inventa datos derivados")
 
 
+def tarjeta_orden(pg, base: str) -> None:
+    print("\n[tarjeta] orden quien / que hace / estado, dos columnas fechadas")
+    abrir(pg, base, "13:00")
+    d = pg.evaluate(
+        """() => {
+          const w = document.querySelector('#hero .cae-widget'); if (!w) return null;
+          const clases = [...w.children].map(c => c.className.split(' ')[0]);
+          const cols = [...w.querySelectorAll('.cae-wdos > .cae-wcol')];
+          const colsOk = cols.length === 2 && cols.every(c => c.children.length === 2
+             && c.children[0].matches('small.cae-wfecha') && c.children[1].matches('b.cae-wnombre'));
+          const luz = w.querySelector('.cae-wpie .cae-pilla > i.cae-wluz');
+          const fig = w.querySelector('.cae-wcab .cae-wfig');
+          return { clases, colsOk, luz: !!luz, fig: !!fig,
+                   gridCols: getComputedStyle(w.querySelector('.cae-wdos') || w).gridTemplateColumns };
+        }"""
+    )
+    assert_que(d is not None, "existe #hero .cae-widget")
+    if d is None:
+        return
+    assert_que(d["clases"] == ["cae-wcab", "cae-wnow", "cae-wsub", "cae-wdos", "cae-wpie"],
+               f"los hijos directos van en orden cabecera/primero/ubicacion/columnas/pie ({d['clases']})")
+    assert_que(d["colsOk"], "dos columnas, cada una con la fecha (small) antes del nombre (b)")
+    assert_que(d["luz"], "la pastilla del pie lleva la luz (i.cae-wluz)")
+    assert_que(d["fig"], "la cabecera lleva el hueco de la figura (.cae-wfig)")
+    assert_que(len(d["gridCols"].split()) == 2, f"las columnas son dos pistas de grid ({d['gridCols']!r})")
+
+
 def entrada(pg, base: str) -> None:
     print("\n[entrada] el trazo existe y el movimiento reducido lo salta")
     abrir(pg, base, "13:00")
@@ -579,6 +606,7 @@ def main() -> int:
         titular(pg, args.base)
         firma_y_cifras(pg, args.base)
         widget(pg, args.base)
+        tarjeta_orden(pg, args.base)
         entrada(pg, args.base)
         roce(pg, args.base)
 

@@ -208,14 +208,14 @@ Sustituir las líneas 150-164 (desde `const disponible = ...` hasta el cierre de
 ```
 Comprobar que `el(tag, clase, hijos?)` admite `Node | string` en hijos (ver `src/utils/dom.ts`); si `el("i", "cae-wluz")` sin hijos no compila, pasar `[]`.
 
-- [ ] **Step 3: Build, lint y gate**
+- [x] **Step 3: Build, lint y gate**
 
 ```bash
 npm run build && npm run lint && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A8 "\[tarjeta\]"
 ```
 Expected: todo OK salvo `las columnas son dos pistas de grid` (el CSS llega en Task 3; anotarlo y seguir). El gate `[widget]` (anti-mock) sigue verde: los literales no cambian.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/sections/hero.ts scripts/measure-caelestia-titulo.py
