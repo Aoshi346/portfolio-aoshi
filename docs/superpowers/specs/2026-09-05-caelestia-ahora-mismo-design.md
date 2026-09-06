@@ -2,7 +2,8 @@
 
 Estado: en ejecucion
 Fecha: 2026-09-05
-Rama de trabajo: `fix/repaso-interfaces` (se abrirá rama propia `design/caelestia-ahora-mismo` al planificar)
+Rama de trabajo: `design/caelestia-ahora-mismo` (worktree `portfolio-aoshi-ahora-mismo`), desde `fix/repaso-interfaces`
+Plan: `docs/superpowers/plans/2026-09-05-caelestia-ahora-mismo.md`
 Origen: sesión de repaso de interfaces con Aoshi. Reabre una pieza cerrada en
 `2026-08-26-caelestia-titulo-design.md` (§ «El widget: Ahora mismo»).
 
