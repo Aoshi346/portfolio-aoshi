@@ -381,6 +381,123 @@ def tarjeta_figura(pg, base: str) -> None:
     ctx.close()
 
 
+def _oklab_to_srgb255(l: float, a_: float, b_: float) -> tuple[float, float, float]:
+    """OKLab -> sRGB (0..255). Mismas matrices que `scripts/verify.py` y
+    `scripts/measure-caelestia-obra.py` (Bjorn Ottosson)."""
+
+    def clamp01(v: float) -> float:
+        return max(0.0, min(1.0, v))
+
+    l_ = l + 0.3963377774 * a_ + 0.2158037573 * b_
+    m_ = l - 0.1055613458 * a_ - 0.0638541728 * b_
+    s_ = l - 0.0894841775 * a_ - 1.2914855480 * b_
+    l3, m3, s3 = l_**3, m_**3, s_**3
+
+    lin_r = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3
+    lin_g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3
+    lin_b = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3
+
+    def to_gamma(c: float) -> float:
+        c = clamp01(c)
+        return 12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1 / 2.4)) - 0.055
+
+    return to_gamma(lin_r) * 255, to_gamma(lin_g) * 255, to_gamma(lin_b) * 255
+
+
+def _parse_rgb(css: str) -> tuple[float, float, float, float] | None:
+    """Parser minimo de color computado: `rgb()`/`rgba()` y `oklch()` (lo que
+    Chromium devuelve para los tokens de Caelestia, resueltos via `oklch()`
+    en `themes.css`). Si no reconoce el formato devuelve `None` y la
+    asercion de contraste lo reporta en vez de fallar en silencio."""
+    css = css.strip()
+
+    if css.startswith("oklch("):
+        inner = css[css.index("(") + 1 : css.rindex(")")]
+        comps, _, alpha_s = inner.partition("/")
+        vals = comps.split()
+        ell, c, h = float(vals[0]), float(vals[1]), float(vals[2])
+        import math
+
+        rad = math.radians(h)
+        a_ = c * math.cos(rad)
+        b_ = c * math.sin(rad)
+        r, g, b = _oklab_to_srgb255(ell, a_, b_)
+        a = float(alpha_s.strip()) if alpha_s.strip() else 1.0
+        return r, g, b, a
+
+    if css.startswith("rgb(") or css.startswith("rgba("):
+        inner = css[css.index("(") + 1 : css.rindex(")")]
+        parts = [p.strip() for p in inner.replace("/", ",").split(",") if p.strip()]
+        if len(parts) < 3:
+            return None
+        r, g, b = float(parts[0]), float(parts[1]), float(parts[2])
+        a = float(parts[3]) if len(parts) > 3 else 1.0
+        return r, g, b, a
+
+    return None
+
+
+def _luminancia(rgb: tuple[float, float, float]) -> float:
+    def canal(c: float) -> float:
+        cs = c / 255
+        return cs / 12.92 if cs <= 0.03928 else ((cs + 0.055) / 1.055) ** 2.4
+
+    r, g, b = rgb
+    return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b)
+
+
+def _ratio(fg: tuple[float, float, float], bg: tuple[float, float, float]) -> float:
+    """Ratio de contraste WCAG. Reusa `contraste()` (ya definido arriba para
+    el barrido del shader), que opera sobre luminancias -- aqui se le pasan
+    las de dos colores parseados en vez de las del canvas."""
+    return contraste(_luminancia(fg), _luminancia(bg))
+
+
+def tarjeta_contraste(pg, base: str) -> None:
+    print("\n[tarjeta] contraste AA de sus pares en las 24 horas, con la capa de estado puesta")
+    PARES = [
+        ("primero", "#hero .cae-wnow"),
+        ("ubicacion", "#hero .cae-wsub"),
+        ("fecha", "#hero .cae-wfecha"),
+        ("nombre", "#hero .cae-wnombre"),
+        ("pastilla", "#hero .cae-pilla"),
+    ]
+    peor = (99.0, "", "")
+    for h in range(0, 24, 3):
+        abrir(pg, base, f"{h:02d}:30")
+        pg.hover("#hero .cae-widget")  # hover REAL: un MouseEvent sintetico no dispara :hover
+        pg.wait_for_timeout(400)  # la capa de estado tiene transition 0.25s
+        for nombre, sel in PARES:
+            d = pg.evaluate(
+                """(sel) => {
+                  const e = document.querySelector(sel); if (!e) return null;
+                  const cs = getComputedStyle(e);
+                  const w = document.querySelector('#hero .cae-widget');
+                  const capa = getComputedStyle(w, '::after');
+                  return { fg: cs.color, bg: sel.includes('pilla') ? cs.backgroundColor : getComputedStyle(w).backgroundColor,
+                           capa: capa.backgroundColor, capaOp: parseFloat(capa.opacity) };
+                }""",
+                sel,
+            )
+            assert_que(d is not None, f"existe {sel}")
+            if d is None:
+                continue
+            fg = _parse_rgb(d["fg"])
+            bg = _parse_rgb(d["bg"])
+            capa = _parse_rgb(d["capa"])
+            if not fg or not bg:
+                assert_que(False, f"no se pudo parsear el color de {nombre} ({d['fg']} / {d['bg']})")
+                continue
+            bg3 = bg[:3]
+            if capa and d["capaOp"] > 0 and "pilla" not in sel:
+                a = d["capaOp"]
+                bg3 = tuple(bg[i] * (1 - a) + capa[i] * a for i in range(3))
+            r = _ratio(fg[:3], bg3)
+            if r < peor[0]:
+                peor = (r, nombre, f"{h:02d}:30")
+    assert_que(peor[0] >= 4.5, f"peor par de la tarjeta {peor[1]} a las {peor[2]}: {peor[0]:.2f}:1 (piso AA 4.5)")
+
+
 def entrada(pg, base: str) -> None:
     print("\n[entrada] el trazo existe y el movimiento reducido lo salta")
     abrir(pg, base, "13:00")
@@ -695,6 +812,7 @@ def main() -> int:
         tarjeta_orden(pg, args.base)
         tarjeta_superficie(pg, args.base)
         tarjeta_figura(pg, args.base)
+        tarjeta_contraste(pg, args.base)
         entrada(pg, args.base)
         roce(pg, args.base)
 
