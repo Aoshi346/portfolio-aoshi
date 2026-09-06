@@ -23,6 +23,8 @@ Los catorce gates (ver el spec, seccion `## Los gates`):
   12. Vice y Hyprland no se alteran (`contacto.ts` es compartido)
   13. el fundido interrumpido aterriza del todo (bicho, nube, suelo, zancada)
   14. rozar responde y el teclado llega a lo mismo (el P1 de `vera-art-director`)
+  15. el dino es un juguete: salta al pulsar, mira al cursor, y el arrastre es
+      un vistazo a otra hora que no notifica el cambio de esquema al soltar
 """
 import argparse
 import pathlib
@@ -910,6 +912,288 @@ def main() -> int:
                 break
         comprobar(alcanzados == len(canales_sel),
                   f"el tabulador alcanza los cuatro canales ({alcanzados} de {len(canales_sel)})")
+        ctx.close()
+
+        # ================================================================
+        # [15] El dino es un juguete: salto, mirada, vistazo
+        # ================================================================
+        print("\n[15] El dino es un juguete")
+        dino_src = (RAIZ / "src" / "themes" / "caelestia.dino.ts").read_text(encoding="utf-8")
+        m_ojo = re.search(r"OJO_DINO\s*=\s*\[([^\]]+)\]", dino_src)
+        assert m_ojo is not None, "OJO_DINO no se encuentra en caelestia.dino.ts"
+        ojo_vals = [int(x.strip()) for x in m_ojo.group(1).split(",")]
+        ox0, oy0 = ojo_vals[0], ojo_vals[1]
+        print(f"       OJO_DINO leido de caelestia.dino.ts: x={ox0} y={oy0}")
+
+        def matriz_a_numeros(matriz):
+            if not matriz or matriz == "none":
+                return None
+            return [float(n) for n in re.findall(r"-?[\d.]+", matriz)]
+
+        # --- 15a. Salto al pulsar ---------------------------------------
+        print("\n[15a] Salto al pulsar")
+        # OJO DE INSTRUMENTO: en esta maquina el `requestAnimationFrame` bajo
+        # `--use-gl=swiftshader` no llega cada ~16ms sino cada 200-400ms, y a
+        # veces en rafagas mucho mas rapidas -- medido al construir este gate,
+        # el mismo salto (0,52s de vuelo + 0,2s de aplaste) unas veces se
+        # captura en la 3a lectura y otras se salta entero en una ventana de
+        # grabacion de 1s. Una ventana corta mide el jitter de la maquina, no
+        # el gesto. Se graba durante 3s (>4x la duracion real del gesto) y NO
+        # se para al primer avistamiento: as{i} un salto lento en esta
+        # sandbox tiene hueco de sobra para dejar al menos una lectura con
+        # ty<-10.
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        pg.evaluate("""() => {
+            window.__ultimoY = [];
+            let activo = true;
+            const bicho = document.querySelector('.cae-fundido-bicho');
+            const marcar = () => {
+                if (!activo) return;
+                window.__ultimoY.push(getComputedStyle(bicho).transform);
+                requestAnimationFrame(marcar);
+            };
+            requestAnimationFrame(marcar);
+            setTimeout(() => { activo = false; }, 3000);
+        }""")
+        pg.click(".cae-fundido-bicho")
+        pg.wait_for_function("window.__ultimoY && window.__ultimoY.length >= 3", timeout=4000)
+        pg.wait_for_timeout(3100)
+        lecturas = pg.evaluate("() => window.__ultimoY")
+        tys = []
+        for m in lecturas:
+            n = matriz_a_numeros(m)
+            tys.append(n[5] if n and len(n) >= 6 else 0.0)
+        print(f"       lecturas: {len(lecturas)} · ty minimo {min(tys) if tys else None}")
+        comprobar(len(lecturas) >= 3, f"se grabaron >=3 lecturas durante el salto ({len(lecturas)})")
+        comprobar(any(t < -10 for t in tys),
+                  f"alguna lectura tiene traslacion Y negativa: el salto ocurre (ty min {min(tys) if tys else None})")
+        volvio = pg.evaluate("""async () => {
+            const frame = () => new Promise(r => requestAnimationFrame(r));
+            const bicho = document.querySelector('.cae-fundido-bicho');
+            const t0 = performance.now();
+            while (performance.now() - t0 < 5000) {
+                const t = getComputedStyle(bicho).transform;
+                if (t === 'none' || /^matrix\\(1,\\s*0,\\s*0,\\s*1,\\s*0,\\s*0\\)$/.test(t)) return true;
+                await frame();
+            }
+            return false;
+        }""")
+        comprobar(volvio, "al final el bicho vuelve a su sitio (transform identidad o none, tope 5s)")
+        ctx.close()
+
+        # --- 15a-reduce. Sin salto con movimiento reducido --------------
+        print("\n[15a-reduce] Sin salto con movimiento reducido")
+        ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+        pg = ctx.new_page()
+        errores = []
+        pg.on("pageerror", lambda e: errores.append(str(e)))
+        pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+        pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(3000)
+        pg.click('[data-cae-ws="contacto"]')
+        pg.wait_for_timeout(200)
+        errores_totales += errores
+        pg.evaluate("""() => {
+            window.__ultimoYReduce = [];
+            let activo = true;
+            const bicho = document.querySelector('.cae-fundido-bicho');
+            const marcar = () => {
+                if (!activo) return;
+                window.__ultimoYReduce.push(getComputedStyle(bicho).transform);
+                requestAnimationFrame(marcar);
+            };
+            requestAnimationFrame(marcar);
+            setTimeout(() => { activo = false; }, 2000);
+        }""")
+        pg.click(".cae-fundido-bicho")
+        pg.wait_for_timeout(2100)
+        lecturas_reduce = pg.evaluate("() => window.__ultimoYReduce")
+        tys_reduce = []
+        for m in lecturas_reduce:
+            n = matriz_a_numeros(m)
+            tys_reduce.append(n[5] if n and len(n) >= 6 else 0.0)
+        print(f"       lecturas reducidas: {len(lecturas_reduce)} · ty minimo "
+              f"{min(tys_reduce) if tys_reduce else None}")
+        comprobar(all(t > -1 for t in tys_reduce),
+                  f"con movimiento reducido ninguna lectura salta (ty min {min(tys_reduce) if tys_reduce else None})")
+        ctx.close()
+
+        # --- 15b. Los ojos siguen al cursor ------------------------------
+        print("\n[15b] La mirada sigue al cursor")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        centro = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.mouse.move(centro["x"] - 120, centro["y"] - 120)
+        pg.wait_for_timeout(80)
+        ojo_cerca = pg.evaluate("""() => {
+            const o = document.querySelector('[data-dino-ojo]');
+            return { x: Number(o.getAttribute('x')), y: Number(o.getAttribute('y')) };
+        }""")
+        print(f"       cerca (120,120 arriba-izq): {ojo_cerca}")
+        comprobar(ojo_cerca["x"] == ox0 - 1 and ojo_cerca["y"] == oy0 - 1,
+                  f"cerca del bicho el ojo se desplaza -1,-1 desde OJO_DINO (medido {ojo_cerca}, "
+                  f"esperado x={ox0 - 1} y={oy0 - 1})")
+        # 400px de distancia, pero en diagonal arriba-izquierda: a la derecha
+        # el centro del bicho ya esta cerca del canto de un viewport de
+        # 1440px (medido ~1206px), y +400px cae fuera de la ventana -- un
+        # `mouse.move` a un punto sin ventana real detras no dispara
+        # `pointermove` en la pagina. -283,-283 (hipotenusa ~400) cae dentro.
+        pg.mouse.move(centro["x"] - 283, centro["y"] - 283)
+        pg.wait_for_timeout(80)
+        ojo_lejos = pg.evaluate("""() => {
+            const o = document.querySelector('[data-dino-ojo]');
+            return { x: Number(o.getAttribute('x')), y: Number(o.getAttribute('y')) };
+        }""")
+        print(f"       lejos (400px, diagonal arriba-izq dentro del viewport): {ojo_lejos}")
+        comprobar(ojo_lejos["x"] == ox0 and ojo_lejos["y"] == oy0,
+                  f"lejos del bicho el ojo vuelve a OJO_DINO (medido {ojo_lejos}, esperado x={ox0} y={oy0})")
+        ctx.close()
+
+        print("\n[15b-reduce] Sin mirada con movimiento reducido")
+        ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+        pg = ctx.new_page()
+        errores = []
+        pg.on("pageerror", lambda e: errores.append(str(e)))
+        pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+        pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(3000)
+        pg.click('[data-cae-ws="contacto"]')
+        pg.wait_for_timeout(500)
+        errores_totales += errores
+        centro_r = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.mouse.move(centro_r["x"] - 120, centro_r["y"] - 120)
+        pg.wait_for_timeout(80)
+        ojo_reduce = pg.evaluate("""() => {
+            const o = document.querySelector('[data-dino-ojo]');
+            return { x: Number(o.getAttribute('x')), y: Number(o.getAttribute('y')) };
+        }""")
+        print(f"       con reduce: {ojo_reduce}")
+        comprobar(ojo_reduce["x"] == ox0 and ojo_reduce["y"] == oy0,
+                  f"con movimiento reducido el ojo no sigue al cursor (medido {ojo_reduce})")
+        ctx.close()
+
+        # --- 15c. El arrastre es un vistazo ------------------------------
+        print("\n[15c] El arrastre es un vistazo")
+        # ANCLA DE VERDAD, no un `__CAE_SET_MINUTOS__(13*60)` desde fuera:
+        # ese gancho fuerza el motor de color, pero el arrastre lee el reloj
+        # REAL (`new Date()`) en el `pointerdown` -- llamarlo antes del
+        # arrastre solo pone un decorado que la propia logica de arrastre
+        # ignora, y el "antes" que se compara ya no es el punto de partida
+        # real del gesto. Visto en rojo al construir este gate: con esa
+        # forma el "antes" y el "despues" no eran comparables y el gate
+        # fallaba por una razon que no era la real. La ZONA HORARIA del
+        # contexto de Playwright, como en el Gate 7, hace que `new Date()`
+        # LEA de verdad las 13:00 sin tocar produccion.
+        ahora_utc_15c = datetime.now(timezone.utc)
+        delta_horas = (13 - (ahora_utc_15c.hour + ahora_utc_15c.minute / 60)) % 24
+        if delta_horas > 12:
+            delta_horas -= 24
+        offset_horas = round(delta_horas)
+        # Etc/GMT invierte el signo: Etc/GMT-5 es UTC+5.
+        zona_13h = "UTC" if offset_horas == 0 else f"Etc/GMT{'-' if offset_horas > 0 else '+'}{abs(offset_horas)}"
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base, timezone_id=zona_13h)
+        errores_totales += err
+        hora_real = pg.evaluate("() => new Date().getHours() + ':' + new Date().getMinutes()")
+        print(f"       zona horaria anclada: {zona_13h} (hora local real en la pagina: {hora_real})")
+        antes = pg.evaluate("""() => ({
+            hue: getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim(),
+            esquema: document.documentElement.dataset.caeEsquema,
+        })""")
+        print(f"       antes del arrastre (ancladas a las 13:00): {antes}")
+        bicho_box = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.mouse.move(bicho_box["x"], bicho_box["y"])
+        pg.mouse.down()
+        toasts = []
+        for i in range(1, 11):
+            pg.mouse.move(bicho_box["x"] + i * 45, bicho_box["y"], steps=1)
+            toasts.append(pg.evaluate("""() => {
+                const t = document.querySelector('[data-cae-toast]');
+                return t ? t.classList.contains('is-open') : false;
+            }"""))
+            pg.wait_for_timeout(40)
+        durante = pg.evaluate("""() => ({
+            hue: getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim(),
+            esquema: document.documentElement.dataset.caeEsquema,
+        })""")
+        print(f"       durante el arrastre (450px, 15h despues): {durante}")
+        print(f"       toast abierto en alguna muestra: {any(toasts)} ({toasts})")
+        pg.mouse.up()
+        pg.wait_for_timeout(300)
+        despues = pg.evaluate("""() => ({
+            hue: getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim(),
+            esquema: document.documentElement.dataset.caeEsquema,
+        })""")
+        print(f"       tras soltar: {despues}")
+        comprobar(durante["hue"] != antes["hue"],
+                  f"--cae-hue cambia durante el arrastre ({antes['hue']} -> {durante['hue']})")
+        comprobar(durante["esquema"] != antes["esquema"],
+                  f"el esquema cruza a noche durante el arrastre de 15h ({antes['esquema']} -> "
+                  f"{durante['esquema']})")
+        comprobar(not any(toasts), f"el aviso de esquema NO se abre durante el arrastre ({toasts})")
+        # Tolerancia de 1 grado: el reloj REAL sigue corriendo durante el
+        # propio arrastre (0,25 grados/minuto, ver `caelestiaTokens`), asi
+        # que unos segundos de ejecucion del gate ya mueven el hue "real" un
+        # poco -- no es que el vistazo no vuelva, es que el reloj de verdad
+        # no se ha detenido mientras se medía.
+        deriva_hue = abs(float(despues["hue"]) - float(antes["hue"]))
+        comprobar(deriva_hue <= 1.0,
+                  f"--cae-hue vuelve (con margen de deriva del reloj real) al valor de antes del "
+                  f"arrastre al soltar ({antes['hue']} -> {despues['hue']}, deriva {deriva_hue:.2f})")
+        comprobar(despues["esquema"] == antes["esquema"],
+                  f"el esquema vuelve al de antes del arrastre al soltar ({antes['esquema']} == "
+                  f"{despues['esquema']})")
+        ctx.close()
+
+        # --- 15d. Clic sin arrastre sigue siendo un salto -----------------
+        print("\n[15d] Clic sin arrastre: salta, no cambia la hora")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        antes_d = pg.evaluate(
+            "() => getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim()"
+        )
+        bicho_box_d = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.evaluate("""() => {
+            window.__ultimoYClic = [];
+            let activo = true;
+            const bicho = document.querySelector('.cae-fundido-bicho');
+            const marcar = () => {
+                if (!activo) return;
+                window.__ultimoYClic.push(getComputedStyle(bicho).transform);
+                requestAnimationFrame(marcar);
+            };
+            requestAnimationFrame(marcar);
+            setTimeout(() => { activo = false; }, 3000);
+        }""")
+        pg.mouse.move(bicho_box_d["x"], bicho_box_d["y"])
+        pg.mouse.down()
+        pg.mouse.up()
+        pg.wait_for_timeout(3100)
+        lecturas_d = pg.evaluate("() => window.__ultimoYClic")
+        tys_d = []
+        for m in lecturas_d:
+            n = matriz_a_numeros(m)
+            tys_d.append(n[5] if n and len(n) >= 6 else 0.0)
+        despues_d = pg.evaluate(
+            "() => getComputedStyle(document.documentElement).getPropertyValue('--cae-hue').trim()"
+        )
+        print(f"       ty min tras clic sin arrastre: {min(tys_d) if tys_d else None} · "
+              f"hue {antes_d} -> {despues_d}")
+        comprobar(any(t < -10 for t in tys_d),
+                  f"un pointerdown/up sin mover mas de 4px salta igual que un click ({min(tys_d) if tys_d else None})")
+        comprobar(despues_d == antes_d, f"--cae-hue no cambia con un clic sin arrastre ({antes_d} == {despues_d})")
         ctx.close()
 
         # ================================================================

@@ -5430,6 +5430,17 @@
 :root[data-theme="caelestia"] .cae-fundido-suelo svg { width: 100%; height: auto; display: block; fill: var(--cae-on-surface-variant); }
 :root[data-theme="caelestia"] .cae-fundido-bicho { left: 50%; bottom: 30%; width: 13.125rem; margin-left: -6.5625rem; }
 :root[data-theme="caelestia"] .cae-fundido-bicho svg { width: 100%; height: auto; display: block; }
+/* El bicho es un juguete: pulsable, aunque hoy nada lo apague. Se deja
+   escrito para que un futuro `pointer-events: none` en el troquel (aunque
+   lleve `aria-hidden`) no se lo lleve por delante sin darse cuenta. NO entra
+   en el orden de tabulacion: sin `tabindex` ni `role`, los cuatro canales
+   siguen siendo las unicas paradas. `touch-action: none` es tecnico, no de
+   diseno: sin el, arrastrar en tactil tambien desplaza la pagina. */
+:root[data-theme="caelestia"] .cae-fundido-bicho {
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+}
 :root[data-theme="caelestia"] .cae-dino-cuerpo { fill: var(--cae-on-surface); }
 :root[data-theme="caelestia"] .cae-dino-ojo { fill: var(--cae-surface); transition: fill 0.3s; }
 
