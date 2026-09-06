@@ -437,6 +437,8 @@ def entrada(pg, base: str) -> None:
         termVis: csTerm ? csTerm.visibility : null,
         termOp: csTerm ? parseFloat(csTerm.opacity) : null,
         typed: typed ? typed.textContent : null,
+        tarjetaClip: (() => { const w = q('#hero .cae-widget'); return w ? (w.style.clipPath || '') : ''; })(),
+        tarjetaOp: (() => { const w = q('#hero .cae-widget'); return w ? parseFloat(getComputedStyle(w).opacity) : null; })(),
       };
     }"""
 
@@ -586,7 +588,10 @@ def entrada(pg, base: str) -> None:
         )
 
         # El widget es la pieza nueva de la timeline: se cubre por separado,
-        # anclado a estado, nunca a un cronometro fijo.
+        # anclado a estado, nunca a un cronometro fijo. Se lee tambien el
+        # clip-path inline de la tarjeta en cada vuelta (Task 5: la entrada
+        # brota de la luz con un circle() en vez de un fundido de opacidad) y
+        # se guarda en `muestras` para que la asercion de "brota" las vea.
         t1 = time.monotonic()
         widget_ok = False
         while time.monotonic() - t1 < 25:
@@ -594,13 +599,30 @@ def entrada(pg, base: str) -> None:
                 "() => { const w = document.querySelector('#hero .cae-widget');"
                 " if (!w) return null;"
                 " const cs = getComputedStyle(w);"
-                " return { op: parseFloat(cs.opacity), vis: cs.visibility }; }"
+                " const hijo = w.lastElementChild;"
+                " return { clip: w.style.clipPath || '', op: hijo ? parseFloat(getComputedStyle(hijo).opacity) : null,"
+                "          vis: cs.visibility }; }"
             )
-            if w and w["op"] >= 0.99 and w["vis"] == "visible":
+            if w:
+                muestras.append({"t": time.monotonic() - t0, "firmaExiste": True, "typed": "whoami", "tarjetaClip": w["clip"], **w})
+            if w and w["clip"] == "" and w["op"] is not None and w["op"] >= 0.99 and w["vis"] == "visible":
                 widget_ok = True
                 break
             pn.wait_for_timeout(30)
         assert_que(widget_ok, "el widget .cae-widget queda puesto al final de la entrada")
+
+        # La tarjeta brota de la luz: hubo un circle() de radio pequeno en
+        # algun momento de la entrada, y al aterrizar no queda clip-path
+        # inline (una mascara viva sobre la tarjeta rompe el hover y la capa
+        # de estado).
+        brota = [m for m in muestras if m.get("tarjetaClip", "").startswith("circle(")]
+        radios: list[float] = []
+        for m in brota:
+            mm = re.search(r"circle\(([\d.]+)px", m["tarjetaClip"])
+            if mm:
+                radios.append(float(mm.group(1)))
+        assert_que(bool(radios) and min(radios) < 20, f"la tarjeta brota de la luz: hubo un circle() de radio < 20 px ({min(radios) if radios else 'ninguno'})")
+        assert_que(not muestras[-1].get("tarjetaClip"), f"al aterrizar la tarjeta no conserva clip-path inline ({muestras[-1].get('tarjetaClip')!r})")
 
     pn.close()
 

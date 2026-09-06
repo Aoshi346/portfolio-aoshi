@@ -640,7 +640,7 @@ git commit -m "feat(hero): la figura viva de la tarjeta Ahora mismo morfa con la
 **Interfaces:**
 - Consumes: `FiguraVivaHandle.relieve.v` y `.pinta()` de la Task 4.
 
-- [ ] **Step 1: Gate en rojo**
+- [x] **Step 1: Gate en rojo**
 
 En `LEE_ENTRADA` (dentro de `entrada`), añadir al objeto devuelto:
 ```js
@@ -663,7 +663,7 @@ Y tras la aserción del widget («queda puesto al final»), añadir:
 2. La condición de «puesta» pasa a ser: `w["clip"] == ""` y opacidad del último hijo `>= 0.99` y `visibility` visible. Si no llega en 25 s, FALLA (como ahora).
 Correr: rojo en «brota» (hoy la tarjeta entra con un `fromTo` de opacidad, sin `circle`).
 
-- [ ] **Step 2: La entrada en `montarEntrada`**
+- [x] **Step 2: La entrada en `montarEntrada`**
 
 Firma: `export function montarEntrada(gsap: Gsap, root: HTMLElement, figura: FiguraVivaHandle = FIGURA_NULA): EntradaHandle`.
 
@@ -725,18 +725,18 @@ En la rama de movimiento reducido de `montarEntrada` no hay que tocar nada: no e
 
 Comprobar `destroy`: `tl.kill()` deja el `clip-path` a medias si se mata en mitad del brote. Añadir en `destroy`: `if (widget) widget.style.clipPath = "";` y `figura.relieve.v = 1; figura.pinta();` (kill NO dispara onComplete: trampa documentada del proyecto).
 
-- [ ] **Step 3: Build, lint, arnés entero**
+- [x] **Step 3: Build, lint, arnés entero**
 
 ```bash
 npm run build && npm run lint && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183
 ```
 Expected: `0 fallo(s)`, incluidas las dos aserciones nuevas de `[entrada]` y todas las de `[tarjeta]`.
 
-- [ ] **Step 4: Verlo**
+- [x] **Step 4: Verlo**
 
 Con Playwright, `wait_until="commit"` y muestreo cada 40 ms del `style.clipPath` de la tarjeta hasta el aterrizaje: imprimir la serie de radios (debe ir de ~0 a 420 y luego vacío). Y una captura a mitad del brote si se pilla (anclada: primera muestra con radio entre 60 y 200).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/caelestia.titulo.ts scripts/measure-caelestia-titulo.py

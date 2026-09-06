@@ -111,10 +111,7 @@ const NULO: EntradaHandle = { destroy: () => {} };
 export function montarEntrada(
   gsap: Gsap,
   root: HTMLElement,
-  // Se recibe pero no se usa todavia: la Task 5 del plan de "Ahora mismo" lo
-  // conecta al brote de la tarjeta.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _figura?: FiguraVivaHandle,
+  figura: FiguraVivaHandle = FIGURA_NULA,
 ): EntradaHandle {
   const descubrir = (): void => document.documentElement.classList.remove("js-cae-entrada");
 
@@ -171,7 +168,23 @@ export function montarEntrada(
   if (bloques.length > 0) {
     gsap.set(bloques, { opacity: 0, rotateX: -82, y: 6, transformPerspective: 600 });
   }
-  if (widget) gsap.set(widget, { opacity: 0, y: 8 });
+  let brote: { cx: number; cy: number } | null = null;
+  if (widget) {
+    // Brota de la luz: el circulo se centra en la luz de la pastilla, medida
+    // AQUI (con la caja ya definitiva; medir al montar daba la caja colapsada,
+    // misma trampa que el aterrizaje del trazo).
+    gsap.set(widget, { opacity: 1, y: 0 });
+    const luz = widget.querySelector<HTMLElement>(".cae-wluz");
+    const wr = widget.getBoundingClientRect();
+    const lr = luz?.getBoundingClientRect();
+    const cx = lr ? lr.left + lr.width / 2 - wr.left : wr.width / 2;
+    const cy = lr ? lr.top + lr.height / 2 - wr.top : wr.height / 2;
+    widget.style.clipPath = `circle(0px at ${cx}px ${cy}px)`;
+    gsap.set(Array.from(widget.children), { opacity: 0, y: 6 });
+    figura.relieve.v = 0;
+    figura.pinta();
+    brote = { cx, cy };
+  }
 
   descubrir();
 
@@ -262,19 +275,46 @@ export function montarEntrada(
     );
   }
 
-  // 11. El widget "Ahora mismo": la unica pieza del hero que hasta ahora
-  // entraba de golpe en vez de paso a paso.
-  if (widget) {
-    tl.fromTo(
-      widget,
-      { opacity: 0, y: 8 },
-      { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+  // 11. La tarjeta "Ahora mismo" brota de su luz: el circulo crece desde el
+  // punto de la pastilla, la figura florece de circulo a figura y el texto se
+  // posa. Al terminar se limpia el clip-path inline: una mascara viva sobre
+  // la tarjeta rompe el hover y la capa de estado.
+  if (widget && brote) {
+    const radio = { r: 0 };
+    const { cx, cy } = brote;
+    tl.to(
+      radio,
+      {
+        r: 420,
+        duration: 0.85,
+        ease: "power3.inOut",
+        onUpdate: () => {
+          widget.style.clipPath = `circle(${radio.r.toFixed(1)}px at ${cx}px ${cy}px)`;
+        },
+        onComplete: () => {
+          widget.style.clipPath = "";
+        },
+      },
       "-=0.2",
+    );
+    tl.to(figura.relieve, { v: 1, duration: 0.8, ease: "back.out(1.4)", onUpdate: figura.pinta }, "<");
+    tl.fromTo(
+      Array.from(widget.children),
+      { opacity: 0, y: 6 },
+      { opacity: 1, y: 0, duration: 0.3, ease: "power2.out", stagger: 0.06 },
+      "-=0.5",
     );
   }
 
   return {
-    destroy: () => tl.kill(),
+    destroy: () => {
+      tl.kill();
+      // `kill()` NO dispara `onComplete`: sin esto, matar la timeline a
+      // mitad del brote deja un clip-path a medias sobre la tarjeta.
+      if (widget) widget.style.clipPath = "";
+      figura.relieve.v = 1;
+      figura.pinta();
+    },
   };
 }
 
