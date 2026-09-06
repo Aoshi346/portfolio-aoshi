@@ -123,6 +123,48 @@ export function montarFundido(
   banda.append(troquel);
 
   /*
+   * La figura de reposo del troquel, leida UNA VEZ del CSS (nunca se toca el
+   * `clip-path` de la hoja de estilos). `figurasM3.ts` (`poly`) escribe los
+   * 240 pares como `polygon(x1% y1%, x2% y2%, ...)`; se parsean a numeros
+   * aqui para poder rotarlos alrededor de (50, 50) mientras se arrastra.
+   *
+   * Si algun dia deja de ser un `polygon()` de 240 pares -- otra figura, otro
+   * generador -- esto falla en silencio y el troquel deja de girar en vez de
+   * escribir un clip roto: girar una figura a medio parsear es peor que no
+   * girarla.
+   */
+  // defensive: figura ausente o con otro conteo de puntos no debe romper el clip
+  const figuraReposo: Array<[number, number]> | null = (() => {
+    const m = window.getComputedStyle(troquel).clipPath.match(/^polygon\((.+)\)$/);
+    if (!m) return null;
+    const pares = [...m[1].matchAll(/(-?[\d.]+)%\s+(-?[\d.]+)%/g)].map(
+      (par): [number, number] => [Number(par[1]), Number(par[2])],
+    );
+    return pares.length === 240 ? pares : null;
+  })();
+
+  /**
+   * Rota la figura de reposo `grados` alrededor de su centro (50, 50) y la
+   * escribe como `clip-path` en linea, con el mismo formato de dos decimales
+   * que `figurasM3.ts`. El dino, el horizonte y la nube NO giran: solo se
+   * gira el recorte.
+   */
+  const girarTroquel = (grados: number): void => {
+    if (!figuraReposo) return;
+    const rad = (grados * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const puntos = figuraReposo.map(([x, y]) => {
+      const dx = x - 50;
+      const dy = y - 50;
+      const rx = (dx * cos - dy * sin + 50).toFixed(2);
+      const ry = (dx * sin + dy * cos + 50).toFixed(2);
+      return `${rx}% ${ry}%`;
+    });
+    troquel.style.clipPath = `polygon(${puntos.join(", ")})`;
+  };
+
+  /*
    * El estado baja bajo el colofon. En el DOM compartido vive dentro de
    * `.contacto-band` —encima de las barras— y la contraportada lo quiere
    * abajo, con el pie de imprenta. Se mueve AQUI y no en `contacto.ts`
@@ -213,6 +255,9 @@ export function montarFundido(
       arrastrando = false;
       const gancho = ganchoMinutos();
       if (gancho) gancho(null);
+      // El troquel vuelve a su figura de reposo: quitar el inline manda a la
+      // regla del CSS, igual que hace `soltarArrastre()` en el camino normal.
+      troquel.style.clipPath = "";
     }
     bajando = false;
   };
@@ -225,6 +270,12 @@ export function montarFundido(
    * dividida entre el radio MINIMO de la figura — los VALLES, no las crestas —
    * con un 4% de margen. Con el radio maximo se queda corto y el escritorio
    * asoma por una esquina.
+   *
+   * Lee el `clip-path` COMPUTADO, que durante un arrastre es el inline que
+   * escribe `girarTroquel()`. No desvia nada: al soltar ya queda vacio
+   * (`soltarArrastre()`/`aterrizado()`), y el fundido (`linea()`, la unica
+   * que llama a esto) nunca corre a mitad de un arrastre -- para llegar a
+   * "contacto" hay que cambiar de workspace, y eso ya suelta el puntero.
    */
   const factorCrecimiento = (): number => {
     const v = escena.getBoundingClientRect();
@@ -370,18 +421,25 @@ export function montarFundido(
   let minutosInicio = 0;
   // El gancho se llama como mucho una vez por fotograma: sin este cerrojo,
   // cada `pointermove` (varios por fotograma en un raton de verdad) llamaria
-  // a `aplicar()` -- que reescribe TODOS los tokens de color -- de mas.
+  // a `aplicar()` -- que reescribe TODOS los tokens de color -- de mas. El
+  // giro del troquel viaja en el MISMO rAF: son 240 puntos por fotograma,
+  // solo mientras se arrastra, y no hace falta un segundo reloj para eso.
   let rafPendiente = false;
   let minutosPendientes: number | null = null;
+  let gradosPendientes: number | null = null;
 
-  const programarMinutos = (minutos: number): void => {
+  const programarArrastre = (minutos: number, grados: number): void => {
     minutosPendientes = minutos;
+    gradosPendientes = grados;
     if (rafPendiente) return;
     rafPendiente = true;
     requestAnimationFrame(() => {
       rafPendiente = false;
       const gancho = ganchoMinutos();
       if (gancho && minutosPendientes !== null) gancho(minutosPendientes);
+      // Con movimiento reducido el reloj se sigue moviendo (ya lo hacia antes
+      // de este gesto) pero el troquel se queda quieto.
+      if (!reduce && gradosPendientes !== null) girarTroquel(gradosPendientes);
     });
   };
 
@@ -390,6 +448,9 @@ export function montarFundido(
     arrastrando = false;
     const gancho = ganchoMinutos();
     if (gancho) gancho(null);
+    // Del corte a la figura de reposo, como el color vuelve al reloj: quitar
+    // el inline manda de vuelta a la regla del CSS.
+    troquel.style.clipPath = "";
     pararZancada();
   };
 
@@ -414,7 +475,8 @@ export function montarFundido(
     }
     const horas = Math.round(dx / PX_POR_HORA);
     const minutos = (((minutosInicio + horas * 60) % 1440) + 1440) % 1440;
-    programarMinutos(minutos);
+    // 15 grados por hora de vistazo (360 en 24h), mismo sentido que la hora.
+    programarArrastre(minutos, horas * 15);
   };
 
   const alSoltarPuntero = (e: PointerEvent): void => {
@@ -635,6 +697,7 @@ export function montarFundido(
       if (arrastrando) {
         const gancho = ganchoMinutos();
         if (gancho) gancho(null);
+        troquel.style.clipPath = "";
       }
     },
     reproducir: () => {
