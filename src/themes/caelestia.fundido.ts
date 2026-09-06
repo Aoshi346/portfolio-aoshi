@@ -95,7 +95,23 @@ export function montarFundido(
   cornIzq.textContent = etiqueta;
   const cornDer = document.createElement("span");
   cornDer.className = "cae-fundido-corn-der";
-  cornDer.textContent = `${identity.name} · ${identity.location}`;
+  /*
+   * Nombre y ubicacion van en nodos separados, no en un solo `textContent`:
+   * a 390px el hueco de la derecha (240px medidos) no alcanza para la frase
+   * entera a este tracking y el navegador la parte en dos renglones (medido:
+   * 27px de alto en un `<span>` de una sola linea de texto). El CSS de 390px
+   * oculta `.cae-fundido-corn-loc` con la misma tecnica de recorte que ya usa
+   * `.contacto-title` (visible para lectores de pantalla, fuera de la vista),
+   * asi que el dato sigue completo en el arbol de accesibilidad y en
+   * escritorio se ve exactamente igual que antes: los dos nodos, unidos por
+   * el separador, ocupan el mismo `cornDer`.
+   */
+  const cornNombre = document.createElement("span");
+  cornNombre.textContent = identity.name;
+  const cornUbicacion = document.createElement("span");
+  cornUbicacion.className = "cae-fundido-corn-loc";
+  cornUbicacion.textContent = ` · ${identity.location}`;
+  cornDer.append(cornNombre, cornUbicacion);
   corn.append(cornIzq, cornDer);
   escena.prepend(corn);
 

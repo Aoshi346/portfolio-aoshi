@@ -5885,8 +5885,68 @@
   :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
     flex-direction: column;
     justify-content: center;
-    gap: 1.75rem;
+    /*
+     * 0.0625rem (1px), no el 1.75rem de origen: con el titular a `--t-7` y
+     * el sello a 196px de alto (los dos valores exactos del spec, ninguno de
+     * los dos se toca), el hueco que deja `.contacto-band` en flex:1 no
+     * alcanza para los 342,6 px que pide el contenido (titular 118,6 + este
+     * vano + sello 196) — el sello acababa pisando el filete de
+     * `.contacto-bars` 23 px (medido antes del ajuste). Reducir el vano es
+     * el unico numero de este reparto que no esta fijado por el spec
+     * (titular y sello si lo estan); se acompaña del recorte de
+     * `margin-bottom` de abajo porque uno solo no bastaba — a medio camino
+     * (0.875rem de vano + 0.75rem de margen) todavia quedaban 4 px de
+     * solape, medidos.
+     */
+    gap: 0.0625rem;
     align-items: stretch;
+    /*
+     * Suelo de la banda. A alturas cortas —un telefono con la barra del
+     * navegador a la vista: 740px de pagina dejan 674 de ventana— el reparto
+     * no cabe y el sello, que no encoge (`flex-shrink: 0` arriba, y con
+     * razon), desbordaba la banda y se sentaba sobre el filete y «CORREO»:
+     * medido -41,8px de aire a 390x740, con el mismo CSS que a 390x844 daba
+     * +10,2. Con `min-content` la banda no se comprime por debajo de su
+     * contenido, asi que la escena crece y la ventana la DESPLAZA, que es lo
+     * que ya hace cualquier workspace del carril (`overflow-y: auto`). A 844
+     * no cambia nada: alli el hueco ya alcanzaba.
+     */
+    min-height: min-content;
+  }
+
+  /*
+   * El encabezado corrido tambien resta hueco vertical al mismo reparto: su
+   * `margin-bottom` de escritorio es 1.375rem (22px) y su `padding-bottom`
+   * 0.875rem (14px). Quitando el margen del todo y recortando el relleno a
+   * 0.625rem, junto con el `gap` casi nulo de arriba, el sello queda a
+   * ~12px de aire sobre el filete de `.contacto-bars` (medido tras el
+   * cambio) -- 8,2px con solo el margen a cero era demasiado justo, sin
+   * margen de sobra frente a variacion de fuente entre motores. La regla
+   * base de escritorio no se toca, esta es la unica declaracion dentro del
+   * media query de 390px.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-corn {
+    margin-bottom: 0;
+    padding-bottom: 0.625rem;
+  }
+
+  /*
+   * La ubicacion se retira del encabezado corrido, no el nombre: a 240px de
+   * hueco (medido) «Aoshi Blanco Sanz · Caracas, Venezuela» a este tracking
+   * parte en dos renglones de 13,5px cada uno (27px de alto donde antes solo
+   * habia 13,5) -- el nombre solo cabe en una linea (132px medidos). Misma
+   * tecnica de recorte que `.contacto-title` arriba: sigue en el arbol de
+   * accesibilidad, solo sale de la vista.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-corn-loc {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   /*
@@ -6159,6 +6219,21 @@
     left: 0.875rem;
     right: 0.875rem;
     max-width: none;
+  }
+
+  /*
+   * `.theme-signature` es compartida por los tres temas (`themeSignature.ts`,
+   * `fixed bottom-5 right-5`) y no lleva CSS propio de Caelestia: aqui choca
+   * con el dock, que a este ancho tambien vive pegado al borde inferior.
+   * Medido a 390x844: dock [103,778,287,830] vs firma [247.9,800,370,824] --
+   * se solapan en x=[247.9,287] / y=[800,824]. Ya es redundante con `.cae-mark`
+   * (la misma palabra "caelestia" en la barra) y va `aria-hidden="true"` de
+   * fabrica, asi que ocultarla aqui no quita nada del arbol de accesibilidad
+   * -- mismo criterio que ya se aplico a `.cae-mark` arriba, no una regla de
+   * rescate nueva.
+   */
+  :root[data-theme="caelestia"] .theme-signature {
+    display: none;
   }
 }
 
