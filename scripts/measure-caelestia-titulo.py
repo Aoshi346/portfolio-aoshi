@@ -354,6 +354,33 @@ def tarjeta_superficie(pg, base: str) -> None:
     ctx.close()
 
 
+def tarjeta_figura(pg, base: str) -> None:
+    print("\n[tarjeta] la figura vive: 240 vertices, cambia sola, quieta con movimiento reducido")
+    abrir(pg, base, "13:00")
+    LEE = "() => { const f = document.querySelector('#hero .cae-wfig'); return f ? getComputedStyle(f).clipPath : 'sin-figura'; }"
+    a = pg.evaluate(LEE)
+    pares = a.count("%,") + 1 if a.startswith("polygon(") else 0
+    assert_que(pares == 240, f"la figura es un polygon() de 240 pares ({pares})")
+    # Anclado a ESTADO: se espera a que cambie, con tope; si no cambia, falla.
+    cambio = False
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < 6:
+        if pg.evaluate(LEE) != a:
+            cambio = True
+            break
+        pg.wait_for_timeout(120)
+    assert_que(cambio, "la figura cambia de forma sola (morfa con el tiempo)")
+
+    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
+    pr = ctx.new_page()
+    abrir(pr, base, "13:00")
+    q0 = pr.evaluate(LEE)
+    pr.wait_for_timeout(1500)
+    q1 = pr.evaluate(LEE)
+    assert_que(q0.startswith("polygon(") and q0 == q1, "con movimiento reducido la figura esta y no cambia")
+    ctx.close()
+
+
 def entrada(pg, base: str) -> None:
     print("\n[entrada] el trazo existe y el movimiento reducido lo salta")
     abrir(pg, base, "13:00")
@@ -645,6 +672,7 @@ def main() -> int:
         widget(pg, args.base)
         tarjeta_orden(pg, args.base)
         tarjeta_superficie(pg, args.base)
+        tarjeta_figura(pg, args.base)
         entrada(pg, args.base)
         roce(pg, args.base)
 

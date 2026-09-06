@@ -475,7 +475,7 @@ git commit -m "feat(hero): la tarjeta Ahora mismo sin caja: superficie tonal, pr
 - Produces: `figuraParametrica(n: number, a: number, relieve: number, fase: number): string` (un `polygon()` de 240 pares).
 - Produces: `montarFiguraViva(gsap: Gsap, root: HTMLElement): FiguraVivaHandle` con `{ destroy(): void; relieve: { v: number }; pinta(): void }` — `relieve.v` y `pinta` los usa la Task 5 para que la figura nazca como círculo en la entrada.
 
-- [ ] **Step 1: Gate de la figura, en rojo**
+- [x] **Step 1: Gate de la figura, en rojo**
 
 ```python
 def tarjeta_figura(pg, base: str) -> None:
@@ -506,7 +506,7 @@ def tarjeta_figura(pg, base: str) -> None:
 ```
 (`time` ya está importado en el arnés.) Llamar tras `tarjeta_superficie`. Correr: rojo en «240 pares» (hoy `clip-path: none`).
 
-- [ ] **Step 2: `figuraParametrica` en `figurasM3.ts`**
+- [x] **Step 2: `figuraParametrica` en `figurasM3.ts`**
 
 Al final del fichero:
 ```ts
@@ -530,7 +530,7 @@ export function figuraParametrica(n: number, a: number, relieve: number, fase: n
 }
 ```
 
-- [ ] **Step 3: `montarFiguraViva` en `caelestia.titulo.ts`**
+- [x] **Step 3: `montarFiguraViva` en `caelestia.titulo.ts`**
 
 Importar arriba: `import { figuraParametrica } from "../utils/figurasM3";`. Añadir al final del fichero:
 ```ts
@@ -613,16 +613,16 @@ En `caelestia.choreography.ts`, tras `montarRoce(gsap, root);`:
 ```
 y cambiar la llamada `montarEntrada(gsap, root);` para que quede DESPUÉS y reciba el handle: `montarEntrada(gsap, root, figuraViva);` (la firma se amplía en la Task 5; en esta tarea, añadir a `montarEntrada` un tercer parámetro opcional `figura?: FiguraVivaHandle` sin usarlo todavía, para que compile). Actualizar el `import` de `./caelestia.titulo` con `montarFiguraViva`.
 
-- [ ] **Step 4: Quitar el `border-radius: 50%` provisional de `.cae-wfig`** (Task 3, Step 2): ahora manda el `clip-path`. En themes.css sustituir esa línea por `/* la forma la pone montarFiguraViva con clip-path (240 vertices) */`.
+- [x] **Step 4: Quitar el `border-radius: 50%` provisional de `.cae-wfig`** (Task 3, Step 2): ahora manda el `clip-path`. En themes.css sustituir esa línea por `/* la forma la pone montarFiguraViva con clip-path (240 vertices) */`.
 
-- [ ] **Step 5: Build, lint, gate**
+- [x] **Step 5: Build, lint, gate**
 
 ```bash
 npm run build && npm run lint && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A6 "la figura vive"
 ```
 Expected: 240 pares OK, cambia sola OK, quieta con reduce OK. Comprobar también en la consola del navegador (`pageerror`) que no hay error: `gsap` llega por parámetro, nunca por `import` directo en este fichero.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/utils/figurasM3.ts src/themes/caelestia.titulo.ts src/themes/caelestia.choreography.ts src/themes/themes.css scripts/measure-caelestia-titulo.py

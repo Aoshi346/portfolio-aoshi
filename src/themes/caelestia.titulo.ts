@@ -4,6 +4,7 @@
  * Spec: docs/superpowers/specs/2026-08-26-caelestia-titulo-design.md
  */
 import type { Gsap } from "./choreography";
+import { figuraParametrica } from "../utils/figurasM3";
 
 /**
  * Estira las lineas del titular hasta que todas midan lo mismo.
@@ -107,7 +108,14 @@ const NULO: EntradaHandle = { destroy: () => {} };
  * piezas se verian un fotograma en su estado FINAL antes de que la timeline
  * las lleve a su estado de partida.
  */
-export function montarEntrada(gsap: Gsap, root: HTMLElement): EntradaHandle {
+export function montarEntrada(
+  gsap: Gsap,
+  root: HTMLElement,
+  // Se recibe pero no se usa todavia: la Task 5 del plan de "Ahora mismo" lo
+  // conecta al brote de la tarjeta.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _figura?: FiguraVivaHandle,
+): EntradaHandle {
   const descubrir = (): void => document.documentElement.classList.remove("js-cae-entrada");
 
   const hero = root.querySelector<HTMLElement>("#hero");
@@ -364,4 +372,73 @@ export function montarRoce(gsap: Gsap, root: HTMLElement): void {
 
   document.addEventListener("pointerover", alPasar);
   document.addEventListener("pointerout", alSalirDelDocumento);
+}
+
+export interface FiguraVivaHandle {
+  destroy: () => void;
+  /** 0 = circulo, 1 = figura entera. La entrada lo lleva de 0 a 1. */
+  relieve: { v: number };
+  pinta: () => void;
+}
+
+const FIGURA_NULA: FiguraVivaHandle = { destroy: () => {}, relieve: { v: 1 }, pinta: () => {} };
+
+/**
+ * La figura de la tarjeta "Ahora mismo" (spec 2026-09-05-caelestia-ahora-
+ * mismo): morfa con la hora del visitante como las figuras del fondo (los
+ * lobulos avanzan de 5 a 9 a lo largo del dia, la fase gira en un bucle de
+ * 24 s) y se inclina hacia el cursor dentro de la tarjeta. Con movimiento
+ * reducido se pinta una vez, quieta, con los lobulos de la hora.
+ */
+export function montarFiguraViva(gsap: Gsap, root: HTMLElement): FiguraVivaHandle {
+  const tarjeta = root.querySelector<HTMLElement>("#hero .cae-widget");
+  const figura = tarjeta?.querySelector<HTMLElement>(".cae-wfig") ?? null;
+  if (!tarjeta || !figura) return FIGURA_NULA;
+
+  const estado = { fase: 0 };
+  const relieve = { v: 1 };
+  const lobulos = (): number => {
+    const ahora = new Date();
+    const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+    return 5 + Math.floor((minutos / 1440) * 5); // 5..9
+  };
+  const pinta = (): void => {
+    figura.style.clipPath = figuraParametrica(lobulos(), 0.11, relieve.v, estado.fase);
+  };
+  pinta();
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return { destroy: () => {}, relieve, pinta };
+  }
+
+  const bucle = gsap.to(estado, { fase: Math.PI * 2, duration: 24, ease: "none", repeat: -1, onUpdate: pinta });
+
+  const mirar = (e: PointerEvent): void => {
+    const r = figura.getBoundingClientRect();
+    const dx = (e.clientX - (r.left + r.width / 2)) / 40;
+    const dy = (e.clientY - (r.top + r.height / 2)) / 40;
+    gsap.to(figura, {
+      rotateY: Math.max(-18, Math.min(18, dx)),
+      rotateX: Math.max(-18, Math.min(18, -dy)),
+      transformPerspective: 300,
+      duration: 0.4,
+      ease: "power2.out",
+    });
+  };
+  const soltar = (): void => {
+    gsap.to(figura, { rotateX: 0, rotateY: 0, duration: 0.6, ease: "power2.out" });
+  };
+  tarjeta.addEventListener("pointermove", mirar);
+  tarjeta.addEventListener("pointerleave", soltar);
+
+  return {
+    relieve,
+    pinta,
+    destroy: () => {
+      bucle.kill();
+      gsap.killTweensOf(figura);
+      tarjeta.removeEventListener("pointermove", mirar);
+      tarjeta.removeEventListener("pointerleave", soltar);
+    },
+  };
 }
