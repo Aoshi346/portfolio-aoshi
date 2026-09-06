@@ -16,8 +16,10 @@ spec. Ninguna se da por buena sin haberla visto dar rojo contra el fallo que
 dice cazar.
 """
 import argparse
+import re
 import sys
 import time
+from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
@@ -253,6 +255,16 @@ def firma_y_cifras(pg, base: str) -> None:
     )
 
 
+def literal_now() -> str:
+    """`identity.now` tal como esta escrito en content.ts. El arnes no puede
+    importar TypeScript, asi que lo lee como texto; si no lo encuentra FALLA en
+    vez de devolver un valor por defecto (un gate que adivina no vigila)."""
+    fuente = (Path(__file__).resolve().parent.parent / "src" / "data" / "content.ts").read_text(encoding="utf-8")
+    m = re.search(r'^\s*now:\s*"([^"]+)",', fuente, re.M)
+    assert m, "no se encuentra `now: \"...\"` en content.ts"
+    return m.group(1)
+
+
 def widget(pg, base: str) -> None:
     print("\n[widget] todo lo que pinta existe en content.ts")
     abrir(pg, base, "13:00")
@@ -261,7 +273,7 @@ def widget(pg, base: str) -> None:
     )
     esperado = [
         "Disponible para proyectos",   # identity.availability
-        "Freelancer",                  # identity.now
+        literal_now(),                 # identity.now, leido de content.ts (Task 1 del plan Ahora mismo)
         "Caracas, Venezuela",          # identity.location
         "2021",                        # identity.since
         "Ingeniería de Sistemas",      # education[0].degree
