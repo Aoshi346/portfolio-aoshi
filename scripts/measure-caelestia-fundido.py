@@ -25,6 +25,8 @@ Los catorce gates (ver el spec, seccion `## Los gates`):
   14. rozar responde y el teclado llega a lo mismo (el P1 de `vera-art-director`)
   15. el dino es un juguete: salta al pulsar, mira al cursor, y el arrastre es
       un vistazo a otra hora que no notifica el cambio de esquema al soltar
+      (15e: mientras arrastra, el troquel GIRA con la hora del vistazo — el
+      bicho no gira, y al soltar el troquel vuelve a su figura de reposo)
 """
 import argparse
 import pathlib
@@ -1194,6 +1196,115 @@ def main() -> int:
         comprobar(any(t < -10 for t in tys_d),
                   f"un pointerdown/up sin mover mas de 4px salta igual que un click ({min(tys_d) if tys_d else None})")
         comprobar(despues_d == antes_d, f"--cae-hue no cambia con un clic sin arrastre ({antes_d} == {despues_d})")
+        ctx.close()
+
+        # --- 15e. El troquel gira con la hora del vistazo -----------------
+        print("\n[15e] El troquel gira con la hora del vistazo")
+        ctx, pg, err = nueva_pagina_en_contacto(navegador, base)
+        errores_totales += err
+        reposo_e = pg.evaluate(
+            "() => getComputedStyle(document.querySelector('.cae-fundido-troquel')).clipPath"
+        )
+        pares_reposo = re.findall(r"(-?[\d.]+)%\s+(-?[\d.]+)%", reposo_e)
+        print(f"       troquel en reposo: {len(pares_reposo)} pares · primer par {pares_reposo[0] if pares_reposo else None}")
+        bicho_box_e = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2, left: b.left };
+        }""")
+        pg.mouse.move(bicho_box_e["x"], bicho_box_e["y"])
+        pg.mouse.down()
+        for i in range(1, 7):
+            # 20px por paso, 6 pasos = 120px = 4h de vistazo = 60 grados.
+            pg.mouse.move(bicho_box_e["x"] + i * 20, bicho_box_e["y"], steps=1)
+            pg.wait_for_timeout(40)
+        # Ancla a ESTADO, no a un temporizador: espera a que el clipPath
+        # computado difiera del de reposo, con tope de 5s.
+        girado = pg.evaluate(
+            """([reposo]) => new Promise((resolve) => {
+                const troquel = document.querySelector('.cae-fundido-troquel');
+                const t0 = performance.now();
+                const mirar = () => {
+                    const clip = getComputedStyle(troquel).clipPath;
+                    if (clip !== reposo || performance.now() - t0 > 5000) {
+                        resolve(clip);
+                        return;
+                    }
+                    requestAnimationFrame(mirar);
+                };
+                mirar();
+            })""",
+            [reposo_e],
+        )
+        pares_girado = re.findall(r"(-?[\d.]+)%\s+(-?[\d.]+)%", girado)
+        x_dino_durante = pg.evaluate(
+            "() => document.querySelector('.cae-fundido-bicho').getBoundingClientRect().left"
+        )
+        print(f"       durante el arrastre (4h, 60 grados): {len(pares_girado)} pares · "
+              f"primer par {pares_girado[0] if pares_girado else None} · "
+              f"x del bicho antes {bicho_box_e['left']:.2f} durante {x_dino_durante:.2f}")
+        comprobar(girado != reposo_e, "el clipPath computado del troquel cambia mientras se arrastra")
+        comprobar(len(pares_girado) == 240,
+                  f"el troquel girado sigue siendo un polygon() de 240 pares ({len(pares_girado)})")
+        comprobar(pares_reposo and pares_girado and pares_reposo[0] != pares_girado[0],
+                  "el primer par ha girado de verdad, no solo se ha reescrito igual "
+                  f"(reposo {pares_reposo[0] if pares_reposo else None} vs girado "
+                  f"{pares_girado[0] if pares_girado else None})")
+        comprobar(abs(x_dino_durante - bicho_box_e["left"]) < 0.5,
+                  f"el bicho NO gira ni se desplaza en x mientras el troquel gira "
+                  f"({bicho_box_e['left']:.2f} -> {x_dino_durante:.2f})")
+        pg.mouse.up()
+        vuelto = pg.evaluate(
+            """([reposo]) => new Promise((resolve) => {
+                const troquel = document.querySelector('.cae-fundido-troquel');
+                const t0 = performance.now();
+                const mirar = () => {
+                    const clip = getComputedStyle(troquel).clipPath;
+                    if (clip === reposo || performance.now() - t0 > 5000) {
+                        resolve(clip);
+                        return;
+                    }
+                    requestAnimationFrame(mirar);
+                };
+                mirar();
+            })""",
+            [reposo_e],
+        )
+        print(f"       tras soltar: {'igual al reposo' if vuelto == reposo_e else 'DISTINTO del reposo'}")
+        comprobar(vuelto == reposo_e,
+                  "al soltar, el clipPath computado del troquel vuelve a ser igual al de reposo "
+                  "(el inline queda vacio)")
+        ctx.close()
+
+        print("\n[15e-reduce] Sin giro con movimiento reducido")
+        ctx = navegador.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+        pg = ctx.new_page()
+        errores = []
+        pg.on("pageerror", lambda e: errores.append(str(e)))
+        pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+        pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        pg.wait_for_timeout(3000)
+        pg.click('[data-cae-ws="contacto"]')
+        pg.wait_for_timeout(200)
+        errores_totales += errores
+        reposo_er = pg.evaluate(
+            "() => getComputedStyle(document.querySelector('.cae-fundido-troquel')).clipPath"
+        )
+        bicho_box_er = pg.evaluate("""() => {
+            const b = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+            return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }""")
+        pg.mouse.move(bicho_box_er["x"], bicho_box_er["y"])
+        pg.mouse.down()
+        for i in range(1, 7):
+            pg.mouse.move(bicho_box_er["x"] + i * 20, bicho_box_er["y"], steps=1)
+            pg.wait_for_timeout(40)
+        durante_er = pg.evaluate(
+            "() => getComputedStyle(document.querySelector('.cae-fundido-troquel')).clipPath"
+        )
+        pg.mouse.up()
+        print(f"       con reduce, durante el arrastre: {'igual al reposo' if durante_er == reposo_er else 'DISTINTO'}")
+        comprobar(durante_er == reposo_er,
+                  "con movimiento reducido el clipPath del troquel no cambia durante el arrastre")
         ctx.close()
 
         # ================================================================
