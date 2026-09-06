@@ -233,7 +233,7 @@ git commit -m "feat(hero): la tarjeta Ahora mismo cambia de orden: quien, que ha
 **Interfaces:**
 - Produces: token `--cae-display-axes-ficha`; clases pintadas de Task 2; `.cae-wfig` con caja 40×40 y fondo `--cae-primary-container` (la Task 4 solo le pone `clip-path`).
 
-- [ ] **Step 1: Gate de superficie, jerarquía y luz, en rojo**
+- [x] **Step 1: Gate de superficie, jerarquía y luz, en rojo**
 
 ```python
 def tarjeta_superficie(pg, base: str) -> None:
@@ -274,7 +274,7 @@ def tarjeta_superficie(pg, base: str) -> None:
 ```
 Llamar a `tarjeta_superficie(pg, args.base)` tras `tarjeta_orden`. Correr y esperar rojo en borde (`1px`), fondo (`surface-container`), tamaño óptico (`opsz 9`) y anillo (`none`).
 
-- [ ] **Step 2: El token y el CSS**
+- [x] **Step 2: El token y el CSS**
 
 Junto a `--cae-display-axes-texto` (themes.css ~3593):
 ```css
@@ -429,14 +429,14 @@ Sustituir el bloque desde `:root[data-theme="caelestia"] .cae-widget {` hasta el
 ```
 Borrar cualquier regla vieja de `.cae-wfila` y `.cae-wn` que quede.
 
-- [ ] **Step 3: Build, lint, gates**
+- [x] **Step 3: Build, lint, gates**
 
 ```bash
 npm run build && npm run lint && python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4183 2>&1 | grep -A10 "\[tarjeta\]"
 ```
 Expected: `[tarjeta] orden…` todo OK (ahora sí las dos pistas de grid) y `[tarjeta] sin caja…` todo OK.
 
-- [ ] **Step 4: Captura y mirarla**
+- [x] **Step 4: Captura y mirarla**
 
 ```bash
 python3 - <<'EOF'
@@ -454,7 +454,7 @@ EOF
 ```
 Abrir las dos capturas y comparar con la maqueta `.superpowers/brainstorm/*/content/09-fullstack.html` (tamaño A). Si la tarjeta no se parece, no seguir.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-caelestia-titulo.py

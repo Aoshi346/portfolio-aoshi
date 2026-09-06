@@ -3592,6 +3592,11 @@
    */
   --cae-display-axes-texto: "opsz" 9, "wght" 700, "SOFT" 0, "WONK" 1;
 
+  /* El primero de la tarjeta "Ahora mismo" (spec 2026-09-05): a 27 px, el
+     tamano optico 9 del token de texto da remates pesados; el 60 es el que ya
+     usa el titulo del cajon de Obra. Un token, no un literal repetido. */
+  --cae-display-axes-ficha: "opsz" 60, "wght" 700, "SOFT" 0, "WONK" 1;
+
   /*
    * La voz de CIERRE, y solo se usa en un sitio de todo el sitio: la frase de
    * «Fundido» (B5). `SOFT` a 100 redondea los angulos de los remates — la
@@ -4331,9 +4336,11 @@
 }
 
 /*
- * El widget "Ahora mismo": tarjeta flotante en la esquina superior derecha
- * de la escena Titulo. Hermano de `.cae-head`, no hijo — vive sobre el
- * fondo directamente, con su propia superficie tonal.
+ * La tarjeta "Ahora mismo" (spec 2026-09-05-caelestia-ahora-mismo): mismo
+ * sitio y ancho que antes, pero superficie tonal SIN borde (el escalon de la
+ * barra y el dock), un primero claro, dos columnas fechadas y la pastilla al
+ * pie. Sombra por esquema: 0,22 calibrado contra surface-container-high
+ * claro; 0,5 contra el oscuro (abajo).
  */
 :root[data-theme="caelestia"] .cae-widget {
   display: block;
@@ -4341,60 +4348,133 @@
   top: 30px;
   right: 48px;
   width: 316px;
-  padding: 20px 22px;
+  padding: 18px 22px 18px;
   border-radius: 24px;
-  background: var(--cae-surface-container);
-  border: 1px solid var(--cae-outline);
+  background: var(--cae-surface-container-high);
+  box-shadow: 0 14px 36px -20px rgb(0 0 0 / 0.22);
+  color: var(--cae-on-surface);
 }
-
+:root[data-theme="caelestia"][data-cae-esquema="noche"] .cae-widget {
+  box-shadow: 0 14px 36px -20px rgb(0 0 0 / 0.5);
+}
+/* Capa de estado M3 al rozar: 6 % del primario (M3 pide 8 %; aqui el fondo ya
+   es tonal y con 8 la tarjeta viraba de tono, medido en los dos esquemas). El
+   levantamiento y apartar el fondo ya los hace montarRoce: no se duplican. */
+:root[data-theme="caelestia"] .cae-widget::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--cae-primary);
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+:root[data-theme="caelestia"] .cae-widget:hover::after {
+  opacity: 0.06;
+}
+:root[data-theme="caelestia"] .cae-wcab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  margin-bottom: 6px;
+}
 :root[data-theme="caelestia"] .cae-whd {
-  margin: 0 0 10px;
+  margin: 0;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 9.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
 }
-
+:root[data-theme="caelestia"] .cae-wfig {
+  display: block;
+  width: 40px;
+  height: 40px;
+  background: var(--cae-primary-container);
+  /* la forma la pone montarFiguraViva con clip-path (240 vertices) */
+}
+:root[data-theme="caelestia"] .cae-wnow {
+  margin: 0;
+  font-family: var(--font-display);
+  font-variation-settings: var(--cae-display-axes-ficha);
+  font-size: 27px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+:root[data-theme="caelestia"] .cae-wsub {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--cae-on-surface-variant);
+}
+:root[data-theme="caelestia"] .cae-wdos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in oklch, var(--cae-outline) 45%, transparent);
+}
+:root[data-theme="caelestia"] .cae-wfecha {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--cae-on-surface-variant);
+  margin-bottom: 3px;
+  white-space: nowrap;
+}
+:root[data-theme="caelestia"] .cae-wnombre {
+  display: block;
+  font-weight: 500;
+  font-size: 12.5px;
+  line-height: 1.25;
+}
+:root[data-theme="caelestia"] .cae-wpie {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in oklch, var(--cae-outline) 45%, transparent);
+}
 :root[data-theme="caelestia"] .cae-pilla {
-  display: inline-block;
-  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 12px 0 10px;
   border-radius: 999px;
   background: var(--cae-anchor);
   color: var(--cae-on-anchor);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-}
-
-:root[data-theme="caelestia"] .cae-wnow {
-  margin: 12px 0 2px;
-  font-family: var(--font-display);
-  font-variation-settings: var(--cae-display-axes-texto);
-  font-size: 20px;
-  line-height: 1.15;
-}
-
-:root[data-theme="caelestia"] .cae-wsub {
-  margin: 0 0 14px;
-  font-size: 13px;
-  color: var(--cae-on-surface-variant);
-}
-
-:root[data-theme="caelestia"] .cae-wfila {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--cae-outline);
-  font-size: 12px;
-}
-
-:root[data-theme="caelestia"] .cae-wn {
-  color: var(--cae-on-surface-variant);
-  text-align: right;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
   white-space: nowrap;
+}
+:root[data-theme="caelestia"] .cae-wluz {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cae-on-anchor);
+  display: block;
+}
+/* La luz respira: SOLO con movimiento. Es un ::after, asi que el `*` de la
+   guardia generica de reduced-motion no lo alcanzaria; por eso vive entero
+   dentro de no-preference y con reduce no existe. */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-theme="caelestia"] .cae-wluz::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 1.5px solid var(--cae-on-anchor);
+    animation: caeLuzRespira 2.4s ease-in-out infinite;
+  }
+  @keyframes caeLuzRespira {
+    0%, 100% { transform: scale(0.6); opacity: 0; }
+    50% { transform: scale(1); opacity: 0.6; }
+  }
 }
 
 :root[data-theme="caelestia"] .chip {

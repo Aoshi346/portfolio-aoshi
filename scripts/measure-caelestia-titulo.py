@@ -317,6 +317,43 @@ def tarjeta_orden(pg, base: str) -> None:
     assert_que(len(d["gridCols"].split()) == 2, f"las columnas son dos pistas de grid ({d['gridCols']!r})")
 
 
+def tarjeta_superficie(pg, base: str) -> None:
+    print("\n[tarjeta] sin caja, un primero en una linea, la luz respira")
+    abrir(pg, base, "13:00")
+    d = pg.evaluate(
+        """() => {
+          const w = document.querySelector('#hero .cae-widget'), bar = document.querySelector('.cae-bar'), hero = document.querySelector('#hero');
+          const cs = getComputedStyle(w), now = w.querySelector('.cae-wnow');
+          const r = document.createRange(); r.selectNodeContents(now);
+          const tamanos = [...w.querySelectorAll('*')].filter(e => e.textContent.trim() && e.children.length === 0)
+             .map(e => parseFloat(getComputedStyle(e).fontSize));
+          const luz = w.querySelector('.cae-wluz');
+          return {
+            borde: cs.borderTopWidth, fondo: cs.backgroundColor, fondoBar: bar ? getComputedStyle(bar).backgroundColor : null,
+            fondoHero: getComputedStyle(hero).backgroundColor,
+            nowPx: parseFloat(getComputedStyle(now).fontSize), maxPx: Math.max(...tamanos),
+            nowAncho: r.getBoundingClientRect().width, caja: w.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+            nowLineas: r.getClientRects().length,
+            axes: getComputedStyle(now).fontVariationSettings,
+            anillo: luz ? getComputedStyle(luz, '::after').animationName : 'sin-luz',
+          };
+        }"""
+    )
+    assert_que(d["borde"] == "0px", f"la tarjeta no lleva borde ({d['borde']})")
+    assert_que(d["fondo"] == d["fondoBar"] and d["fondo"] != d["fondoHero"], f"la tarjeta es surface-container-high como la barra ({d['fondo']})")
+    assert_que(d["nowPx"] == d["maxPx"] and d["nowPx"] >= 26, f"el primero es el texto mas grande de la tarjeta ({d['nowPx']} px)")
+    assert_que(d["nowAncho"] <= d["caja"] and d["nowLineas"] == 1, f"el primero cabe en una linea ({d['nowAncho']:.0f} de {d['caja']:.0f} px, {d['nowLineas']} lineas)")
+    assert_que('"opsz" 60' in d["axes"], f"el primero va a tamano optico 60 ({d['axes']})")
+    assert_que(d["anillo"] not in ("none", "sin-luz"), f"la luz respira con movimiento ({d['anillo']})")
+
+    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
+    pr = ctx.new_page()
+    abrir(pr, base, "13:00")
+    quieta = pr.evaluate("() => { const l = document.querySelector('#hero .cae-wluz'); return l ? getComputedStyle(l, '::after').animationName : 'sin-luz'; }")
+    assert_que(quieta == "none", f"con movimiento reducido la luz no respira ({quieta})")
+    ctx.close()
+
+
 def entrada(pg, base: str) -> None:
     print("\n[entrada] el trazo existe y el movimiento reducido lo salta")
     abrir(pg, base, "13:00")
@@ -607,6 +644,7 @@ def main() -> int:
         firma_y_cifras(pg, args.base)
         widget(pg, args.base)
         tarjeta_orden(pg, args.base)
+        tarjeta_superficie(pg, args.base)
         entrada(pg, args.base)
         roce(pg, args.base)
 
