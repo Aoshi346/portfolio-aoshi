@@ -220,3 +220,74 @@ móvil antes de cerrar. Un arnés a la vez (la máquina ha muerto por OOM con tr
 Al cerrar: Lidia (¿en el teléfono se entiende quién es y cómo contactar en dos segundos?) y Vera
 (jerarquía, rejilla, tokens, y que el móvil sea el mismo tema que el escritorio). Un P0 se arregla
 antes de cerrar; los P1 se registran.
+
+---
+
+## Registro de implementación
+
+Rama `design/caelestia-movil`, worktree `portfolio-aoshi-movil`, sobre `main` (`1f41e6c`) más el
+arreglo de Contacto de `fix/caelestia-movil-contacto-dock`, que entra fusionado dentro de esta
+rama porque B6 lo necesita como base (la escena 5 era la única que ya declaraba 390 px en alcance
+y aun así se rompía en teléfonos cortos y en tabletas).
+
+### Lo que quedó construido
+
+- **La ley (opción A).** El documento no se desplaza a ningún ancho; cada workspace se desplaza
+  por dentro y vuelve a cero al cambiar de escena (`caelestia.choreography.ts`, dentro de `irA`:
+  `if (destino !== origen) escenas[destino].scrollTop = 0;`).
+- **Título silencioso.** Por debajo de 900 px no pintan ni la tarjeta «Ahora mismo» ni la columna
+  de cifras ni la figura viva: en su lugar, `.cae-movil` con tres líneas de prosa, cuatro cifras y
+  un pie. La rama corta se decide por `widget.getClientRects().length === 0` —lo que de verdad se
+  pinta—, no por un ancho leído en TS.
+- **Quién soy** en una columna, con el `neofetch` tecleado como único gesto.
+- **Obra**, carrusel con imán: la tarjeta centrada es la elegida y el cajón la sigue. La centrada
+  se resuelve con `getBoundingClientRect()` contra la pista, y se confirma con `scrollend` más un
+  `scroll` con 120 ms de reposo (Safari no tiene `scrollend`).
+- **Stack**, bandas apiladas; tocar elige; la instalación entra como una sola onda.
+- **Tableta**: banda compacta (≤900) y banda media (901-1365) para Obra, Stack y Contacto, con
+  sub-bandas por altura en Contacto.
+
+### Las trampas pagadas
+
+1. **Un gate tautológico que salía verde contra el fallo real.** «La cabecera no se parte en dos
+   líneas» contaba `getClientRects().length` sobre un elemento flex: devuelve 1 se parta o no. El
+   primer arreglo (un `Range` sobre el contenido) contaba 4 porque incluía el nodo oculto fuera de
+   flujo. La versión buena mide la altura contra el `line-height` calculado.
+2. **Un cronómetro disfrazado de gate.** «La entrada arranca tecleando» leía el comando 200 ms
+   después del cambio de escena; al comprimir la entrada a 0,86 s se puso rojo contra un
+   comportamiento correcto. Se cambió por un `MutationObserver` instalado ANTES del cambio, que
+   afirma valores intermedios: con `dTecleo: 0` da 0 pasos (rojo) y con la tabla real, 6.
+3. **Especificidad de CSS, cinco veces.** Las reglas de escritorio llevan una clase o un camino de
+   más (`.contacto-bar[data-canal="acto"]`, `main[data-cae-track] > [data-scene="contacto"]`); una
+   regla móvil sin ese peso pierde el desempate y no se aplica, en silencio. Se comprueba siempre
+   con `getComputedStyle`.
+4. **Un `replace` que aterrizó en el `@media` equivocado**, porque el mismo texto de regla existe
+   en dos bandas. Se cazó grepeando el CSS **construido** (`dist/assets/*.css`), no el fuente.
+5. **Un estilo en línea gana a cualquier `@media`.** `.cae-cred-fig` fijaba tamaño con
+   `fig.style.width/height`, así que ninguna consulta de medios podía encogerla. Se sustituyó por
+   una propiedad personalizada `--lado`.
+6. **`offsetLeft` medido contra el carril de workspaces** y no contra la pista del carrusel: solo
+   la tarjeta 1 llegaba nunca al centro. El error estaba en el código Y en el gate.
+7. **La carga produce rojos falsos** (tres veces): el gate 13 de Fundido y dos familias del dino
+   salieron rojos con dos previews y un arnés vivos, y verdes al repetirlos en vacío.
+8. **`scrollHeight` miente**, y esta vez también en horizontal. Los gates 1 y 2 leían
+   `scrollWidth`/`scrollHeight` del workspace: en Contacto el campo inundado es un `<span>` con
+   `transform: scale(5,7)` dentro de un `overflow: clip`, e infla `scrollWidth` a 1835 y
+   `scrollHeight` a 1629 sobre una escena que se ve entera. Los dos gates se reescribieron para
+   medir el CONTENIDO —los nodos con texto propio o accionables contra el
+   `getBoundingClientRect()` del workspace— con una excepción explícita para lo alcanzable
+   deslizando (si un ancestro tiene `overflow` auto/scroll en ese eje, estar fuera de la caja no
+   es un defecto: es el carrusel de Obra). Vistos en rojo con `.contacto-lead` a 1400 px (+104 por
+   la derecha) y con `.contacto-estado` a 400 px de margen (+282 por debajo).
+9. **Un subagente corrió `pkill -9 -f chrome-headless-shell`** y probablemente mató el arnés de
+   otra sesión. Prohibido explícitamente en todos los briefs posteriores.
+10. **Los subagentes se quedan parados** esperando un proceso en segundo plano. La instrucción que
+    lo evita: esperar POR PID dentro del MISMO comando de Bash, nunca terminar el turno esperando.
+
+### Números finales
+
+- `scripts/measure-caelestia-movil.py`: **10 familias, 123 comprobaciones, 0 fallos**, a 390x844,
+  768x1024, 1024x768 y 1180x820.
+- Peor par de contraste de B6: **6,43:1** (`.cae-mv-prosa` a las 13:00), piso AA 4,5.
+- Contacto entra a 390x844, 390x740, 390x667, 390x620, 768x1024, 820x1180, 1024x768, 1180x820 y
+  1440x900.

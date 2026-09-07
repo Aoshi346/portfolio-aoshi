@@ -42,7 +42,7 @@
   - `ESCENAS = ["hero", "quien-es", "obra", "creditos", "contacto"]` con su `data-scene` real: `{"hero": "hero", "quien-es": "about", "obra": None, "creditos": "credits", "contacto": "contacto"}` — Obra no lleva `data-scene`, es `div#obra.obra-rail`.
   - `workspace_activo(pg) -> dict` con `id, scrollWidth, clientWidth, scrollHeight, clientHeight, scrollTop`.
 
-- [ ] **Step 1: El spec pasa a `en ejecucion`**
+- [x] **Step 1: El spec pasa a `en ejecucion`**
 
 En la línea 3 del spec: `Estado: pendiente de plan` → `Estado: en ejecucion`.
 
@@ -51,7 +51,7 @@ git add docs/superpowers/specs/2026-09-07-caelestia-movil-design.md
 git commit -m "docs(caelestia): el spec de B6 pasa a en ejecucion"
 ```
 
-- [ ] **Step 2: Build verde y preview en 4213**
+- [x] **Step 2: Build verde y preview en 4213**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -59,7 +59,7 @@ npm run build && (nohup npx vite preview --port 4213 --strictPort > /tmp/preview
 ```
 Esperado: `BUILD` sin errores y una línea con `:4213`.
 
-- [ ] **Step 3: Escribir el esqueleto del arnés con los gates 1 y 2**
+- [x] **Step 3: Escribir el esqueleto del arnés con los gates 1 y 2**
 
 Crear `scripts/measure-caelestia-movil.py`:
 
@@ -216,14 +216,14 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 4: Verlo en ROJO contra el build actual**
+- [x] **Step 4: Verlo en ROJO contra el build actual**
 
 ```bash
 python3 scripts/measure-caelestia-movil.py --base http://127.0.0.1:4213 --solo 1,2
 ```
 Esperado: gate 2 en rojo en `quien-es` (847 > 362), `obra` (1316) y `creditos` (1364). Gate 1: la aserción «vuelve a cero» puede salir roja (hoy nadie reinicia el `scrollTop`). Copiar las líneas `FALLO` literales.
 
-- [ ] **Step 5: Commit del arnés en rojo**
+- [x] **Step 5: Commit del arnés en rojo**
 
 ```bash
 git add scripts/measure-caelestia-movil.py
@@ -243,7 +243,7 @@ FALLO <pegar las lineas literales del Step 4>"
 **Interfaces:**
 - Produces: el bloque `@media (max-width: 900px)` que las Tasks 2-5 extienden con sus reglas (todas dentro del MISMO bloque, con comentario de cabecera por escena).
 
-- [ ] **Step 1: Volver a cero el desplazamiento interior al cambiar de escena**
+- [x] **Step 1: Volver a cero el desplazamiento interior al cambiar de escena**
 
 En `src/themes/caelestia.choreography.ts`, dentro de `irA`, justo después de `aislarInactivos(destino);`:
 
@@ -256,7 +256,7 @@ En `src/themes/caelestia.choreography.ts`, dentro de `irA`, justo después de `a
     if (destino !== origen) escenas[destino].scrollTop = 0;
 ```
 
-- [ ] **Step 2: El bloque de B6 en `themes.css`**
+- [x] **Step 2: El bloque de B6 en `themes.css`**
 
 Añadir tras la regla `::-webkit-scrollbar-thumb` del carril:
 
@@ -287,7 +287,7 @@ Añadir tras la regla `::-webkit-scrollbar-thumb` del carril:
 ```
 Comprobar el selector real de la marca inferior: `grep -n 'class' src/components/themeSignature.ts` y usar su clase raíz (si es `theme-signature`, queda así; si no, sustituir). Si la rama `fix/caelestia-movil-contacto-dock` ya fusionó una regla equivalente en `main`, no duplicarla: dejar la suya y quitar esta.
 
-- [ ] **Step 3: Build, gate 1 en verde**
+- [x] **Step 3: Build, gate 1 en verde**
 
 ```bash
 kill $(cat /tmp/preview-4213.pid); npm run build && (nohup npx vite preview --port 4213 --strictPort > /tmp/preview-4213.log 2>&1 & echo $! > /tmp/preview-4213.pid); sleep 3
@@ -295,7 +295,7 @@ python3 scripts/measure-caelestia-movil.py --base http://127.0.0.1:4213 --solo 1
 ```
 Esperado: gate 1 entero en verde (el 2 sigue rojo hasta las Tasks 3-5). `npm run lint` limpio.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/themes/themes.css src/themes/caelestia.choreography.ts
@@ -545,7 +545,7 @@ python3 scripts/measure-caelestia-titulo.py --base http://127.0.0.1:4213
 ```
 Esperado: 3 y 6 verdes; el arnés de Título (escritorio, 1440x900) en `0 fallo(s)`. Captura 390x844 a 13:00 y 23:00 (`window.__CAE_SET_MINUTOS__(min)` tras cargar) en `/tmp/b6-titulo-*.png`, y MIRARLA: firma, titular en tres líneas con «no demos.» grande, prosa, cifras, pastilla; nada cortado.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/sections/hero.ts src/themes/themes.css src/style.css src/themes/caelestia.titulo.ts scripts/measure-caelestia-movil.py
@@ -563,7 +563,7 @@ Gates 3 y 6 (Titulo): rojo <literal> / verde <literal>"
 - Modify: `src/themes/caelestia.ficha.ts:82-140` (`reproducir`: rama corta)
 - Modify: `scripts/measure-caelestia-movil.py` (gate 6-Quién soy)
 
-- [ ] **Step 1: Gate 6-Quién soy en el arnés, en rojo**
+- [x] **Step 1: Gate 6-Quién soy en el arnés, en rojo**
 
 En `gate_entradas`, tras el bloque de Título y antes de `ctx.close()`:
 
@@ -579,7 +579,7 @@ En `gate_entradas`, tras el bloque de Título y antes de `ctx.close()`:
 ```
 Y en `gate_desbordamiento` ya está cubierto el ancho. Correr `--solo 2,6`: rojo en `quien-es` (847) y, si la entrada larga tarda más, en el tiempo.
 
-- [ ] **Step 2: El CSS de la ficha en columna**
+- [x] **Step 2: El CSS de la ficha en columna**
 
 En el bloque de B6:
 
@@ -626,7 +626,7 @@ En el bloque de B6:
 ```
 Leer primero `src/sections/about.ts` y las reglas de escritorio de `.ficha-cuerpo`/`.ficha-col` (themes.css ~4639) para ajustar los selectores a la anidación real (`.ficha-col` puede ser el envoltorio de las columnas: en ese caso `flex-direction: column` va en `.ficha-col` y `.ficha-cuerpo` queda como está). El objetivo medible es el gate 2: `scrollWidth <= clientWidth` en `quien-es`, y que el filete (`[data-ficha-regla]`) mida el ancho del nombre, como en B2.
 
-- [ ] **Step 3: La rama corta de la entrada de la ficha**
+- [x] **Step 3: La rama corta de la entrada de la ficha**
 
 En `caelestia.ficha.ts`, dentro de `reproducir`, tras el bloque `if (reduce) {...}`:
 
@@ -638,7 +638,7 @@ En `caelestia.ficha.ts`, dentro de `reproducir`, tras el bloque `if (reduce) {..
 ```
 (Usar como testigo el ancho pintado de `host` u otro nodo cuyo ancho de escritorio sea > 700 px y en móvil < 400: comprobarlo con `getBoundingClientRect` a 1440 y a 390 antes de fijar el umbral, y anotar los dos números en el comentario.) Y donde la timeline añade los tweens de `grupos`, `filas` y `tonos`: `if (corto) { linea.set([...grupos, ...filas, ...tonos], { opacity: 1, x: 0, scale: 1, scaleX: 1, clearProps: "transform" }); } else { ...los tweens actuales... }`. El tecleo, el cursor, la regla y el `clip-path` del nombre se quedan.
 
-- [ ] **Step 4: Build, lint, gates 2 (quien-es) y 6 en verde, arnés de Quién soy de escritorio intacto**
+- [x] **Step 4: Build, lint, gates 2 (quien-es) y 6 en verde, arnés de Quién soy de escritorio intacto**
 
 ```bash
 kill $(cat /tmp/preview-4213.pid); npm run build && (nohup npx vite preview --port 4213 --strictPort > /tmp/preview-4213.log 2>&1 & echo $! > /tmp/preview-4213.pid); sleep 3; npm run lint
@@ -647,7 +647,7 @@ python3 scripts/measure-caelestia-quien-soy.py --base http://127.0.0.1:4213
 ```
 Captura 390x844 de `quien-es` a 13:00 y mirarla.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css src/themes/caelestia.ficha.ts scripts/measure-caelestia-movil.py
@@ -1016,7 +1016,7 @@ Gates 2 (creditos), 5 y 6: rojo <literal> / verde <literal>"
 - Modify: `docs/superpowers/specs/2026-09-07-caelestia-movil-design.md` (`Estado`, registro, gates de crítica)
 - Modify: `.claude/rules/verification.md` (fila nueva), `CLAUDE.md` (bloque de B6)
 
-- [ ] **Step 1: Gate 7 (contraste) en rojo con sabotaje**
+- [x] **Step 1: Gate 7 (contraste) en rojo con sabotaje**
 
 Copiar de `scripts/measure-caelestia-titulo.py` las funciones de parseo y ratio (`_parse_rgb`, `_ratio` o `contraste`/`luz_texto`, y el parseo de `oklch` si lo lleva; `grep -n "def _ratio\|def contraste\|def _parse_rgb\|oklch" scripts/measure-caelestia-titulo.py`) y añadir:
 
@@ -1055,7 +1055,7 @@ def gate_contraste(navegador, base: str) -> list[str]:
 ```
 Nota: el fondo se resuelve subiendo hasta el primer ancestro con fondo NO transparente; si algún par cae sobre el fondo generativo (Título es «el escritorio desnudo»), medir contra `--cae-surface` como hace el arnés de Título para el titular, y decirlo en el comentario. **Sabotaje:** `.cae-mv-prosa { color: var(--cae-outline) }` dentro del bloque de B6 → build → rojo (≈1,8:1 de noche); deshacer → verde. Pegar las dos líneas.
 
-- [ ] **Step 2: Gate 8 (tableta compacta y media) y gate 9 (escritorio intacto, documentado)**
+- [x] **Step 2: Gate 8 (tableta compacta y media) y gate 9 (escritorio intacto, documentado)**
 
 Además de repetir las familias 1 a 3 a 768x1024, añadir la **familia 8b, banda media**, a
 1024x768 y 1180x820: las cinco escenas sin desbordamiento horizontal, las cinco tarjetas de Obra
