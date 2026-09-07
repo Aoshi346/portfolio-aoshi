@@ -62,7 +62,22 @@ def abrir(navegador, base: str, *, dispositivo: str = "movil", reduced_motion=No
     pg.on("pageerror", lambda e: errores.append(str(e)))
     pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
     pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
-    pg.wait_for_timeout(3000)
+    # Desviacion del plan (instrumento, no producto): 3000ms fijos era una
+    # carrera contra el montaje real de la coreografia. Medido en esta
+    # sandbox (swiftshader): `data-cae-shell="workspaces"` tarda ~5000ms en
+    # aparecer (import() diferido de gsap + ScrollTrigger + la propia
+    # coreografia), asi que a los 3000ms el documento todavia es la pagina
+    # apilada sin montar -- exactamente la trampa "el cronometro miente en
+    # esta sandbox" que ya documenta CLAUDE.md para B5. Se espera al hito real
+    # en vez de a un numero de milisegundos, con una espera fija de reserva
+    # solo si el montaje no llega (nunca debe fallar el harness por esto).
+    try:
+        pg.wait_for_function(
+            "document.documentElement.dataset.caeShell === 'workspaces'", timeout=12000
+        )
+    except Exception:
+        pg.wait_for_timeout(3000)
+    pg.wait_for_timeout(300)
     return ctx, pg, errores
 
 

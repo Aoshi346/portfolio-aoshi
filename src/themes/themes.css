@@ -6599,6 +6599,28 @@
 }
 
 /*
+ * B6 — el escritorio en el telefono (spec 2026-09-07-caelestia-movil).
+ * Un solo corte, 900px: telefono (390) y tableta vertical (768). Por debajo,
+ * el carril no cambia (cinco workspaces, `inert`, sin scroll de documento) y
+ * cada ventana se desplaza por dentro: `overflow-y: auto` y
+ * `overscroll-behavior: contain` ya vienen de la regla general del carril; lo
+ * que este bloque hace es que el CONTENIDO quepa en el ancho. Lo que no sirve
+ * en el telefono se oculta aqui, no se bifurca en TypeScript (patron B3/B4).
+ * El shell conserva su bloque propio de 51.25rem (fase A) — y esa regla ya
+ * cubre .theme-signature (ver mas abajo), asi que aqui NO se repite: 768px
+ * (tableta, el mayor de los dos anchos de B6) ya cae por debajo de 820px.
+ */
+@media (max-width: 900px) {
+  :root[data-theme="caelestia"] main[data-cae-track] > * {
+    /* Sin barra visible: el pulgar ya sabe que una app se desplaza. */
+    scrollbar-width: none;
+  }
+  :root[data-theme="caelestia"] main[data-cae-track] > *::-webkit-scrollbar {
+    width: 0;
+  }
+}
+
+/*
  * La barra de workspaces envolvia sus pastillas al estrecharse y crecia con
  * ello (Tarea 7). El hueco de arriba del carril seguia esos escalones: con el
  * hueco fijo de escritorio, la barra se comia los primeros pixeles de la

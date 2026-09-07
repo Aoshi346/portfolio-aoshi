@@ -129,6 +129,12 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
     const origen = actual;
     actual = destino;
     aislarInactivos(destino);
+    // Un workspace se abre siempre por su principio (spec B6, «La ley en
+    // movil»): en escritorio no hay nada que desplazar y esto no cambia
+    // nada; en el telefono, volver a Stack tras leerla hasta abajo la
+    // encontraba a mitad. Se hace en el destino, no en el origen, para que
+    // el carril no muestre el salto durante el deslizamiento.
+    if (destino !== origen) escenas[destino].scrollTop = 0;
     // Solo al ENTRAR en su workspace, no al pulsar la pastilla del que ya
     // esta delante: no vuelves a abrir la aplicacion en la que ya estas, y
     // sin ningun affordance que prometa repeticion, 2,6 s de tecleo donde ya
