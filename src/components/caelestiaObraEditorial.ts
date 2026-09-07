@@ -186,6 +186,49 @@ export async function mountCaelestiaObraEditorial(
     }
   }
 
+  /*
+   * B6 (Task 4, spec 2026-09-07-caelestia-movil): en el carrusel con iman
+   * (movil/tableta vertical) la tarjeta centrada es la elegida, sin pulsar.
+   * Se decide por ESTADO -- si la pista desplaza en X mas alla de su propio
+   * ancho -- nunca por `innerWidth` (regla del proyecto: las ramas cortas
+   * de una entrada, y aqui la de seleccion, se deciden por si la pieza
+   * pinta/se comporta como tal, no por el ancho de la ventana).
+   */
+  const pista = cards[0]?.parentElement ?? null;
+  const enCarrusel = (): boolean =>
+    pista !== null && pista.scrollWidth > pista.clientWidth + 1;
+  const elegirCentrada = (): void => {
+    if (!pista || !enCarrusel()) return;
+    // `offsetLeft` cuenta desde el ancestro POSICIONADO mas cercano, que
+    // aqui no es `pista`: es el carril de workspaces (`main[data-cae-track]`),
+    // asi que incluiria tambien el desplazamiento de Obra como tercer panel.
+    // Se mide con `getBoundingClientRect()` en su lugar (rectangulos reales
+    // en viewport, restados entre si), que no depende de quien sea el
+    // ancestro posicionado.
+    const pistaRect = pista.getBoundingClientRect();
+    const centro = pistaRect.left + pista.clientWidth / 2;
+    let mejor = 0;
+    let dist = Number.POSITIVE_INFINITY;
+    cards.forEach((c, i) => {
+      const r = c.getBoundingClientRect();
+      const d = Math.abs(r.left + r.width / 2 - centro);
+      if (d < dist) {
+        dist = d;
+        mejor = i;
+      }
+    });
+    abrir(mejor);
+  };
+  // `scrollend` donde exista; `scroll` con un reposo de 120ms como reserva
+  // (Safari no lo dispara en todas las versiones que este proyecto soporta).
+  let reposo = 0;
+  const alDesplazar = (): void => {
+    window.clearTimeout(reposo);
+    reposo = window.setTimeout(elegirCentrada, 120);
+  };
+  pista?.addEventListener("scrollend", elegirCentrada);
+  pista?.addEventListener("scroll", alDesplazar, { passive: true });
+
   cards.forEach((card, index) => {
     card.addEventListener("click", () => abrir(index));
     if (reduce) return;
@@ -221,8 +264,12 @@ export async function mountCaelestiaObraEditorial(
    * verdad a Obra, en vez de jugarse y asentarse mientras nadie mira.
    */
   function prepararEstadoInicial(): void {
+    const carrusel = enCarrusel();
     cards.forEach((card, index) => {
-      const tilt = TILTS[index] ?? 0;
+      // B6: en el carrusel la inclinacion alterna no se pinta (spec Obra) --
+      // ni siquiera como estado de partida, para no tener que enderezarla
+      // luego con un `rotate: 0` de mas.
+      const tilt = carrusel ? 0 : (TILTS[index] ?? 0);
       gsap.set(card, { opacity: 0, y: -46, rotate: tilt, transformOrigin: "50% 0%" });
     });
 
@@ -250,6 +297,33 @@ export async function mountCaelestiaObraEditorial(
     const { h3, kick, lead, foot, preview, rows, blocks } = refsCajon();
 
     tl = gsap.timeline();
+
+    if (enCarrusel()) {
+      // B6 (Task 4): en el carrusel solo caen la tarjeta visible y sus
+      // vecinas (spec Obra, tabla de entradas). `seleccionado` es 0 en este
+      // punto (prepararEstadoInicial la deja asi), asi que las vecinas son
+      // la 0 y la 1; el resto se pone directo en su sitio, sin animar lo
+      // que no se ve -- la misma regla que la figura viva de la tarjeta
+      // Ahora mismo (Titulo) no monta si no pinta.
+      const cerca = [seleccionado - 1, seleccionado, seleccionado + 1]
+        .filter((i) => i >= 0 && i < cards.length)
+        .map((i) => cards[i]);
+      const lejos = cards.filter((c) => !cerca.includes(c));
+      gsap.set(lejos, { opacity: 1, y: 0, rotate: 0 });
+      tl.fromTo(
+        cerca,
+        { opacity: 0, y: -46, rotate: 0 },
+        { opacity: 1, y: 0, rotate: 0, duration: 0.4, ease: "bounce.out", stagger: 0.08 },
+      ).to(drawer, { opacity: 1, duration: 0.24 }, "-=.1");
+      gsap.set([h3, kick, lead, foot, preview, ...rows, ...blocks].filter(Boolean), {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        clipPath: "inset(0 0% 0 0)",
+      });
+      return;
+    }
+
     tl.fromTo(
       cards,
       { opacity: 0, y: -46, rotate: (i: number) => TILTS[i] ?? 0 },
@@ -288,6 +362,9 @@ export async function mountCaelestiaObraEditorial(
   return {
     destroy: () => {
       document.documentElement.removeEventListener("caelestia:workspace", alCambiarWorkspace);
+      pista?.removeEventListener("scrollend", elegirCentrada);
+      pista?.removeEventListener("scroll", alDesplazar);
+      window.clearTimeout(reposo);
       tl?.kill();
       tlSel?.kill();
       const { h3, kick, lead, foot, preview, rows, blocks } = refsCajon();

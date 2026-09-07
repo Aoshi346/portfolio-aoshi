@@ -234,6 +234,13 @@ body {
   display: none;
 }
 
+/* B6 (spec 2026-09-07-caelestia-movil): el bloque de prosa/cifras que
+   sustituye a la tarjeta por debajo de 900px. Mismo patron -- el DOM es
+   comun, Vice/Hyprland nunca lo encienden. */
+.cae-movil {
+  display: none;
+}
+
 /* Piezas de la entrada de escena (tarea 6): terminal falsa + trazo del
    nombre. Mismo patron — el DOM es comun, solo Caelestia las enciende. */
 .cae-term,

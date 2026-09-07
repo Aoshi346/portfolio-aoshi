@@ -107,6 +107,17 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
       return;
     }
 
+    /*
+     * B6: si la escena esta en una columna (el retrato es pequeno porque no
+     * pinta a su tamano de escritorio), la entrada conserva solo el tecleo;
+     * las capas de grupos y filas aterrizan de golpe al terminar el comando.
+     * Testigo: el ancho pintado de `ficha`, medido con `getClientRects` a
+     * 1440x900 (1412px, la ventana real, no el viewport — ver
+     * `docs/superpowers/specs/2026-09-07-caelestia-movil-design.md`) y a
+     * 390x844 (362px): 700 cae limpio entre los dos.
+     */
+    const corto = (ficha.getClientRects()[0]?.width ?? 0) < 700;
+
     const cuenta = { i: 0 };
     // fromTo con los dos extremos escritos a mano: `gsap.from` esta prohibido.
     const tl = gsap.timeline({
@@ -120,37 +131,73 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
       },
     });
     gsap.set(nombre, { clipPath: "inset(0 100% 0 0)" });
-    gsap.set(grupos, { opacity: 0 });
-    gsap.set(filas, { opacity: 0, x: -6 });
-    gsap.set(tonos, { opacity: 0, scaleX: 0.2 });
     regla.style.width = "0px";
     comando.textContent = "";
 
+    if (corto) {
+      // Columna estrecha: solo el tecleo y el barrido del nombre se ven. El
+      // resto de la ficha aterriza de golpe al terminar el comando — no hay
+      // sitio para capas secundarias por debajo de 900ms (regla del spec).
+      gsap.set([...grupos, ...filas, ...tonos], {
+        opacity: 1, x: 0, scale: 1, scaleX: 1, clearProps: "transform",
+      });
+    } else {
+      gsap.set(grupos, { opacity: 0 });
+      gsap.set(filas, { opacity: 0, x: -6 });
+      gsap.set(tonos, { opacity: 0, scaleX: 0.2 });
+    }
+
+    /*
+     * Los tiempos, por rama. El spec de B6 fija el techo de la version corta
+     * en 900 ms DECLARADOS («un gesto por escena, por debajo de 900 ms»), y
+     * la partitura de escritorio dura 2,02 s: no basta con quitarle capas,
+     * hay que apretarla. Se conservan los dos gestos que el spec dice que
+     * Quien soy mantiene —el tecleo y el barrido de tinta del nombre, que es
+     * lo que ata esta escena con el titular de B1— y lo que cede es el
+     * reposo entre ellos. Total declarado en corto: 0,86 s.
+     *
+     * No hay gate que mida esto: la duracion DECLARADA de una timeline no se
+     * puede leer desde fuera de la pagina sin exponer el handle, y el
+     * cronometro de esta sandbox no sirve de proxy (mide 351 ms para una
+     * partitura de 2,02 s, por el hambre de fotogramas de swiftshader). Los
+     * numeros de abajo son la fuente: si alguien los cambia, que rehaga esta
+     * cuenta a mano.
+     */
+    const T = corto
+      ? { parpadeo: 0.06, tecleo: 0.06, dTecleo: 0.3, guino: 0.36, salida: 0.4,
+          dSalida: 0.12, barrido: 0.4, dBarrido: 0.36, filete: 0.58, dFilete: 0.28 }
+      : { parpadeo: 0.085, tecleo: 0.34, dTecleo: 0.44, guino: 0.78, salida: 1.05,
+          dSalida: 0.2, barrido: 1.05, dBarrido: 0.72, filete: 1.6, dFilete: 0.42 };
+
     tl.fromTo(cursor, { opacity: 1 },
-      { opacity: 0, duration: 0.085, repeat: 3, yoyo: true, ease: "none" }, 0);
+      { opacity: 0, duration: T.parpadeo, repeat: 3, yoyo: true, ease: "none" }, 0);
     tl.to(cuenta, {
-      i: COMANDO.length, duration: 0.44, ease: "none",
+      i: COMANDO.length, duration: T.dTecleo, ease: "none",
       onUpdate: () => { comando.textContent = COMANDO.slice(0, Math.round(cuenta.i)); },
-    }, 0.34);
+    }, T.tecleo);
     tl.fromTo(cursor, { opacity: 1 },
-      { opacity: 0.2, duration: 0.04, yoyo: true, repeat: 1, ease: "power1.inOut" }, 0.78);
-    tl.fromTo(grupos[0] ?? ficha, { opacity: 0, scale: 1.06 },
-      { opacity: 1, scale: 1, duration: 0.55, ease: "power2.out" }, 0.86);
-    tl.set(grupos[1] ?? ficha, { opacity: 1 }, 1.05);
+      { opacity: 0.2, duration: 0.04, yoyo: true, repeat: 1, ease: "power1.inOut" }, T.guino);
+    tl.to(cursor, { opacity: 0, duration: T.dSalida }, T.salida);
     // El barrido de tinta: el mismo gesto que el titular de B1. Es lo que ata
-    // las dos escenas.
+    // las dos escenas. Se queda en las dos ramas: es EL gesto que Quien soy
+    // conserva por debajo del corte (tabla de la seccion "Las entradas").
     tl.fromTo(nombre, { clipPath: "inset(0 100% 0 0)" },
-      { clipPath: "inset(0 0% 0 0)", duration: 0.72, ease: "power2.inOut" }, 1.05);
-    tl.to(cursor, { opacity: 0, duration: 0.2 }, 1.05);
-    tl.fromTo(grupos[2] ?? ficha, { opacity: 0, x: -6 },
-      { opacity: 1, x: 0, duration: 0.28, ease: "power2.out" }, 1.45);
+      { clipPath: "inset(0 0% 0 0)", duration: T.dBarrido, ease: "power2.inOut" }, T.barrido);
     tl.fromTo(regla, { width: 0 },
-      { width: ancho, duration: 0.42, ease: "power2.inOut" }, 1.6);
-    tl.fromTo(grupos.slice(3), { opacity: 0 },
-      { opacity: 1, duration: 0.22, ease: "power2.out" }, 1.85);
-    tl.fromTo(filas, { opacity: 0, x: -6 },
-      { opacity: 1, x: 0, duration: 0.22, ease: "power2.out", stagger: 0.07 }, 1.85);
-    tl.to(tonos, { opacity: 1, scaleX: 1, duration: 0.18, ease: "power2.out", stagger: 0.035 }, 2.45);
+      { width: ancho, duration: T.dFilete, ease: "power2.inOut" }, T.filete);
+
+    if (!corto) {
+      tl.fromTo(grupos[0] ?? ficha, { opacity: 0, scale: 1.06 },
+        { opacity: 1, scale: 1, duration: 0.55, ease: "power2.out" }, 0.86);
+      tl.set(grupos[1] ?? ficha, { opacity: 1 }, 1.05);
+      tl.fromTo(grupos[2] ?? ficha, { opacity: 0, x: -6 },
+        { opacity: 1, x: 0, duration: 0.28, ease: "power2.out" }, 1.45);
+      tl.fromTo(grupos.slice(3), { opacity: 0 },
+        { opacity: 1, duration: 0.22, ease: "power2.out" }, 1.85);
+      tl.fromTo(filas, { opacity: 0, x: -6 },
+        { opacity: 1, x: 0, duration: 0.22, ease: "power2.out", stagger: 0.07 }, 1.85);
+      tl.to(tonos, { opacity: 1, scaleX: 1, duration: 0.18, ease: "power2.out", stagger: 0.035 }, 2.45);
+    }
 
     linea = tl;
   };

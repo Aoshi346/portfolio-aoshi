@@ -4373,6 +4373,11 @@
 :root[data-theme="caelestia"] .cae-widget:hover::after {
   opacity: 0.06;
 }
+/* B6 (spec 2026-09-07-caelestia-movil): en escritorio la tarjeta manda, el
+   bloque de prosa movil no se enciende. Se activa dentro del @media de B6. */
+:root[data-theme="caelestia"] .cae-movil {
+  display: none;
+}
 :root[data-theme="caelestia"] .cae-wcab {
   display: flex;
   align-items: center;
@@ -4559,10 +4564,18 @@
   la convencion de terminal deja todas las lineas pesando igual y la escena no
   tiene un primero.
 */
+/* `safe center` y no `center` a secas, y `min-height` en vez de `height`: con
+   `center` sobre una caja MAS BAJA que su contenido el sobrante se reparte a
+   los dos lados, y lo que sale por arriba no lo alcanza nadie -- el nombre se
+   metia debajo de la barra fija. Medido a 1024x768 (tableta apaisada): caja
+   [68,684], cuerpo [44,708], el nombre a 44 con la barra acabando en 56. `safe`
+   cae a `start` solo cuando desborda, asi que donde ya cabia no cambia nada.
+   La caja crece (`height: auto`) solo en la banda media, mas abajo: hacerlo
+   aqui movia tambien el portatil de 1366x768, donde hoy entra entero. */
 :root[data-theme="caelestia"] [data-ficha="neofetch"] {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: safe center;
   height: 100%;
   padding: 3.25rem 3.5rem;
   font-family: "Martian Mono", ui-monospace, monospace;
@@ -5062,6 +5075,11 @@
   align-items: end;
   justify-items: center;
   padding-top: 8px;
+  /* B6: el filete de abajo lee estas dos variables, no un 142px fijo, para
+     que la banda media (Task 5 Step 4b, columnas de 88px) pueda recalcular
+     el mismo trazo sin reescribir la formula. Cero gap en escritorio. */
+  --cae-cred-col: 142px;
+  --cae-cred-gap-x: 0px;
 }
 
 /* El filete llega solo hasta la ultima pieza de la banda. */
@@ -5071,7 +5089,9 @@
   bottom: -14px;
   left: 0;
   height: 1px;
-  width: calc(var(--piezas) * 142px);
+  width: calc(
+    var(--piezas) * var(--cae-cred-col) + (var(--piezas) - 1) * var(--cae-cred-gap-x)
+  );
   background: var(--cae-outline);
 }
 
@@ -5106,6 +5126,11 @@
   clip-path: var(--fig);
   display: grid;
   place-items: center;
+  /* B6: el lado viene de la variable `--lado` que fija el JS (88px en
+     escritorio) para que las reglas de banda compacta/media puedan
+     sobreescribir `width`/`height` sin pelear con un inline. */
+  width: var(--lado);
+  height: var(--lado);
   /* Relleno en `--cae-outline`: `--cae-surface-container` es EXACTAMENTE
      `--cae-elev-1`, el fondo de la ventana, asi que rellenar con el borra la
      figura. Lo mismo vale para apagarla: se apaga la tinta, nunca el fondo. */
@@ -6194,16 +6219,20 @@
 }
 
 /*
- * Movil, tablet estrecho: cinco pastillas con nombre no caben a 390px. Se
- * quedan solo con el numero (Tarea 9, decision del plan) -- ni se colapsa el
- * dock ni se esconde la barra, son la navegacion entera del tema.
+ * Movil: cinco pastillas con nombre no caben a 390px. Se quedan solo con el
+ * numero (Tarea 9, decision del plan) -- ni se colapsa el dock ni se esconde
+ * la barra, son la navegacion entera del tema.
+ *
+ * El corte esta en 640px y no en 820: a 768 (tableta vertical) los cinco
+ * nombres caben de sobra y sin ellos la barra son cinco numeros a ciegas,
+ * hallazgo de Lidia sobre esta misma banda. Medido antes de moverlo.
  *
  * `font-size: 0` en el boton y tamano real en el `<i>` del numero deja el
  * nombre fuera de la caja visual pero DENTRO del arbol de accesibilidad. No
  * cambiar por `display: none` sobre el texto: eso si lo sacaria del lector
  * de pantalla.
  */
-@media (max-width: 51.25rem) {
+@media (max-width: 40rem) {
   :root[data-theme="caelestia"] .cae-bar {
     padding-inline: 0.75rem 0.5rem;
     gap: 0.375rem;
@@ -6605,6 +6634,456 @@
   border-radius: 999px;
   border: 3px solid transparent;
   background-clip: content-box;
+}
+
+/*
+ * B6 — el escritorio en el telefono (spec 2026-09-07-caelestia-movil).
+ * Un solo corte, 900px: telefono (390) y tableta vertical (768). Por debajo,
+ * el carril no cambia (cinco workspaces, `inert`, sin scroll de documento) y
+ * cada ventana se desplaza por dentro: `overflow-y: auto` y
+ * `overscroll-behavior: contain` ya vienen de la regla general del carril; lo
+ * que este bloque hace es que el CONTENIDO quepa en el ancho. Lo que no sirve
+ * en el telefono se oculta aqui, no se bifurca en TypeScript (patron B3/B4).
+ * El shell conserva su bloque propio de 51.25rem (fase A) — y esa regla ya
+ * cubre .theme-signature (ver mas abajo), asi que aqui NO se repite: 768px
+ * (tableta, el mayor de los dos anchos de B6) ya cae por debajo de 820px.
+ */
+@media (max-width: 900px) {
+  :root[data-theme="caelestia"] main[data-cae-track] > * {
+    /* Sin barra visible: el pulgar ya sabe que una app se desplaza. */
+    scrollbar-width: none;
+  }
+  :root[data-theme="caelestia"] main[data-cae-track] > *::-webkit-scrollbar {
+    width: 0;
+  }
+
+  /* ---- Titulo: Silencioso (maqueta 6, Task 2) ---- */
+  /* El `.hero` compartido trae `py-24` de Tailwind (96px arriba y abajo,
+     192px en total) pensado para un `min-h-screen` de escritorio. Bajo
+     Caelestia la escena es el workspace de altura fija del carril (692px de
+     hueco a 390x844, medido): con el padding de escritorio puesto, cabecera
+     (283px) + bloque movil (225px) + 192px de padding suman 700, 8px por
+     encima del hueco -- el fallo real del gate "cabe entero". Se recorta
+     solo aqui, no se toca `.hero` para los otros dos temas.
+   */
+  :root[data-theme="caelestia"] .hero {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  :root[data-theme="caelestia"] .cae-widget,
+  :root[data-theme="caelestia"] .cae-statcol,
+  :root[data-theme="caelestia"] .cae-trazo-stage {
+    display: none;
+  }
+  :root[data-theme="caelestia"] .cae-movil {
+    display: block;
+    padding: 0 1.375rem 1.5rem;
+  }
+  :root[data-theme="caelestia"] .cae-head {
+    /* la cabecera deja de ser el bloque absoluto de 1080px: fluye */
+    position: static;
+    width: auto;
+    padding: 1.625rem 1.375rem 0;
+  }
+  :root[data-theme="caelestia"] .cae-kicker {
+    display: block;
+  }
+  :root[data-theme="caelestia"] .cae-firma {
+    font-size: 1.125rem; /* 18px */
+  }
+  :root[data-theme="caelestia"] .cae-regla {
+    display: none;
+  }
+  :root[data-theme="caelestia"] .cae-meta {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.5625rem;
+  }
+  :root[data-theme="caelestia"] .cae-tit {
+    margin-top: 7.5rem; /* el titular a media altura: aire, no relleno */
+    text-align: left;
+  }
+  :root[data-theme="caelestia"] .cae-tit .cae-ln {
+    display: block;
+    white-space: nowrap;
+    /* Paso discreto de la escala, no clamp: dos moderadas y una grande. */
+    font-size: var(--t-3);
+    line-height: 1.02;
+  }
+  :root[data-theme="caelestia"] .cae-tit .cae-ln:last-child {
+    font-size: var(--t-7);
+    margin-top: 0.25rem;
+    line-height: 0.92;
+  }
+  :root[data-theme="caelestia"] .cae-mv-prosa {
+    margin: 1.625rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    color: var(--cae-on-surface-variant);
+  }
+  :root[data-theme="caelestia"] .cae-mv-linea {
+    display: block;
+  }
+  :root[data-theme="caelestia"] .cae-mv-linea b {
+    font-weight: 600;
+    color: var(--cae-on-surface);
+  }
+  :root[data-theme="caelestia"] .cae-mv-cifras {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 1rem;
+    margin: 1.375rem 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cae-on-surface-variant);
+  }
+  :root[data-theme="caelestia"] .cae-mv-cifra b {
+    font-family: var(--font-display);
+    font-variation-settings: var(--cae-display-axes-ficha);
+    font-size: 0.9375rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--cae-on-surface);
+    margin-right: 0.25rem;
+  }
+  :root[data-theme="caelestia"] .cae-mv-pie {
+    margin-top: 1.375rem;
+  }
+
+  /*
+   * ---- Quien soy: la salida de neofetch en una columna (Task 3) ----
+   * Real DOM (`about.ts::createFicha`): `.ficha-cuerpo` es hoy un grid
+   * `312px 1fr` (retrato | `.ficha-col`) con `align-items: center` — a 362px
+   * de ancho util eso desborda 847px (medido, gate 2). `.ficha-col` SI existe
+   * como envoltorio de las filas (nombre, id, regla, frase, filas, tira) y ya
+   * es un bloque que apila solo: no hace falta tocarlo, basta con apilar
+   * TAMBIEN `.ficha-cuerpo` (retrato encima, columna debajo a todo el ancho)
+   * y encoger el retrato a logotipo pequeno (96px, la misma figura de 240
+   * vertices). El nombre queda primero en la columna, justo bajo el retrato
+   * -- no literalmente «a su lado»: con el nombre real (17 caracteres) a
+   * 26px, ponerlo en una segunda columna junto al retrato deja ~210px de
+   * ancho util y desborda; a todo el ancho (322px) sobra margen de sobra.
+   * `.ficha-id` (correo + disponibilidad) sigue siendo el bloque JUSTO
+   * DEBAJO del nombre en el flujo del documento, que es donde el spec pide
+   * el correo.
+   */
+  :root[data-theme="caelestia"] [data-ficha="neofetch"] {
+    padding: 2rem 1.375rem 2.25rem;
+    justify-content: flex-start;
+  }
+  :root[data-theme="caelestia"] .ficha-cuerpo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  :root[data-theme="caelestia"] .ficha-arte {
+    display: flex;
+    justify-content: flex-start;
+  }
+  :root[data-theme="caelestia"] .ficha-foto {
+    width: 6rem; /* 96px, el retrato como logotipo pequeno */
+    height: 6rem;
+  }
+  :root[data-theme="caelestia"] .ficha-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    width: 100%;
+  }
+  :root[data-theme="caelestia"] .ficha-nombre {
+    font-size: 1.625rem;
+    line-height: 1.05;
+    white-space: normal;
+  }
+  :root[data-theme="caelestia"] .ficha-id {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+  :root[data-theme="caelestia"] .ficha-filas {
+    grid-template-columns: 1fr;
+    gap: 0.625rem;
+  }
+  :root[data-theme="caelestia"] .ficha-fila {
+    display: block;
+    grid-template-columns: none;
+  }
+  :root[data-theme="caelestia"] .ficha-k {
+    display: block;
+    margin-bottom: 0.125rem;
+  }
+  :root[data-theme="caelestia"] .ficha-v {
+    display: block;
+    line-height: 1.4;
+  }
+
+  /*
+   * ---- Obra: carrusel con iman y cajon a una columna (Task 4) ----
+   * `.cae-obra-row` es grid `repeat(5, 1fr)` en escritorio (fila fija de
+   * 1316px, gate 2 desbordaba 1316 sobre 362 de ancho util). Aqui pasa a
+   * fila flex con scroll-snap: `x mandatory` + `scroll-snap-align: center`
+   * en cada tarjeta hace que el navegador la asiente en el centro del
+   * viewport tras el gesto, sin JS. La inclinacion alterna (TILTS, escrita
+   * inline por GSAP) deja de escribirse en este modo desde
+   * `caelestiaObraEditorial.ts` (Task 4 Step 3, `enCarrusel`): no hace
+   * falta un `!important` de rescate aqui.
+   */
+  :root[data-theme="caelestia"] .obra-rail {
+    padding: 1rem 0 1.625rem;
+    overflow-y: auto;
+  }
+  :root[data-theme="caelestia"] .cae-obra-row {
+    display: flex;
+    gap: 0.75rem;
+    /*
+     * El relleno lateral NO es un valor fijo: tiene que dejar sitio para
+     * que la PRIMERA y la ULTIMA tarjeta tambien puedan llegar al centro
+     * del carril (`scroll-snap-align: center`) -- con un relleno fijo de
+     * 1.25rem, el desplazamiento maximo se queda corto (medido: la tarjeta
+     * 5 solo llega a 976 de 1012 necesarios, 36px de sobra que la deja sin
+     * centrar) y la primera y la ultima nunca se seleccionan solas.
+     * `calc(50% - 7.8125rem)` es medio ancho del carril menos medio ancho
+     * de tarjeta (125px = 7.8125rem): con eso la tarjeta 1, en reposo
+     * (scrollLeft 0), ya nace centrada, y la ultima alcanza el centro
+     * exacto al desplazarse del todo.
+     */
+    padding-block: 0;
+    padding-inline: calc(50% - 7.8125rem);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    width: auto;
+  }
+  :root[data-theme="caelestia"] .cae-obra-row::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+  :root[data-theme="caelestia"] .cae-obra-card {
+    flex: 0 0 15.625rem; /* 250px, la medida del spec */
+    scroll-snap-align: center;
+  }
+  /*
+   * El cajon deja de ser el grid de 3 columnas / 2 filas de escritorio
+   * (`grid-template-areas: "texto captura meta" / "prosa captura meta"`) y
+   * pasa a apilar sus cuatro hijos EN EL ORDEN DEL DOM (`poblarCajon`:
+   * titleBlock, preview, meta, prose) -- ese orden ya es
+   * kicker/titulo/lead/nota-de-privado, captura, metadatos, Problema y
+   * Solucion, asi que `display: block` basta: no hace falta reescribir
+   * `grid-template-areas` a una columna.
+   */
+  :root[data-theme="caelestia"] .cae-obra-drawer {
+    display: block;
+    height: auto;
+    margin: 0.875rem 1rem 0;
+    padding: 1.125rem 1.25rem 1.375rem;
+    /* `container-type: size` de escritorio no tiene sentido con `height:
+       auto`: `.cae-obra-thumb` deja de leer `cqh` (regla siguiente). */
+    container-type: normal;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-title,
+  :root[data-theme="caelestia"] .cae-obra-drawer-preview,
+  :root[data-theme="caelestia"] .cae-obra-drawer-meta,
+  :root[data-theme="caelestia"] .cae-obra-prose {
+    margin-top: 0.875rem;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-title {
+    margin-top: 0;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-preview .cae-obra-thumb {
+    /* En escritorio la captura lee su alto de `cqh` (ver la regla base);
+       aqui vuelve al comportamiento normal de `.cae-obra-thumb`: ancho
+       100% y alto por `aspect-ratio` (ya en la regla base, sin tocarla). */
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-meta {
+    flex-direction: column;
+  }
+
+  /* ---- Stack: bandas apiladas, piezas a cuatro columnas (Task 5) ---- */
+  :root[data-theme="caelestia"] .cae-cred-wrap {
+    padding: 0.875rem 1rem 1.625rem;
+    height: auto;
+  }
+  /* `height: auto` es obligatorio, no cosmetico: la regla de escritorio fija
+     `height: 96px` y `min-height: 0` no la desactiva. En columna la cabecera
+     mide 135, asi que con 96 fijos y `align-items: center` el contenido se
+     desbordaba 24 px por ARRIBA y el nombre de la pieza salia del panel,
+     cortado por su canto redondeado. */
+  :root[data-theme="caelestia"] .cae-cred-cab {
+    min-height: 0;
+    height: auto;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.375rem 0.25rem 0.875rem;
+  }
+  :root[data-theme="caelestia"] .cae-cred-grid {
+    display: block;
+  }
+  :root[data-theme="caelestia"] .cae-cred-banda {
+    display: block;
+    border-top: 1px solid var(--cae-outline);
+    padding: 0.75rem 0 0.875rem;
+  }
+  :root[data-theme="caelestia"] .cae-cred-banda:first-child {
+    border-top: 0;
+  }
+  /* El filete de escritorio dibuja una linea de UNA fila (piezas * pitch):
+     aqui la tira envuelve en varias filas (4 columnas), asi que esa cuenta
+     ya no describe un ancho real -- causaba desbordamiento horizontal
+     (gate 2, 1152/362 medido). El `border-top` de la banda ya separa. */
+  :root[data-theme="caelestia"] .cae-cred-banda:not(:last-child) .cae-cred-tira::after {
+    content: none;
+  }
+  :root[data-theme="caelestia"] .cae-cred-rot {
+    text-align: left;
+    width: auto;
+    margin-bottom: 0.625rem;
+  }
+  :root[data-theme="caelestia"] .cae-cred-tira {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.625rem 0.5rem;
+  }
+  :root[data-theme="caelestia"] .cae-cred-pieza {
+    width: auto;
+    height: auto;
+    padding: 0;
+  }
+  :root[data-theme="caelestia"] .cae-cred-fig {
+    width: 3.5rem; /* 56px */
+    height: 3.5rem;
+    margin: 0 auto;
+  }
+  :root[data-theme="caelestia"] .cae-cred-nom {
+    font-size: 0.53rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/*
+ * Obra en la banda MEDIA (901-1365px): tableta apaisada y portatil estrecho
+ * (spec B6, Task 4 Step 4b). Aqui NO se apila en columna como en el
+ * telefono -- hay ancho de sobra y poca altura --, asi que la escena
+ * conserva la composicion de escritorio (la fila de cinco, fija) y lo que
+ * cede es el tamano de la pieza: `.cae-obra-row` sigue siendo el grid de
+ * escritorio (`repeat(5, 1fr)`), pero sus columnas tienen un `min-width`
+ * implicito de `auto` (el `max-content` del contenido de cada tarjeta), asi
+ * que a un ancho estrecho el grid desborda EN VEZ DE encoger las columnas
+ * -- el mismo fallo, no de tamano fijo, que las 23 fichas de Creditos: el
+ * ancho no se declaraba en ningun sitio, lo fijaba el contenido.
+ *
+ * Medido antes del cambio: 1160px de fila contra 996 utiles a 1024x768
+ * (ancho de tarjeta que pedia el contenido, no un valor en el CSS) y
+ * 1212 contra 1152 a 1180x820. Con `min-width: 0` la tarjeta puede encoger
+ * por debajo de su max-content y el grid reparte los 1fr de verdad; la
+ * proporcion 16:10 de `.cae-obra-thumb` no se toca (viene de la regla base,
+ * `aspect-ratio: 16/10` con `width: 100%`), asi que la imagen se estrecha
+ * con la tarjeta sin deformarse. De 1366 en adelante manda el escritorio.
+ */
+@media (min-width: 901px) and (max-width: 1365px) {
+  /* Tableta apaisada: la ficha de Quien soy no cabe en los 616 px de panel de
+     un 1024x768 (mide 664), asi que la caja crece y el sobrante se alcanza
+     desplazando el panel. Con `height: 100%` no crecia y el sobrante quedaba
+     fuera de todo alcance. */
+  :root[data-theme="caelestia"] [data-ficha="neofetch"] {
+    height: auto;
+    min-height: 100%;
+  }
+
+  :root[data-theme="caelestia"] .cae-obra-card {
+    min-width: 0;
+  }
+  /*
+   * La leyenda en Fraunces italica es la pieza que menos margen de sobra
+   * tiene con tarjetas mas estrechas (16 px base, dos lineas a 250px de
+   * ancho de tarjeta); baja un paso para seguir cabiendo en una sola linea
+   * a las anchuras medidas (1024 y 1180) sin partirse.
+   */
+  :root[data-theme="caelestia"] .cae-obra-caption {
+    font-size: 12px;
+  }
+
+  /*
+   * El cajon, de tres columnas a dos (spec Obra: "el cajón sigue debajo, a
+   * dos columnas en vez de tres"). La fila de tarjetas por si sola ya cabe
+   * con `min-width: 0` (arriba), pero el cajon SEGUIA desbordando el
+   * workspace (medido: #obra 1164/996 con la fila ya arreglada): sus tres
+   * columnas de escritorio (`minmax(320px,1fr) auto 200px`) piden al menos
+   * 320+auto+200+52 de huecos, y la columna "auto" (captura) se dimensiona
+   * por el ALTO que le da `cqh` -- a la altura util de una tableta apaisada
+   * eso todavia pedia 568px de ancho, mas de lo que cabe. Columna 2 funde
+   * captura y metadatos en el mismo carril vertical (texto/prosa a la
+   * izquierda, captura encima de metadatos a la derecha, 220px fijos, el
+   * mismo ancho que ya usaba la columna de metadatos en escritorio) y la
+   * captura deja de leer `cqh` -- vuelve a `aspect-ratio` sobre un ancho
+   * fijo, igual que en la banda compacta.
+   */
+  :root[data-theme="caelestia"] .cae-obra-drawer {
+    grid-template-columns: minmax(0, 1fr) 13.75rem;
+    grid-template-areas:
+      "texto captura"
+      "prosa meta";
+    column-gap: 1.25rem;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-preview .cae-obra-thumb {
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-meta {
+    margin-top: 0.75rem;
+  }
+}
+
+/*
+ * Stack en la banda MEDIA (901-1365px): las cuatro bandas de escritorio miden
+ * 1364px fijos (calle de rotulo 158px + 8 x 142px de columnas + gaps) y no
+ * caben a ningun ancho de tableta apaisada -- desbordan a 1024 (1364/996), a
+ * 1180 (1364/1152) y todavia a 1280 (1364/1252). La calle del rotulo y el
+ * modulo dejan de ser valores fijos y se reparten el ancho disponible.
+ * Las 23 piezas siguen midiendo TODAS lo mismo (ley de B4: el tamano no
+ * codifica nada): en vez de dejar que el `1fr` de cada tira escale su propia
+ * pieza (lo que dejaria a las bandas mas vacias con piezas mas grandes que
+ * las de la banda de 8), la pieza queda a un ancho fijo en `ch` calculado
+ * para la banda mas llena (8 columnas) y las demas tiras se limitan a
+ * alinear a la izquierda en vez de estirar.
+ */
+@media (min-width: 901px) and (max-width: 1365px) {
+  :root[data-theme="caelestia"] .cae-cred-banda {
+    /* La calle del rotulo cede primero (de 158px a un minimo legible); la
+       tira de piezas se queda con el resto. */
+    display: grid;
+    grid-template-columns: minmax(6rem, 158px) 1fr;
+    column-gap: 1rem;
+    align-items: start;
+  }
+  :root[data-theme="caelestia"] .cae-cred-rot {
+    width: auto;
+  }
+  :root[data-theme="caelestia"] .cae-cred-tira {
+    display: grid;
+    grid-template-columns: repeat(8, 5.5rem);
+    justify-content: start;
+    gap: 0.75rem 0.5rem;
+    /* El filete (regla base) recalcula su ancho con estas dos variables en
+       vez del 142px/0 de escritorio: columna de 5.5rem (88px) con 0.5rem
+       (8px) de hueco entre columnas. Sin esto el filete seguia dibujando
+       piezas*142px sobre una tira de columnas de 88px y desbordaba el
+       workspace (gate 8b, 1324/996 y 1358/1152 medido). */
+    --cae-cred-col: 5.5rem;
+    --cae-cred-gap-x: 0.5rem;
+  }
+  :root[data-theme="caelestia"] .cae-cred-pieza {
+    width: 5.5rem; /* 88px, el mismo lado que en escritorio: fijo, no 1fr */
+    height: auto;
+  }
 }
 
 /*

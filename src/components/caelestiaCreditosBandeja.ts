@@ -59,8 +59,14 @@ function construirPieza(p: Pieza): HTMLButtonElement {
   fig.style.setProperty("--fig", figuraDe(p.slug));
   fig.style.setProperty("--fig-suave", figuraSuaveDe(p.slug));
   fig.style.setProperty("--fig-circ", FIGURA_CIRCULO);
-  fig.style.width = `${LADO}px`;
-  fig.style.height = `${LADO}px`;
+  // B6 (spec 2026-09-07-caelestia-movil): el lado se fija como variable, no
+  // como estilo inline de `width`/`height` -- un inline gana siempre a
+  // cualquier regla de hoja de estilos (aunque este dentro de un @media mas
+  // especifico), asi que las reglas de banda compacta/media de themes.css
+  // no podian encoger la pieza. Con la variable, `width`/`height` viven en
+  // la hoja (`.cae-cred-fig { width: var(--lado) }`) y cada @media puede
+  // sobreescribir `width`/`height` directamente sin pelear con el inline.
+  fig.style.setProperty("--lado", `${LADO}px`);
   const icono = fig.firstElementChild as HTMLElement;
   icono.style.width = `${ladoIcono(p.slug)}px`;
   icono.style.height = `${ladoIcono(p.slug)}px`;
@@ -200,17 +206,26 @@ export async function mountCaelestiaCreditosBandeja(
       elegir(nombrePieza);
     };
     const salir = (): void => grid?.classList.remove("is-tocando");
+    // B6 (spec 2026-09-07-caelestia-movil): en tactil no hay `mouseleave` tras
+    // el `click` que dispara `entrar` (no hay puntero que "salga"), asi que
+    // `is-tocando` se quedaba pegado hasta el siguiente toque en OTRA pieza.
+    // `pointerup` de tipo `touch` cierra el estado en el mismo gesto.
+    const soltarToque = (ev: PointerEvent): void => {
+      if (ev.pointerType === "touch") salir();
+    };
     b.addEventListener("mouseenter", entrar);
     b.addEventListener("focus", entrar);
     b.addEventListener("click", entrar);
     b.addEventListener("blur", salir);
     b.addEventListener("mouseleave", salir);
+    b.addEventListener("pointerup", soltarToque);
     escuchas.push(() => {
       b.removeEventListener("mouseenter", entrar);
       b.removeEventListener("focus", entrar);
       b.removeEventListener("click", entrar);
       b.removeEventListener("blur", salir);
       b.removeEventListener("mouseleave", salir);
+      b.removeEventListener("pointerup", soltarToque);
     });
   }
 
@@ -244,11 +259,25 @@ export async function mountCaelestiaCreditosBandeja(
   };
 
   if (!reduce) {
+    // B6: en la banda compacta las bandas se apilan en columna (una tira por
+    // fila, ver themes.css `.cae-cred-tira { grid-template-columns: repeat(4,
+    // 1fr) }`) y la onda por territorios (190ms entre grupos + 34ms entre
+    // piezas) llegaba al ultimo retardo a 1068ms, por encima de los 900ms
+    // declarados. Se detecta por ESTADO, no por `innerWidth` (ley B6): la
+    // pieza mide 88px de lado en escritorio/banda media y 56px en la banda
+    // compacta (`.cae-cred-pieza` no fija su propio ancho -- se mide la
+    // pieza real, que hereda el tamano de `.cae-cred-fig` via `--lado`).
+    const apilada = (botones[0]?.getBoundingClientRect().width ?? 200) < 100;
     let indice = 0;
     skillGroups.forEach((g, gi) => {
       g.items.forEach((_, i) => {
         const fig = botones[indice]?.querySelector<HTMLElement>(".cae-cred-fig");
-        fig?.style.setProperty("--retardo", `${260 + gi * 190 + i * 34}ms`);
+        // En banda compacta, una sola onda para las 23 (max 260 + 22*26 =
+        // 832ms < 900). En escritorio/banda media, la onda por territorios.
+        fig?.style.setProperty(
+          "--retardo",
+          apilada ? `${260 + indice * 26}ms` : `${260 + gi * 190 + i * 34}ms`,
+        );
         indice += 1;
       });
     });
