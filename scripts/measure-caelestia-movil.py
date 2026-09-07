@@ -96,6 +96,57 @@ def workspace_activo(pg) -> dict:
     }""")
 
 
+# Que se sale de la caja del workspace, medido sobre el CONTENIDO y no sobre
+# `scrollWidth`/`scrollHeight`. La razon es la trampa que ya documento B5: el
+# campo inundado de Contacto es un `<span>` con `transform: scale(5.7)` dentro
+# de un `overflow: clip`, asi que infla scrollWidth a 1835 y scrollHeight a 1629
+# sin que haya nada que desplazar ni nada recortado -- decoracion recortada a
+# proposito. Lo que la ley protege no es un numero de layout, es que ningun
+# texto ni ningun pulsable quede fuera de la caja visible. Se miden por eso los
+# nodos con texto propio o accionables, contra la caja REAL del workspace
+# (`getBoundingClientRect`), no contra `clientWidth`, que esta en otro sistema
+# de coordenadas.
+FUERA_JS = """() => {
+    const ws = [...document.querySelectorAll('main[data-cae-track] > *')].find(e => !e.inert);
+    if (!ws) return null;
+    const caja = ws.getBoundingClientRect();
+    const fuera = { der: [], izq: [], abajo: [] };
+    const util = (e) => {
+        if (e.getClientRects().length === 0) return false;
+        if (e.matches('a,button,input,textarea,select,[tabindex]')) return true;
+        return [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim().length > 0);
+    };
+    // Alcanzable: algun ancestro dentro del workspace se desplaza en ese eje.
+    // El carrusel de Obra deja cuatro de las cinco tarjetas fuera de la caja a
+    // proposito y se llega a ellas deslizando: eso no es desbordamiento.
+    const alcanzable = (e, eje) => {
+        const prop = eje === 'x' ? 'overflowX' : 'overflowY';
+        for (let n = e.parentElement; n && n !== ws.parentElement; n = n.parentElement) {
+            const v = getComputedStyle(n)[prop];
+            if (v === 'auto' || v === 'scroll') return true;
+        }
+        return false;
+    };
+    for (const e of ws.querySelectorAll('*')) {
+        if (!util(e)) continue;
+        const b = e.getBoundingClientRect();
+        const et = e.tagName + '.' + String(e.className).slice(0, 40);
+        if (!alcanzable(e, 'x')) {
+            if (b.right > caja.right + 1) fuera.der.push(`${et} +${Math.round(b.right - caja.right)}`);
+            if (b.left < caja.left - 1) fuera.izq.push(`${et} +${Math.round(caja.left - b.left)}`);
+        }
+        if (!alcanzable(e, 'y') && b.bottom > caja.bottom + 1) {
+            fuera.abajo.push(`${et} +${Math.round(b.bottom - caja.bottom)}`);
+        }
+    }
+    return fuera;
+}"""
+
+
+def contenido_fuera(pg) -> dict:
+    return pg.evaluate(FUERA_JS)
+
+
 def gate_ley(navegador, base: str, dispositivo: str = "movil") -> list[str]:
     print(f"\n[1] La ley ({dispositivo}): el documento no se desplaza; el workspace si, y vuelve a cero")
     ctx, pg, err = abrir(navegador, base, dispositivo=dispositivo)
@@ -112,10 +163,12 @@ def gate_ley(navegador, base: str, dispositivo: str = "movil") -> list[str]:
         # cabe entero (Titulo silencioso), scrollTop se queda en 0 y eso es OK.
         r = pg.evaluate("""() => {
             const ws = [...document.querySelectorAll('main[data-cae-track] > *')].find(e => !e.inert);
-            ws.scrollTop = 200; const st = ws.scrollTop; return { st, cabe: ws.scrollHeight <= ws.clientHeight + 1 };
+            ws.scrollTop = 200; return { st: ws.scrollTop };
         }""")
-        comprobar(r["cabe"] or r["st"] > 0,
-                  f"{id_escena}: el workspace responde a un scroll interior (scrollTop={r['st']}, cabe={r['cabe']})")
+        fuera = contenido_fuera(pg)
+        comprobar(r["st"] > 0 or not fuera["abajo"],
+                  f"{id_escena}: o el workspace se desplaza por dentro o nada queda por debajo "
+                  f"(scrollTop={r['st']}, abajo={fuera['abajo'][:3]})")
     # Volver a cero al cambiar: dejar Stack desplazado, ir a Titulo y volver.
     ir_a(pg, "creditos")
     pg.evaluate("""() => { const ws = [...document.querySelectorAll('main[data-cae-track] > *')].find(e => !e.inert); ws.scrollTop = 200; }""")
@@ -133,9 +186,10 @@ def gate_desbordamiento(navegador, base: str, dispositivo: str = "movil") -> lis
     ctx, pg, err = abrir(navegador, base, dispositivo=dispositivo)
     for id_escena in ESCENAS:
         ir_a(pg, id_escena)
-        ws = workspace_activo(pg)
-        comprobar(ws is not None and ws["scrollWidth"] <= ws["clientWidth"] + 1,
-                  f"{id_escena}: scrollWidth {ws and ws['scrollWidth']} <= clientWidth {ws and ws['clientWidth']}")
+        fuera = contenido_fuera(pg)
+        comprobar(fuera is not None and not fuera["der"] and not fuera["izq"],
+                  f"{id_escena}: nada de texto ni pulsable se sale por los lados "
+                  f"(der={fuera and fuera['der'][:3]}, izq={fuera and fuera['izq'][:3]})")
     ctx.close()
     return err
 
