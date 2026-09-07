@@ -785,6 +785,58 @@ def main() -> int:
                       f"(sobra {resto['sobra']}px de contenido)")
             ctx.close()
 
+        # ---- Tableta (641-900px de ancho) ----
+        # Hasta el 2026-09-07 esta franja caia en el hueco entre el bloque de
+        # 640 y el escritorio: se quedaba con el troquel absoluto de
+        # escritorio, que sangra 460px. Medido a 768x1024: el sello TAPABA la
+        # frase de cierre, el telefono se partia en cuatro renglones y GitHub
+        # quedaba cortado.
+        for ancho, alto in ((768, 1024), (820, 1180), (1024, 768), (1180, 820)):
+            ctx, pg, err = nueva_pagina_en_contacto(
+                navegador, base, viewport={"width": ancho, "height": alto}
+            )
+            errores_totales += err
+            tab = pg.evaluate("""() => {
+                const ws = document.querySelector('[data-scene="contacto"]');
+                const wr = ws.getBoundingClientRect();
+                const f = document.querySelector('.contacto-lead').getBoundingClientRect();
+                const t = document.querySelector('[data-fundido-troquel]').getBoundingClientRect();
+                const d = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+                const e = document.querySelector('.contacto-estado').getBoundingClientRect();
+                const barras = [...document.querySelectorAll('.contacto-bar')];
+                const tel = barras.find(b => (b.textContent || '').includes('+58'));
+                const cs = tel ? getComputedStyle(tel.querySelector('.contacto-bar-value')) : null;
+                const lh = cs ? (parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4) : 1;
+                const vr = tel ? tel.querySelector('.contacto-bar-value').getBoundingClientRect() : null;
+                return {
+                    solapan: !(f.right < t.left || t.right < f.left ||
+                               f.bottom < t.top || t.bottom < f.top),
+                    sello: Math.round(t.height),
+                    dinoDentro: d.top >= t.top - 1 && d.bottom <= t.bottom + 1,
+                    telLineas: vr ? Math.round(vr.height / lh) : null,
+                    fuera: barras.filter(b => {
+                        const r = b.getBoundingClientRect();
+                        return r.bottom > wr.bottom + 1 || r.right > wr.right + 1;
+                    }).length,
+                    pieDentro: e.bottom <= wr.bottom + 1,
+                };
+            }""")
+            print(f"       {ancho}x{alto}: {tab}")
+            comprobar(not tab["solapan"],
+                      f"a {ancho}x{alto} el sello no tapa la frase de cierre")
+            # En apaisado el sello es mas pequeno todavia: el limite ahi es el
+            # alto (616 utiles a 1024x768), no el ancho.
+            comprobar(tab["sello"] <= (300 if alto > ancho else 240),
+                      f"a {ancho}x{alto} el troquel es un sello, no el de escritorio a sangre "
+                      f"({tab['sello']}px)")
+            comprobar(tab["dinoDentro"], f"a {ancho}x{alto} el bicho cabe dentro del sello")
+            comprobar(tab["telLineas"] == 1,
+                      f"a {ancho}x{alto} el telefono va en una linea ({tab['telLineas']})")
+            comprobar(tab["fuera"] == 0 and tab["pieDentro"],
+                      f"a {ancho}x{alto} los cuatro canales y el pie entran "
+                      f"(fuera {tab['fuera']}, pie {tab['pieDentro']})")
+            ctx.close()
+
         ctx, pg, err = nueva_pagina_en_contacto(
             navegador, base, viewport={"width": 390, "height": 844}
         )
