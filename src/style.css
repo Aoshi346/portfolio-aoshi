@@ -106,7 +106,7 @@ body {
    * quedan identicos al pixel. Vice pierde el clamp por vw: la Tarea 1 lo deja
    * en un solo paso de la escala, no en un rango.
    */
-  font-size: var(--t-3, 1.125rem);
+  font-size: var(--t-3);
   line-height: 1.4;
 }
 
@@ -161,7 +161,7 @@ body {
   /* `--t-1` solo existe bajo `[data-theme="vice"]`; el respaldo es el
      0.66rem que ya rendia aqui, medido en Hyprland/Caelestia antes de tocar
      nada — los otros dos temas quedan identicos al pixel. */
-  font-size: var(--t-1, 0.66rem);
+  font-size: var(--t-1);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   /*
@@ -189,7 +189,7 @@ body {
   font-weight: 700;
   /* `--t-1` solo existe en Vice; respaldo = 0.6rem medido en Hyprland/
      Caelestia antes de la escala, idem `.hero-kick` arriba. */
-  font-size: var(--t-1, 0.6rem);
+  font-size: var(--t-1);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   /*
@@ -333,7 +333,7 @@ body {
 }
 
 .contacto-lead {
-  font-size: var(--t-3, 1.25rem);
+  font-size: var(--t-3);
   margin-top: 1rem;
 }
 
@@ -342,11 +342,11 @@ body {
   align-items: center;
   gap: 0.75rem;
   margin-top: 2rem;
-  font-size: var(--t-2, 1rem);
+  font-size: var(--t-2);
 }
 
 .contacto-estado-label {
-  font-size: var(--t-1, 0.75rem);
+  font-size: var(--t-1);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   opacity: 0.6;
@@ -368,7 +368,7 @@ body {
 
 .contacto-bar-label {
   display: block;
-  font-size: var(--t-1, 0.75rem);
+  font-size: var(--t-1);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   opacity: 0.6;
@@ -376,7 +376,7 @@ body {
 
 .contacto-bar-value {
   display: block;
-  font-size: var(--t-3, 1.25rem);
+  font-size: var(--t-3);
   margin-top: 0.25rem;
 }
 
@@ -478,7 +478,7 @@ body {
      Esta linea se quedo fuera del barrido que migro a sus siete hermanas, y
      era la unica del grupo visible en las cinco escenas y a todo ancho: el
      unico tamano fuera de escala que un visitante tiene delante siempre. */
-  font-size: var(--t-1, 0.58rem);
+  font-size: var(--t-1);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-paper) 70%, transparent);
@@ -668,7 +668,7 @@ body {
      media (punto ciego de `n.children.length`, ver measure-type-scale.py).
      Paso mas cercano en Vice: 9.92px -> 12px (+20.97%, mismo salto que
      `.about-h`, anotado en el informe). */
-  font-size: var(--t-1, 0.62rem);
+  font-size: var(--t-1);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-accent);
@@ -892,7 +892,7 @@ body {
   /* `--t-1` solo en Vice; respaldo = 0.53rem medido en Hyprland/Caelestia
      antes de la escala. Paso mas cercano en Vice: 8.48px -> 12px (+41.5%,
      el salto mas grande de la tarea — anotado en el informe). */
-  font-size: var(--t-1, 0.53rem);
+  font-size: var(--t-1);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--color-accent-legible);
@@ -1018,7 +1018,7 @@ body {
   /* `--t-1` solo en Vice; respaldo = 0.58rem medido en Hyprland/Caelestia
      antes de la escala. Paso mas cercano en Vice: 9.28px -> 12px (+29.3%,
      anotado en el informe). */
-  font-size: var(--t-1, 0.58rem);
+  font-size: var(--t-1);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-paper) 92%, transparent);
