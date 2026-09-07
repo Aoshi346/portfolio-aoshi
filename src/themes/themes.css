@@ -6896,8 +6896,14 @@
     padding: 0.875rem 1rem 1.625rem;
     height: auto;
   }
+  /* `height: auto` es obligatorio, no cosmetico: la regla de escritorio fija
+     `height: 96px` y `min-height: 0` no la desactiva. En columna la cabecera
+     mide 135, asi que con 96 fijos y `align-items: center` el contenido se
+     desbordaba 24 px por ARRIBA y el nombre de la pieza salia del panel,
+     cortado por su canto redondeado. */
   :root[data-theme="caelestia"] .cae-cred-cab {
     min-height: 0;
+    height: auto;
     display: flex;
     gap: 0.75rem;
     align-items: center;

@@ -110,7 +110,7 @@ FUERA_JS = """() => {
     const ws = [...document.querySelectorAll('main[data-cae-track] > *')].find(e => !e.inert);
     if (!ws) return null;
     const caja = ws.getBoundingClientRect();
-    const fuera = { der: [], izq: [], abajo: [] };
+    const fuera = { der: [], izq: [], arriba: [], abajo: [] };
     const util = (e) => {
         if (e.getClientRects().length === 0) return false;
         if (e.matches('a,button,input,textarea,select,[tabindex]')) return true;
@@ -138,6 +138,13 @@ FUERA_JS = """() => {
         if (!alcanzable(e, 'y') && b.bottom > caja.bottom + 1) {
             fuera.abajo.push(`${et} +${Math.round(b.bottom - caja.bottom)}`);
         }
+        // Hacia ARRIBA no vale el indulto de `alcanzable`: un contenedor con
+        // overflow auto en scrollTop 0 no puede desplazarse hacia atras, asi
+        // que lo que asome por encima del canto no lo alcanza nadie. Con la
+        // regla generica este gate salia VERDE contra el fallo real.
+        const subible = (() => { for (let n = e.parentElement; n && n !== ws.parentElement; n = n.parentElement)
+            if (n.scrollTop > 0) return true; return false; })();
+        if (!subible && b.top < caja.top - 1) fuera.arriba.push(`${et} +${Math.round(caja.top - b.top)}`);
     }
     return fuera;
 }"""
@@ -190,6 +197,13 @@ def gate_desbordamiento(navegador, base: str, dispositivo: str = "movil") -> lis
         comprobar(fuera is not None and not fuera["der"] and not fuera["izq"],
                   f"{id_escena}: nada de texto ni pulsable se sale por los lados "
                   f"(der={fuera and fuera['der'][:3]}, izq={fuera and fuera['izq'][:3]})")
+        # Por arriba tambien: la cabecera de Stack heredaba `height: 96px` de
+        # escritorio, y con `align-items: center` sobre 135 px de contenido el
+        # nombre de la pieza salia 24 px POR ENCIMA del panel, cortado por su
+        # canto. Nada de esto movia scrollWidth ni scrollHeight.
+        comprobar(fuera is not None and not fuera["arriba"],
+                  f"{id_escena}: nada se sale por arriba del panel "
+                  f"(arriba={fuera and fuera['arriba'][:3]})")
     ctx.close()
     return err
 
