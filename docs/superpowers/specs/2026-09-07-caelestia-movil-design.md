@@ -1,6 +1,6 @@
 # Caelestia B6 — el escritorio en el teléfono
 
-Estado: pendiente de plan
+Estado: en ejecucion
 Fecha: 2026-09-07
 Rama de trabajo: `design/caelestia-movil` (worktree `portfolio-aoshi-movil`), desde `main` (`1f41e6c`)
 Plan: `docs/superpowers/plans/2026-09-07-caelestia-movil.md`
