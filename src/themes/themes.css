@@ -10455,3 +10455,101 @@
     margin-left: -1.875rem;
   }
 }
+
+/*
+ * Contacto en TABLETA (641-900px de ancho). Hasta aqui esta franja caia en el
+ * hueco entre el bloque de 640 y el escritorio: se quedaba con el troquel
+ * absoluto de escritorio, que sangra 460px, y el resultado medido a 768x1024
+ * era que el sello TAPABA la frase de cierre, el telefono se partia en cuatro
+ * renglones, GitHub quedaba cortado y la escena desbordaba 336px.
+ *
+ * Recibe el mismo tratamiento de columna que el telefono —es lo que declara
+ * el spec de B6 para la tableta, «el mismo layout con mas medida»— pero con
+ * sus propias medidas, no con las de 390: la frase sube un paso de escala y el
+ * sello crece, porque aqui SI hay sitio. No se ensancha el bloque de 640 a
+ * 900: ese bloque lleva reglas de las otras cuatro escenas calibradas a 390,
+ * y esas las esta rehaciendo la fase B6 aparte.
+ *
+ * Fuera de esta franja sigue sin promesa la tableta APAISADA (1024x768 y
+ * similares, por encima de 900 de ancho): ahi manda el escritorio y la escena
+ * desborda. Es el mismo hueco de 901-1365 que el spec de B6 deja declarado.
+ */
+@media (min-width: 641px) and (max-width: 900px) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 1rem;
+    /* Igual que en el telefono: la banda no se comprime por debajo de su
+       contenido, asi que el sello no puede desbordarla y pisar el filete. */
+    min-height: min-content;
+    padding-block: 1.5rem 1rem;
+  }
+
+  /*
+   * El troquel deja de sangrar y pasa a ser un sello, como a 390, pero de
+   * 16rem: a 740 de ventana los 196px del telefono se leerian como un sello
+   * de solapa, y los 460 de escritorio no caben. `flex-shrink: 0` por el
+   * mismo motivo que a 390 — aqui es un item de flex real y el motor lo
+   * aplastaria hasta dejarlo rectangular.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    align-self: center;
+    flex-shrink: 0;
+    width: 16rem;
+    height: 16rem;
+  }
+
+  /* 47% del lado del sello, la proporcion original del bicho en el troquel. */
+  :root[data-theme="caelestia"] .cae-fundido-bicho {
+    left: 50%;
+    bottom: 26%;
+    width: 7.5rem;
+    margin-left: -3.75rem;
+  }
+
+  /*
+   * La frase sube un paso respecto al telefono (--t-8, 89,85px): a 608px de
+   * medida util «Cuentame» mide 330 y entra con sitio de sobra, y a --t-10
+   * (el valor de escritorio) no cabria.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    font-size: var(--t-8);
+  }
+
+  /*
+   * Los canales, en la misma rejilla que a 390: los dos ACTOS ocupan fila
+   * entera y los dos DESTINOS se reparten la ultima. En escritorio son cuatro
+   * columnas y aqui no caben: el telefono se partia en cuatro renglones.
+   * `margin: 0` y el selector con `.contacto-bar` por el mismo motivo que en
+   * el bloque de 390 — el truco de zona de toque con margen negativo solo
+   * funciona con el hueco de escritorio, y sin la clase la regla pierde el
+   * empate de especificidad.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: 0.75rem 1.25rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+    margin: 0;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+    grid-column: span 1;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+    margin: 0;
+  }
+}
