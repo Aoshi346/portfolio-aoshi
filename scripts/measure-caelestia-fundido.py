@@ -676,6 +676,96 @@ def main() -> int:
         comprobar(movil["scrollDoc"] <= movil["anchoViewport"],
                   f"sin barra horizontal a 390px (scrollWidth {movil['scrollDoc']} <= "
                   f"viewport {movil['anchoViewport']})")
+
+        # El sello no pisa el filete de `.contacto-bars` (repaso de interfaces,
+        # 2026-09-06): antes del ajuste del reparto vertical, el sello (196px
+        # de alto, valor de spec, no se toca) sobraba 23px por debajo del
+        # filete. Se pide >= 8px de aire, no solo "no negativo": un solape de
+        # 0px seria visualmente identico a pegarlo, que tampoco es "por
+        # encima, con aire".
+        sello_filete = pg.evaluate("""() => {
+            const troquel = document.querySelector('[data-fundido-troquel]');
+            const bars = document.querySelector('.contacto-bars');
+            const tr = troquel.getBoundingClientRect();
+            const br = bars.getBoundingClientRect();
+            return { gap: br.top - tr.bottom, troquelH: Math.round(tr.height) };
+        }""")
+        print(f"       sello/filete: {sello_filete}")
+        comprobar(sello_filete["gap"] >= 8,
+                  f"el sello no pisa la regla, con >= 8px de aire "
+                  f"(medido {sello_filete['gap']:.1f}px, sello {sello_filete['troquelH']}px de alto)")
+
+        # La cabecera corrida no se parte en dos lineas a 390px: se pidio
+        # elegir entre `text-wrap: balance`, menos tracking o solo el nombre,
+        # y se opto por solo el nombre (`.cae-fundido-corn-loc` se oculta
+        # visualmente, sigue en el arbol de accesibilidad).
+        cabecera = pg.evaluate("""() => {
+            const cornDer = document.querySelector('.cae-fundido-corn-der');
+            const cornLoc = document.querySelector('.cae-fundido-corn-loc');
+            // Contar lineas VISIBLES por altura, no con `getClientRects()`:
+            // sobre el <span> devuelve UNA caja aunque el texto ocupe dos
+            // renglones (es un item de flex, no un inline partido), asi que
+            // con el fallo delante seguia dando 1 y el gate no podia fallar;
+            // y un `Range` sobre el contenido cuenta de mas, porque incluye
+            // el nodo de la ubicacion, que va fuera de flujo. La altura de la
+            // caja frente a su interlineado es lo que de verdad ve el
+            // visitante (la ubicacion, absoluta, no suma altura).
+            const cs = getComputedStyle(cornDer);
+            const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4;
+            return {
+                lineas: Math.round(cornDer.getBoundingClientRect().height / lh),
+                alto: Math.round(cornDer.getBoundingClientRect().height * 10) / 10,
+                interlineado: Math.round(lh * 10) / 10,
+                textoCompleto: cornDer.textContent,
+                locEnArbol: cornLoc ? cornLoc.textContent : null,
+                locVisible: cornLoc ? getComputedStyle(cornLoc).position !== 'absolute' ||
+                    cornLoc.getBoundingClientRect().width > 2 : null,
+            };
+        }""")
+        print(f"       cabecera: {cabecera}")
+        comprobar(cabecera["lineas"] == 1,
+                  f"la cabecera no se parte en dos lineas a 390px ({cabecera['lineas']} lineas)")
+        comprobar(bool(cabecera["locEnArbol"] and cabecera["locEnArbol"].strip()),
+                  "la ubicacion sigue en el arbol de accesibilidad, aunque no se vea")
+        ctx.close()
+
+        # Los cuatro canales entran en la ventana en las alturas REALES de un
+        # telefono, no solo en los 844 de pagina que asume el resto del gate
+        # 11: con la barra del navegador a la vista quedan 588 utiles, y en un
+        # telefono pequeno 515. Con el reparto calibrado solo contra 844, el
+        # telefono, LinkedIn y GitHub caian fuera (3 de 4 a 740, los 4 a 667):
+        # una escena de contacto que esconde sus canales se contradice a si
+        # misma. Se mide contra la caja VISIBLE del workspace, no contra el
+        # documento: la ventana desplaza, y lo que hay que garantizar es que
+        # no haya que desplazar para ver un canal.
+        for alto in (740, 667):
+            ctx, pg, err = nueva_pagina_en_contacto(
+                navegador, base, viewport={"width": 390, "height": alto}
+            )
+            errores_totales += err
+            canales = pg.evaluate("""() => {
+                const ws = document.querySelector('[data-scene="contacto"]');
+                const wr = ws.getBoundingClientRect();
+                return [...document.querySelectorAll('.contacto-bar')].map(e => {
+                    const r = e.getBoundingClientRect();
+                    return { etiqueta: (e.textContent || '').trim().slice(0, 18),
+                             dentro: r.bottom <= wr.bottom + 1 && r.top >= wr.top - 1,
+                             alto: Math.round(r.height), ancho: Math.round(r.width) };
+                });
+            }""")
+            fuera = [c["etiqueta"] for c in canales if not c["dentro"]]
+            print(f"       {alto}px: {canales}")
+            comprobar(len(canales) == 4 and not fuera,
+                      f"a 390x{alto} los cuatro canales entran en la ventana (fuera: {fuera})")
+            comprobar(all(c["alto"] >= 48 and c["ancho"] >= 48 for c in canales),
+                      f"a 390x{alto} los blancos siguen por encima de 48x48 "
+                      f"({[(c['ancho'], c['alto']) for c in canales]})")
+            ctx.close()
+
+        ctx, pg, err = nueva_pagina_en_contacto(
+            navegador, base, viewport={"width": 390, "height": 844}
+        )
+        errores_totales += err
         ctx.close()
 
         # ================================================================
