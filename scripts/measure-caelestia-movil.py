@@ -38,6 +38,11 @@ SELECTOR = {
 }
 DISPOSITIVOS = {
     "movil": {"width": 390, "height": 844},
+    # 360 no es un capricho: por debajo de 390 hay telefonos de sobra, y ahi
+    # aparecio lo que 390 no veia -- la tira de Stack a `repeat(4, 1fr)`
+    # desbordando 351 sobre 332, porque `1fr` es `minmax(auto, 1fr)` y ese
+    # `auto` vale el `max-content` de la pieza.
+    "movil-estrecho": {"width": 360, "height": 800},
     "tableta": {"width": 768, "height": 1024},
 }
 
@@ -343,15 +348,31 @@ def gate_stack(navegador, base: str) -> list[str]:
         return { n: piezas.length, dentro: piezas.filter(Boolean).length, rotulos }; }""")
     comprobar(caja["n"] == 23 and caja["dentro"] == 23, f"las 23 piezas dentro del ancho de la caja ({caja['dentro']}/{caja['n']})")
     comprobar(len(caja["rotulos"]) == 4 and all(caja["rotulos"]), f"los cuatro rotulos pintan ({caja['rotulos']})")
-    # Tocar elige: tap real sobre la sexta pieza (ni hover ni MouseEvent sintetico).
-    objetivo = pg.evaluate("() => document.querySelectorAll('.cae-cred-pieza')[5].dataset.pieza")
+    # Tocar elige: tap real (ni hover ni MouseEvent sintetico). Anclado al
+    # PUNTO tocado y no a un indice: al recibir el foco, el navegador desplaza
+    # el panel por su cuenta (medido: scrollTop 28 -> 10, la pieza se mueve
+    # 103 px), asi que un `tap(selector)` aterriza en otra pieza y el gate
+    # acusaba al producto de un movimiento que provoca el propio instrumento.
+    # Se espera a que el desplazamiento se quede quieto, se lee QUE pieza hay
+    # bajo el punto y se comprueba que la ficha muestre ESA.
     pg.evaluate("() => document.querySelectorAll('.cae-cred-pieza')[5].scrollIntoView({ block: 'center' })")
-    pg.wait_for_timeout(300)
-    pg.tap(".cae-cred-pieza >> nth=5")
+    quieto = pg.evaluate("""() => new Promise(res => { const ws = document.querySelector('[data-scene="credits"]');
+        let previo = null, iguales = 0;
+        const mira = () => { if (ws.scrollTop === previo) iguales++; else iguales = 0;
+          previo = ws.scrollTop;
+          if (iguales >= 3) res(ws.scrollTop); else requestAnimationFrame(mira); }; mira(); })""")
+    punto = pg.evaluate("""() => { const b = document.querySelectorAll('.cae-cred-pieza')[5];
+        const r = b.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        const bajo = document.elementFromPoint(x, y)?.closest('.cae-cred-pieza');
+        return { x, y, pieza: bajo?.dataset.pieza ?? null }; }""")
+    comprobar(punto["pieza"] is not None, f"hay una pieza bajo el punto tocado (scrollTop quieto en {quieto})")
+    pg.touchscreen.tap(punto["x"], punto["y"])
     pg.wait_for_timeout(500)
-    est = pg.evaluate("""() => { const b = document.querySelectorAll('.cae-cred-pieza')[5];
-        return { pressed: b.getAttribute('aria-pressed'), nombre: document.querySelector('.cae-cred-nombre')?.textContent?.trim() }; }""")
-    comprobar(est["pressed"] == "true" and est["nombre"] == objetivo, f"tocar elige («{objetivo}» -> ficha «{est['nombre']}», aria-pressed={est['pressed']})")
+    est = pg.evaluate("""(pieza) => { const b = [...document.querySelectorAll('.cae-cred-pieza')].find(e => e.dataset.pieza === pieza);
+        return { pressed: b?.getAttribute('aria-pressed'), nombre: document.querySelector('.cae-cred-nombre')?.textContent?.trim() }; }""",
+        punto["pieza"])
+    comprobar(est["pressed"] == "true" and est["nombre"] == punto["pieza"],
+              f"tocar elige la pieza que hay bajo el dedo («{punto['pieza']}» -> ficha «{est['nombre']}», aria-pressed={est['pressed']})")
     # is-tocando no se queda pegado tras el tap (sin mouseleave en tactil).
     pg.wait_for_timeout(300)
     pegado = pg.evaluate("() => document.querySelector('.cae-cred-grid')?.classList.contains('is-tocando')")
@@ -404,6 +425,53 @@ def gate_stack_banda_media(navegador, base: str) -> list[str]:
         ctx.close()
         resultado_final += errores
     return resultado_final
+
+
+def gate_stack_cabeceras(navegador, base: str, dispositivo: str = "movil-estrecho") -> list[str]:
+    """Las 23 cabeceras de Stack, no solo la que viene elegida. La que mas
+    empuja no es la primera: «Aparece en» con dos obras en Fraunces a 26 px
+    desbordaba el panel, y la figura de la pieza (`.cae-cred-marca`, un hijo
+    de flex sin `flex-shrink: 0`) se aplastaba a 24 px de ancho por 48 de
+    alto con el icono descentrado dentro. Con una sola pieza medida, las dos
+    cosas pasaban desapercibidas."""
+    print(f"\n[5b] Stack: las 23 cabeceras caben y la figura no se aplasta ({dispositivo})")
+    ctx, pg, err = abrir(navegador, base, dispositivo=dispositivo)
+    ir_a(pg, "creditos", 2600)
+    datos = pg.evaluate("""async () => {
+        const ws = [...document.querySelectorAll('main[data-cae-track] > *')].find(e => !e.inert);
+        const caja = ws.getBoundingClientRect();
+        const btns = [...ws.querySelectorAll('.cae-cred-tira button')];
+        const out = [];
+        for (const btn of btns) {
+            btn.click();
+            await new Promise(r => setTimeout(r, 40));
+            const cab = ws.querySelector('.cae-cred-cab');
+            const marca = ws.querySelector('.cae-cred-marca');
+            let fuera = 0;
+            for (const e of cab.querySelectorAll('*')) { const b = e.getBoundingClientRect();
+                if (b.right - caja.right > fuera) fuera = b.right - caja.right; }
+            const mr = marca.getBoundingClientRect();
+            out.push({ nom: ws.querySelector('.cae-cred-nombre')?.textContent?.trim() ?? '?',
+                       fuera: Math.round(fuera), marca: [Math.round(mr.width), Math.round(mr.height)],
+                       alto: Math.round(cab.getBoundingClientRect().height) });
+        }
+        return out;
+    }""")
+    comprobar(len(datos) == 23, f"se recorren las 23 piezas ({len(datos)})")
+    peor = max(datos, key=lambda d: d["fuera"]) if datos else None
+    comprobar(peor is not None and peor["fuera"] <= 1,
+              f"ninguna cabecera se sale por la derecha (peor: {peor and peor['nom']} +{peor and peor['fuera']})")
+    chafada = [d for d in datos if d["marca"][0] != d["marca"][1]]
+    comprobar(not chafada,
+              f"la figura de la pieza sigue siendo cuadrada en las 23 ({chafada[:3]})")
+    # La cabecera no puede cambiar de alto al elegir: si crece, la tira baja
+    # BAJO EL DEDO entre el `pointerdown` y el `click`, y tocas una pieza
+    # pero se elige otra. Medido antes de fijarla: entre 164 y 254 px.
+    altos = sorted({d["alto"] for d in datos})
+    comprobar(len(altos) == 1,
+              f"la cabecera mide siempre lo mismo, elijas la pieza que elijas ({altos})")
+    ctx.close()
+    return err
 
 
 def gate_entradas(navegador, base: str) -> list[str]:
@@ -615,6 +683,12 @@ def main() -> int:
             errores += gate_obra(navegador, args.base)
         if not solo or "5" in solo:
             errores += gate_stack(navegador, args.base)
+        if not solo or "5b" in solo:
+            errores += gate_stack_cabeceras(navegador, args.base)
+        if not solo or "2b" in solo:
+            print("\n[2b] Telefono estrecho (360x800): la ley y el desbordamiento")
+            errores += gate_ley(navegador, args.base, "movil-estrecho")
+            errores += gate_desbordamiento(navegador, args.base, "movil-estrecho")
         if not solo or "6" in solo:
             errores += gate_entradas(navegador, args.base)
         if not solo or "7" in solo:

@@ -134,6 +134,14 @@ export function montarEntrada(
   const widget = hero?.querySelector<HTMLElement>(".cae-widget") ?? null;
   const lineas = hero ? Array.from(hero.querySelectorAll<HTMLElement>(".cae-ln")) : [];
   const bloques = hero ? Array.from(hero.querySelectorAll<HTMLElement>(".cae-statcol > div")) : [];
+  // B6: las piezas del bloque movil. Tienen que estar aqui y no solo en el
+  // paso 10: `themes.css` las oculta con `visibility: hidden` mientras vive
+  // `js-cae-entrada`, asi que sin estado inicial propio aparecian de golpe y
+  // en su estado FINAL en cuanto `descubrir()` retira la clase -- antes que
+  // la terminal, que es lo primero que deberia verse.
+  const mvLineas = hero ? Array.from(hero.querySelectorAll<HTMLElement>(".cae-mv-linea")) : [];
+  const mvCifras = hero ? Array.from(hero.querySelectorAll<HTMLElement>(".cae-mv-cifra")) : [];
+  const mvPie = hero?.querySelector<HTMLElement>(".cae-mv-pie") ?? null;
   if (!term || !typed || !cursor || !trazo || !firma) {
     // Sin las piezas minimas no hay timeline que las revele: si no se retira
     // aqui, el contenido queda invisible hasta el timeout de 3s de main.ts.
@@ -181,6 +189,11 @@ export function montarEntrada(
   if (bloques.length > 0) {
     gsap.set(bloques, { opacity: 0, rotateX: -82, y: 6, transformPerspective: 600 });
   }
+  if (mvLineas.length > 0) gsap.set(mvLineas, { opacity: 0, y: 8 });
+  if (mvCifras.length > 0) {
+    gsap.set(mvCifras, { opacity: 0, rotateX: -82, y: 6, transformPerspective: 600 });
+  }
+  if (mvPie) gsap.set(mvPie, { opacity: 0, y: 8 });
   let brote: { cx: number; cy: number } | null = null;
   if (widget) {
     // Brota de la luz: el circulo se centra en la luz de la pastilla, medida
@@ -294,6 +307,33 @@ export function montarEntrada(
       { opacity: 0, rotateX: -82, y: 6 },
       { opacity: 1, rotateX: 0, y: 0, duration: 0.6, ease: "power3.out", stagger: 0.09 },
     );
+  }
+
+  // 10-movil. El bloque de B6 entra con el mismo gesto que la columna de
+  // escritorio, no con uno nuevo: la prosa sube y se descubre, y las cuatro
+  // cifras VOLTEAN en el eje X, que es el gesto de cierre de esta escena
+  // desde B1. Empieza montado sobre el final del barrido de tinta para que
+  // la escena no gane tiempo por hacerse mas estrecha.
+  if (corto) {
+    if (mvLineas.length > 0) {
+      tl.fromTo(
+        mvLineas,
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.34, ease: "power2.out", stagger: 0.08 },
+        "-=0.34",
+      );
+    }
+    if (mvCifras.length > 0) {
+      tl.fromTo(
+        mvCifras,
+        { opacity: 0, rotateX: -82, y: 6 },
+        { opacity: 1, rotateX: 0, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.07 },
+        "-=0.1",
+      );
+    }
+    if (mvPie) {
+      tl.fromTo(mvPie, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, "-=0.16");
+    }
   }
 
   // 11. La tarjeta "Ahora mismo" brota de su luz: el circulo crece desde el

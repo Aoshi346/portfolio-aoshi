@@ -4270,6 +4270,9 @@
 :root[data-theme="caelestia"].js-cae-entrada .cae-meta,
 :root[data-theme="caelestia"].js-cae-entrada .cae-tit .cae-ln,
 :root[data-theme="caelestia"].js-cae-entrada .cae-statcol > div,
+:root[data-theme="caelestia"].js-cae-entrada .cae-mv-linea,
+:root[data-theme="caelestia"].js-cae-entrada .cae-mv-cifra,
+:root[data-theme="caelestia"].js-cae-entrada .cae-mv-pie,
 :root[data-theme="caelestia"].js-cae-entrada .cae-widget {
   visibility: hidden;
 }
@@ -4292,6 +4295,9 @@
   :root[data-theme="caelestia"].js-cae-entrada .cae-meta,
   :root[data-theme="caelestia"].js-cae-entrada .cae-tit .cae-ln,
   :root[data-theme="caelestia"].js-cae-entrada .cae-statcol > div,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-mv-linea,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-mv-cifra,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-mv-pie,
   :root[data-theme="caelestia"].js-cae-entrada .cae-widget {
     visibility: visible;
   }
@@ -6944,10 +6950,63 @@
     width: auto;
     margin-bottom: 0.625rem;
   }
+  /* `minmax(0, 1fr)` y no `1fr`: `1fr` es `minmax(auto, 1fr)` y ese `auto`
+     vale el `max-content` de la pieza, asi que las columnas NO encogen y la
+     tira desborda en vez de estrecharse. Medido a 360 px (telefonos
+     corrientes por debajo de los 390 que se venian midiendo): 351 de
+     contenido contra 332 de caja, con desplazamiento horizontal dentro del
+     panel. Es la misma trampa que ya documenta la banda media para la fila
+     de Obra. */
   :root[data-theme="caelestia"] .cae-cred-tira {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.625rem 0.5rem;
+  }
+  /* La marca es la figura de la pieza: sin `flex-shrink: 0` el flex de la
+     cabecera la aplasta cuando el texto es largo. Medida a 360: 24 px de
+     ancho por 48 de alto, con el icono descentrado dentro. */
+  :root[data-theme="caelestia"] .cae-cred-marca {
+    flex: 0 0 auto;
+  }
+  /* El cruce «Aparece en» es lo que mas empuja: dos nombres de obra en
+     Fraunces a 26 px no caben en un telefono. Baja de cuerpo, puede encoger
+     (`min-width: 0`, que un hijo de flex no tiene por defecto) y envuelve. */
+  :root[data-theme="caelestia"] .cae-cred-cruce {
+    min-width: 0;
+    max-width: none;
+  }
+  :root[data-theme="caelestia"] .cae-cred-cruce-lista li {
+    font-size: 1.0625rem;
+    line-height: 1.2;
+  }
+}
+
+/* En el TELEFONO (<=640) el cruce baja a su propia linea. Tres columnas en
+   332 px dejaban la frase de la pieza en tres lineas estrujadas entre la
+   figura y «Aparece en», que es lo que se veia mal aunque ya no desbordara.
+   Al bajar, la frase recupera el ancho entero y el cruce se alinea a la
+   izquierda como todo lo demas de la banda. Se queda fuera de la tableta
+   vertical, donde la cabecera mide 105 px y la fila de tres cabe bien. */
+@media (max-width: 40rem) {
+  /* Altura fija, como en escritorio (`height: 96px`) y por la misma razon,
+     que aqui ademas rompe el toque: la cabecera mide entre 164 y 254 px
+     segun la pieza, asi que al elegir una larga la tira entera baja hasta
+     90 px BAJO EL DEDO. Medido: el `pointerdown` cae sobre GSAP, la escena
+     se reordena al llegar el foco y el `click` posterior aterriza sobre
+     Next.js -- tocabas una pieza y se te elegia otra. El hueco reservado es
+     el peor caso real de las 23 (254 px a 360, 390 y 430). */
+  :root[data-theme="caelestia"] .cae-cred-cab {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    min-height: 15.875rem;
+  }
+  :root[data-theme="caelestia"] .cae-cred-cruce {
+    flex: 1 0 100%;
+    text-align: left;
+    margin-top: 0.25rem;
+  }
+  :root[data-theme="caelestia"] .cae-cred-cruce-lista {
+    justify-content: flex-start;
   }
   :root[data-theme="caelestia"] .cae-cred-pieza {
     width: auto;
