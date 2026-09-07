@@ -846,7 +846,7 @@ Gates 2 (obra), 4 y 6: rojo <literal> / verde <literal>"
 - Modify: `src/components/caelestiaCreditosBandeja.ts:196-260` (toque, onda única)
 - Modify: `scripts/measure-caelestia-movil.py` (gate 5, gate 6-Stack)
 
-- [ ] **Step 1: Gates 5 y 6-Stack en rojo**
+- [x] **Step 1: Gates 5 y 6-Stack en rojo**
 
 ```python
 def gate_stack(navegador, base: str) -> list[str]:
@@ -881,7 +881,7 @@ En `gate_entradas`, tras Obra:
 ```
 Correr `--solo 5,6`: rojo en «dentro de la caja» (1364 de ancho) y en el retardo (hoy el último es 260 + 3·190 + 7·34 = 1068).
 
-- [ ] **Step 2: El CSS de las bandas**
+- [x] **Step 2: El CSS de las bandas**
 
 ```css
   /* ---- Stack: bandas apiladas, piezas a cuatro columnas ---- */
@@ -936,7 +936,7 @@ Correr `--solo 5,6`: rojo en «dentro de la caja» (1364 de ancho) y en el retar
 ```
 Leer las reglas de escritorio (themes.css 5018-5140) y ajustar los nombres de clase a los reales de `construirPieza` y del montaje de bandas (`.cae-cred-rot`, `.cae-cred-tira`, `.cae-cred-terr`: comprobar cuál es el rótulo y cuál la tira de piezas).
 
-- [ ] **Step 3: Tocar elige y la onda única**
+- [x] **Step 3: Tocar elige y la onda única**
 
 En `mountCaelestiaCreditosBandeja`, `entrar` ya se dispara con `click` (y un tap dispara `click`): comprobar que `is-tocando` no se queda pegado tras el tap (no hay `mouseleave` en táctil): añadir `b.addEventListener("pointerup", salir)` cuando `pointerType === "touch"`:
 
@@ -956,7 +956,7 @@ Onda única: donde se calcula `--retardo`, decidir por estado (la banda no es un
 ```
 (`indice` es el contador global que ya existe en ese bucle.) Con `reduce` no se toca: la rama ya no pone retardos.
 
-- [ ] **Step 4: Build, lint, gates 2 (creditos), 5 y 6 en verde; arnés de Créditos de escritorio (nohup + PID) en verde**
+- [x] **Step 4: Build, lint, gates 2 (creditos), 5 y 6 en verde; arnés de Créditos de escritorio (nohup + PID) en verde**
 
 ```bash
 kill $(cat /tmp/preview-4213.pid); npm run build && (nohup npx vite preview --port 4213 --strictPort > /tmp/preview-4213.log 2>&1 & echo $! > /tmp/preview-4213.pid); sleep 3; npm run lint
@@ -965,7 +965,7 @@ nohup python3 scripts/measure-caelestia-creditos.py --base http://127.0.0.1:4213
 ```
 Captura 390x844 de `creditos` a 13:00 y mirarla.
 
-- [ ] **Step 4b: La banda media (901-1365)**
+- [x] **Step 4b: La banda media (901-1365)**
 
 Las cuatro bandas miden 1364 px fijos —la calle del rótulo son 158 px y cada módulo 142— y no
 caben a ningún ancho de tableta apaisada: desbordan a 1024 (1364 sobre 996), a 1180 (sobre 1152) y
@@ -998,7 +998,7 @@ alinearlas, no dejar que cada banda escale por su cuenta. Comprobarlo midiendo l
 Gate: familia 8b, a 1024x768 y 1180x820 el workspace de Stack no desborda y las 23 piezas están
 dentro de la caja y miden lo mismo. Verlo en rojo antes: hoy sale 1364/996.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css src/components/caelestiaCreditosBandeja.ts scripts/measure-caelestia-movil.py
