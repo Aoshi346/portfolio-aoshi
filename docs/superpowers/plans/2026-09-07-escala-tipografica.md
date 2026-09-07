@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Que ninguna talla tipográfica de Caelestia se elija a ojo: las 56 declaraciones con
+**Goal:** Que ninguna talla tipográfica de Caelestia se elija a ojo: las 57 declaraciones con
 literal pasan a los doce escalones de la escala, y un gate impide que vuelva a colarse una.
 
 **Architecture:** Tres movimientos sobre `src/themes/themes.css` y `src/style.css`: dos escalones
@@ -372,15 +372,32 @@ nuevo = """/*
 p.write_text(nuevo + s, encoding="utf-8")
 ```
 
-- [ ] **Step 2: Quitar los nueve respaldos de `style.css`**
+- [ ] **Step 2: Quitar los diecisiete respaldos, y reapuntar los tres consumidores de `--t-0`**
+
+Son 17, no 9: doce en `style.css` y cinco en `themes.css` (`.scene-nav-trigger`).
 
 ```python
 import pathlib, re
-p = pathlib.Path("src/style.css")
-s = p.read_text(encoding="utf-8")
-s, n = re.subn(r"var\((--t-\d+),\s*[0-9.]+rem\)", r"var(\1)", s)
-print(f"{n} respaldos quitados")   # esperado: 9
+total = 0
+for ruta in ("src/style.css", "src/themes/themes.css"):
+    p = pathlib.Path(ruta)
+    s, n = re.subn(r"var\((--t-\d+),[^)]*\)", r"var(\1)", p.read_text(encoding="utf-8"))
+    p.write_text(s, encoding="utf-8")
+    total += n
+    print(f"{ruta}: {n}")
+print(f"total {total}")   # esperado: 17
+```
+
+Y los tres consumidores de `var(--t-0)` en Contacto (`.cae-fundido-corn`, `.contacto-bar-label` y
+`.contacto-estado`) pasan a `var(--t-00)`: el token viejo valía 9px y el nombre ahora es del
+escalón de 10,67, así que sin reapuntarlos crecerían 1,67px en silencio. Con el cambio crecen 0,5.
+
+```python
+import pathlib, re
+p = pathlib.Path("src/themes/themes.css")
+s, n = re.subn(r"var\(--t-0\)", "var(--t-00)", p.read_text(encoding="utf-8"))
 p.write_text(s, encoding="utf-8")
+print(f"{n} consumidores reapuntados")   # esperado: 3
 ```
 
 - [ ] **Step 3: Build y familia estática, comprobando qué queda rojo**
@@ -764,7 +781,7 @@ filete medido con Range guarda su relacion con el retrato."
 
 ---
 
-## Task 6: Título (10 declaraciones)
+## Task 6: Título (11 declaraciones)
 
 **Files:**
 - Modify: `src/themes/themes.css` — bloque de `#hero`, la tarjeta «Ahora mismo» y la banda ≤900
@@ -772,11 +789,12 @@ filete medido con Range guarda su relacion con el retrato."
 **Interfaces:**
 - Consumes: los tokens de la Task 1.
 
-- [ ] **Step 1: Sustituir las diez**
+- [ ] **Step 1: Sustituir las once**
 
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
 | `.cae-firma` | 30px | `var(--t-4)` | +1,57 |
+| `.cae-firma` (segunda regla) | 1.125rem | `var(--t-2)` | −2,00 |
 | `.cae-term-line` | 20px | `var(--t-3)` | −1,33 |
 | `.cae-whd` | 9.5px | `var(--t-00)` | 0 |
 | `.cae-wnow` | 27px | `var(--t-4)` | −1,43 |

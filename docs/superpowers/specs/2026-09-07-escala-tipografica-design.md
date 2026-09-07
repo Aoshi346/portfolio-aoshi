@@ -18,8 +18,9 @@ Está declarada en `src/themes/themes.css`, una cuarta justa de razón 1,333, di
 (`:root[data-theme="vice"]` L77, `hyprland` L1185, `caelestia` L3549), con valores idénticos. Nunca
 en `:root` a secas.
 
-Medido sobre `themes.css`: **176 declaraciones de `font-size`, 108 con token y 68 con un literal**,
-con 39 valores distintos. El reparto no está repartido: **56 de esos literales son de Caelestia**,
+Medido sobre `themes.css` con los comentarios quitados —los cita dentro y contarlos daba literales
+fantasma—: **177 declaraciones de `font-size`, 108 con token y 69 con un literal**, con 39 valores
+distintos. El reparto no está repartido: **57 de esos literales son de Caelestia**,
 3 de Vice —dos de ellos texto dentro de comentarios, así que el número real es 1— y el resto
 genéricos. Esta es una deuda de Caelestia, no del proyecto.
 
@@ -36,7 +37,8 @@ font-size: var(--t-1, 0.66rem);   /* 10,56px */
 font-size: var(--t-1, 0.75rem);   /* 12px    */
 ```
 
-Nueve respaldos distintos para tres tokens. Mientras haya un tema puesto no se pintan nunca, pero
+**Diecisiete respaldos** para tres tokens, con nueve valores distintos: doce en `style.css` y
+cinco más en `themes.css`, en `.scene-nav-trigger`. Mientras haya un tema puesto no se pintan nunca, pero
 son el número que se pintaría si el token faltara, y el registro fósil de las tallas anteriores a
 los tokens. **Un `--t-1` que puede valer 8,48 o 12 según dónde se escriba no es un token, es una
 sugerencia.**
@@ -60,6 +62,18 @@ Tres cambios, ninguno de ellos cosmético:
 | `--t-9` | 119,77 | 1,333 |
 | `--t-10` | 159,66 | 1,333 |
 
+**`--t-0` ya existía, y vale 9 px.** Lo declaró B5 (Fundido) con este comentario: «un escalón por
+debajo del suelo, en la misma razón de la escala: 12 / 1,333 = 9 px — existe solo para la rotulación
+mono de Fundido, porque esos tres sitios llevaban literales sin declarar (10, 9 y 9,5 px), la sexta
+vez que ese defecto aparecía en el proyecto». Es decir: **esta misma reparación ya se empezó una
+vez, en pequeño, y se quedó en tres selectores.** Sus tres consumidores son la esquina, el rótulo de
+acto/destino y el estado de Contacto.
+
+Reutilizar el nombre con otro valor los cambiaría en silencio, así que el orden manda: `--t-00` es
+9,5 y `--t-0` es 10,67, y **los tres `var(--t-0)` de Contacto pasan a `var(--t-00)`**, de 9 a 9,5 px
+(+0,5). Un token cuyo número cambia bajo sus consumidores es peor que un literal, porque el literal
+al menos se ve.
+
 1. **Dos escalones nuevos por abajo, con razón 1,125 y no 1,333.** El cambio de razón es
    deliberado: a 10 px el ojo distingue un escalón de 1 px y a 120 px no distingue quince. Una
    razón única en todo el rango deja o sin tallas abajo (1,333 bajo 12 solo da 9, y luego 6,75) o
@@ -68,12 +82,12 @@ Tres cambios, ninguno de ellos cosmético:
 2. **La escala se declara UNA vez, en `:root` a secas.** Los tres bloques de tema dejan de
    repetirla. No es tocar el diseño de Vice: son exactamente los mismos números que su bloque ya
    declara, y su bloque deja de declararlos.
-3. **Desaparecen los nueve respaldos de `style.css`.** `var(--t-1)` sin coma. Un token que necesita
+3. **Desaparecen los diecisiete respaldos.** `var(--t-1)` sin coma. Un token que necesita
    respaldo es un token que no está garantizado; con la declaración en `:root` lo está.
 
 ## La migración
 
-Los **56 literales de Caelestia pasan al escalón más cercano de la escala nueva, sin excepciones.**
+Los **57 literales de Caelestia pasan al escalón más cercano de la escala nueva, sin excepciones.**
 Mediana del desplazamiento: **0,50 px**. Máximo: **3,90 px**. Seis se mueven más de 2 px y son los
 únicos que pueden pedir trabajo de verdad:
 
