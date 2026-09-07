@@ -11,6 +11,7 @@ Diez familias, cada una vista en rojo contra su sabotaje antes de aceptarse:
   6. entradas cortas, ancladas a estado (Tasks 2-5)
   7. contraste de los pares nuevos (Task 6)
   8. tableta: 1-3 a 768x1024 (Task 6)
+ 8b. Obra/Stack en banda media, 1024x768 y 1180x820 (Tasks 4b/5b)
   9. escritorio intacto: los arneses de escritorio se corren aparte (Task 6)
  10. consola sin errores
 
@@ -178,6 +179,91 @@ def gate_titulo(navegador, base: str) -> list[str]:
     return err
 
 
+def gate_obra(navegador, base: str) -> list[str]:
+    print("\n[4] Obra: carrusel con iman, la centrada es la elegida, el cajon la sigue")
+    ctx, pg, err = abrir(navegador, base)
+    ir_a(pg, "obra", 2600)
+    n = pg.evaluate("() => document.querySelectorAll('#obra .cae-obra-card').length")
+    comprobar(n == 5, f"hay cinco tarjetas ({n})")
+    for i in range(5):
+        r = pg.evaluate(
+            """(i) => new Promise(res => {
+            const cards = [...document.querySelectorAll('#obra .cae-obra-card')]; const c = cards[i];
+            const pista = c.parentElement;
+            // Desviacion de instrumento (no de plan): `c.offsetLeft` cuenta
+            // desde el ancestro POSICIONADO mas cercano, que aqui es el
+            // carril de workspaces, no `pista` -- incluye el desplazamiento
+            // de Obra como tercer panel y da un `x` disparatado (814px de
+            // mas, medido). Se mide la posicion real con
+            // `getBoundingClientRect()`, restando el rectangulo de `pista`.
+            const cr0 = c.getBoundingClientRect(), pr0 = pista.getBoundingClientRect();
+            const relLeft = cr0.left - pr0.left + pista.scrollLeft;
+            const x = relLeft - (pista.clientWidth - c.offsetWidth) / 2;
+            pista.scrollTo({ left: x, behavior: 'instant' });
+            pista.dispatchEvent(new Event('scrollend'));
+            setTimeout(() => { const pr = pista.getBoundingClientRect(), cr = c.getBoundingClientRect();
+              const centrada = Math.abs((cr.left + cr.right) / 2 - (pr.left + pr.right) / 2) < 24;
+              const sel = c.classList.contains('is-sel');
+              const titulo = document.querySelector('#obra .cae-obra-drawer-title h3')?.textContent?.trim();
+              res({ centrada, sel, titulo, esperado: c.querySelector('.cae-obra-caption')?.textContent?.trim() }); }, 600); })""",
+            i,
+        )
+        comprobar(r["centrada"], f"tarjeta {i + 1} llega al centro con scrollTo")
+        comprobar(r["sel"], f"tarjeta {i + 1} centrada es la elegida")
+        comprobar(
+            bool(r["titulo"]) and bool(r["esperado"]) and r["esperado"].startswith(r["titulo"][:6]),
+            f"el cajon muestra la tarjeta {i + 1} («{r['titulo']}»)",
+        )
+    ctx.close()
+    return err
+
+
+def gate_obra_banda_media(navegador, base: str) -> list[str]:
+    """Familia 8b, banda media (901-1365): tableta apaisada real, sin touch
+    (a diferencia de `abrir`, que fuerza is_mobile/has_touch para la banda
+    compacta). Anchos del spec: 1024x768 y 1180x820. Ancla la aseveracion al
+    scrollWidth/clientWidth del workspace, no a un pixel fijo, y comprueba
+    ademas que las cinco tarjetas siguen dentro de la caja."""
+    print("\n[8b] Obra en banda media (901-1365): sin desbordamiento horizontal, las cinco caben")
+    resultado_final: list[str] = []
+    for ancho, alto in ((1024, 768), (1180, 820)):
+        print(f"  -- {ancho}x{alto} --")
+        ctx = navegador.new_context(viewport={"width": ancho, "height": alto})
+        errores: list[str] = []
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: errores.append(str(e)))
+        pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
+        pg.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+        try:
+            pg.wait_for_function(
+                "document.documentElement.dataset.caeShell === 'workspaces'", timeout=12000
+            )
+        except Exception:
+            pg.wait_for_timeout(3000)
+        pg.wait_for_timeout(300)
+        ir_a(pg, "obra", 1600)
+        ws = workspace_activo(pg)
+        comprobar(
+            ws is not None and ws["scrollWidth"] <= ws["clientWidth"] + 1,
+            f"{ancho}x{alto}: Obra no desborda (scrollWidth={ws and ws['scrollWidth']} / clientWidth={ws and ws['clientWidth']})",
+        )
+        cajas = pg.evaluate(
+            """() => { const pista = document.querySelector('#obra .cae-obra-row');
+                const pr = pista.getBoundingClientRect();
+                return [...document.querySelectorAll('#obra .cae-obra-card')].map(c => {
+                    const cr = c.getBoundingClientRect();
+                    return cr.left >= pr.left - 1 && cr.right <= pr.right + 1;
+                }); }"""
+        )
+        comprobar(
+            len(cajas) == 5 and all(cajas),
+            f"{ancho}x{alto}: las cinco tarjetas caben dentro de la fila ({cajas})",
+        )
+        ctx.close()
+        resultado_final += errores
+    return resultado_final
+
+
 def gate_entradas(navegador, base: str) -> list[str]:
     """Anclado a estado: se lee el primer fotograma sincrono del gesto en la
     misma evaluate que dispara el cambio (tecnica de B5), y luego se espera
@@ -203,8 +289,16 @@ def gate_entradas(navegador, base: str) -> list[str]:
         const mira = () => { const c = document.querySelector('[data-ficha-cmd]'); const ok = c && c.textContent === 'neofetch';
           if (ok || performance.now() - t0 > 4000) res({ ok, ms: Math.round(performance.now() - t0) }); else requestAnimationFrame(mira); }; mira(); })""")
     comprobar(fin["ok"] and fin["ms"] < 2500, f"Quien soy: aterriza en menos de 2,5 s de sandbox ({fin['ms']} ms)")
+    # Obra: la caida, solo de la tarjeta visible y sus vecinas; el primer
+    # fotograma tras el cambio la tiene en el aire y luego aterriza entera.
+    ir_a(pg, "obra", 60)
+    aire = pg.evaluate("() => [...document.querySelectorAll('#obra .cae-obra-card')].map(c => getComputedStyle(c).opacity)")
+    comprobar(any(o != "1" for o in aire), f"Obra: la entrada arranca (opacidades {aire})")
+    pg.wait_for_timeout(2600)
+    suelo = pg.evaluate("() => [...document.querySelectorAll('#obra .cae-obra-card')].map(c => getComputedStyle(c).opacity)")
+    comprobar(all(o == "1" for o in suelo), f"Obra: las cinco aterrizan ({suelo})")
     ctx.close()
-    # Las tres siguientes se completan en las Tasks 3, 4 y 5 (una comprobacion por escena).
+    # Las dos siguientes se completan en la Task 5 (una comprobacion por escena).
     # Reduce: nada corre.
     ctx, pg, err2 = abrir(navegador, base, reduced_motion="reduce")
     est = pg.evaluate("() => ({ typed: document.querySelector('#hero .cae-term-typed')?.textContent, entrada: document.documentElement.classList.contains('js-cae-entrada') })")
@@ -216,20 +310,26 @@ def gate_entradas(navegador, base: str) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:4213")
-    ap.add_argument("--solo", default="", help="familias a correr, p.ej. 1,2")
+    ap.add_argument("--solo", default="", help="familias a correr, p.ej. 1,2 o 8b")
     args = ap.parse_args()
-    solo = {int(x) for x in args.solo.split(",") if x.strip()}
+    # Cadenas, no enteros: la familia de banda media es "8b" (spec la nombra
+    # asi), no un numero.
+    solo = {x.strip() for x in args.solo.split(",") if x.strip()}
     errores: list[str] = []
     with sync_playwright() as p:
         navegador = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
-        if not solo or 1 in solo:
+        if not solo or "1" in solo:
             errores += gate_ley(navegador, args.base)
-        if not solo or 2 in solo:
+        if not solo or "2" in solo:
             errores += gate_desbordamiento(navegador, args.base)
-        if not solo or 3 in solo:
+        if not solo or "3" in solo:
             errores += gate_titulo(navegador, args.base)
-        if not solo or 6 in solo:
+        if not solo or "4" in solo:
+            errores += gate_obra(navegador, args.base)
+        if not solo or "6" in solo:
             errores += gate_entradas(navegador, args.base)
+        if not solo or "8b" in solo:
+            errores += gate_obra_banda_media(navegador, args.base)
         navegador.close()
     print("\n[10] Consola sin errores")
     comprobar(not errores, f"cero errores de consola ({errores[:3]})")

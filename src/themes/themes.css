@@ -6794,6 +6794,156 @@
     display: block;
     line-height: 1.4;
   }
+
+  /*
+   * ---- Obra: carrusel con iman y cajon a una columna (Task 4) ----
+   * `.cae-obra-row` es grid `repeat(5, 1fr)` en escritorio (fila fija de
+   * 1316px, gate 2 desbordaba 1316 sobre 362 de ancho util). Aqui pasa a
+   * fila flex con scroll-snap: `x mandatory` + `scroll-snap-align: center`
+   * en cada tarjeta hace que el navegador la asiente en el centro del
+   * viewport tras el gesto, sin JS. La inclinacion alterna (TILTS, escrita
+   * inline por GSAP) deja de escribirse en este modo desde
+   * `caelestiaObraEditorial.ts` (Task 4 Step 3, `enCarrusel`): no hace
+   * falta un `!important` de rescate aqui.
+   */
+  :root[data-theme="caelestia"] .obra-rail {
+    padding: 1rem 0 1.625rem;
+    overflow-y: auto;
+  }
+  :root[data-theme="caelestia"] .cae-obra-row {
+    display: flex;
+    gap: 0.75rem;
+    /*
+     * El relleno lateral NO es un valor fijo: tiene que dejar sitio para
+     * que la PRIMERA y la ULTIMA tarjeta tambien puedan llegar al centro
+     * del carril (`scroll-snap-align: center`) -- con un relleno fijo de
+     * 1.25rem, el desplazamiento maximo se queda corto (medido: la tarjeta
+     * 5 solo llega a 976 de 1012 necesarios, 36px de sobra que la deja sin
+     * centrar) y la primera y la ultima nunca se seleccionan solas.
+     * `calc(50% - 7.8125rem)` es medio ancho del carril menos medio ancho
+     * de tarjeta (125px = 7.8125rem): con eso la tarjeta 1, en reposo
+     * (scrollLeft 0), ya nace centrada, y la ultima alcanza el centro
+     * exacto al desplazarse del todo.
+     */
+    padding-block: 0;
+    padding-inline: calc(50% - 7.8125rem);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    width: auto;
+  }
+  :root[data-theme="caelestia"] .cae-obra-row::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+  :root[data-theme="caelestia"] .cae-obra-card {
+    flex: 0 0 15.625rem; /* 250px, la medida del spec */
+    scroll-snap-align: center;
+  }
+  /*
+   * El cajon deja de ser el grid de 3 columnas / 2 filas de escritorio
+   * (`grid-template-areas: "texto captura meta" / "prosa captura meta"`) y
+   * pasa a apilar sus cuatro hijos EN EL ORDEN DEL DOM (`poblarCajon`:
+   * titleBlock, preview, meta, prose) -- ese orden ya es
+   * kicker/titulo/lead/nota-de-privado, captura, metadatos, Problema y
+   * Solucion, asi que `display: block` basta: no hace falta reescribir
+   * `grid-template-areas` a una columna.
+   */
+  :root[data-theme="caelestia"] .cae-obra-drawer {
+    display: block;
+    height: auto;
+    margin: 0.875rem 1rem 0;
+    padding: 1.125rem 1.25rem 1.375rem;
+    /* `container-type: size` de escritorio no tiene sentido con `height:
+       auto`: `.cae-obra-thumb` deja de leer `cqh` (regla siguiente). */
+    container-type: normal;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-title,
+  :root[data-theme="caelestia"] .cae-obra-drawer-preview,
+  :root[data-theme="caelestia"] .cae-obra-drawer-meta,
+  :root[data-theme="caelestia"] .cae-obra-prose {
+    margin-top: 0.875rem;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-title {
+    margin-top: 0;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-preview .cae-obra-thumb {
+    /* En escritorio la captura lee su alto de `cqh` (ver la regla base);
+       aqui vuelve al comportamiento normal de `.cae-obra-thumb`: ancho
+       100% y alto por `aspect-ratio` (ya en la regla base, sin tocarla). */
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-meta {
+    flex-direction: column;
+  }
+}
+
+/*
+ * Obra en la banda MEDIA (901-1365px): tableta apaisada y portatil estrecho
+ * (spec B6, Task 4 Step 4b). Aqui NO se apila en columna como en el
+ * telefono -- hay ancho de sobra y poca altura --, asi que la escena
+ * conserva la composicion de escritorio (la fila de cinco, fija) y lo que
+ * cede es el tamano de la pieza: `.cae-obra-row` sigue siendo el grid de
+ * escritorio (`repeat(5, 1fr)`), pero sus columnas tienen un `min-width`
+ * implicito de `auto` (el `max-content` del contenido de cada tarjeta), asi
+ * que a un ancho estrecho el grid desborda EN VEZ DE encoger las columnas
+ * -- el mismo fallo, no de tamano fijo, que las 23 fichas de Creditos: el
+ * ancho no se declaraba en ningun sitio, lo fijaba el contenido.
+ *
+ * Medido antes del cambio: 1160px de fila contra 996 utiles a 1024x768
+ * (ancho de tarjeta que pedia el contenido, no un valor en el CSS) y
+ * 1212 contra 1152 a 1180x820. Con `min-width: 0` la tarjeta puede encoger
+ * por debajo de su max-content y el grid reparte los 1fr de verdad; la
+ * proporcion 16:10 de `.cae-obra-thumb` no se toca (viene de la regla base,
+ * `aspect-ratio: 16/10` con `width: 100%`), asi que la imagen se estrecha
+ * con la tarjeta sin deformarse. De 1366 en adelante manda el escritorio.
+ */
+@media (min-width: 901px) and (max-width: 1365px) {
+  :root[data-theme="caelestia"] .cae-obra-card {
+    min-width: 0;
+  }
+  /*
+   * La leyenda en Fraunces italica es la pieza que menos margen de sobra
+   * tiene con tarjetas mas estrechas (16 px base, dos lineas a 250px de
+   * ancho de tarjeta); baja un paso para seguir cabiendo en una sola linea
+   * a las anchuras medidas (1024 y 1180) sin partirse.
+   */
+  :root[data-theme="caelestia"] .cae-obra-caption {
+    font-size: 12px;
+  }
+
+  /*
+   * El cajon, de tres columnas a dos (spec Obra: "el cajón sigue debajo, a
+   * dos columnas en vez de tres"). La fila de tarjetas por si sola ya cabe
+   * con `min-width: 0` (arriba), pero el cajon SEGUIA desbordando el
+   * workspace (medido: #obra 1164/996 con la fila ya arreglada): sus tres
+   * columnas de escritorio (`minmax(320px,1fr) auto 200px`) piden al menos
+   * 320+auto+200+52 de huecos, y la columna "auto" (captura) se dimensiona
+   * por el ALTO que le da `cqh` -- a la altura util de una tableta apaisada
+   * eso todavia pedia 568px de ancho, mas de lo que cabe. Columna 2 funde
+   * captura y metadatos en el mismo carril vertical (texto/prosa a la
+   * izquierda, captura encima de metadatos a la derecha, 220px fijos, el
+   * mismo ancho que ya usaba la columna de metadatos en escritorio) y la
+   * captura deja de leer `cqh` -- vuelve a `aspect-ratio` sobre un ancho
+   * fijo, igual que en la banda compacta.
+   */
+  :root[data-theme="caelestia"] .cae-obra-drawer {
+    grid-template-columns: minmax(0, 1fr) 13.75rem;
+    grid-template-areas:
+      "texto captura"
+      "prosa meta";
+    column-gap: 1.25rem;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-preview .cae-obra-thumb {
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+  :root[data-theme="caelestia"] .cae-obra-drawer-meta {
+    margin-top: 0.75rem;
+  }
 }
 
 /*
