@@ -584,6 +584,40 @@ def main():
             fallos.append("movil 390: %s" % d)
         if page.evaluate("document.documentElement.scrollWidth > 391"):
             fallos.append("movil 390: la pagina desplaza en horizontal")
+
+        # `.theme-signature` es compartida por los tres temas (bottom-5 right-5,
+        # `themeSignature.ts`) y no llevaba CSS propio de Caelestia: a 390px
+        # invadia el dock (medido antes del arreglo: dock [103,778,287,830] vs
+        # firma [247.9,800,370,824], solape real en x e y). Se comprueba en las
+        # cinco escenas, no solo en el hero: el dock no se mueve al cambiar de
+        # workspace pero conviene no asumirlo.
+        for indice in range(5):
+            if indice > 0:
+                page.eval_on_selector_all(
+                    "[data-cae-ws]", "(bs, i) => bs[i].click()", indice
+                )
+                page.wait_for_timeout(600)
+            solape = page.evaluate(
+                """() => {
+                    const dock = document.querySelector('[data-cae-dock]');
+                    const sig = document.querySelector('.theme-signature');
+                    if (!dock || !sig) return { ausente: true };
+                    if (getComputedStyle(sig).display === 'none') return { oculta: true };
+                    const dr = dock.getBoundingClientRect();
+                    const sr = sig.getBoundingClientRect();
+                    const overlap = !(dr.right < sr.left || dr.left > sr.right ||
+                                       dr.bottom < sr.top || dr.top > sr.bottom);
+                    return { overlap, dock: [dr.left, dr.top, dr.right, dr.bottom],
+                             sig: [sr.left, sr.top, sr.right, sr.bottom] };
+                }"""
+            )
+            if solape.get("ausente"):
+                fallos.append("movil 390: dock o firma de tema ausentes (escena %d)" % indice)
+            elif not solape.get("oculta") and solape.get("overlap"):
+                fallos.append(
+                    "movil 390: el dock y la firma de tema se solapan en la escena %d "
+                    "(dock %s, firma %s)" % (indice, solape["dock"], solape["sig"])
+                )
         ctx.close()
 
         # ---- 12. movimiento reducido: el cambio de workspace es instantaneo

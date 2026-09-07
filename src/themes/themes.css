@@ -5885,8 +5885,77 @@
   :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
     flex-direction: column;
     justify-content: center;
-    gap: 1.75rem;
+    /*
+     * 0.0625rem (1px), no el 1.75rem de origen: con el titular a `--t-7` y
+     * el sello a 196px de alto (los dos valores exactos del spec, ninguno de
+     * los dos se toca), el hueco que deja `.contacto-band` en flex:1 no
+     * alcanza para los 342,6 px que pide el contenido (titular 118,6 + este
+     * vano + sello 196) — el sello acababa pisando el filete de
+     * `.contacto-bars` 23 px (medido antes del ajuste). Reducir el vano es
+     * el unico numero de este reparto que no esta fijado por el spec
+     * (titular y sello si lo estan); se acompaña del recorte de
+     * `margin-bottom` de abajo porque uno solo no bastaba — a medio camino
+     * (0.875rem de vano + 0.75rem de margen) todavia quedaban 4 px de
+     * solape, medidos.
+     */
+    gap: 0.0625rem;
     align-items: stretch;
+    /*
+     * Suelo de la banda. A alturas cortas —un telefono con la barra del
+     * navegador a la vista: 740px de pagina dejan 674 de ventana— el reparto
+     * no cabe y el sello, que no encoge (`flex-shrink: 0` arriba, y con
+     * razon), desbordaba la banda y se sentaba sobre el filete y «CORREO»:
+     * medido -41,8px de aire a 390x740, con el mismo CSS que a 390x844 daba
+     * +10,2. Con `min-content` la banda no se comprime por debajo de su
+     * contenido, asi que la escena crece y la ventana la DESPLAZA, que es lo
+     * que ya hace cualquier workspace del carril (`overflow-y: auto`). A 844
+     * no cambia nada: alli el hueco ya alcanzaba.
+     */
+    min-height: min-content;
+    /*
+     * La banda arrastraba el relleno de escritorio (64px arriba, 32 abajo,
+     * medido) dentro de una ventana que como mucho tiene 692 utiles. Son 76px
+     * que no pintan nada y que hacen falta abajo: con ellos, «Disponible para
+     * proyectos» caia fuera de la ventana en las tres alturas probadas. Va en
+     * el bloque de ANCHO, no en el de alto: el sobrante existe tambien en el
+     * telefono alto (medido: 26px de mas a 390x844).
+     */
+    padding-block: 1rem 0.75rem;
+  }
+
+  /*
+   * El encabezado corrido tambien resta hueco vertical al mismo reparto: su
+   * `margin-bottom` de escritorio es 1.375rem (22px) y su `padding-bottom`
+   * 0.875rem (14px). Quitando el margen del todo y recortando el relleno a
+   * 0.625rem, junto con el `gap` casi nulo de arriba, el sello queda a
+   * ~12px de aire sobre el filete de `.contacto-bars` (medido tras el
+   * cambio) -- 8,2px con solo el margen a cero era demasiado justo, sin
+   * margen de sobra frente a variacion de fuente entre motores. La regla
+   * base de escritorio no se toca, esta es la unica declaracion dentro del
+   * media query de 390px.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-corn {
+    margin-bottom: 0;
+    padding-bottom: 0.625rem;
+  }
+
+  /*
+   * La ubicacion se retira del encabezado corrido, no el nombre: a 240px de
+   * hueco (medido) «Aoshi Blanco Sanz · Caracas, Venezuela» a este tracking
+   * parte en dos renglones de 13,5px cada uno (27px de alto donde antes solo
+   * habia 13,5) -- el nombre solo cabe en una linea (132px medidos). Misma
+   * tecnica de recorte que `.contacto-title` arriba: sigue en el arbol de
+   * accesibilidad, solo sale de la vista.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-corn-loc {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   /*
@@ -6159,6 +6228,21 @@
     left: 0.875rem;
     right: 0.875rem;
     max-width: none;
+  }
+
+  /*
+   * `.theme-signature` es compartida por los tres temas (`themeSignature.ts`,
+   * `fixed bottom-5 right-5`) y no lleva CSS propio de Caelestia: aqui choca
+   * con el dock, que a este ancho tambien vive pegado al borde inferior.
+   * Medido a 390x844: dock [103,778,287,830] vs firma [247.9,800,370,824] --
+   * se solapan en x=[247.9,287] / y=[800,824]. Ya es redundante con `.cae-mark`
+   * (la misma palabra "caelestia" en la barra) y va `aria-hidden="true"` de
+   * fabrica, asi que ocultarla aqui no quita nada del arbol de accesibilidad
+   * -- mismo criterio que ya se aplico a `.cae-mark` arriba, no una regla de
+   * rescate nueva.
+   */
+  :root[data-theme="caelestia"] .theme-signature {
+    display: none;
   }
 }
 
@@ -10274,5 +10358,362 @@
   .cae-cursor[data-estado="apagada"] ~ .cae-cursor-mancha .cae-cursor-gota {
     animation: none;
     transition: none;
+  }
+}
+
+/*
+ * Contacto en un telefono REAL: el alto manda tanto como el ancho
+ * (repaso de interfaces, 2026-09-06). El reparto de 390px se calibro contra
+ * una ventana de 844 de pagina —692 utiles— pero un telefono con la barra del
+ * navegador a la vista deja 588, y un iPhone SE 515. Medido ahi: el contenido
+ * pide 718px, asi que el telefono, LinkedIn y GitHub caian fuera de la ventana
+ * (3 de 4 canales a 740, los 4 a 667). Una escena de contacto que esconde sus
+ * canales se contradice a si misma, que es justo el argumento por el que B5
+ * metio los 390px en alcance.
+ *
+ * Ceden la frase y el sello, en PASOS DISCRETOS de la escala (nunca un
+ * `clamp()` continuo: la regla del proyecto), y el sello sigue la regla del
+ * propio Material 3 que esta escena ya aplica —la complejidad del lobulo baja
+ * con el tamano— manteniendo sus 8 lobulos. Los canales no ceden: son lo
+ * unico que esta escena existe para dar.
+ *
+ * Los dos cortes de alto son los dos formatos reales que hay debajo de 844:
+ * 820 cubre el telefono con barra de navegador (588-692 utiles) y 700 el
+ * telefono pequeno (iPhone SE y similares, ~515).
+ */
+@media (max-width: 640px) and (max-height: 820px) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    /* --t-6, no --t-7: 50,52px. A este paso «Cuentame» mide 186 sobre los 322
+       de medida util, asi que sigue entrando de sobra por ancho; lo que se
+       recupera son los 30px de alto que hacian falta abajo. */
+    font-size: var(--t-6);
+  }
+
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    /* 152px, no 196. El lobulo del sol a este tamano mide 16px de profundidad
+       (20,6 a 196): sigue leyendose como figura recortada, no como mancha. */
+    width: 9.5rem;
+    height: 9.5rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] {
+    padding-block: 0.75rem;
+  }
+
+
+  /*
+   * El bicho es lo unico del sello que NO escala con el: su ancho es un valor
+   * absoluto (5.75rem = 92px, calibrado contra el sello de 196). Con el sello
+   * en 152 se comia el 60% de la figura, y en 128 asomaba 4px POR ENCIMA de
+   * su borde (medido: sello top 203, bicho top 199) — se leia como un dibujo
+   * roto, no como un dino dentro de un troquel. Se mantiene la proporcion
+   * original, 47% del lado del sello.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-bicho {
+    width: 4.4375rem;
+    margin-left: -2.21875rem;
+  }
+
+  /*
+   * Los canales adelgazan su relleno, no su letra ni su numero: el valor
+   * sigue al mismo paso de escala y solo se recorta el aire. Medido antes:
+   * acto 74px de alto (10/12 de relleno), destino 56 (9/9), y el bloque
+   * entero 232. Con esto el acto queda en 58 y el destino en 48, los dos por
+   * encima del piso tactil de 48x48 de Material que esta escena ya vigila
+   * (gate 11 del arnes). Los 60px que se recuperan aqui y en el relleno de
+   * la escena son exactamente los que faltaban para que el telefono,
+   * LinkedIn y GitHub entren en una ventana de 588.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+    /* `.contacto-bar` en el selector NO es adorno: sin esa clase la regla
+       pierde el empate de especificidad contra la de escritorio, que si la
+       lleva, y no llega a aplicarse nunca. El fichero ya documenta esa misma
+       trampa dos veces mas arriba; esta es la tercera. */
+    padding-block: 0.25rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+    padding-block: 0.3125rem;
+  }
+
+  /*
+   * Los ultimos pixeles: el relleno de la escena (34/30 medidos, valores de
+   * escritorio) dejaba el pie de disponibilidad 23px por debajo del borde de
+   * una ventana de 616. El selector cuelga de `main[data-cae-track] >` porque
+   * asi lo hace la regla de escritorio que reparte ese relleno: sin ese
+   * mismo camino la declaracion pierde el empate de especificidad y no se
+   * aplica (medido: seguia en 34/30). Cuarta vez en la sesion.
+   */
+  :root[data-theme="caelestia"] main[data-cae-track] > [data-scene="contacto"] {
+    padding-block: 0.875rem 0.625rem;
+  }
+}
+
+@media (max-width: 640px) and (max-height: 700px) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    /* --t-5: 37,9px. Es el ultimo paso en que la frase sigue siendo el
+       primero de la escena por encima del valor de los canales (28,4). */
+    font-size: var(--t-5);
+  }
+
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    width: 8rem;
+    height: 8rem;
+  }
+
+  /* 47% del lado del sello, igual que arriba. */
+  :root[data-theme="caelestia"] .cae-fundido-bicho {
+    width: 3.75rem;
+    margin-left: -1.875rem;
+  }
+}
+
+/*
+ * Contacto en TABLETA (641-900px de ancho). Hasta aqui esta franja caia en el
+ * hueco entre el bloque de 640 y el escritorio: se quedaba con el troquel
+ * absoluto de escritorio, que sangra 460px, y el resultado medido a 768x1024
+ * era que el sello TAPABA la frase de cierre, el telefono se partia en cuatro
+ * renglones, GitHub quedaba cortado y la escena desbordaba 336px.
+ *
+ * Recibe el mismo tratamiento de columna que el telefono —es lo que declara
+ * el spec de B6 para la tableta, «el mismo layout con mas medida»— pero con
+ * sus propias medidas, no con las de 390: la frase sube un paso de escala y el
+ * sello crece, porque aqui SI hay sitio. No se ensancha el bloque de 640 a
+ * 900: ese bloque lleva reglas de las otras cuatro escenas calibradas a 390,
+ * y esas las esta rehaciendo la fase B6 aparte.
+ *
+ * Fuera de esta franja sigue sin promesa la tableta APAISADA (1024x768 y
+ * similares, por encima de 900 de ancho): ahi manda el escritorio y la escena
+ * desborda. Es el mismo hueco de 901-1365 que el spec de B6 deja declarado.
+ */
+@media (min-width: 641px) and (max-width: 900px) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 1rem;
+    /* Igual que en el telefono: la banda no se comprime por debajo de su
+       contenido, asi que el sello no puede desbordarla y pisar el filete. */
+    min-height: min-content;
+    padding-block: 1.5rem 1rem;
+  }
+
+  /*
+   * El troquel deja de sangrar y pasa a ser un sello, como a 390, pero de
+   * 16rem: a 740 de ventana los 196px del telefono se leerian como un sello
+   * de solapa, y los 460 de escritorio no caben. `flex-shrink: 0` por el
+   * mismo motivo que a 390 — aqui es un item de flex real y el motor lo
+   * aplastaria hasta dejarlo rectangular.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    align-self: center;
+    flex-shrink: 0;
+    width: 16rem;
+    height: 16rem;
+  }
+
+  /* 47% del lado del sello, la proporcion original del bicho en el troquel. */
+  :root[data-theme="caelestia"] .cae-fundido-bicho {
+    left: 50%;
+    bottom: 26%;
+    width: 7.5rem;
+    margin-left: -3.75rem;
+  }
+
+  /*
+   * La frase sube un paso respecto al telefono (--t-8, 89,85px): a 608px de
+   * medida util «Cuentame» mide 330 y entra con sitio de sobra, y a --t-10
+   * (el valor de escritorio) no cabria.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    font-size: var(--t-8);
+  }
+
+  /*
+   * Los canales, en la misma rejilla que a 390: los dos ACTOS ocupan fila
+   * entera y los dos DESTINOS se reparten la ultima. En escritorio son cuatro
+   * columnas y aqui no caben: el telefono se partia en cuatro renglones.
+   * `margin: 0` y el selector con `.contacto-bar` por el mismo motivo que en
+   * el bloque de 390 — el truco de zona de toque con margen negativo solo
+   * funciona con el hueco de escritorio, y sin la clase la regla pierde el
+   * empate de especificidad.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: 0.75rem 1.25rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+    margin: 0;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+    grid-column: span 1;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+    margin: 0;
+  }
+}
+
+/*
+ * Contacto en la banda MEDIA (901-1365px): tableta apaisada y portatil
+ * estrecho. Aqui NO se apila en columna como en el telefono: hay ancho de
+ * sobra y poca altura (a 1024x768 la ventana util son 996x616), asi que la
+ * escena conserva su composicion de escritorio —frase a la izquierda, sello a
+ * la derecha— y lo que cede es el tamano de las piezas fijas.
+ *
+ * Medido antes del cambio, a 1024x768: el troquel de escritorio (460px, a
+ * sangre) se comia la mitad derecha y TAPABA la frase («Cuentame» quedaba
+ * cortado por el sello), el telefono se partia en dos renglones y LinkedIn en
+ * tres. De 1366 en adelante manda el escritorio y esto no aplica.
+ */
+@media (min-width: 901px) and (max-width: 1365px) {
+  /*
+   * El troquel deja de sangrar y se queda en 20rem: a 996 de ventana, los 460
+   * de escritorio no dejan medida para la frase, y los 256 de la tableta
+   * vertical se leerian como un sello de solapa en una escena tan ancha.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    align-self: center;
+    flex-shrink: 0;
+    /*
+     * 16rem, no 20: en apaisado el limite no es el ancho sino el ALTO. A
+     * 1024x768 la ventana util son 996x616 y el reparto pide corn 25 + banda
+     * + canales 210 + pie 14 + relleno: con el sello en 320 los cuatro
+     * canales y el pie caian fuera de la ventana (medido).
+     */
+    width: 14rem;
+    height: 14rem;
+  }
+
+  /* 47% del lado del sello, la proporcion original del bicho en el troquel. */
+  :root[data-theme="caelestia"] .cae-fundido-bicho {
+    left: 50%;
+    bottom: 26%;
+    width: 6.5625rem;
+    margin-left: -3.28125rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
+    align-items: center;
+    gap: 2rem;
+    min-height: min-content;
+    /* El relleno de escritorio (64/32) no cabe en 616px de ventana. */
+    padding-block: 0.75rem 0.5rem;
+  }
+
+  /*
+   * --t-8 (89,85px). A --t-10 la frase no cabe al lado del sello, y a --t-9
+   * (119,77) se parte en TRES renglones y la banda crece a 413px de alto:
+   * medido, con eso tres canales y el pie caian fuera de una ventana de 616.
+   * A --t-8 son dos renglones y el reparto entra entero.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    font-size: var(--t-8);
+  }
+
+  /*
+   * Los actos adelgazan su relleno, como en la banda compacta y por el mismo
+   * motivo: el alto es el recurso escaso en apaisado. El valor y su etiqueta
+   * no cambian de tamano. Se queda por encima del piso tactil de 48x48.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+    padding-block: 0.375rem;
+  }
+
+  /*
+   * Los canales, en la misma rejilla que en la banda compacta: los dos ACTOS
+   * ocupan fila entera y los dos DESTINOS se reparten la ultima. Las cuatro
+   * columnas de escritorio piden mas ancho del que hay: a 1024 el telefono se
+   * partia en dos renglones y LinkedIn en tres. `.contacto-bar` en el selector
+   * del `margin: 0` no es adorno: sin esa clase pierde el empate de
+   * especificidad contra la regla de escritorio y no se aplica.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: 0.75rem 1.5rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="acto"] {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+    margin: 0;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] [data-canal="destino"] {
+    grid-column: span 1;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+    margin: 0;
+  }
+}
+
+/*
+ * Banda media y ALTURA corta (901-1365 de ancho, hasta 850 de alto): la
+ * tableta apaisada real. A 1024x768 la ventana util son 996x616, y ahi el
+ * limite no es el ancho sino el alto: con la frase a --t-8 la banda medía 355
+ * px y tres canales y el pie quedaban fuera. Se baja un paso mas la frase y el
+ * sello, que es lo unico que puede ceder: los canales son lo que esta escena
+ * existe para dar.
+ */
+@media (min-width: 901px) and (max-width: 1365px) and (max-height: 850px) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    font-size: var(--t-7);
+  }
+
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    width: 11.5rem;
+    height: 11.5rem;
+  }
+
+  /* 47% del lado del sello, la proporcion original del bicho. */
+  :root[data-theme="caelestia"] .cae-fundido-bicho {
+    width: 5.375rem;
+    margin-left: -2.6875rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-band {
+    gap: 1.25rem;
+    padding-block: 0.5rem 0.25rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+    padding-block: 0.3125rem;
+  }
+
+  /*
+   * Los ultimos pixeles: el relleno de la escena (34/30 medidos, valores de
+   * escritorio) dejaba el pie de disponibilidad 23px por debajo del borde de
+   * una ventana de 616. El selector cuelga de `main[data-cae-track] >` porque
+   * asi lo hace la regla que reparte ese relleno en escritorio: sin ese mismo
+   * camino la declaracion pierde el empate de especificidad y no se aplica.
+   */
+  :root[data-theme="caelestia"] main[data-cae-track] > [data-scene="contacto"] {
+    padding-block: 0.875rem 0.625rem;
+  }
+
+  /* Los tres pixeles que quedaban: el aire sobre el pie baja de 16 a 8. */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado {
+    margin-top: 0.5rem;
   }
 }
