@@ -791,7 +791,7 @@ def main() -> int:
         # escritorio, que sangra 460px. Medido a 768x1024: el sello TAPABA la
         # frase de cierre, el telefono se partia en cuatro renglones y GitHub
         # quedaba cortado.
-        for ancho, alto in ((768, 1024), (820, 1180)):
+        for ancho, alto in ((768, 1024), (820, 1180), (1024, 768), (1180, 820)):
             ctx, pg, err = nueva_pagina_en_contacto(
                 navegador, base, viewport={"width": ancho, "height": alto}
             )
@@ -824,7 +824,9 @@ def main() -> int:
             print(f"       {ancho}x{alto}: {tab}")
             comprobar(not tab["solapan"],
                       f"a {ancho}x{alto} el sello no tapa la frase de cierre")
-            comprobar(tab["sello"] <= 300,
+            # En apaisado el sello es mas pequeno todavia: el limite ahi es el
+            # alto (616 utiles a 1024x768), no el ancho.
+            comprobar(tab["sello"] <= (300 if alto > ancho else 240),
                       f"a {ancho}x{alto} el troquel es un sello, no el de escritorio a sangre "
                       f"({tab['sello']}px)")
             comprobar(tab["dinoDentro"], f"a {ancho}x{alto} el bicho cabe dentro del sello")
