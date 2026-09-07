@@ -4373,6 +4373,11 @@
 :root[data-theme="caelestia"] .cae-widget:hover::after {
   opacity: 0.06;
 }
+/* B6 (spec 2026-09-07-caelestia-movil): en escritorio la tarjeta manda, el
+   bloque de prosa movil no se enciende. Se activa dentro del @media de B6. */
+:root[data-theme="caelestia"] .cae-movil {
+  display: none;
+}
 :root[data-theme="caelestia"] .cae-wcab {
   display: flex;
   align-items: center;
@@ -6626,6 +6631,101 @@
   }
   :root[data-theme="caelestia"] main[data-cae-track] > *::-webkit-scrollbar {
     width: 0;
+  }
+
+  /* ---- Titulo: Silencioso (maqueta 6, Task 2) ---- */
+  /* El `.hero` compartido trae `py-24` de Tailwind (96px arriba y abajo,
+     192px en total) pensado para un `min-h-screen` de escritorio. Bajo
+     Caelestia la escena es el workspace de altura fija del carril (692px de
+     hueco a 390x844, medido): con el padding de escritorio puesto, cabecera
+     (283px) + bloque movil (225px) + 192px de padding suman 700, 8px por
+     encima del hueco -- el fallo real del gate "cabe entero". Se recorta
+     solo aqui, no se toca `.hero` para los otros dos temas.
+   */
+  :root[data-theme="caelestia"] .hero {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  :root[data-theme="caelestia"] .cae-widget,
+  :root[data-theme="caelestia"] .cae-statcol,
+  :root[data-theme="caelestia"] .cae-trazo-stage {
+    display: none;
+  }
+  :root[data-theme="caelestia"] .cae-movil {
+    display: block;
+    padding: 0 1.375rem 1.5rem;
+  }
+  :root[data-theme="caelestia"] .cae-head {
+    /* la cabecera deja de ser el bloque absoluto de 1080px: fluye */
+    position: static;
+    width: auto;
+    padding: 1.625rem 1.375rem 0;
+  }
+  :root[data-theme="caelestia"] .cae-kicker {
+    display: block;
+  }
+  :root[data-theme="caelestia"] .cae-firma {
+    font-size: 1.125rem; /* 18px */
+  }
+  :root[data-theme="caelestia"] .cae-regla {
+    display: none;
+  }
+  :root[data-theme="caelestia"] .cae-meta {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.5625rem;
+  }
+  :root[data-theme="caelestia"] .cae-tit {
+    margin-top: 7.5rem; /* el titular a media altura: aire, no relleno */
+    text-align: left;
+  }
+  :root[data-theme="caelestia"] .cae-tit .cae-ln {
+    display: block;
+    white-space: nowrap;
+    /* Paso discreto de la escala, no clamp: dos moderadas y una grande. */
+    font-size: var(--t-3);
+    line-height: 1.02;
+  }
+  :root[data-theme="caelestia"] .cae-tit .cae-ln:last-child {
+    font-size: var(--t-7);
+    margin-top: 0.25rem;
+    line-height: 0.92;
+  }
+  :root[data-theme="caelestia"] .cae-mv-prosa {
+    margin: 1.625rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    color: var(--cae-on-surface-variant);
+  }
+  :root[data-theme="caelestia"] .cae-mv-linea {
+    display: block;
+  }
+  :root[data-theme="caelestia"] .cae-mv-linea b {
+    font-weight: 600;
+    color: var(--cae-on-surface);
+  }
+  :root[data-theme="caelestia"] .cae-mv-cifras {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 1rem;
+    margin: 1.375rem 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cae-on-surface-variant);
+  }
+  :root[data-theme="caelestia"] .cae-mv-cifra b {
+    font-family: var(--font-display);
+    font-variation-settings: var(--cae-display-axes-ficha);
+    font-size: 0.9375rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--cae-on-surface);
+    margin-right: 0.25rem;
+  }
+  :root[data-theme="caelestia"] .cae-mv-pie {
+    margin-top: 1.375rem;
   }
 }
 

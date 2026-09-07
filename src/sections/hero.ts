@@ -176,6 +176,31 @@ export function createHero(): HTMLElement {
   ]);
 
   /*
+   * B6 (spec 2026-09-07-caelestia-movil, «Titulo: Silencioso»): por debajo de
+   * 900px la tarjeta no se monta y lo que dice se lee en tres lineas de
+   * prosa, mas las cuatro cifras como una linea de mono. Es OTRO DOM, oculto
+   * en escritorio desde themes.css: no se reescala la tarjeta. Los literales
+   * son los mismos de arriba (identity, education[0], experience[0], stats);
+   * `semestre` es el parentesis de education[0].period, ya extraido.
+   */
+  const lineaProsa = (fuerte: string, resto: string): HTMLElement =>
+    el("span", "cae-mv-linea", [el("b", "", [fuerte]), resto]);
+  const prosa = el("p", "cae-mv-prosa", [
+    lineaProsa(identity.now, ` en ${identity.location}.`),
+    lineaProsa(education[0].degree, `, ${semestre}.`),
+    lineaProsa(experience[0].organization, `, ${experience[0].period}.`),
+  ]);
+  const cifrasMovil = el(
+    "p",
+    "cae-mv-cifras",
+    stats.map((s) => el("span", "cae-mv-cifra", [el("b", "", [s.value]), el("small", "", [s.label])])),
+  );
+  const luzMovil = el("i", "cae-wluz", []);
+  luzMovil.setAttribute("aria-hidden", "true");
+  const pillaMovil = el("span", "cae-pilla cae-pilla-mv", [luzMovil, identity.availability]);
+  const bloqueMovil = el("div", "cae-movil", [prosa, cifrasMovil, el("div", "cae-mv-pie", [pillaMovil])]);
+
+  /*
    * La entrada de escena de Caelestia (tarea 6): una terminal falsa que
    * teclea `whoami` y, al terminar, el nombre trazado con los contornos
    * reales de Fraunces aterriza sobre `.cae-firma`. `montarEntrada`
@@ -201,7 +226,7 @@ export function createHero(): HTMLElement {
   const section = el(
     "section",
     "hero relative flex min-h-screen flex-col justify-center overflow-hidden px-6 py-24 md:px-12",
-    [eyebrow, divider, surface, widget, caeHead, corner, term, trazoStage],
+    [eyebrow, divider, surface, widget, caeHead, bloqueMovil, corner, term, trazoStage],
   );
   section.setAttribute("data-scene", "hero");
 

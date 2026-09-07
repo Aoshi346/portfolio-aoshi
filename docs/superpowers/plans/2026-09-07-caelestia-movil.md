@@ -318,7 +318,7 @@ Gate 1 (measure-caelestia-movil.py): rojo <linea literal> / verde <linea literal
 - Produces: DOM `.cae-movil` con hijos `.cae-mv-prosa` (tres `<span class="cae-mv-linea">`), `.cae-mv-cifras` (cuatro `<span class="cae-mv-cifra">` con `<b>` valor y `<small>` rótulo) y `.cae-mv-pie` (la pastilla `.cae-pilla` clonada como segundo nodo `cae-pilla-mv`).
 - Consumes: `abrir`, `ir_a`, `comprobar` de Task 0.
 
-- [ ] **Step 1: Gate 3 (Título silencioso) y 6-Título en el arnés, en rojo**
+- [x] **Step 1: Gate 3 (Título silencioso) y 6-Título en el arnés, en rojo**
 
 Añadir a `scripts/measure-caelestia-movil.py` (antes de `main`), y en `main` las llamadas `if not solo or 3 in solo: errores += gate_titulo(navegador, args.base)` y `if not solo or 6 in solo: errores += gate_entradas(navegador, args.base)`:
 
@@ -390,7 +390,7 @@ def gate_entradas(navegador, base: str) -> list[str]:
 
 Correr `--solo 3,6`: esperado ROJO en «la tarjeta no pinta», «el bloque movil pinta», «el trazo no pinta». Copiar las líneas.
 
-- [ ] **Step 2: El DOM del bloque móvil en `hero.ts`**
+- [x] **Step 2: El DOM del bloque móvil en `hero.ts`**
 
 Justo después de la construcción de `widget` (tras `el("div", "cae-wpie", [disponible]),\n  ]);`), añadir:
 
@@ -422,7 +422,7 @@ Justo después de la construcción de `widget` (tras `el("div", "cae-wpie", [dis
 ```
 Comprobar que `stats` está importado en `hero.ts` (ya se usa para `statcol`; si el nombre difiere, usar el mismo que `statcol`). Añadir `bloqueMovil` al `section` después de `caeHead`: `[eyebrow, divider, surface, widget, caeHead, bloqueMovil, corner, term, trazoStage]`.
 
-- [ ] **Step 3: El CSS de Título en el bloque de B6**
+- [x] **Step 3: El CSS de Título en el bloque de B6**
 
 Dentro de `@media (max-width: 900px) { ... }` de Task 1, añadir:
 
@@ -512,7 +512,7 @@ Dentro de `@media (max-width: 900px) { ... }` de Task 1, añadir:
 ```
 Y FUERA del `@media`, en la sección de Título de escritorio (junto a `.cae-widget`), la regla que oculta el bloque en escritorio: `:root[data-theme="caelestia"] .cae-movil { display: none; }` más `.cae-movil { display: none; }` en `style.css` junto a `.cae-head` (Vice/Hyprland no lo enseñan nunca). Comprobar con `grep -n '\-\-t-3\|--t-7' src/themes/themes.css src/style.css` que los tokens existen; si la escala se llama distinto, usar los dos pasos equivalentes (~26 px y ~64 px medidos) y anotarlo en el commit. **Comprobar a mano** que `justificarTitular` (`caelestia.titulo.ts:32`) no escribe `font-size` inline sobre `.cae-ln` en móvil: si lo hace, en Step 4 se le pasa por alto cuando `statcol` no pinta.
 
-- [ ] **Step 4: La rama corta de la entrada y la figura viva**
+- [x] **Step 4: La rama corta de la entrada y la figura viva**
 
 En `src/themes/caelestia.titulo.ts`, en `montarEntrada`, tras la lectura de refs y antes del bloque de `prefers-reduced-motion`:
 
@@ -536,7 +536,7 @@ En `montarFiguraViva`, al principio:
 ```
 (comprobar el nombre real de la constante nula que ya exporta el módulo, `FIGURA_NULA` en la firma de `montarEntrada`).
 
-- [ ] **Step 5: Build, lint, gates 3 y 6 en verde, y el arnés de Título de escritorio intacto**
+- [x] **Step 5: Build, lint, gates 3 y 6 en verde, y el arnés de Título de escritorio intacto**
 
 ```bash
 kill $(cat /tmp/preview-4213.pid); npm run build && (nohup npx vite preview --port 4213 --strictPort > /tmp/preview-4213.log 2>&1 & echo $! > /tmp/preview-4213.pid); sleep 3; npm run lint

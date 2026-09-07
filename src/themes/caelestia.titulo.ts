@@ -32,6 +32,14 @@ import { figuraParametrica } from "../utils/figurasM3";
 export function justificarTitular(root: HTMLElement, medida = 1080, altoMax = 250): void {
   const tit = root.querySelector<HTMLElement>(".cae-tit");
   if (!tit) return;
+  // B6 (spec 2026-09-07-caelestia-movil): por debajo de 900px `.cae-statcol`
+  // no pinta (themes.css) y las lineas del titular usan tokens fijos de la
+  // escala, no la medida justificada de escritorio. Sin esta guarda, este
+  // `Range` sobre .cae-ln escribiria un `font-size` inline que gana SIEMPRE
+  // al `font-size: var(--t-3/--t-7)` del @media (misma especificidad, pero
+  // inline > hoja de estilos), tapando el paso discreto.
+  const statcol = root.querySelector<HTMLElement>(".cae-statcol");
+  if (statcol && statcol.getClientRects().length === 0) return;
   const lineas = Array.from(tit.querySelectorAll<HTMLElement>(".cae-ln"));
   if (lineas.length === 0) return;
 
@@ -135,6 +143,11 @@ export function montarEntrada(
 
   const paths = Array.from(trazo.querySelectorAll<SVGPathElement>("path"));
 
+  // B6: por debajo del corte la tarjeta, la columna y el trazo no pintan
+  // (themes.css). Se decide por «pinta o no», nunca por innerWidth: asi el
+  // mismo criterio vale para tableta y para cualquier corte futuro.
+  const corto = widget !== null && widget.getClientRects().length === 0;
+
   // Movimiento reducido: sin timeline, salto directo al estado final. La
   // terminal desaparece del arbol visual (`display: none`, no solo
   // opacidad) y la firma queda puesta — es lo que comprueba
@@ -213,35 +226,42 @@ export function montarEntrada(
   // no esta en pantalla.
   tl.to(term, { opacity: 0, y: -8, duration: 0.26, ease: "power2.in" });
 
-  // 5. El trazo: cada glifo dibuja su contorno.
-  tl.to(paths, {
-    strokeDashoffset: 0,
-    duration: 0.52,
-    ease: "power1.inOut",
-    stagger: 0.045,
-  });
-
-  // 6. Relleno, con el trazo desvaneciendose a la vez.
-  tl.to(paths, { fillOpacity: 1, duration: 0.3, stagger: 0.03, ease: "power1.out" }, "-=0.42");
-  tl.to(paths, { strokeOpacity: 0, duration: 0.3 }, "<");
-
-  // 7. El aterrizaje: hay que medir en este instante, no antes (el layout de
-  // .cae-firma depende de la justificacion del titular, que ya corrio, pero
-  // medir fuera del callback capturaria el rect de ANTES de que el trazo
-  // llegue a este punto de la timeline).
-  tl.add(() => {
-    const a = trazo.getBoundingClientRect();
-    const b = firma.getBoundingClientRect();
-    gsap.to(trazo, {
-      x: b.left + b.width / 2 - (a.left + a.width / 2),
-      y: b.top + b.height / 2 - (a.top + a.height / 2),
-      scale: b.width / a.width,
-      duration: 0.66,
-      ease: "power3.inOut",
+  // 5-7. El trazo, el relleno y el aterrizaje de la firma trazada. En movil
+  // (`corto`) `.cae-trazo-stage` no pinta (themes.css): la firma se muestra
+  // directa en cuanto la terminal se ha ido, sin trazar nada.
+  if (!corto) {
+    // 5. El trazo: cada glifo dibuja su contorno.
+    tl.to(paths, {
+      strokeDashoffset: 0,
+      duration: 0.52,
+      ease: "power1.inOut",
+      stagger: 0.045,
     });
-    gsap.to(trazo, { opacity: 0, duration: 0.2, delay: 0.54, ease: "power2.in" });
-    gsap.to(firma, { opacity: 1, duration: 0.2, delay: 0.56, ease: "power2.out" });
-  });
+
+    // 6. Relleno, con el trazo desvaneciendose a la vez.
+    tl.to(paths, { fillOpacity: 1, duration: 0.3, stagger: 0.03, ease: "power1.out" }, "-=0.42");
+    tl.to(paths, { strokeOpacity: 0, duration: 0.3 }, "<");
+
+    // 7. El aterrizaje: hay que medir en este instante, no antes (el layout
+    // de .cae-firma depende de la justificacion del titular, que ya corrio,
+    // pero medir fuera del callback capturaria el rect de ANTES de que el
+    // trazo llegue a este punto de la timeline).
+    tl.add(() => {
+      const a = trazo.getBoundingClientRect();
+      const b = firma.getBoundingClientRect();
+      gsap.to(trazo, {
+        x: b.left + b.width / 2 - (a.left + a.width / 2),
+        y: b.top + b.height / 2 - (a.top + a.height / 2),
+        scale: b.width / a.width,
+        duration: 0.66,
+        ease: "power3.inOut",
+      });
+      gsap.to(trazo, { opacity: 0, duration: 0.2, delay: 0.54, ease: "power2.in" });
+      gsap.to(firma, { opacity: 1, duration: 0.2, delay: 0.56, ease: "power2.out" });
+    });
+  } else {
+    tl.set(firma, { opacity: 1 });
+  }
 
   // 8. La regla se abre y la meta entra detras de ella.
   if (regla) tl.fromTo(regla, { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out" });
@@ -265,8 +285,9 @@ export function montarEntrada(
   }
 
   // 10. Volteo de las cifras: cada bloque cae de boca abajo, en el eje X, con
-  // perspectiva propia para que se note el giro.
-  if (bloques.length > 0) {
+  // perspectiva propia para que se note el giro. En movil `.cae-statcol` no
+  // pinta: no hay nada que voltear.
+  if (!corto && bloques.length > 0) {
     gsap.set(bloques, { transformPerspective: 600 });
     tl.fromTo(
       bloques,
@@ -278,8 +299,9 @@ export function montarEntrada(
   // 11. La tarjeta "Ahora mismo" brota de su luz: el circulo crece desde el
   // punto de la pastilla, la figura florece de circulo a figura y el texto se
   // posa. Al terminar se limpia el clip-path inline: una mascara viva sobre
-  // la tarjeta rompe el hover y la capa de estado.
-  if (widget && brote) {
+  // la tarjeta rompe el hover y la capa de estado. En movil la tarjeta no
+  // pinta (B6): nada que brotar.
+  if (!corto && widget && brote) {
     const radio = { r: 0 };
     const { cx, cy } = brote;
     tl.to(
@@ -434,6 +456,10 @@ export function montarFiguraViva(gsap: Gsap, root: HTMLElement): FiguraVivaHandl
   const tarjeta = root.querySelector<HTMLElement>("#hero .cae-widget");
   const figura = tarjeta?.querySelector<HTMLElement>(".cae-wfig") ?? null;
   if (!tarjeta || !figura) return FIGURA_NULA;
+  // B6 (spec 2026-09-07-caelestia-movil): por debajo de 900px la tarjeta no
+  // pinta (themes.css). No animar lo que no se ve: sin esta guarda, el bucle
+  // de 24s y el `pointermove` seguirian corriendo sobre un nodo invisible.
+  if (figura.getClientRects().length === 0) return FIGURA_NULA;
 
   const estado = { fase: 0 };
   const relieve = { v: 1 };

@@ -139,6 +139,72 @@ def gate_desbordamiento(navegador, base: str, dispositivo: str = "movil") -> lis
     return err
 
 
+def literal_content(campo: str) -> str:
+    """Lee un literal de src/data/content.ts sin evaluarlo (regex sobre el fuente)."""
+    import pathlib
+    import re
+
+    fuente = (pathlib.Path(__file__).resolve().parent.parent / "src/data/content.ts").read_text(encoding="utf-8")
+    m = re.search(rf'^\s*{re.escape(campo)}:\s*"([^"]+)"', fuente, re.MULTILINE)
+    if not m:
+        raise SystemExit(f"content.ts no tiene el literal {campo}")
+    return m.group(1)
+
+
+def gate_titulo(navegador, base: str) -> list[str]:
+    print("\n[3] Titulo silencioso: sin tarjeta ni columna, prosa y cifras literales, cabe entero")
+    ctx, pg, err = abrir(navegador, base)
+    pintan = pg.evaluate("""() => {
+        const p = sel => { const e = document.querySelector(sel); return e ? e.getClientRects().length : -1; };
+        return { widget: p('#hero .cae-widget'), statcol: p('#hero .cae-statcol'), trazo: p('#hero .cae-trazo-stage'),
+                 movil: p('#hero .cae-movil'), fig: !!document.querySelector('#hero .cae-wfig[style*="clip-path"]') };
+    }""")
+    comprobar(pintan["widget"] == 0, f"la tarjeta Ahora mismo no pinta (rects={pintan['widget']})")
+    comprobar(pintan["statcol"] == 0, f"la columna de cifras no pinta (rects={pintan['statcol']})")
+    comprobar(pintan["movil"] > 0, f"el bloque movil pinta (rects={pintan['movil']})")
+    comprobar(not pintan["fig"], "la figura viva no se monta (sin clip-path inline en .cae-wfig)")
+    texto = pg.evaluate("() => document.querySelector('#hero .cae-movil')?.textContent ?? ''")
+    for campo in ("now", "location", "availability"):
+        lit = literal_content(campo)
+        comprobar(lit in texto, f"la prosa lleva el literal identity.{campo} («{lit}»)")
+    cifras = pg.evaluate("() => [...document.querySelectorAll('#hero .cae-mv-cifra b')].map(b => b.textContent.trim())")
+    comprobar(cifras == ["2021", "10", "5", "1"], f"las cuatro cifras son las de stats ({cifras})")
+    tam = pg.evaluate("""() => { const ln = [...document.querySelectorAll('#hero .cae-ln')].map(e => parseFloat(getComputedStyle(e).fontSize));
+        const ws = document.querySelector('[data-scene="hero"]'); return { ln, cabe: ws.scrollHeight <= ws.clientHeight + 1 }; }""")
+    comprobar(len(tam["ln"]) == 3 and tam["ln"][2] > tam["ln"][0] and tam["ln"][2] > tam["ln"][1],
+              f"«no demos.» es la linea mas grande ({tam['ln']})")
+    comprobar(tam["cabe"], "Titulo cabe entero sin desplazamiento")
+    ctx.close()
+    return err
+
+
+def gate_entradas(navegador, base: str) -> list[str]:
+    """Anclado a estado: se lee el primer fotograma sincrono del gesto en la
+    misma evaluate que dispara el cambio (tecnica de B5), y luego se espera
+    al aterrizaje con tope. Con movimiento reducido nada corre."""
+    print("\n[6] Entradas cortas: un gesto por escena, aterrizan; con reduce ninguna")
+    ctx, pg, err = abrir(navegador, base)
+    # Titulo: la terminal teclea whoami y NO hay trazo de firma.
+    typed = pg.evaluate("() => document.querySelector('#hero .cae-term-typed')?.textContent ?? null")
+    comprobar(typed is not None, "Titulo: la terminal existe")
+    aterrizo = pg.evaluate("""() => new Promise(res => { const t0 = performance.now();
+        const mira = () => { const f = document.querySelector('#hero .cae-firma');
+          const ok = f && getComputedStyle(f).opacity === '1' && !document.documentElement.classList.contains('js-cae-entrada');
+          if (ok || performance.now() - t0 > 6000) res({ ok, ms: Math.round(performance.now() - t0) }); else requestAnimationFrame(mira); };
+        mira(); })""")
+    comprobar(aterrizo["ok"], f"Titulo aterriza (firma visible, {aterrizo['ms']} ms de espera)")
+    comprobar(pg.evaluate("() => document.querySelector('#hero .cae-trazo-stage').getClientRects().length === 0"),
+              "Titulo: el trazo de la firma no pinta en movil")
+    ctx.close()
+    # Las tres siguientes se completan en las Tasks 3, 4 y 5 (una comprobacion por escena).
+    # Reduce: nada corre.
+    ctx, pg, err2 = abrir(navegador, base, reduced_motion="reduce")
+    est = pg.evaluate("() => ({ typed: document.querySelector('#hero .cae-term-typed')?.textContent, entrada: document.documentElement.classList.contains('js-cae-entrada') })")
+    comprobar(not est["entrada"], "reduce: Titulo aterriza directo (sin js-cae-entrada)")
+    ctx.close()
+    return err + err2
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:4213")
@@ -152,6 +218,10 @@ def main() -> int:
             errores += gate_ley(navegador, args.base)
         if not solo or 2 in solo:
             errores += gate_desbordamiento(navegador, args.base)
+        if not solo or 3 in solo:
+            errores += gate_titulo(navegador, args.base)
+        if not solo or 6 in solo:
+            errores += gate_entradas(navegador, args.base)
         navegador.close()
     print("\n[10] Consola sin errores")
     comprobar(not errores, f"cero errores de consola ({errores[:3]})")
