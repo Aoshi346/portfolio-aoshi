@@ -4171,7 +4171,7 @@
      porque esta linea es el destino del trazo de la entrada — si partiera en
      dos, el aterrizaje no cuadraria. */
   font-variation-settings: var(--cae-display-axes-texto);
-  font-size: 30px;
+  font-size: var(--t-4);
   line-height: 1;
   letter-spacing: -0.015em;
   white-space: nowrap;
@@ -4318,7 +4318,7 @@
   background: var(--cae-elev-2);
   border: 1px solid var(--cae-outline);
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: var(--t-3);
   letter-spacing: 0.01em;
   color: var(--cae-on-surface);
   box-shadow: 0 18px 48px rgb(0 0 0 / 0.22);
@@ -4394,7 +4394,7 @@
 :root[data-theme="caelestia"] .cae-whd {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--t-00);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4430,7 +4430,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-variation-settings: var(--cae-display-axes-ficha);
-  font-size: 27px;
+  font-size: var(--t-4);
   line-height: 1;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -4451,7 +4451,7 @@
 :root[data-theme="caelestia"] .cae-wfecha {
   display: block;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--t-00);
   letter-spacing: 0.04em;
   color: var(--cae-on-surface-variant);
   margin-bottom: 3px;
@@ -4460,7 +4460,7 @@
 :root[data-theme="caelestia"] .cae-wnombre {
   display: block;
   font-weight: 500;
-  font-size: 12.5px;
+  font-size: var(--t-1);
   line-height: 1.25;
 }
 :root[data-theme="caelestia"] .cae-wpie {
@@ -4481,6 +4481,12 @@
  * con la MISMA ventana de 748 de alto del resto del arnes -- esta media
  * query tambien se activa ahi, a proposito). Medido: bottom pasa de 366 a
  * 326, hueco con `.cae-statcol` de -22px a +18px.
+ *
+ * Task 6 (escala tipografica, 2026-09-07): `.cae-wnow` pasa de 27px a
+ * `var(--t-4)` (28,43px), la tarjeta crece ~1,4px y el hueco baja de 18px a
+ * 7px, bajo el piso de 8. Se recorta `.cae-wpie` (margin-top 8px -> 6px en
+ * esta misma media query, la fila con mas aire de las cuatro) en vez de
+ * tocar `.cae-wnow`: el tamano de esa linea no se toca, esta migrado.
  */
 @media (max-height: 800px) {
   :root[data-theme="caelestia"] .cae-widget {
@@ -4497,7 +4503,7 @@
     padding-top: 8px;
   }
   :root[data-theme="caelestia"] .cae-wpie {
-    margin-top: 8px;
+    margin-top: 6px;
     padding-top: 8px;
   }
 }
@@ -4512,7 +4518,7 @@
   background: var(--cae-anchor);
   color: var(--cae-on-anchor);
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--t-0);
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
@@ -6701,7 +6707,7 @@
     display: block;
   }
   :root[data-theme="caelestia"] .cae-firma {
-    font-size: 1.125rem; /* 18px */
+    font-size: var(--t-2);
   }
   :root[data-theme="caelestia"] .cae-regla {
     display: none;
@@ -6729,7 +6735,7 @@
   }
   :root[data-theme="caelestia"] .cae-mv-prosa {
     margin: 1.625rem 0 0;
-    font-size: 0.8125rem;
+    font-size: var(--t-1);
     line-height: 1.7;
     color: var(--cae-on-surface-variant);
   }
@@ -6746,7 +6752,7 @@
     gap: 0.25rem 1rem;
     margin: 1.375rem 0 0;
     font-family: var(--font-mono);
-    font-size: 0.625rem;
+    font-size: var(--t-00);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--cae-on-surface-variant);
@@ -6754,7 +6760,7 @@
   :root[data-theme="caelestia"] .cae-mv-cifra b {
     font-family: var(--font-display);
     font-variation-settings: var(--cae-display-axes-ficha);
-    font-size: 0.9375rem;
+    font-size: var(--t-2);
     letter-spacing: 0;
     text-transform: none;
     color: var(--cae-on-surface);
