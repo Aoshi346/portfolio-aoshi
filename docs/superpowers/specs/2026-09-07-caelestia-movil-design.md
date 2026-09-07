@@ -1,6 +1,6 @@
 # Caelestia B6 — el escritorio en el teléfono y en la tableta
 
-Estado: en ejecucion
+Estado: implementado
 Fecha: 2026-09-07
 Rama de trabajo: `design/caelestia-movil` (worktree `portfolio-aoshi-movil`), desde `main` (`1f41e6c`)
 Plan: `docs/superpowers/plans/2026-09-07-caelestia-movil.md`
@@ -291,3 +291,33 @@ y aun así se rompía en teléfonos cortos y en tabletas).
 - Peor par de contraste de B6: **6,43:1** (`.cae-mv-prosa` a las 13:00), piso AA 4,5.
 - Contacto entra a 390x844, 390x740, 390x667, 390x620, 768x1024, 820x1180, 1024x768, 1180x820 y
   1440x900.
+
+### Los gates de critica
+
+`lidia-naive-tester` **7/10, cero P0**: en los tres formatos entiende quien es Aoshi, que hace y
+como contactarlo, y Contacto se lleva el elogio explicito. `vera-art-director` **6,22/10, BLOCK**
+sobre un gate de 7,5 — el mismo residual aceptado en Vice, el shell, B1 y B4.
+
+**Los dos convergieron en el mismo P0, y era real:** en tableta apaisada (1024x768) el nombre de
+Quien soy quedaba 12 px por debajo de la barra fija. La causa no estaba en B6 sino en la fase B2:
+`[data-ficha="neofetch"]` centra con `justify-content: center` y con `height: 100%`, asi que en una
+caja mas baja que su contenido el sobrante se reparte a los dos lados **y lo que sale por arriba no
+lo alcanza nadie**. Se cambio a `safe center`, que cae a `start` solo cuando desborda (donde ya
+cabia no mueve nada), y en la banda media la caja crece (`height: auto; min-height: 100%`) para que
+el sobrante se alcance desplazando el panel. **El mismo fallo estaba en `main` sin B6**, en
+portatiles corrientes: 11 px a 1366x768 y 35 px a 1280x720, los dos con el comando `~ $ neofetch`
+metido bajo la barra. El arreglo los cubre.
+
+De los P1 se cerro uno en la misma corrida: a 768 px las cinco pastillas se quedaban solo con el
+numero. El corte estaba en 820 px y baja a 640: medido, a 641 los cinco nombres terminan en 502 y
+el reloj empieza en 572, asi que caben con holgura y solo el telefono se queda con los numeros.
+
+Quedan abiertos, anotados y no arreglados aqui:
+- **La escala tipografica** (Vera, septima aparicion en el proyecto). Es deuda de todo el sitio, no
+  de esta fase; arreglarla es una fase propia.
+- **La entrada del titular** todavia tecleando a 1,5 s. Medido bajo `swiftshader`, donde el
+  cronometro miente por diseno de la sandbox; pendiente de mirarlo en un telefono real.
+- **La banda negra de 27 px** bajo el panel, en las tres escenas con panel desplazable y en los dos
+  esquemas. No sale a 1440x900, no sale en Titulo ni en Contacto, **y sale igual en `main` sin
+  B6** — solo bajo emulacion de movil/tableta, lo que apunta al compositor del headless. Pendiente
+  de confirmar en un telefono real.

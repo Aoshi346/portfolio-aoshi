@@ -281,6 +281,45 @@
   the `Tab` returned the transition's *first* frame. **The stopwatch has lied three times in this
   phase alone.**
 
+- **Caelestia's phase B6 (mobile and tablet) is DONE** (`2026-09-07-caelestia-movil`, branch
+  `design/caelestia-movil`). B1-B4 left narrow viewports out of scope on purpose; Aoshi opened his
+  phone at the end of the interface review and four of the five scenes did not fit (Título
+  justifies to a fixed 1080px measure, Quién soy overflowed 847 over 362, Obra 1316, Stack 1364).
+  **The law he chose is option A: each workspace scrolls inside itself**; the document still never
+  scrolls, and the inner scroll returns to zero when you switch scenes. Two bands: **compacta**
+  (`max-width: 900px`, phone and tablet portrait) and **media** (`901-1365px`, tablet landscape).
+  Título becomes **"Silencioso"** — no "Ahora mismo" card, no stat column, no live figure: three
+  lines of prose, four numbers and a footer, and the short branch is decided by
+  `widget.getClientRects().length === 0`, what actually paints, never a width read in TS. Quién soy
+  goes to one column, Obra becomes a snap carousel where the centred card is the selected one (the
+  centre is resolved with `getBoundingClientRect()` against the track — `offsetLeft` measures
+  against the workspace rail and only card 1 ever centred), Stack stacks its four bands. One
+  gesture per scene, all under 900ms.
+  Gated by `scripts/measure-caelestia-movil.py` (10 families, 143 checks).
+  **Two instrument lessons worth more than the CSS:**
+  1. **`scrollWidth`/`scrollHeight` lie in both axes.** Contacto's flooded field is a `<span>` with
+     `transform: scale(5.7)` inside an `overflow: clip`: it inflates them to 1835 and 1629 over a
+     scene that is fully visible. Gates 1 and 2 now measure **content** — nodes with their own text
+     or focusable — against the workspace's `getBoundingClientRect()`.
+  2. **The excuse for "reachable by scrolling" must not apply upwards.** A container at `scrollTop`
+     0 cannot scroll backwards, so anything above its edge is unreachable. With the generic excuse
+     the gate went **green against the real fault**: Stack's header inherited `height: 96px` from
+     desktop (`min-height: 0` does not cancel it) and, centred over 135px of content, pushed the
+     piece's name 24px above the panel, cut by its rounded edge.
+  `lidia-naive-tester` 7/10, zero P0. `vera-art-director` **BLOCK 6.22/10**, residual accepted as in
+  Vice/shell/B1/B4 — but **its P0 was real and fixed first**: at 1024x768 Quién soy's name sat 12px
+  under the fixed bar. The cause was in B2, not B6: `[data-ficha="neofetch"]` centres with
+  `justify-content: center` at `height: 100%`, so in a box shorter than its content the overflow
+  splits both ways and the top half is unreachable. It is `safe center` now (a no-op wherever it
+  already fit), and in the media band the box grows. **The same fault was on `main`** at 1366x768
+  and 1280x720 — ordinary laptops — with 11 and 35px of the `~ $ neofetch` command under the bar.
+  Open and recorded, not fixed here: the typographic-scale debt (Vera's 7th sighting, a phase of
+  its own), the headline still typing at 1.5s (measured under `swiftshader`, where the stopwatch
+  lies), and a 27px black band under the panel in the three scenes with a scrolling panel — absent
+  at 1440x900, absent in Título and Contacto, **and identical on `main`**, only under device
+  emulation, so it points at the headless compositor. Full record in the spec.
+
+
 ## Architecture Notes
 - Stack: Vite + TypeScript (strict) + Tailwind + GSAP + Lenis — no backend, no framework, **no Three.js**
 - Three themes over one DOM, switched by `data-theme` (vice / hyprland / caelestia). The skin is decided by CSS, never by the markup. The theme is picked at random per visit: to verify, always use `?theme=vice`

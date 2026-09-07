@@ -1064,7 +1064,7 @@ alcanzables, las 23 piezas de Stack dentro y del mismo tamaño, y Título y Qui�
 
 En `main`: `if not solo or 8 in solo: errores += gate_ley(navegador, args.base, "tableta") + gate_desbordamiento(navegador, args.base, "tableta")` y añadir a `gate_titulo` un parámetro `dispositivo` para correrlo también en tableta. El gate 9 no vive en este arnés: es correr los cinco arneses de escritorio (Título, Quién soy, Obra con sus tres conocidos, Créditos con nohup, hora) contra este build; se deja escrito en el docstring y en `verification.md`.
 
-- [ ] **Step 3: Verificación completa**
+- [x] **Step 3: Verificación completa**
 
 ```bash
 kill $(cat /tmp/preview-4213.pid); npm run build && (nohup npx vite preview --port 4213 --strictPort > /tmp/preview-4213.log 2>&1 & echo $! > /tmp/preview-4213.pid); sleep 3; npm run lint
@@ -1079,18 +1079,18 @@ python3 scripts/verify.py --url http://127.0.0.1:4213                           
 ```
 Capturas: las cinco escenas a 390x844 y a 768x1024, a 13:00 y 23:00 (20 imágenes), más las cinco a 1440x900 a 13:00; en `/tmp/b6-final-*.png`. Mirarlas todas: nada cortado, nada pisado, el escritorio igual que antes.
 
-- [ ] **Step 4: Gates de crítica**
+- [x] **Step 4: Gates de crítica**
 
 Lanzar `lidia-naive-tester` (contexto móvil 390x844, pregunta: ¿en el teléfono se entiende quién es y cómo contactar en dos segundos?) y `vera-art-director` (móvil y tableta; jerarquía, rejilla 4/8, tokens, que el móvil sea el mismo tema), uno tras otro, con PROHIBIDO editar producción. Un P0 se arregla antes de cerrar (con su gate en rojo); los P1 se registran en el spec.
 
-- [ ] **Step 5: Cerrar el spec y la documentación**
+- [x] **Step 5: Cerrar el spec y la documentación**
 
 - Spec: `Estado: implementado`; sección `## Registro de implementación` (qué rompió cada gate en rojo, medidas finales: tamaños del titular, retardo máximo de la onda, peor contraste, scrollWidth por escena antes/después; desviaciones respecto al spec) y `### Resultado` bajo «Gates de crítica».
 - `.claude/rules/verification.md`: fila para `measure-caelestia-movil.py` (las diez familias, «un arnés a la vez», que el gate 9 son los arneses de escritorio corridos aparte).
 - `CLAUDE.md` (raíz) y `.claude/CLAUDE.md`: bloque «Caelestia B6 (móvil)» tras el del repaso de interfaces: la ley en móvil, el corte de 900, Título silencioso, lo que perdieron las entradas, y las trampas nuevas que hayan salido.
 - Memoria de sesión (la escribe el orquestador).
 
-- [ ] **Step 6: Commit y cierre de rama**
+- [x] **Step 6: Commit y cierre de rama**
 
 ```bash
 git add scripts/measure-caelestia-movil.py docs/superpowers/specs/2026-09-07-caelestia-movil-design.md docs/superpowers/plans/2026-09-07-caelestia-movil.md CLAUDE.md
