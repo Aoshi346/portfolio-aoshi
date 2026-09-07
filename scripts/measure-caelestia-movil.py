@@ -355,10 +355,26 @@ def gate_entradas(navegador, base: str) -> list[str]:
     comprobar(aterrizo["ok"], f"Titulo aterriza (firma visible, {aterrizo['ms']} ms de espera)")
     comprobar(pg.evaluate("() => document.querySelector('#hero .cae-trazo-stage').getClientRects().length === 0"),
               "Titulo: el trazo de la firma no pinta en movil")
-    # Quien soy: el neofetch se teclea y la ficha aterriza; las filas no entran por capas.
-    ir_a(pg, "quien-es", 200)
-    primer = pg.evaluate("() => document.querySelector('[data-ficha-cmd]')?.textContent ?? null")
-    comprobar(primer is not None and primer != "neofetch", f"Quien soy: la entrada arranca tecleando (primer fotograma «{primer}»)")
+    # Quien soy: el neofetch se TECLEA (no aparece de golpe) y la ficha
+    # aterriza. Anclado a ESTADO con un MutationObserver puesto ANTES del
+    # cambio, no a un cronometro: la version corta de movil dura 0,86 s
+    # declarados y un muestreo a los 200 ms ya la encuentra terminada, asi
+    # que un gate con reloj daba rojo contra una entrada correcta. Lo que
+    # define «tecleado» es que el nodo pase por valores intermedios, y eso
+    # el observador lo ve pase lo que pase con los fotogramas.
+    pg.evaluate("""() => {
+        window.__pasos = [];
+        const nodo = document.querySelector('[data-ficha-cmd]');
+        if (!nodo) return;
+        window.__obs = new MutationObserver(() => window.__pasos.push(nodo.textContent));
+        window.__obs.observe(nodo, { childList: true, characterData: true, subtree: true });
+    }""")
+    ir_a(pg, "quien-es", 2000)
+    pasos = pg.evaluate("() => { window.__obs && window.__obs.disconnect(); return window.__pasos || []; }")
+    intermedios = [p for p in pasos if p and p != "neofetch"]
+    comprobar(len(intermedios) >= 2,
+              f"Quien soy: la entrada TECLEA el comando, no lo pone de golpe "
+              f"({len(intermedios)} pasos intermedios, p.ej. {intermedios[:3]})")
     fin = pg.evaluate("""() => new Promise(res => { const t0 = performance.now();
         const mira = () => { const c = document.querySelector('[data-ficha-cmd]'); const ok = c && c.textContent === 'neofetch';
           if (ok || performance.now() - t0 > 4000) res({ ok, ms: Math.round(performance.now() - t0) }); else requestAnimationFrame(mira); }; mira(); })""")

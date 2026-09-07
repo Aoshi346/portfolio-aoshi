@@ -147,22 +147,44 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
       gsap.set(tonos, { opacity: 0, scaleX: 0.2 });
     }
 
+    /*
+     * Los tiempos, por rama. El spec de B6 fija el techo de la version corta
+     * en 900 ms DECLARADOS («un gesto por escena, por debajo de 900 ms»), y
+     * la partitura de escritorio dura 2,02 s: no basta con quitarle capas,
+     * hay que apretarla. Se conservan los dos gestos que el spec dice que
+     * Quien soy mantiene —el tecleo y el barrido de tinta del nombre, que es
+     * lo que ata esta escena con el titular de B1— y lo que cede es el
+     * reposo entre ellos. Total declarado en corto: 0,86 s.
+     *
+     * No hay gate que mida esto: la duracion DECLARADA de una timeline no se
+     * puede leer desde fuera de la pagina sin exponer el handle, y el
+     * cronometro de esta sandbox no sirve de proxy (mide 351 ms para una
+     * partitura de 2,02 s, por el hambre de fotogramas de swiftshader). Los
+     * numeros de abajo son la fuente: si alguien los cambia, que rehaga esta
+     * cuenta a mano.
+     */
+    const T = corto
+      ? { parpadeo: 0.06, tecleo: 0.06, dTecleo: 0.3, guino: 0.36, salida: 0.4,
+          dSalida: 0.12, barrido: 0.4, dBarrido: 0.36, filete: 0.58, dFilete: 0.28 }
+      : { parpadeo: 0.085, tecleo: 0.34, dTecleo: 0.44, guino: 0.78, salida: 1.05,
+          dSalida: 0.2, barrido: 1.05, dBarrido: 0.72, filete: 1.6, dFilete: 0.42 };
+
     tl.fromTo(cursor, { opacity: 1 },
-      { opacity: 0, duration: 0.085, repeat: 3, yoyo: true, ease: "none" }, 0);
+      { opacity: 0, duration: T.parpadeo, repeat: 3, yoyo: true, ease: "none" }, 0);
     tl.to(cuenta, {
-      i: COMANDO.length, duration: 0.44, ease: "none",
+      i: COMANDO.length, duration: T.dTecleo, ease: "none",
       onUpdate: () => { comando.textContent = COMANDO.slice(0, Math.round(cuenta.i)); },
-    }, 0.34);
+    }, T.tecleo);
     tl.fromTo(cursor, { opacity: 1 },
-      { opacity: 0.2, duration: 0.04, yoyo: true, repeat: 1, ease: "power1.inOut" }, 0.78);
-    tl.to(cursor, { opacity: 0, duration: 0.2 }, 1.05);
+      { opacity: 0.2, duration: 0.04, yoyo: true, repeat: 1, ease: "power1.inOut" }, T.guino);
+    tl.to(cursor, { opacity: 0, duration: T.dSalida }, T.salida);
     // El barrido de tinta: el mismo gesto que el titular de B1. Es lo que ata
     // las dos escenas. Se queda en las dos ramas: es EL gesto que Quien soy
     // conserva por debajo del corte (tabla de la seccion "Las entradas").
     tl.fromTo(nombre, { clipPath: "inset(0 100% 0 0)" },
-      { clipPath: "inset(0 0% 0 0)", duration: 0.72, ease: "power2.inOut" }, 1.05);
+      { clipPath: "inset(0 0% 0 0)", duration: T.dBarrido, ease: "power2.inOut" }, T.barrido);
     tl.fromTo(regla, { width: 0 },
-      { width: ancho, duration: 0.42, ease: "power2.inOut" }, 1.6);
+      { width: ancho, duration: T.dFilete, ease: "power2.inOut" }, T.filete);
 
     if (!corto) {
       tl.fromTo(grupos[0] ?? ficha, { opacity: 0, scale: 1.06 },
