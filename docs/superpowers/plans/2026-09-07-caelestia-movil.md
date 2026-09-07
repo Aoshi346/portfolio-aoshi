@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Que las escenas Título, Quién soy, Obra y Stack de Caelestia se vean y se usen por debajo de 900 px (teléfono 390x844 y tableta 768x1024), con cada workspace desplazándose por dentro, sin tocar el escritorio.
+**Goal:** Que las escenas Título, Quién soy, Obra y Stack de Caelestia se vean y se usen por debajo de 1366 px: en la banda **compacta** (hasta 900 px: teléfono 390x844 y tableta vertical 768x1024) con cada workspace desplazándose por dentro en una columna, y en la banda **media** (901 a 1365: tableta apaisada 1024x768 y 1180x820) conservando la composición de escritorio con las piezas fijas encogidas. De 1366 en adelante no se toca nada.
 
 **Architecture:** Un solo bloque `@media (max-width: 900px)` en `themes.css` bajo `[data-theme="caelestia"]` re-maqueta las cuatro escenas sobre el DOM que ya existe (lo que no sirve en móvil se oculta; Título gana un bloque nuevo de prosa en `hero.ts`). El carril, `inert` y el motor de color no cambian. Cada entrada conserva un solo gesto por debajo del corte, decidido en TypeScript leyendo si la pieza pinta (`getClientRects().length`), nunca por ancho de ventana. Un arnés nuevo, `scripts/measure-caelestia-movil.py`, con diez familias, cada una vista en rojo antes de aceptarse.
 
@@ -16,7 +16,8 @@
 - Node 22: `export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"` en cada comando npm/npx.
 - Preview de producción en el puerto **4213**: `npm run build && (nohup npx vite preview --port 4213 --strictPort > /tmp/preview-4213.log 2>&1 & echo $! > /tmp/preview-4213.pid)`. Antes de cada rebuild `kill $(cat /tmp/preview-4213.pid)`. Nunca `pkill -f`, nunca `npm run dev`, nunca otro puerto.
 - **Un solo arnés a la vez** (la máquina murió por OOM con tres). Los largos con `nohup ... & PID=$!; until ! kill -0 $PID 2>/dev/null; do sleep 5; done` en el MISMO comando Bash (timeout 600000). No terminar el turno «esperando».
-- Corte único de B6: `@media (max-width: 900px)`. El shell conserva su bloque propio de 51.25rem (fase A); no se unifican.
+- Dos cortes de B6: `@media (max-width: 900px)` (banda compacta) y `@media (min-width: 901px) and (max-width: 1365px)` (banda media). El shell conserva su bloque propio de 51.25rem (fase A); no se unifican.
+- **Solo Obra y Stack necesitan banda media**, medido el 2026-09-07: a 1024 de ancho Obra desborda 1160 sobre 996 y Stack 1364 sobre 996; Stack sigue desbordando hasta 1280 (1364 sobre 1252). Título y Quién soy ya caben a 1024 y a 1180: en sus tareas la banda media entra solo como comprobación de no regresión, no como trabajo. Contacto la resuelve su propia rama, fuera de B6.
 - Skin por CSS bajo `:root[data-theme="caelestia"]`, nunca ramas TypeScript por tema. Las ramas cortas de las entradas se deciden por «¿pinta la pieza?» (`el.getClientRects().length === 0`), no por `innerWidth`.
 - Nunca `any`, nunca `gsap.from` (siempre `fromTo` con los dos extremos), nunca `console.log`, nunca `clamp()` continuo para tamaños de texto (tokens cambiados por `@media`), toda animación con rama `prefers-reduced-motion` explícita (el `*` no alcanza pseudo-elementos).
 - Todo texto sale de `src/data/content.ts` literal; ningún campo derivado nuevo. El «10.º semestre» se extrae como ya hace `hero.ts` (paréntesis de `education[0].period`).
@@ -796,6 +797,37 @@ python3 scripts/measure-caelestia-obra.py --base http://127.0.0.1:4213
 ```
 El arnés de Obra de escritorio arrastra tres fallos de contraste conocidos (su propio instrumento, documentado en CLAUDE.md): la comparación es «los mismos tres, ninguno nuevo». Captura 390x844 de `obra` a 13:00 y mirarla: dos tarjetas y media, la central marcada, el cajón debajo.
 
+- [ ] **Step 4b: La banda media (901-1365)**
+
+La fila de cinco tarjetas mide 1316 px fijos y no cabe a ningún ancho de tableta apaisada
+(medido: 1160 sobre 996 útiles a 1024x768, 1212 sobre 1152 a 1180x820). En
+`@media (min-width: 901px) and (max-width: 1365px)`, las tarjetas dejan de tener ancho fijo y se
+reparten el disponible manteniendo la proporción 16:10 de la captura:
+
+```css
+@media (min-width: 901px) and (max-width: 1365px) {
+  :root[data-theme="caelestia"] .cae-obra-row {
+    /* Cinco columnas iguales del ancho que haya, no cinco anchos fijos. El
+       hueco entre tarjetas se mantiene; lo que cede es la tarjeta. */
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+  }
+  :root[data-theme="caelestia"] .cae-obra-card {
+    width: auto;
+    min-width: 0;
+  }
+}
+```
+Comprobar el nombre real del contenedor (`.cae-obra-row` es una suposición: leerlo del módulo) y
+que la leyenda en Fraunces itálica sigue cabiendo sin partirse. Si a 1024 la tarjeta baja de
+150 px de ancho, no encoger más: convertir la fila en el mismo carrusel con imán de la banda
+compacta, reutilizando la regla que ya escribiste, y decirlo en el commit.
+
+Gate: en el arnés, familia 8b (banda media), a 1024x768 y 1180x820 el workspace de Obra no
+desborda (`scrollWidth <= clientWidth`) y las cinco tarjetas están dentro de la caja. Verlo en
+rojo antes: hoy sale 1160/996.
+
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -933,6 +965,39 @@ nohup python3 scripts/measure-caelestia-creditos.py --base http://127.0.0.1:4213
 ```
 Captura 390x844 de `creditos` a 13:00 y mirarla.
 
+- [ ] **Step 4b: La banda media (901-1365)**
+
+Las cuatro bandas miden 1364 px fijos —la calle del rótulo son 158 px y cada módulo 142— y no
+caben a ningún ancho de tableta apaisada: desbordan a 1024 (1364 sobre 996), a 1180 (sobre 1152) y
+todavía a 1280 (sobre 1252). En `@media (min-width: 901px) and (max-width: 1365px)` la calle y el
+módulo dejan de ser fijos y se reparten el ancho:
+
+```css
+@media (min-width: 901px) and (max-width: 1365px) {
+  :root[data-theme="caelestia"] .cae-cred-banda {
+    /* La calle del rotulo cede primero (de 158 a lo que haya, con un minimo
+       legible); la tira de piezas se queda con el resto. */
+    grid-template-columns: minmax(6rem, 158px) 1fr;
+  }
+  :root[data-theme="caelestia"] .cae-cred-tira {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.5rem;
+  }
+  :root[data-theme="caelestia"] .cae-cred-pieza {
+    width: auto;
+    min-width: 0;
+  }
+}
+```
+Ocho columnas es el máximo de piezas que tiene una banda (Interfaz). **Las 23 piezas siguen
+midiendo todas lo mismo** (la ley de B4: el tamaño no codifica nada), así que si el reparto
+fluido las deja de tamaños distintos por banda, fijar el lado al de la banda más llena y
+alinearlas, no dejar que cada banda escale por su cuenta. Comprobarlo midiendo las 23.
+
+Gate: familia 8b, a 1024x768 y 1180x820 el workspace de Stack no desborda y las 23 piezas están
+dentro de la caja y miden lo mismo. Verlo en rojo antes: hoy sale 1364/996.
+
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -990,7 +1055,12 @@ def gate_contraste(navegador, base: str) -> list[str]:
 ```
 Nota: el fondo se resuelve subiendo hasta el primer ancestro con fondo NO transparente; si algún par cae sobre el fondo generativo (Título es «el escritorio desnudo»), medir contra `--cae-surface` como hace el arnés de Título para el titular, y decirlo en el comentario. **Sabotaje:** `.cae-mv-prosa { color: var(--cae-outline) }` dentro del bloque de B6 → build → rojo (≈1,8:1 de noche); deshacer → verde. Pegar las dos líneas.
 
-- [ ] **Step 2: Gate 8 (tableta) y gate 9 (escritorio intacto, documentado)**
+- [ ] **Step 2: Gate 8 (tableta compacta y media) y gate 9 (escritorio intacto, documentado)**
+
+Además de repetir las familias 1 a 3 a 768x1024, añadir la **familia 8b, banda media**, a
+1024x768 y 1180x820: las cinco escenas sin desbordamiento horizontal, las cinco tarjetas de Obra
+alcanzables, las 23 piezas de Stack dentro y del mismo tamaño, y Título y Quién soy sin regresión
+(hoy ya caben, así que aquí solo se vigilan).
 
 En `main`: `if not solo or 8 in solo: errores += gate_ley(navegador, args.base, "tableta") + gate_desbordamiento(navegador, args.base, "tableta")` y añadir a `gate_titulo` un parámetro `dispositivo` para correrlo también en tableta. El gate 9 no vive en este arnés: es correr los cinco arneses de escritorio (Título, Quién soy, Obra con sus tres conocidos, Créditos con nohup, hora) contra este build; se deja escrito en el docstring y en `verification.md`.
 

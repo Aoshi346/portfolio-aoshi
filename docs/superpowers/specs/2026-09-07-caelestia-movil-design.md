@@ -1,4 +1,4 @@
-# Caelestia B6 — el escritorio en el teléfono
+# Caelestia B6 — el escritorio en el teléfono y en la tableta
 
 Estado: en ejecucion
 Fecha: 2026-09-07
@@ -34,9 +34,28 @@ respuestas en el companion y Aoshi eligió la primera:
 La ley de la fase A dice que **un workspace no se desplaza, se cambia**. En móvil se añade una
 excepción de formato, no una derogación:
 
-- **Un solo corte: 900 px de ancho** (`@media (max-width: 900px)`, el que ya usan ocho reglas de
-  `themes.css`). Cubre teléfono (390) y tableta vertical (768). De 901 a 1365 px no hay promesa
-  nueva: sigue como hoy. Escritorio no cambia en nada.
+- **Dos bandas, no una** (ampliación del 2026-09-07, a petición de Aoshi: «arregla móvil y
+  tablets en la misma corrida»):
+  - **Compacta, hasta 900 px de ancho** (`@media (max-width: 900px)`, el corte que ya usan ocho
+    reglas de `themes.css`): teléfono (390) y tableta vertical (768, 820). Una columna.
+  - **Media, de 901 a 1365 px**: tableta apaisada (1024, 1180, 1194) y portátil estrecho. NO es
+    una columna: hay ancho de sobra y poca altura, así que conserva la composición de escritorio
+    y lo que cede es el tamaño de las piezas fijas.
+  De 1366 en adelante manda el escritorio y no cambia nada: ese es el ancho que el proyecto ya
+  trata como cordura de portátil.
+
+  **Qué está roto en la banda media, medido el 2026-09-07** (`scrollWidth` contra `clientWidth`
+  del workspace, y solape real de cajas):
+
+  | Ancho | Título | Quién soy | Obra | Stack | Contacto |
+  |---|---|---|---|---|---|
+  | 1024 | cabe | cabe | 1160/996 | 1364/996 | el sello tapa la frase |
+  | 1180 | cabe | cabe | 1212/1152 | 1364/1152 | el sello tapa la frase |
+  | 1280 | cabe | cabe | cabe | 1364/1252 | el sello tapa la frase |
+
+  Título y Quién soy no necesitan nada en la banda media: solo hay que comprobarlo. Obra y Stack
+  la necesitan en sus tareas. Contacto la resuelve su propia rama (`fix/caelestia-movil-contacto-dock`),
+  fuera de B6, porque B5 la dejó cerrada.
 - Por debajo del corte, **el carril sigue igual**: cinco workspaces, se cambian con las pastillas
   de la barra, los inactivos `inert`, el documento no se desplaza nunca.
 - **Cada workspace se desplaza por dentro**, en vertical: `overflow-y: auto`,
@@ -102,12 +121,22 @@ donde no exista). El cajón, debajo, con la ficha entera a una columna (kicker, 
 de privado, Problema y Solución). La escena se desplaza en vertical. La inclinación alterna de las
 tarjetas no se pinta en móvil.
 
+**En la banda media (901-1365)** la fila de cinco no cabe (1316 px de fila contra 996 útiles a
+1024): las tarjetas se estrechan a la medida que quepa manteniendo su proporción 16:10, y si con
+cinco no llegan a un tamaño legible, la fila se convierte en el mismo carrusel con imán de la
+banda compacta. El cajón sigue debajo, a dos columnas en vez de tres.
+
 ### Stack
 
 Las cuatro bandas apiladas, cada una con su rótulo, su cuenta y sus piezas a **cuatro columnas de
 56 px** (las 23 figuras de 240 vértices, las mismas tablas de `figurasM3.ts`). La ficha de la pieza
 elegida en cabecera de la escena. **Rozar no existe en táctil: tocar elige**, y el foco llega a lo
 mismo. Se desplaza en vertical.
+
+**En la banda media (901-1365)** las cuatro bandas de escritorio miden 1364 px fijos y no caben a
+ningún ancho de tableta apaisada: la calle del rótulo (158 px) y el módulo (142 px) dejan de ser
+valores fijos y pasan a repartirse el ancho disponible, con las 23 piezas siempre en pantalla y
+todas del mismo tamaño (la ley de B4: el tamaño no codifica nada).
 
 ## Las entradas: un gesto por escena, por debajo de 900 ms
 
@@ -128,7 +157,7 @@ pseudo-elementos, que `*` no alcanza (trampa de B2).
 
 ## Fuera de alcance
 
-- De 901 a 1365 px de ancho: sin promesa nueva.
+- De 1366 px en adelante: el escritorio, que no se toca.
 - Apaisado en teléfono.
 - Contacto (B5, ya en alcance) y el cursor (en táctil no se descarga).
 - Cambiar contenido: la tabla estudios/trabajo sin rótulo y la pastilla que parece botón (deuda
@@ -173,7 +202,11 @@ pulsa la pastilla. **Cada familia se ve en rojo contra su sabotaje antes de acep
    reducido ninguna corre, pseudo-elementos incluidos.
 7. **Contraste** de los pares nuevos (prosa, línea de cifras, rótulos de banda, puntos del
    carrusel) en los dos esquemas, apilando fondos translúcidos hasta el primero opaco.
-8. **Tableta.** Las familias 1 a 3 repetidas a 768x1024.
+8. **Tableta.** Las familias 1 a 3 repetidas a 768x1024 (banda compacta) y, para la banda media,
+   una familia propia a **1024x768 y 1180x820**: ninguna de las cinco escenas desborda en
+   horizontal (`scrollWidth <= clientWidth`), las cinco tarjetas de Obra son alcanzables y las 23
+   piezas de Stack están dentro de la caja. Título y Quién soy entran aquí solo como comprobación
+   de no regresión: hoy ya caben.
 9. **Escritorio intacto.** A 1440x900 los arneses de Título, Quién soy, Obra, Stack y hora siguen
    en verde sin tocar sus aserciones (se corren, no se asume).
 10. **Consola** sin errores en todo el recorrido, en los dos contextos.
