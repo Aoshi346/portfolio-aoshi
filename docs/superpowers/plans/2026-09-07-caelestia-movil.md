@@ -669,7 +669,7 @@ Gate 2 (quien-es): rojo <literal> / verde <literal>. Gate 6: <literal>"
 - Consumes: `abrir(index)` ya existente en el módulo (privada), `cards: HTMLButtonElement[]`, `drawer`.
 - Produces: el contenedor de tarjetas (leer su clase real en `buildCard`/montaje: es el padre común de `.cae-obra-card`) gana `data-cae-carrusel` en móvil solo por CSS; el módulo escucha `scrollend` en ese padre.
 
-- [ ] **Step 1: Gates 4 y 6-Obra en rojo**
+- [x] **Step 1: Gates 4 y 6-Obra en rojo**
 
 ```python
 def gate_obra(navegador, base: str) -> list[str]:
@@ -708,7 +708,7 @@ En `gate_entradas`, tras Quién soy:
 ```
 Correr `--solo 4,6`: rojo en «centrada es la elegida» (hoy se elige con clic) y posiblemente en el centrado (hoy no hay carrusel).
 
-- [ ] **Step 2: El CSS del carrusel y del cajón**
+- [x] **Step 2: El CSS del carrusel y del cajón**
 
 Leer `mountCaelestiaObraEditorial` para el nombre del contenedor de tarjetas (aquí `.cae-obra-row` a modo de ejemplo; sustituir por el real) y añadir al bloque de B6:
 
@@ -753,7 +753,7 @@ Leer `mountCaelestiaObraEditorial` para el nombre del contenedor de tarjetas (aq
 ```
 El `!important` en `transform` está justificado: la inclinación la escribe GSAP inline (`rotate: tilt` en `prepararEstadoInicial`); en Step 3 se deja de escribir en móvil y entonces el `!important` se quita (no se acepta en el commit final). Comprobar que el cajón de escritorio usa `grid-template-areas` (~línea 3837): en móvil `display: block` apila `texto / captura / meta` en el orden del DOM; si el orden visual del DOM no es kicker-título-lead-captura-meta, usar `display: grid; grid-template-areas: "texto" "captura" "meta"` con las mismas áreas que escritorio.
 
-- [ ] **Step 3: La selección por `scrollend` y la entrada corta**
+- [x] **Step 3: La selección por `scrollend` y la entrada corta**
 
 En `mountCaelestiaObraEditorial`, tras `cards.forEach((card, index) => { card.addEventListener("click", ...` :
 
@@ -788,7 +788,7 @@ Y en `destroy`: `pista?.removeEventListener("scrollend", elegirCentrada); pista?
 
 Entrada corta: en `prepararEstadoInicial` y `jugarEntrada`, calcular `const enCarrusel = pista !== null && pista.scrollWidth > pista.clientWidth + 1;` y, si es así, (a) no escribir `rotate: tilt` (dejar `rotate: 0`) y (b) animar solo `cards.slice(Math.max(0, seleccionado - 1), seleccionado + 2)`; el resto se pone directo con `gsap.set(otras, { opacity: 1, y: 0, rotate: 0 })`. El cajón entra en un solo paso: `.to(drawer, { opacity: 1, duration: 0.24 })` y `gsap.set` del resto de capas al estado final. Duración total en móvil < 0,9 s (`tl.duration()`).
 
-- [ ] **Step 4: Build, lint, gates 2 (obra), 4 y 6 en verde; arnés de Obra de escritorio como estaba**
+- [x] **Step 4: Build, lint, gates 2 (obra), 4 y 6 en verde; arnés de Obra de escritorio como estaba**
 
 ```bash
 kill $(cat /tmp/preview-4213.pid); npm run build && (nohup npx vite preview --port 4213 --strictPort > /tmp/preview-4213.log 2>&1 & echo $! > /tmp/preview-4213.pid); sleep 3; npm run lint
@@ -797,7 +797,7 @@ python3 scripts/measure-caelestia-obra.py --base http://127.0.0.1:4213
 ```
 El arnés de Obra de escritorio arrastra tres fallos de contraste conocidos (su propio instrumento, documentado en CLAUDE.md): la comparación es «los mismos tres, ninguno nuevo». Captura 390x844 de `obra` a 13:00 y mirarla: dos tarjetas y media, la central marcada, el cajón debajo.
 
-- [ ] **Step 4b: La banda media (901-1365)**
+- [x] **Step 4b: La banda media (901-1365)**
 
 La fila de cinco tarjetas mide 1316 px fijos y no cabe a ningún ancho de tableta apaisada
 (medido: 1160 sobre 996 útiles a 1024x768, 1212 sobre 1152 a 1180x820). En
@@ -828,7 +828,7 @@ Gate: en el arnés, familia 8b (banda media), a 1024x768 y 1180x820 el workspace
 desborda (`scrollWidth <= clientWidth`) y las cinco tarjetas están dentro de la caja. Verlo en
 rojo antes: hoy sale 1160/996.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css src/components/caelestiaObraEditorial.ts scripts/measure-caelestia-movil.py
