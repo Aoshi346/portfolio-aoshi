@@ -107,6 +107,17 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
       return;
     }
 
+    /*
+     * B6: si la escena esta en una columna (el retrato es pequeno porque no
+     * pinta a su tamano de escritorio), la entrada conserva solo el tecleo;
+     * las capas de grupos y filas aterrizan de golpe al terminar el comando.
+     * Testigo: el ancho pintado de `ficha`, medido con `getClientRects` a
+     * 1440x900 (1412px, la ventana real, no el viewport — ver
+     * `docs/superpowers/specs/2026-09-07-caelestia-movil-design.md`) y a
+     * 390x844 (362px): 700 cae limpio entre los dos.
+     */
+    const corto = (ficha.getClientRects()[0]?.width ?? 0) < 700;
+
     const cuenta = { i: 0 };
     // fromTo con los dos extremos escritos a mano: `gsap.from` esta prohibido.
     const tl = gsap.timeline({
@@ -120,11 +131,21 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
       },
     });
     gsap.set(nombre, { clipPath: "inset(0 100% 0 0)" });
-    gsap.set(grupos, { opacity: 0 });
-    gsap.set(filas, { opacity: 0, x: -6 });
-    gsap.set(tonos, { opacity: 0, scaleX: 0.2 });
     regla.style.width = "0px";
     comando.textContent = "";
+
+    if (corto) {
+      // Columna estrecha: solo el tecleo y el barrido del nombre se ven. El
+      // resto de la ficha aterriza de golpe al terminar el comando — no hay
+      // sitio para capas secundarias por debajo de 900ms (regla del spec).
+      gsap.set([...grupos, ...filas, ...tonos], {
+        opacity: 1, x: 0, scale: 1, scaleX: 1, clearProps: "transform",
+      });
+    } else {
+      gsap.set(grupos, { opacity: 0 });
+      gsap.set(filas, { opacity: 0, x: -6 });
+      gsap.set(tonos, { opacity: 0, scaleX: 0.2 });
+    }
 
     tl.fromTo(cursor, { opacity: 1 },
       { opacity: 0, duration: 0.085, repeat: 3, yoyo: true, ease: "none" }, 0);
@@ -134,23 +155,27 @@ export function montarFicha(gsap: Gsap, escena: HTMLElement): FichaHandle | null
     }, 0.34);
     tl.fromTo(cursor, { opacity: 1 },
       { opacity: 0.2, duration: 0.04, yoyo: true, repeat: 1, ease: "power1.inOut" }, 0.78);
-    tl.fromTo(grupos[0] ?? ficha, { opacity: 0, scale: 1.06 },
-      { opacity: 1, scale: 1, duration: 0.55, ease: "power2.out" }, 0.86);
-    tl.set(grupos[1] ?? ficha, { opacity: 1 }, 1.05);
+    tl.to(cursor, { opacity: 0, duration: 0.2 }, 1.05);
     // El barrido de tinta: el mismo gesto que el titular de B1. Es lo que ata
-    // las dos escenas.
+    // las dos escenas. Se queda en las dos ramas: es EL gesto que Quien soy
+    // conserva por debajo del corte (tabla de la seccion "Las entradas").
     tl.fromTo(nombre, { clipPath: "inset(0 100% 0 0)" },
       { clipPath: "inset(0 0% 0 0)", duration: 0.72, ease: "power2.inOut" }, 1.05);
-    tl.to(cursor, { opacity: 0, duration: 0.2 }, 1.05);
-    tl.fromTo(grupos[2] ?? ficha, { opacity: 0, x: -6 },
-      { opacity: 1, x: 0, duration: 0.28, ease: "power2.out" }, 1.45);
     tl.fromTo(regla, { width: 0 },
       { width: ancho, duration: 0.42, ease: "power2.inOut" }, 1.6);
-    tl.fromTo(grupos.slice(3), { opacity: 0 },
-      { opacity: 1, duration: 0.22, ease: "power2.out" }, 1.85);
-    tl.fromTo(filas, { opacity: 0, x: -6 },
-      { opacity: 1, x: 0, duration: 0.22, ease: "power2.out", stagger: 0.07 }, 1.85);
-    tl.to(tonos, { opacity: 1, scaleX: 1, duration: 0.18, ease: "power2.out", stagger: 0.035 }, 2.45);
+
+    if (!corto) {
+      tl.fromTo(grupos[0] ?? ficha, { opacity: 0, scale: 1.06 },
+        { opacity: 1, scale: 1, duration: 0.55, ease: "power2.out" }, 0.86);
+      tl.set(grupos[1] ?? ficha, { opacity: 1 }, 1.05);
+      tl.fromTo(grupos[2] ?? ficha, { opacity: 0, x: -6 },
+        { opacity: 1, x: 0, duration: 0.28, ease: "power2.out" }, 1.45);
+      tl.fromTo(grupos.slice(3), { opacity: 0 },
+        { opacity: 1, duration: 0.22, ease: "power2.out" }, 1.85);
+      tl.fromTo(filas, { opacity: 0, x: -6 },
+        { opacity: 1, x: 0, duration: 0.22, ease: "power2.out", stagger: 0.07 }, 1.85);
+      tl.to(tonos, { opacity: 1, scaleX: 1, duration: 0.18, ease: "power2.out", stagger: 0.035 }, 2.45);
+    }
 
     linea = tl;
   };

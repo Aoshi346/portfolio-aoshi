@@ -195,6 +195,14 @@ def gate_entradas(navegador, base: str) -> list[str]:
     comprobar(aterrizo["ok"], f"Titulo aterriza (firma visible, {aterrizo['ms']} ms de espera)")
     comprobar(pg.evaluate("() => document.querySelector('#hero .cae-trazo-stage').getClientRects().length === 0"),
               "Titulo: el trazo de la firma no pinta en movil")
+    # Quien soy: el neofetch se teclea y la ficha aterriza; las filas no entran por capas.
+    ir_a(pg, "quien-es", 200)
+    primer = pg.evaluate("() => document.querySelector('[data-ficha-cmd]')?.textContent ?? null")
+    comprobar(primer is not None and primer != "neofetch", f"Quien soy: la entrada arranca tecleando (primer fotograma «{primer}»)")
+    fin = pg.evaluate("""() => new Promise(res => { const t0 = performance.now();
+        const mira = () => { const c = document.querySelector('[data-ficha-cmd]'); const ok = c && c.textContent === 'neofetch';
+          if (ok || performance.now() - t0 > 4000) res({ ok, ms: Math.round(performance.now() - t0) }); else requestAnimationFrame(mira); }; mira(); })""")
+    comprobar(fin["ok"] and fin["ms"] < 2500, f"Quien soy: aterriza en menos de 2,5 s de sandbox ({fin['ms']} ms)")
     ctx.close()
     # Las tres siguientes se completan en las Tasks 3, 4 y 5 (una comprobacion por escena).
     # Reduce: nada corre.

@@ -6727,6 +6727,73 @@
   :root[data-theme="caelestia"] .cae-mv-pie {
     margin-top: 1.375rem;
   }
+
+  /*
+   * ---- Quien soy: la salida de neofetch en una columna (Task 3) ----
+   * Real DOM (`about.ts::createFicha`): `.ficha-cuerpo` es hoy un grid
+   * `312px 1fr` (retrato | `.ficha-col`) con `align-items: center` — a 362px
+   * de ancho util eso desborda 847px (medido, gate 2). `.ficha-col` SI existe
+   * como envoltorio de las filas (nombre, id, regla, frase, filas, tira) y ya
+   * es un bloque que apila solo: no hace falta tocarlo, basta con apilar
+   * TAMBIEN `.ficha-cuerpo` (retrato encima, columna debajo a todo el ancho)
+   * y encoger el retrato a logotipo pequeno (96px, la misma figura de 240
+   * vertices). El nombre queda primero en la columna, justo bajo el retrato
+   * -- no literalmente «a su lado»: con el nombre real (17 caracteres) a
+   * 26px, ponerlo en una segunda columna junto al retrato deja ~210px de
+   * ancho util y desborda; a todo el ancho (322px) sobra margen de sobra.
+   * `.ficha-id` (correo + disponibilidad) sigue siendo el bloque JUSTO
+   * DEBAJO del nombre en el flujo del documento, que es donde el spec pide
+   * el correo.
+   */
+  :root[data-theme="caelestia"] [data-ficha="neofetch"] {
+    padding: 2rem 1.375rem 2.25rem;
+    justify-content: flex-start;
+  }
+  :root[data-theme="caelestia"] .ficha-cuerpo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  :root[data-theme="caelestia"] .ficha-arte {
+    display: flex;
+    justify-content: flex-start;
+  }
+  :root[data-theme="caelestia"] .ficha-foto {
+    width: 6rem; /* 96px, el retrato como logotipo pequeno */
+    height: 6rem;
+  }
+  :root[data-theme="caelestia"] .ficha-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    width: 100%;
+  }
+  :root[data-theme="caelestia"] .ficha-nombre {
+    font-size: 1.625rem;
+    line-height: 1.05;
+    white-space: normal;
+  }
+  :root[data-theme="caelestia"] .ficha-id {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+  :root[data-theme="caelestia"] .ficha-filas {
+    grid-template-columns: 1fr;
+    gap: 0.625rem;
+  }
+  :root[data-theme="caelestia"] .ficha-fila {
+    display: block;
+    grid-template-columns: none;
+  }
+  :root[data-theme="caelestia"] .ficha-k {
+    display: block;
+    margin-bottom: 0.125rem;
+  }
+  :root[data-theme="caelestia"] .ficha-v {
+    display: block;
+    line-height: 1.4;
+  }
 }
 
 /*
