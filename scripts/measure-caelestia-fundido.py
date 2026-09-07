@@ -729,6 +729,45 @@ def main() -> int:
                   "la ubicacion sigue en el arbol de accesibilidad, aunque no se vea")
         ctx.close()
 
+        # Los cuatro canales entran en la ventana en las alturas REALES de un
+        # telefono, no solo en los 844 de pagina que asume el resto del gate
+        # 11: con la barra del navegador a la vista quedan 588 utiles, y en un
+        # telefono pequeno 515. Con el reparto calibrado solo contra 844, el
+        # telefono, LinkedIn y GitHub caian fuera (3 de 4 a 740, los 4 a 667):
+        # una escena de contacto que esconde sus canales se contradice a si
+        # misma. Se mide contra la caja VISIBLE del workspace, no contra el
+        # documento: la ventana desplaza, y lo que hay que garantizar es que
+        # no haya que desplazar para ver un canal.
+        for alto in (740, 667):
+            ctx, pg, err = nueva_pagina_en_contacto(
+                navegador, base, viewport={"width": 390, "height": alto}
+            )
+            errores_totales += err
+            canales = pg.evaluate("""() => {
+                const ws = document.querySelector('[data-scene="contacto"]');
+                const wr = ws.getBoundingClientRect();
+                return [...document.querySelectorAll('.contacto-bar')].map(e => {
+                    const r = e.getBoundingClientRect();
+                    return { etiqueta: (e.textContent || '').trim().slice(0, 18),
+                             dentro: r.bottom <= wr.bottom + 1 && r.top >= wr.top - 1,
+                             alto: Math.round(r.height), ancho: Math.round(r.width) };
+                });
+            }""")
+            fuera = [c["etiqueta"] for c in canales if not c["dentro"]]
+            print(f"       {alto}px: {canales}")
+            comprobar(len(canales) == 4 and not fuera,
+                      f"a 390x{alto} los cuatro canales entran en la ventana (fuera: {fuera})")
+            comprobar(all(c["alto"] >= 48 and c["ancho"] >= 48 for c in canales),
+                      f"a 390x{alto} los blancos siguen por encima de 48x48 "
+                      f"({[(c['ancho'], c['alto']) for c in canales]})")
+            ctx.close()
+
+        ctx, pg, err = nueva_pagina_en_contacto(
+            navegador, base, viewport={"width": 390, "height": 844}
+        )
+        errores_totales += err
+        ctx.close()
+
         # ================================================================
         # [12] Vice y Hyprland no se alteran
         # ================================================================

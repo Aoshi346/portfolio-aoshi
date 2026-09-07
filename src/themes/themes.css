@@ -10351,3 +10351,78 @@
     transition: none;
   }
 }
+
+/*
+ * Contacto en un telefono REAL: el alto manda tanto como el ancho
+ * (repaso de interfaces, 2026-09-06). El reparto de 390px se calibro contra
+ * una ventana de 844 de pagina —692 utiles— pero un telefono con la barra del
+ * navegador a la vista deja 588, y un iPhone SE 515. Medido ahi: el contenido
+ * pide 718px, asi que el telefono, LinkedIn y GitHub caian fuera de la ventana
+ * (3 de 4 canales a 740, los 4 a 667). Una escena de contacto que esconde sus
+ * canales se contradice a si misma, que es justo el argumento por el que B5
+ * metio los 390px en alcance.
+ *
+ * Ceden la frase y el sello, en PASOS DISCRETOS de la escala (nunca un
+ * `clamp()` continuo: la regla del proyecto), y el sello sigue la regla del
+ * propio Material 3 que esta escena ya aplica —la complejidad del lobulo baja
+ * con el tamano— manteniendo sus 8 lobulos. Los canales no ceden: son lo
+ * unico que esta escena existe para dar.
+ *
+ * Los dos cortes de alto son los dos formatos reales que hay debajo de 844:
+ * 820 cubre el telefono con barra de navegador (588-692 utiles) y 700 el
+ * telefono pequeno (iPhone SE y similares, ~515).
+ */
+@media (max-width: 640px) and (max-height: 820px) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    /* --t-6, no --t-7: 50,52px. A este paso «Cuentame» mide 186 sobre los 322
+       de medida util, asi que sigue entrando de sobra por ancho; lo que se
+       recupera son los 30px de alto que hacian falta abajo. */
+    font-size: var(--t-6);
+  }
+
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    /* 152px, no 196. El lobulo del sol a este tamano mide 16px de profundidad
+       (20,6 a 196): sigue leyendose como figura recortada, no como mancha. */
+    width: 9.5rem;
+    height: 9.5rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] {
+    padding-block: 0.75rem;
+  }
+
+  /*
+   * Los canales adelgazan su relleno, no su letra ni su numero: el valor
+   * sigue al mismo paso de escala y solo se recorta el aire. Medido antes:
+   * acto 74px de alto (10/12 de relleno), destino 56 (9/9), y el bloque
+   * entero 232. Con esto el acto queda en 58 y el destino en 48, los dos por
+   * encima del piso tactil de 48x48 de Material que esta escena ya vigila
+   * (gate 11 del arnes). Los 60px que se recuperan aqui y en el relleno de
+   * la escena son exactamente los que faltaban para que el telefono,
+   * LinkedIn y GitHub entren en una ventana de 588.
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="acto"] {
+    /* `.contacto-bar` en el selector NO es adorno: sin esa clase la regla
+       pierde el empate de especificidad contra la de escritorio, que si la
+       lleva, y no llega a aplicarse nunca. El fichero ya documenta esa misma
+       trampa dos veces mas arriba; esta es la tercera. */
+    padding-block: 0.25rem;
+  }
+
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar[data-canal="destino"] {
+    padding-block: 0.3125rem;
+  }
+}
+
+@media (max-width: 640px) and (max-height: 700px) {
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-lead {
+    /* --t-5: 37,9px. Es el ultimo paso en que la frase sigue siendo el
+       primero de la escena por encima del valor de los canales (28,4). */
+    font-size: var(--t-5);
+  }
+
+  :root[data-theme="caelestia"] .cae-fundido-troquel {
+    width: 8rem;
+    height: 8rem;
+  }
+}
