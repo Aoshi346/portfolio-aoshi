@@ -12,6 +12,11 @@
  * rango deja o sin tallas abajo (1,333 bajo 12 solo da 9, y luego 6,75) o con
  * quince arriba que nadie usa. Los dos escalones de abajo salen de los siete
  * valores a ojo que hacian un unico trabajo: rotular.
+ *
+ * `--t-00`/`--t-0` no son texto de lectura: existen para la rotulacion mono
+ * (esquina, rotulo de acto/destino, estado). Caelestia llego a declarar su
+ * propio `--t-0: 9px` en su bloque de tema para cubrir ese mismo hueco --
+ * la sexta vez que un literal sin declarar se colaba ahi. Vive solo aqui.
  */
 :root {
   --t-00: 9.5px;
@@ -3555,17 +3560,12 @@
    * Las dos reglas de la escala valen aqui igual que en los otros dos temas:
    *   1. Todo clamp() lleva LOS DOS extremos en pasos de esta escala.
    *   2. Maximo cuatro tamanos por encuadre.
+   *
+   * `--t-00` y `--t-0` (rotulacion mono de Fundido, no texto de lectura) se
+   * declaran una sola vez, en el bloque de `:root` al principio del fichero
+   * -- no aqui. Una segunda declaracion por tema es exactamente el defecto
+   * que esa escala vino a eliminar.
    */
-  /*
-   * `--t-0`: UN ESCALON POR DEBAJO DEL SUELO (`--t-1`, 12px), en la misma
-   * razon de la escala (1,333): 12 / 1,333 = 9px. El suelo de `--t-1` es para
-   * texto de LECTURA corrida; esto no lo es — existe solo para la rotulacion
-   * mono de Fundido (la esquina, el rotulo de acto/destino, el estado), que
-   * es una palabra en versalitas, no un parrafo. Antes de este token esos tres
-   * sitios llevaban literales sin declarar (10px, 9px, 9.5px) — la sexta vez
-   * que ese defecto aparecia en el proyecto. No usar para texto de lectura.
-   */
-  --t-0: 9px;
 
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
   --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;

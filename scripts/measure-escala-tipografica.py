@@ -91,12 +91,27 @@ def familia_estatica(raiz: pathlib.Path) -> list[str]:
                 con_respaldo.append(f"{f.relative_to(raiz)}:{n}")
     comprobar(not con_respaldo, f"cero var(--t-N, respaldo) en src/ ({len(con_respaldo)}: {con_respaldo[:3]})")
 
-    # 1c. La escala se declara UNA vez, y en `:root` a secas.
-    decls = [n for n, linea in enumerate(themes.split("\n"), 1) if re.match(r"\s*--t-1:\s", linea)]
-    comprobar(len(decls) == 1, f"la escala se declara una sola vez (lineas {decls})")
-    if decls:
+    # 1c. Ninguno de los doce tokens de la escala se declara mas de una vez
+    # en todo el fichero. Antes esto solo miraba `--t-1`, asi que un
+    # `--t-0` fantasma dentro de `:root[data-theme="caelestia"]` (mas
+    # especificidad que `:root` a secas, y por tanto el que gana dentro de
+    # ese tema) pasaba sin que nada lo cazara -- exactamente el defecto que
+    # esta escala vino a eliminar: un token que vale otra cosa segun donde
+    # se lea. Se recorren los doce y se exige exactamente una declaracion
+    # por token, no solo del que se usaba como testigo de la posicion.
+    lineas = themes.split("\n")
+    decls_por_token: dict[str, list[int]] = {}
+    for token in ESCALA:
+        patron = re.compile(rf"^\s*{re.escape(token)}:\s")
+        decls_por_token[token] = [n for n, linea in enumerate(lineas, 1) if patron.match(linea)]
+    duplicados = [f"{token} ({decls})" for token, decls in decls_por_token.items() if len(decls) != 1]
+    comprobar(not duplicados, f"los doce tokens se declaran una sola vez cada uno ({duplicados[:3]})")
+
+    # 1d. Y esa declaracion unica cuelga de `:root` a secas. `--t-1` sirve de
+    # testigo de la posicion: los doce tokens viven en el mismo bloque.
+    decls = decls_por_token["--t-1"]
+    if len(decls) == 1:
         prof, dueno = 0, "?"
-        lineas = themes.split("\n")
         for i in range(decls[0] - 2, -1, -1):
             prof += lineas[i].count("}") - lineas[i].count("{")
             if prof < 0:
@@ -104,7 +119,7 @@ def familia_estatica(raiz: pathlib.Path) -> list[str]:
                 break
         comprobar(dueno.startswith(":root {"), f"la escala cuelga de :root a secas (cuelga de «{dueno[:40]}»)")
 
-    # 1d. Los doce tokens existen con el valor de la tabla.
+    # 1e. Los doce tokens existen con el valor de la tabla.
     for token, px in ESCALA.items():
         m = re.search(rf"{re.escape(token)}:\s*([0-9.]+)px", themes)
         comprobar(m is not None and abs(float(m.group(1)) - px) < 0.005,
