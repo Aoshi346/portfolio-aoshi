@@ -5912,6 +5912,15 @@
      * no cambia nada: alli el hueco ya alcanzaba.
      */
     min-height: min-content;
+    /*
+     * La banda arrastraba el relleno de escritorio (64px arriba, 32 abajo,
+     * medido) dentro de una ventana que como mucho tiene 692 utiles. Son 76px
+     * que no pintan nada y que hacen falta abajo: con ellos, «Disponible para
+     * proyectos» caia fuera de la ventana en las tres alturas probadas. Va en
+     * el bloque de ANCHO, no en el de alto: el sobrante existe tambien en el
+     * telefono alto (medido: 26px de mas a 390x844).
+     */
+    padding-block: 1rem 0.75rem;
   }
 
   /*
@@ -10413,6 +10422,20 @@
     padding-block: 0.75rem;
   }
 
+
+  /*
+   * El bicho es lo unico del sello que NO escala con el: su ancho es un valor
+   * absoluto (5.75rem = 92px, calibrado contra el sello de 196). Con el sello
+   * en 152 se comia el 60% de la figura, y en 128 asomaba 4px POR ENCIMA de
+   * su borde (medido: sello top 203, bicho top 199) — se leia como un dibujo
+   * roto, no como un dino dentro de un troquel. Se mantiene la proporcion
+   * original, 47% del lado del sello.
+   */
+  :root[data-theme="caelestia"] .cae-fundido-bicho {
+    width: 4.4375rem;
+    margin-left: -2.21875rem;
+  }
+
   /*
    * Los canales adelgazan su relleno, no su letra ni su numero: el valor
    * sigue al mismo paso de escala y solo se recorta el aire. Medido antes:
@@ -10446,5 +10469,11 @@
   :root[data-theme="caelestia"] .cae-fundido-troquel {
     width: 8rem;
     height: 8rem;
+  }
+
+  /* 47% del lado del sello, igual que arriba. */
+  :root[data-theme="caelestia"] .cae-fundido-bicho {
+    width: 3.75rem;
+    margin-left: -1.875rem;
   }
 }

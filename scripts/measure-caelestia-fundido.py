@@ -760,6 +760,29 @@ def main() -> int:
             comprobar(all(c["alto"] >= 48 and c["ancho"] >= 48 for c in canales),
                       f"a 390x{alto} los blancos siguen por encima de 48x48 "
                       f"({[(c['ancho'], c['alto']) for c in canales]})")
+
+            # El bicho es lo unico del sello que no escalaba con el (ancho
+            # absoluto de 92px, calibrado contra el sello de 196): con el sello
+            # reducido asomaba por encima de su borde y la escena se leia rota.
+            # Y el pie de disponibilidad caia fuera de la ventana.
+            resto = pg.evaluate("""() => {
+                const ws = document.querySelector('[data-scene="contacto"]');
+                const wr = ws.getBoundingClientRect();
+                const t = document.querySelector('[data-fundido-troquel]').getBoundingClientRect();
+                const d = document.querySelector('.cae-fundido-bicho').getBoundingClientRect();
+                const e = document.querySelector('.contacto-estado').getBoundingClientRect();
+                return { dinoDentro: d.top >= t.top - 1 && d.bottom <= t.bottom + 1,
+                         sello: Math.round(t.height), dino: Math.round(d.width),
+                         estadoDentro: e.bottom <= wr.bottom + 1,
+                         sobra: ws.scrollHeight - ws.clientHeight };
+            }""")
+            print(f"       {alto}px resto: {resto}")
+            comprobar(resto["dinoDentro"],
+                      f"a 390x{alto} el bicho cabe dentro del sello "
+                      f"(sello {resto['sello']}px, bicho {resto['dino']}px)")
+            comprobar(resto["estadoDentro"],
+                      f"a 390x{alto} el pie de disponibilidad entra en la ventana "
+                      f"(sobra {resto['sobra']}px de contenido)")
             ctx.close()
 
         ctx, pg, err = nueva_pagina_en_contacto(
