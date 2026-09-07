@@ -5066,7 +5066,7 @@
 :root[data-theme="caelestia"] .cae-cred-rot h4 {
   margin: 0;
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: 16px;
+  font-size: var(--t-2);
   font-style: normal;
   font-variation-settings: normal;
   letter-spacing: 0.04em;
@@ -5121,7 +5121,7 @@
 :root[data-theme="caelestia"] .cae-cred-nom {
   margin: 0;
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: 10px;
+  font-size: var(--t-00);
   font-style: normal;
   font-variation-settings: normal;
   letter-spacing: 0.01em;
@@ -5184,7 +5184,7 @@
 :root[data-theme="caelestia"] .cae-cred-nombre {
   font-family: "Fraunces", Georgia, serif;
   font-variation-settings: var(--cae-display-axes-cartel);
-  font-size: 32px;
+  font-size: var(--t-4);
   line-height: 1;
   margin: 0 0 4px;
   color: var(--cae-on-surface);
@@ -5195,7 +5195,7 @@
   font-family: "Fraunces", Georgia, serif;
   font-style: italic;
   font-variation-settings: "opsz" 24, "wght" 400, "SOFT" 0, "WONK" 1;
-  font-size: 17px;
+  font-size: var(--t-2);
   color: var(--cae-on-surface-variant);
 }
 
@@ -5206,7 +5206,7 @@
    heredados. Sin versalitas ni tracking largo — a 10 px separaba las letras. */
 :root[data-theme="caelestia"] .cae-cred-cab .cae-cred-terr {
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: 10px;
+  font-size: var(--t-00);
   letter-spacing: 0.01em;
   font-style: normal;
   font-variation-settings: normal;
@@ -5228,7 +5228,7 @@
 :root[data-theme="caelestia"] .cae-cred-cruce > span {
   display: block;
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: 9.5px;
+  font-size: var(--t-00);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -5250,7 +5250,7 @@
   font-family: "Fraunces", Georgia, serif;
   font-style: italic;
   font-variation-settings: "opsz" 48, "wght" 500, "SOFT" 0, "WONK" 1;
-  font-size: 26px;
+  font-size: var(--t-4);
   line-height: 1.16;
   color: var(--cae-on-surface);
 }
@@ -5267,7 +5267,7 @@
    dice la PALABRA. Apagar la tinta para decir «esto pesa menos» es la misma
    opacidad recalibrada que ya fallo en B1. */
 :root[data-theme="caelestia"] .cae-cred-cruce-lista li.is-vacia {
-  font-size: 21px;
+  font-size: var(--t-3);
   color: var(--cae-on-surface-variant);
 }
 
@@ -6982,7 +6982,7 @@
     max-width: none;
   }
   :root[data-theme="caelestia"] .cae-cred-cruce-lista li {
-    font-size: 1.0625rem;
+    font-size: var(--t-2);
     line-height: 1.2;
   }
 }
@@ -6995,16 +6995,17 @@
    vertical, donde la cabecera mide 105 px y la fila de tres cabe bien. */
 @media (max-width: 40rem) {
   /* Altura fija, como en escritorio (`height: 96px`) y por la misma razon,
-     que aqui ademas rompe el toque: la cabecera mide entre 164 y 254 px
-     segun la pieza, asi que al elegir una larga la tira entera baja hasta
-     90 px BAJO EL DEDO. Medido: el `pointerdown` cae sobre GSAP, la escena
-     se reordena al llegar el foco y el `click` posterior aterriza sobre
-     Next.js -- tocabas una pieza y se te elegia otra. El hueco reservado es
-     el peor caso real de las 23 (254 px a 360, 390 y 430). */
+     que aqui ademas rompe el toque: la cabecera cambia de alto segun la
+     pieza, asi que al elegir una larga la tira entera baja BAJO EL DEDO.
+     Medido: el `pointerdown` cae sobre GSAP, la escena se reordena al
+     llegar el foco y el `click` posterior aterriza sobre Next.js --
+     tocabas una pieza y se te elegia otra. El hueco reservado es el peor
+     caso real de las 23, vuelto a medir tras la escala tipografica (el
+     nombre de pieza baja de 32 a 28,43px): 248 px a 360, 390 y 430. */
   :root[data-theme="caelestia"] .cae-cred-cab {
     flex-wrap: wrap;
     align-content: flex-start;
-    min-height: 15.875rem;
+    min-height: 15.5rem;
   }
   :root[data-theme="caelestia"] .cae-cred-cruce {
     flex: 1 0 100%;
@@ -7025,7 +7026,7 @@
     margin: 0 auto;
   }
   :root[data-theme="caelestia"] .cae-cred-nom {
-    font-size: 0.53rem;
+    font-size: var(--t-00);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -8480,7 +8481,7 @@
 
 :root[data-theme="caelestia"] .credit-name {
   font-family: var(--font-body);
-  font-size: 0.8rem;
+  font-size: var(--t-1);
   text-transform: none;
   color: var(--color-paper);
 }
