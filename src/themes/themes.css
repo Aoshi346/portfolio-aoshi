@@ -3719,7 +3719,7 @@
   font-family: "Fraunces", serif;
   font-style: italic;
   font-variation-settings: "opsz" 30, "wght" 520;
-  font-size: 14px;
+  font-size: var(--t-1);
   text-align: center;
   color: var(--cae-on-surface);
   line-height: 1.25;
@@ -3730,7 +3730,7 @@
   display: block;
   font-family: "Martian Mono", monospace;
   font-style: normal;
-  font-size: 9px;
+  font-size: var(--t-00);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--cae-on-surface-variant);
@@ -3884,7 +3884,7 @@
 
 :root[data-theme="caelestia"] .cae-obra-drawer-kick {
   font-family: "Martian Mono", monospace;
-  font-size: 10.5px;
+  font-size: var(--t-0);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--cae-primary);
@@ -3893,14 +3893,14 @@
 :root[data-theme="caelestia"] .cae-obra-drawer-title h3 {
   font-family: "Fraunces", serif;
   font-variation-settings: "opsz" 60, "wght" 640;
-  font-size: 34px;
+  font-size: var(--t-5);
   margin: 4px 0 8px;
   line-height: 1.04;
   color: var(--cae-on-surface);
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-lead {
-  font-size: 14px;
+  font-size: var(--t-1);
   color: var(--cae-on-surface-variant);
   line-height: 1.4;
 }
@@ -3952,14 +3952,14 @@
 
 :root[data-theme="caelestia"] .cae-obra-drawer-meta dt {
   font-family: "Martian Mono", monospace;
-  font-size: 9.5px;
+  font-size: var(--t-00);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-meta dd {
-  font-size: 13px;
+  font-size: var(--t-1);
   color: var(--cae-on-surface);
   margin: 3px 0 0;
 }
@@ -3989,7 +3989,7 @@
 
 :root[data-theme="caelestia"] .cae-obra-stack-text {
   font-family: "Martian Mono", monospace;
-  font-size: 10.5px;
+  font-size: var(--t-0);
   padding: 0 7px;
   height: 24px;
   display: flex;
@@ -4026,7 +4026,7 @@
 
 :root[data-theme="caelestia"] .cae-obra-prose h4 {
   font-family: "Martian Mono", monospace;
-  font-size: 10px;
+  font-size: var(--t-00);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4049,7 +4049,7 @@
      CINCO tarjetas a 1366x768. El recorte de `max-height: 800px` se deja
      puesto (no estorba, y cubre portatiles mas bajos aun que 768 de alto que
      no se han medido), pero HyprFinance a 1366x768 ya no depende de el. */
-  font-size: 14px;
+  font-size: var(--t-1);
   line-height: 1.5;
   color: var(--cae-on-surface);
   margin: 0;
@@ -4057,7 +4057,7 @@
 
 @media (max-height: 800px) {
   :root[data-theme="caelestia"] .cae-obra-prose p {
-    font-size: 13.5px;
+    font-size: var(--t-1);
     line-height: 1.45;
   }
 }
@@ -4075,7 +4075,7 @@
 :root[data-theme="caelestia"] .cae-obra-foot a {
   color: var(--cae-primary);
   text-decoration: none;
-  font-size: 12.5px;
+  font-size: var(--t-1);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -4101,7 +4101,7 @@
      sobreescribir explicitamente. */
   font-family: var(--font-body, "Hanken Grotesk", sans-serif);
   color: var(--cae-on-surface-variant);
-  font-size: 13px;
+  font-size: var(--t-1);
   text-transform: none;
   letter-spacing: normal;
   display: inline-flex;
@@ -7072,7 +7072,7 @@
    * a las anchuras medidas (1024 y 1180) sin partirse.
    */
   :root[data-theme="caelestia"] .cae-obra-caption {
-    font-size: 12px;
+    font-size: var(--t-1);
   }
 
   /*
