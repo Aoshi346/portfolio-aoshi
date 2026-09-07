@@ -152,9 +152,9 @@ def literal_content(campo: str) -> str:
     return m.group(1)
 
 
-def gate_titulo(navegador, base: str) -> list[str]:
-    print("\n[3] Titulo silencioso: sin tarjeta ni columna, prosa y cifras literales, cabe entero")
-    ctx, pg, err = abrir(navegador, base)
+def gate_titulo(navegador, base: str, dispositivo: str = "movil") -> list[str]:
+    print(f"\n[3] Titulo silencioso ({dispositivo}): sin tarjeta ni columna, prosa y cifras literales, cabe entero")
+    ctx, pg, err = abrir(navegador, base, dispositivo=dispositivo)
     pintan = pg.evaluate("""() => {
         const p = sel => { const e = document.querySelector(sel); return e ? e.getClientRects().length : -1; };
         return { widget: p('#hero .cae-widget'), statcol: p('#hero .cae-statcol'), trazo: p('#hero .cae-trazo-stage'),
@@ -400,6 +400,132 @@ def gate_entradas(navegador, base: str) -> list[str]:
     return err + err2
 
 
+def _oklab_to_srgb255(l: float, a_: float, b_: float) -> tuple[float, float, float]:
+    """OKLab -> sRGB (0..255). Copiado de `measure-caelestia-titulo.py`
+    (mismas matrices, Bjorn Ottosson)."""
+
+    def clamp01(v: float) -> float:
+        return max(0.0, min(1.0, v))
+
+    l_ = l + 0.3963377774 * a_ + 0.2158037573 * b_
+    m_ = l - 0.1055613458 * a_ - 0.0638541728 * b_
+    s_ = l - 0.0894841775 * a_ - 1.2914855480 * b_
+    l3, m3, s3 = l_**3, m_**3, s_**3
+
+    lin_r = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3
+    lin_g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3
+    lin_b = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3
+
+    def to_gamma(c: float) -> float:
+        c = clamp01(c)
+        return 12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1 / 2.4)) - 0.055
+
+    return to_gamma(lin_r) * 255, to_gamma(lin_g) * 255, to_gamma(lin_b) * 255
+
+
+def _parse_rgb(css: str) -> tuple[float, float, float, float] | None:
+    """Parser minimo de color computado: `rgb()`/`rgba()` y `oklch()` (lo que
+    Chromium devuelve para los tokens de Caelestia). Copiado de
+    `measure-caelestia-titulo.py`. Si no reconoce el formato devuelve `None`
+    y la asercion de contraste lo reporta en vez de fallar en silencio."""
+    css = css.strip()
+
+    if css.startswith("oklch("):
+        inner = css[css.index("(") + 1 : css.rindex(")")]
+        comps, _, alpha_s = inner.partition("/")
+        vals = comps.split()
+        ell, c, h = float(vals[0]), float(vals[1]), float(vals[2])
+        import math
+
+        rad = math.radians(h)
+        a_ = c * math.cos(rad)
+        b_ = c * math.sin(rad)
+        r, g, b = _oklab_to_srgb255(ell, a_, b_)
+        a = float(alpha_s.strip()) if alpha_s.strip() else 1.0
+        return r, g, b, a
+
+    if css.startswith("rgb(") or css.startswith("rgba("):
+        inner = css[css.index("(") + 1 : css.rindex(")")]
+        parts = [p.strip() for p in inner.replace("/", ",").split(",") if p.strip()]
+        if len(parts) < 3:
+            return None
+        r, g, b = float(parts[0]), float(parts[1]), float(parts[2])
+        a = float(parts[3]) if len(parts) > 3 else 1.0
+        return r, g, b, a
+
+    return None
+
+
+def _luminancia(rgb: tuple[float, float, float]) -> float:
+    def canal(c: float) -> float:
+        cs = c / 255
+        return cs / 12.92 if cs <= 0.03928 else ((cs + 0.055) / 1.055) ** 2.4
+
+    r, g, b = rgb
+    return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b)
+
+
+def _contraste(a: float, b: float) -> float:
+    hi, lo = max(a, b), min(a, b)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _ratio(fg: tuple[float, float, float], bg: tuple[float, float, float]) -> float:
+    """Ratio de contraste WCAG entre dos colores ya parseados."""
+    return _contraste(_luminancia(fg), _luminancia(bg))
+
+
+def gate_contraste(navegador, base: str) -> list[str]:
+    """Contraste AA de los pares nuevos de B6, en los dos esquemas (13:00 /
+    23:00). El fondo se resuelve subiendo por los ancestros hasta el primero
+    con `background-color` NO transparente; Titulo es "el escritorio
+    desnudo" (sin panel opaco, el fondo real es el canvas generativo), asi
+    que si la subida no encuentra nada opaco se mide contra el token
+    `--cae-surface`, igual que hace `measure-caelestia-titulo.py` para el
+    titular (no contra `document.body`, que en Caelestia tampoco pinta
+    fondo y daria un `rgba(0,0,0,0)` que no es el fondo real de nadie)."""
+    print("\n[7] Contraste AA de los pares nuevos, en los dos esquemas")
+    PARES = [
+        ("hero", "#hero .cae-mv-linea b"),
+        ("hero", "#hero .cae-mv-prosa"),
+        ("hero", "#hero .cae-mv-cifra b"),
+        ("hero", "#hero .cae-mv-cifra small"),
+        ("creditos", ".cae-cred-rot"),
+        ("creditos", ".cae-cred-nom"),
+        ("obra", "#obra .cae-obra-caption"),
+    ]
+    peor = (99.0, "", "")
+    for hora_min in (13 * 60, 23 * 60):
+        etiqueta_hora = f"{hora_min // 60:02d}:{hora_min % 60:02d}"
+        ctx, pg, err = abrir(navegador, base)
+        pg.evaluate("(m) => window.__CAE_SET_MINUTOS__(m)", hora_min)
+        pg.wait_for_timeout(800)
+        for escena, sel in PARES:
+            ir_a(pg, escena, 2600)
+            d = pg.evaluate(
+                """(sel) => { const e = document.querySelector(sel); if (!e) return null;
+                let n = e, bg = null; while (n && n !== document.documentElement) { const b = getComputedStyle(n).backgroundColor;
+                  if (b && !b.startsWith('rgba(0, 0, 0, 0)') && !b.endsWith(', 0)')) { bg = b; break; } n = n.parentElement; }
+                if (!bg) bg = getComputedStyle(document.documentElement).getPropertyValue('--cae-surface').trim();
+                return { fg: getComputedStyle(e).color, bg }; }""",
+                sel,
+            )
+            comprobar(d is not None, f"existe {sel}")
+            if d is None:
+                continue
+            fg, bg = _parse_rgb(d["fg"]), _parse_rgb(d["bg"])
+            if not fg or not bg:
+                comprobar(False, f"no se pudo parsear {sel} ({d})")
+                continue
+            r = _ratio(fg[:3], bg[:3])
+            comprobar(r >= 4.5, f"{escena} {sel} a las {etiqueta_hora}: {r:.2f}:1 (piso AA 4.5, bg={d['bg']})")
+            if r < peor[0]:
+                peor = (r, sel, etiqueta_hora)
+        ctx.close()
+    comprobar(peor[0] >= 4.5, f"peor par {peor[1]} a las {peor[2]}: {peor[0]:.2f}:1 (piso AA 4.5)")
+    return []
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:4213")
@@ -423,6 +549,13 @@ def main() -> int:
             errores += gate_stack(navegador, args.base)
         if not solo or "6" in solo:
             errores += gate_entradas(navegador, args.base)
+        if not solo or "7" in solo:
+            errores += gate_contraste(navegador, args.base)
+        if not solo or "8" in solo:
+            print("\n[8] Tableta compacta (768x1024): familias 1-3 repetidas")
+            errores += gate_ley(navegador, args.base, "tableta")
+            errores += gate_desbordamiento(navegador, args.base, "tableta")
+            errores += gate_titulo(navegador, args.base, "tableta")
         if not solo or "8b" in solo:
             errores += gate_obra_banda_media(navegador, args.base)
             errores += gate_stack_banda_media(navegador, args.base)
