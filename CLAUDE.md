@@ -314,10 +314,20 @@
   already fit), and in the media band the box grows. **The same fault was on `main`** at 1366x768
   and 1280x720 — ordinary laptops — with 11 and 35px of the `~ $ neofetch` command under the bar.
   Open and recorded, not fixed here: the typographic-scale debt (Vera's 7th sighting, a phase of
-  its own), the headline still typing at 1.5s (measured under `swiftshader`, where the stopwatch
-  lies), and a 27px black band under the panel in the three scenes with a scrolling panel — absent
-  at 1440x900, absent in Título and Contacto, **and identical on `main`**, only under device
-  emulation, so it points at the headless compositor. Full record in the spec.
+  its own). **Two other open items were closed by Aoshi on his own phone** (2026-09-07, against the
+  merged `main` over Tailscale): the headline still typing at 1.5s and a 27px black band under the
+  panel. Neither exists on a real device — both were the instrument (the `swiftshader` stopwatch and
+  the headless compositor under device emulation; the band showed identically on `main` without B6
+  and never at 1440x900). **Do not chase either again from a Playwright capture.** Full record in
+  the spec.
+  Two later faults Aoshi dictated after the merge, both fixed (`e4beed5`): the mobile Título block
+  painted in its final state before the terminal (it was in neither the entrance-hiding CSS rule nor
+  the choreography's initial states), and Stack broke on narrow phones — the tira used
+  `repeat(4, 1fr)` (`1fr` is `minmax(auto, 1fr)`, so columns never shrink: 351 over 332 at 360px),
+  the header figure was a flex child without `flex-shrink: 0`, and **the header changed height on
+  selection (164 to 254px), so the tira moved under the finger between `pointerdown` and `click` —
+  you tapped one piece and a different one was selected**. The header now has a fixed height, as
+  desktop already did. The harness gained a 360x800 band and a walk over all 23 headers.
 
 
 ## Architecture Notes

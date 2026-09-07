@@ -315,9 +315,10 @@ el reloj empieza en 572, asi que caben con holgura y solo el telefono se queda c
 Quedan abiertos, anotados y no arreglados aqui:
 - **La escala tipografica** (Vera, septima aparicion en el proyecto). Es deuda de todo el sitio, no
   de esta fase; arreglarla es una fase propia.
-- **La entrada del titular** todavia tecleando a 1,5 s. Medido bajo `swiftshader`, donde el
-  cronometro miente por diseno de la sandbox; pendiente de mirarlo en un telefono real.
-- **La banda negra de 27 px** bajo el panel, en las tres escenas con panel desplazable y en los dos
-  esquemas. No sale a 1440x900, no sale en Titulo ni en Contacto, **y sale igual en `main` sin
-  B6** — solo bajo emulacion de movil/tableta, lo que apunta al compositor del headless. Pendiente
-  de confirmar en un telefono real.
+- ~~La entrada del titular todavia tecleando a 1,5 s~~ y ~~la banda negra de 27 px bajo el
+  panel~~: **CERRADOS el 2026-09-07 por Aoshi en su propio telefono**, sobre el `main` fusionado
+  servido por Tailscale. Ninguna de las dos existe en un dispositivo real. Las dos eran del
+  instrumento: el cronometro de `swiftshader`, que la sandbox retrasa cientos de ms, y el
+  compositor del headless bajo emulacion de dispositivo — la banda salia igual en `main` sin B6 y
+  nunca a 1440x900. **No perseguirlas otra vez desde una captura de Playwright**: si algo solo
+  aparece bajo emulacion y no en el aparato, es del aparato de medir.
