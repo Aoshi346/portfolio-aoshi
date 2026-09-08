@@ -11313,4 +11313,21 @@
   :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado {
     margin-top: 0.5rem;
   }
+
+  /*
+   * Los cinco pixeles que faltaban tras fundirse la escala tipografica: las
+   * etiquetas de `.contacto-bars` pasaron de un escalon de 9,5px a 10,67
+   * (refactor(escala): un solo escalon bajo el suelo, no dos) y cada una
+   * crecio 1,17px, empujando el pie fuera de la caja del workspace (medido a
+   * 1024x768: caja [68,684], pie terminando en 689 — 5px de sobra).
+   * El relleno superior de `.contacto-bars` (encima del filete, antes de la
+   * primera fila de canales) es el unico hueco de este reparto que no se
+   * habia tocado todavia en esta banda: baja de 18 a 13px, que sigue dejando
+   * aire visible sobre "CORREO" sin tocar el gap ENTRE canales (el que
+   * separa las dianas tactiles, mas importante que el margen decorativo del
+   * filete).
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+    padding-top: 0.8125rem;
+  }
 }
