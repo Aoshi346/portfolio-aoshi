@@ -350,7 +350,7 @@
   on the scale by construction. A second element with an inline size turns the gate red.
   Gated by `scripts/measure-escala-tipografica.py`, **two families that watch each other**. The
   static one reads the source; the live one reads the **computed** `font-size` of everything that
-  paints text, and it is not redundant — it caught four sizes no regex could see: a `0.92em` that
+  paints text, and it is not redundant — it caught three sizes no regex could see: a `0.92em` that
   computed to 14.72px, a `font-size: 0` used as a hiding trick (now a proper visually-hidden span,
   better than before: the name stays in the accessibility tree), and a `<small>` the browser shrank
   to 7.60px with its own `smaller`.

@@ -4048,21 +4048,27 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-prose p {
-  /* Tercera vuelta 2026-09-05: con el grid de tres columnas / dos filas,
-     14px/1.5 cabe sin scroll a 1440x900 (panel #obra 1412x748, cajon
+  /* Tercera vuelta 2026-09-05: con el grid de tres columnas / dos filas, la
+     talla base cabe sin scroll a 1440x900 (panel #obra 1412x748, cajon
      interior 436, titulo+prosa comparten columna: HyprFinance cabe con
      margen). A 1366x768 (panel 616 de alto en vez de 748) el titulo mas la
-     prosa a 14px no cabian: se aplico un recorte a 13.5px/1.45 bajo
+     prosa no cabian a esa talla: se aplico un recorte de interlineado bajo
      `max-height: 800px` que AUN ASI dejaba HyprFinance desbordando #obra en
      ~22px, porque el problema real no era el tamano de la fuente — era que
      la columna de la captura crecia con el propio texto (ver la cuarta
      vuelta en el comentario de cabecera de `.cae-obra-drawer`, mas arriba).
      Cuarta vuelta, mismo dia: arreglada la causa (captura con alto fijo via
      `cqh`), HyprFinance cabe en el mismo cajon SIN este recorte — medido:
-     #obra 616/616 (sin scroll) con `.cae-obra-prose p` en 14px/1.5 en las
-     CINCO tarjetas a 1366x768. El recorte de `max-height: 800px` se deja
-     puesto (no estorba, y cubre portatiles mas bajos aun que 768 de alto que
-     no se han medido), pero HyprFinance a 1366x768 ya no depende de el. */
+     #obra 616/616 (sin scroll) con `.cae-obra-prose p` a interlineado base
+     en las CINCO tarjetas a 1366x768. El recorte de `max-height: 800px` se
+     deja puesto (no estorba, y cubre portatiles mas bajos aun que 768 de
+     alto que no se han medido), pero HyprFinance a 1366x768 ya no depende
+     de el.
+     Revision de hallazgos 2026-09-08: la escala (spec
+     2026-09-07-escala-tipografica) dejo la talla base y el recorte en el
+     mismo token, `--t-1` -- el override de `font-size` que llevaba esta
+     media query era ya un no-op, y se retira. Solo el interlineado (1.45
+     contra 1.5 de la base) sigue diferenciando la banda. */
   font-size: var(--t-1);
   line-height: 1.5;
   color: var(--cae-on-surface);
@@ -4071,7 +4077,6 @@
 
 @media (max-height: 800px) {
   :root[data-theme="caelestia"] .cae-obra-prose p {
-    font-size: var(--t-1);
     line-height: 1.45;
   }
 }
@@ -4181,9 +4186,9 @@
 
 :root[data-theme="caelestia"] .cae-firma {
   font-family: var(--font-display);
-  /* Los ejes del SHELL, no los del cartel: aqui se lee a 30px. Y `nowrap`
-     porque esta linea es el destino del trazo de la entrada — si partiera en
-     dos, el aterrizaje no cuadraria. */
+  /* Los ejes del SHELL, no los del cartel: aqui se lee a 28,43px (`--t-4`).
+     Y `nowrap` porque esta linea es el destino del trazo de la entrada — si
+     partiera en dos, el aterrizaje no cuadraria. */
   font-variation-settings: var(--cae-display-axes-texto);
   font-size: var(--t-4);
   line-height: 1;
@@ -5151,11 +5156,12 @@
   padding: 0;
 }
 
-/* Subordinada a `.cae-cred-rot h4`: mismo eje monoespaciado, 10px — el mismo
-   tamano que ya lleva `.cae-cred-cab .cae-cred-terr` para el mismo dato
-   (territorio) en la cabecera, asi que el par «rotulo grande / etiqueta
-   pequena» es coherente en las dos lecturas de la escena. Sin versalitas:
-   son nombres propios de marca ("TypeScript", "Django"), no un epigrafe. */
+/* Subordinada a `.cae-cred-rot h4`: mismo eje monoespaciado, `--t-0`
+   (10,67px) — el mismo tamano que ya lleva `.cae-cred-cab .cae-cred-terr`
+   para el mismo dato (territorio) en la cabecera, asi que el par «rotulo
+   grande / etiqueta pequena» es coherente en las dos lecturas de la escena.
+   Sin versalitas: son nombres propios de marca ("TypeScript", "Django"), no
+   un epigrafe. */
 :root[data-theme="caelestia"] .cae-cred-nom {
   margin: 0;
   font-family: "Martian Mono", ui-monospace, monospace;
@@ -5241,7 +5247,8 @@
    (0,1,0): `.cae-cred-cab p` le ganaba y el territorio se pintaba en Fraunces
    itálica pese a pedir la monoespaciada, obedeciendo solo el tracking. Y no
    basta con repetir la familia: hay que apagar tambien `font-style` y los ejes
-   heredados. Sin versalitas ni tracking largo — a 10 px separaba las letras. */
+   heredados. Sin versalitas ni tracking largo — a `--t-0` (10,67px) separaba
+   las letras. */
 :root[data-theme="caelestia"] .cae-cred-cab .cae-cred-terr {
   font-family: "Martian Mono", ui-monospace, monospace;
   font-size: var(--t-0);
@@ -7026,8 +7033,9 @@
     flex: 0 0 auto;
   }
   /* El cruce «Aparece en» es lo que mas empuja: dos nombres de obra en
-     Fraunces a 26 px no caben en un telefono. Baja de cuerpo, puede encoger
-     (`min-width: 0`, que un hijo de flex no tiene por defecto) y envuelve. */
+     Fraunces a 28,43px (`--t-4`) no caben en un telefono. Baja de cuerpo,
+     puede encoger (`min-width: 0`, que un hijo de flex no tiene por
+     defecto) y envuelve. */
   :root[data-theme="caelestia"] .cae-cred-cruce {
     min-width: 0;
     max-width: none;
@@ -7119,13 +7127,22 @@
     min-width: 0;
   }
   /*
-   * La leyenda en Fraunces italica es la pieza que menos margen de sobra
-   * tiene con tarjetas mas estrechas (16 px base, dos lineas a 250px de
-   * ancho de tarjeta); baja un paso para seguir cabiendo en una sola linea
-   * a las anchuras medidas (1024 y 1180) sin partirse.
+   * Esta banda bajaba la leyenda a `--t-1` para seguir cabiendo en una sola
+   * linea a las anchuras medidas (1024 y 1180), pero `--t-1` es exactamente
+   * la talla que la regla base (`:3732`) rechazo por accesibilidad: medido
+   * (revision de hallazgos, 2026-09-08) el contraste bajo el derrame de la
+   * gota cae a **4,15:1 a las 04:30 en 1024x768**, por debajo del piso AA de
+   * 4,5 -- el mismo fallo de `--t-1` que el gate 6 de
+   * `measure-caelestia-cursor.py` ya vigila a 1440x900, solo que en esta
+   * banda no habia arnes que lo viera. Se deja en `--t-2`, igual que la
+   * base (la regla queda como no-op deliberado y documentado, no se borra:
+   * si algun dia esta banda necesita otro ajuste, este es el sitio). La
+   * leyenda mas larga pasa de dos a tres lineas a 1024x768 (comprobado: las
+   * cinco tarjetas siguen alineadas, la fila crece con la mas alta, ninguna
+   * se recorta).
    */
   :root[data-theme="caelestia"] .cae-obra-caption {
-    font-size: var(--t-1);
+    font-size: var(--t-2);
   }
 
   /*

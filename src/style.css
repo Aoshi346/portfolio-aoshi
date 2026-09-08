@@ -100,11 +100,12 @@ body {
   font-family: var(--font-lead, var(--font-body));
   font-weight: var(--lead-weight, 300);
   /*
-   * `--t-3` solo existe bajo `[data-theme="vice"]`; el respaldo es el valor
-   * que ya rendia aqui para Hyprland/Caelestia antes de la escala (medido:
-   * 1.125rem via el extinto `--lead-size`), asi que los otros dos temas
-   * quedan identicos al pixel. Vice pierde el clamp por vw: la Tarea 1 lo deja
-   * en un solo paso de la escala, no en un rango.
+   * `--t-3` es un token global de `:root` (spec 2026-09-07-escala-tipografica):
+   * vale lo mismo en los tres temas, sin respaldo. Antes de la escala este
+   * selector rendia distinto por tema (medido: 1.125rem via el extinto
+   * `--lead-size` en Hyprland/Caelestia); Vice ademas pierde el clamp por vw
+   * que llevaba -- la Tarea 1 de esta escala lo deja en un solo paso, no en
+   * un rango.
    */
   font-size: var(--t-3);
   line-height: 1.4;
@@ -158,9 +159,10 @@ body {
 
 .hero-kick {
   font-weight: 700;
-  /* `--t-1` solo existe bajo `[data-theme="vice"]`; el respaldo es el
-     0.66rem que ya rendia aqui, medido en Hyprland/Caelestia antes de tocar
-     nada — los otros dos temas quedan identicos al pixel. */
+  /* `--t-1` es un token global de `:root` (spec 2026-09-07-escala-tipografica),
+     sin respaldo. Antes de la escala este selector rendia 0.66rem en
+     Hyprland/Caelestia y otro valor en Vice; los tres temas quedan ahora
+     al mismo pixel. */
   font-size: var(--t-1);
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -187,8 +189,9 @@ body {
   justify-content: space-between;
   gap: 1rem;
   font-weight: 700;
-  /* `--t-1` solo existe en Vice; respaldo = 0.6rem medido en Hyprland/
-     Caelestia antes de la escala, idem `.hero-kick` arriba. */
+  /* `--t-1` es un token global de `:root`, sin respaldo, igual que en
+     `.hero-kick` arriba. Antes de la escala este selector rendia 0.6rem en
+     Hyprland/Caelestia. */
   font-size: var(--t-1);
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -472,9 +475,10 @@ body {
   justify-content: space-between;
   padding: 0.75rem 1.5rem;
   font-weight: 700;
-  /* `--t-1` solo en Vice; respaldo = 0.58rem medido en Hyprland/Caelestia
-     antes de la escala, mismo patron que `.gallery-caption`. Paso mas cercano
-     en Vice: 9.28px -> 12px, el suelo duro de la escala.
+  /* `--t-1` es un token global de `:root`, sin respaldo, mismo patron que
+     `.gallery-caption`. Antes de la escala este selector rendia 0.58rem en
+     Hyprland/Caelestia; en Vice el paso mas cercano fue 9.28px -> 12px, el
+     suelo duro de la escala.
      Esta linea se quedo fuera del barrido que migro a sus siete hermanas, y
      era la unica del grupo visible en las cinco escenas y a todo ancho: el
      unico tamano fuera de escala que un visitante tiene delante siempre. */
@@ -663,11 +667,12 @@ body {
   gap: 0.4rem;
   margin-top: 0.5rem;
   font-weight: 600;
-  /* `--t-1` solo en Vice; respaldo = 0.62rem medido en Hyprland/Caelestia
-     antes de la escala. Ronda de correcciones 1: el arnes original no lo
-     media (punto ciego de `n.children.length`, ver measure-type-scale.py).
-     Paso mas cercano en Vice: 9.92px -> 12px (+20.97%, mismo salto que
-     `.about-h`, anotado en el informe). */
+  /* `--t-1` es un token global de `:root`, sin respaldo. Antes de la escala
+     este selector rendia 0.62rem en Hyprland/Caelestia. Ronda de
+     correcciones 1: el arnes original no lo media (punto ciego de
+     `n.children.length`, ver measure-type-scale.py). Paso mas cercano en
+     Vice: 9.92px -> 12px (+20.97%, mismo salto que `.about-h`, anotado en
+     el informe). */
   font-size: var(--t-1);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -889,9 +894,10 @@ body {
 
 .obra-meta dt {
   font-weight: 700;
-  /* `--t-1` solo en Vice; respaldo = 0.53rem medido en Hyprland/Caelestia
-     antes de la escala. Paso mas cercano en Vice: 8.48px -> 12px (+41.5%,
-     el salto mas grande de la tarea — anotado en el informe). */
+  /* `--t-1` es un token global de `:root`, sin respaldo. Antes de la escala
+     este selector rendia 0.53rem en Hyprland/Caelestia; en Vice el paso mas
+     cercano fue 8.48px -> 12px (+41.5%, el salto mas grande de la tarea —
+     anotado en el informe). */
   font-size: var(--t-1);
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -1015,9 +1021,9 @@ body {
     transparent
   );
   font-weight: 700;
-  /* `--t-1` solo en Vice; respaldo = 0.58rem medido en Hyprland/Caelestia
-     antes de la escala. Paso mas cercano en Vice: 9.28px -> 12px (+29.3%,
-     anotado en el informe). */
+  /* `--t-1` es un token global de `:root`, sin respaldo. Antes de la escala
+     este selector rendia 0.58rem en Hyprland/Caelestia; en Vice el paso mas
+     cercano fue 9.28px -> 12px (+29.3%, anotado en el informe). */
   font-size: var(--t-1);
   letter-spacing: 0.12em;
   text-transform: uppercase;

@@ -73,11 +73,13 @@ Reutilizar el nombre con otro valor los cambiaría en silencio, así que el orde
 (+0,5). Un token cuyo número cambia bajo sus consumidores es peor que un literal, porque el literal
 al menos se ve.
 
-1. **Dos escalones nuevos por abajo, con razón 1,125 y no 1,333.** El cambio de razón es
+1. **Un escalón nuevo por abajo, con razón 1,125 y no 1,333.** El cambio de razón es
    deliberado: a 10 px el ojo distingue un escalón de 1 px y a 120 px no distingue quince. Una
    razón única en todo el rango deja o sin tallas abajo (1,333 bajo 12 solo da 9, y luego 6,75) o
-   con quince tallas arriba que nadie usa. Los 23 literales pequeños caen en `--t-00`, `--t-0` y
-   `--t-1`, con un desplazamiento máximo de 1,02 px.
+   con quince tallas arriba que nadie usa. Los 23 literales pequeños caen en `--t-0` y `--t-1`, con
+   un desplazamiento máximo de 1,02 px. (Salió con **dos** escalones bajo el suelo, `--t-00` a
+   9,5 px y `--t-0` a 10,67 px — ver «El escalón que se fusionó» más abajo para el porqué de que
+   ahora solo quede uno.)
 2. **La escala se declara UNA vez, en `:root` a secas.** Los tres bloques de tema dejan de
    repetirla. No es tocar el diseño de Vice: son exactamente los mismos números que su bloque ya
    declara, y su bloque deja de declararlos.
@@ -263,7 +265,7 @@ mueve bajo el dedo entre el `pointerdown` y el `click` y tocas una pieza pero se
 ### Números finales
 
 - **57 declaraciones migradas**, mediana del desplazamiento 0,50 px, máximo 3,90 px.
-- **39 valores distintos a 12**, más una excepción nombrada.
+- **39 valores distintos a 11**, más una excepción nombrada.
 - `measure-escala-tipografica.py`: **dos familias, 0 fallos**, con la viva vista en rojo dos veces
   sobre `SPAN.cae-clock = 13.70px` y el arnés restaurado sin diferencias.
 - Los ocho arneses de Caelestia en verde (Créditos con su `hover` que expira, conocido y ajeno).
@@ -293,4 +295,24 @@ se ajustó al mismo tiempo: el diccionario de la escala pierde `--t-00` y las as
 ### Gates de crítica
 
 `vera-art-director` sobre las cinco escenas, con la pregunta explícita de si **se nota que las tallas
-ahora son doce**. Veredicto en el apartado siguiente.
+ahora son once**.
+
+**Veredicto: BLOCK, 6,8/10 sobre un gate de 7,5.**
+
+Su P1 medido es el que provocó fundir los dos escalones de la sección anterior: `--t-00` (9,5px) y
+`--t-0` (10,67px) estaban a 1,17px de distancia y no se distinguían donde de verdad conviven en el
+mismo encuadre — la barra (`.cae-mark` contra `.cae-ws-n`) y el cajón de Obra
+(`.cae-obra-drawer-kick` contra `.cae-obra-drawer-meta dt` y `.cae-obra-prose h4`), comprobado con
+capturas a triple densidad. Ya está resuelto: es la fusión documentada arriba.
+
+Su P2, anotado y **no arreglado** — deuda conocida, no bloqueante: la escena Quién soy mete cuatro
+roles semánticos (`.ficha-k`, `.ficha-v`, `.ficha-host`, `.ficha-frase`) en un único escalón de
+16px y los separa por peso y color, no por talla. La escala resuelve que cada talla sea una de
+once y no una de treinta y nueve; no resuelve, por sí sola, que cada rol tenga su propio escalón —
+eso es una decisión de jerarquía por escena, fuera del alcance de esta rama.
+
+Lo que sí verificó como conseguido: un barrido de las 397 reglas del tema con cero declaraciones de
+`font-size` fuera de un token, y jerarquías de tres escalones legibles en el cajón de Obra, la
+tarjeta «Ahora mismo» y la cabecera de Stack — la pregunta concreta («¿se nota que las tallas ahora
+son once?») tiene respuesta afirmativa en esos tres sitios, que es lo que separa este trabajo de
+ser solo contable.
