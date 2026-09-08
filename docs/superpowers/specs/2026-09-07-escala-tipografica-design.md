@@ -49,8 +49,7 @@ Tres cambios, ninguno de ellos cosmético:
 
 | token | px | razón respecto al anterior |
 |---|---|---|
-| `--t-00` | 9,5 | — |
-| `--t-0` | 10,67 | 1,125 |
+| `--t-0` | 10,67 | — |
 | `--t-1` | 12 | 1,125 |
 | `--t-2` | 16 | 1,333 |
 | `--t-3` | 21,33 | 1,333 |
@@ -157,7 +156,7 @@ de aceptarse.
    - Cero `font-size` con literal bajo `[data-theme="caelestia"]` en `themes.css`.
    - Cero `var(--t-N, respaldo)` en todo `src/`: el token se usa sin coma.
    - La escala se declara **exactamente una vez** en el repo, y en `:root` a secas.
-   - Los doce tokens existen y sus valores son los de la tabla.
+   - Los once tokens existen y sus valores son los de la tabla.
    Sabotaje: devolver un literal al CSS y un respaldo a `style.css`.
 
 **2. Viva, sobre el build de producción servido.** Es la que manda.
@@ -269,6 +268,27 @@ mueve bajo el dedo entre el `pointerdown` y el `click` y tocas una pieza pero se
   sobre `SPAN.cae-clock = 13.70px` y el arnés restaurado sin diferencias.
 - Los ocho arneses de Caelestia en verde (Créditos con su `hover` que expira, conocido y ajeno).
 - `verify.py` con código 0.
+
+### El escalón que se fusionó (2026-09-08)
+
+`vera-art-director` auditó el resultado y no aguantó los dos escalones bajo el suelo. `--t-00`
+(9,5) y `--t-0` (10,67) están a **1,17 px** de distancia, y en los dos únicos sitios del proyecto
+donde conviven en el mismo encuadre —la barra (`.cae-mark` a 10,67 junto a `.cae-ws-n` a 9,5) y el
+cajón de Obra (`.cae-obra-drawer-kick` a 10,67 junto a `.cae-obra-drawer-meta dt` y
+`.cae-obra-prose h4` a 9,5)— se leen como una única talla, medido a triple densidad. El spec
+justificaba los dos escalones diciendo que «a 10 px el ojo distingue un escalón de 1 px»: cierto en
+general, falso en este caso concreto, porque 1,17 px de por sí no basta cuando los dos textos
+comparten peso, familia y color.
+
+**Si dos escalones se leen como uno, son uno.** Se fusionaron en `--t-0` a 10,67 px: la escala pasa
+de doce tokens a **once**, las 18 declaraciones que pedían `--t-00` pasan a pedir `--t-0` (las 6 que
+ya pedían `--t-0` no cambian), y el comentario del bloque `:root` cuenta el porqué para que nadie
+vuelva a separarlos sin volver a medir. Consecuencia medida, no solo teórica: crecer 1,17 px movió
+el peor caso de las 23 cabeceras de Stack de 248 a **251 px** (`.cae-cred-cab .cae-cred-terr` sube
+de 9,5 a 10,67), así que su `min-height` en la banda de teléfono sube de `15.5rem` a `15.6875rem`.
+Gate 5b de `measure-caelestia-movil.py` confirma `[251]` uniforme en las 23. `measure-escala-tipografica.py`
+se ajustó al mismo tiempo: el diccionario de la escala pierde `--t-00` y las aserciones que decían
+«doce» pasan a «once».
 
 ### Gates de crítica
 

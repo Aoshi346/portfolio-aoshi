@@ -10,16 +10,24 @@
  * abajo. El cambio de razon es deliberado: a 10px el ojo distingue un escalon
  * de 1px y a 120px no distingue quince, asi que una razon unica en todo el
  * rango deja o sin tallas abajo (1,333 bajo 12 solo da 9, y luego 6,75) o con
- * quince arriba que nadie usa. Los dos escalones de abajo salen de los siete
- * valores a ojo que hacian un unico trabajo: rotular.
+ * quince arriba que nadie usa.
  *
- * `--t-00`/`--t-0` no son texto de lectura: existen para la rotulacion mono
+ * `--t-0` (10,67px) NO es texto de lectura: existe para la rotulacion mono
  * (esquina, rotulo de acto/destino, estado). Caelestia llego a declarar su
- * propio `--t-0: 9px` en su bloque de tema para cubrir ese mismo hueco --
- * la sexta vez que un literal sin declarar se colaba ahi. Vive solo aqui.
+ * propio `--t-0: 9px` en su bloque de tema para cubrir ese mismo hueco -- la
+ * sexta vez que un literal sin declarar se colaba ahi. Vive solo aqui.
+ *
+ * Hubo un segundo escalon bajo el suelo, `--t-00` a 9,5px, para separar la
+ * rotulacion mas pequena de la rotulacion normal. Se fusiono con `--t-0` el
+ * 2026-09-08: Vera Holm midio los dos a triple densidad en los dos sitios
+ * donde conviven en el mismo encuadre -- la barra (`.cae-mark` a 10,67 junto
+ * a `.cae-ws-n` a 9,5) y el cajon de Obra (`.cae-obra-drawer-kick` a 10,67
+ * junto a `.cae-obra-drawer-meta dt` y `.cae-obra-prose h4` a 9,5) -- y a
+ * 1,17px de distancia se leen como una unica talla. Si dos escalones se leen
+ * como uno, son uno: la escala tiene once tokens, no doce, y todo lo que
+ * pedia `--t-00` pide ahora `--t-0`.
  */
 :root {
-  --t-00: 9.5px;
   --t-0: 10.67px;
   --t-1: 12px;
   --t-2: 16px;
@@ -3561,10 +3569,10 @@
    *   1. Todo clamp() lleva LOS DOS extremos en pasos de esta escala.
    *   2. Maximo cuatro tamanos por encuadre.
    *
-   * `--t-00` y `--t-0` (rotulacion mono de Fundido, no texto de lectura) se
-   * declaran una sola vez, en el bloque de `:root` al principio del fichero
-   * -- no aqui. Una segunda declaracion por tema es exactamente el defecto
-   * que esa escala vino a eliminar.
+   * `--t-0` (rotulacion mono de Fundido, no texto de lectura) se declara una
+   * sola vez, en el bloque de `:root` al principio del fichero -- no aqui.
+   * Una segunda declaracion por tema es exactamente el defecto que esa
+   * escala vino a eliminar.
    */
 
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
@@ -3736,7 +3744,7 @@
   display: block;
   font-family: "Martian Mono", monospace;
   font-style: normal;
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--cae-on-surface-variant);
@@ -3958,7 +3966,7 @@
 
 :root[data-theme="caelestia"] .cae-obra-drawer-meta dt {
   font-family: "Martian Mono", monospace;
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4032,7 +4040,7 @@
 
 :root[data-theme="caelestia"] .cae-obra-prose h4 {
   font-family: "Martian Mono", monospace;
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4193,7 +4201,7 @@
 
 :root[data-theme="caelestia"] .cae-meta {
   font-family: var(--font-mono);
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4228,7 +4236,7 @@
   display: block;
   margin-top: 3px;
   font-family: var(--font-mono);
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4400,7 +4408,7 @@
 :root[data-theme="caelestia"] .cae-whd {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4457,7 +4465,7 @@
 :root[data-theme="caelestia"] .cae-wfecha {
   display: block;
   font-family: var(--font-mono);
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   letter-spacing: 0.04em;
   color: var(--cae-on-surface-variant);
   margin-bottom: 3px;
@@ -4511,6 +4519,19 @@
   :root[data-theme="caelestia"] .cae-wpie {
     margin-top: 6px;
     padding-top: 8px;
+  }
+  /* Escala tipografica (2026-09-08, fusion de --t-00 en --t-0): `.cae-k`
+     crece de 9,5 a 10,67px en las cuatro filas de la columna de cifras, que
+     cuelga de `bottom: 0` -- crecer empuja su `top` HACIA ARRIBA y comia el
+     hueco con `.cae-widget` (a 1366x768 bajo de 9 a 0px, gate `tarjeta_portatil`).
+     Medido donde estaba la holgura antes de tocar nada: `.cae-wdos` y
+     `.cae-wpie` ya estan en su limite (recortados en una ronda anterior, ver
+     el comentario de `.cae-wpie` arriba); el hueco mas generoso que quedaba
+     era el `gap` ENTRE filas de la columna de cifras (14px, sin tocar desde
+     que existe). Se recorta ahi, no en la tarjeta: 14 -> 10px devuelve el
+     hueco a >=8px con margen (12px medido). */
+  :root[data-theme="caelestia"] .cae-statcol {
+    gap: 10px;
   }
 }
 
@@ -5138,7 +5159,7 @@
 :root[data-theme="caelestia"] .cae-cred-nom {
   margin: 0;
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   font-style: normal;
   font-variation-settings: normal;
   letter-spacing: 0.01em;
@@ -5223,7 +5244,7 @@
    heredados. Sin versalitas ni tracking largo — a 10 px separaba las letras. */
 :root[data-theme="caelestia"] .cae-cred-cab .cae-cred-terr {
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   letter-spacing: 0.01em;
   font-style: normal;
   font-variation-settings: normal;
@@ -5245,7 +5266,7 @@
 :root[data-theme="caelestia"] .cae-cred-cruce > span {
   display: block;
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -5520,11 +5541,11 @@
   padding-bottom: 0.875rem;
   border-bottom: 1px solid currentColor;
   font-family: var(--font-mono);
-  /* `--t-00` (9,5px): rotulacion mono, no texto de lectura. Ver el comentario
-     junto a su declaracion, en el bloque de tokens (:root). Antes era
-     `--t-0`, que la escala nueva reasigno a 10,67px -- reapuntado el
-     2026-09-07 para no crecer 1,67px en silencio. */
-  font-size: var(--t-00);
+  /* `--t-0` (10,67px): rotulacion mono, no texto de lectura. Ver el
+     comentario junto a su declaracion, en el bloque de tokens (:root). Fue
+     `--t-00` (9,5px) hasta el 2026-09-08, cuando Vera Holm midio que los dos
+     escalones bajo el suelo se leian como uno y se fusionaron. */
+  font-size: var(--t-0);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   opacity: var(--fundido-dim);
@@ -5817,11 +5838,11 @@
 
 :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar-label {
   font-family: var(--font-mono);
-  /* `--t-00` (9,5px): rotulacion mono, no texto de lectura. Ver el comentario
-     junto a su declaracion, en el bloque de tokens (:root). Antes era
-     `--t-0`, que la escala nueva reasigno a 10,67px -- reapuntado el
-     2026-09-07 para no crecer 1,67px en silencio. */
-  font-size: var(--t-00);
+  /* `--t-0` (10,67px): rotulacion mono, no texto de lectura. Ver el
+     comentario junto a su declaracion, en el bloque de tokens (:root). Fue
+     `--t-00` (9,5px) hasta el 2026-09-08, cuando Vera Holm midio que los dos
+     escalones bajo el suelo se leian como uno y se fusionaron. */
+  font-size: var(--t-0);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   opacity: var(--fundido-dim);
@@ -5851,11 +5872,11 @@
   align-items: center;
   gap: 0.5625rem;
   font-family: var(--font-mono);
-  /* `--t-00` (9,5px): rotulacion mono, no texto de lectura. Ver el comentario
-     junto a su declaracion, en el bloque de tokens (:root). Antes era
-     `--t-0`, que la escala nueva reasigno a 10,67px -- reapuntado el
-     2026-09-07 para no crecer 1,67px en silencio. */
-  font-size: var(--t-00);
+  /* `--t-0` (10,67px): rotulacion mono, no texto de lectura. Ver el
+     comentario junto a su declaracion, en el bloque de tokens (:root). Fue
+     `--t-00` (9,5px) hasta el 2026-09-08, cuando Vera Holm midio que los dos
+     escalones bajo el suelo se leian como uno y se fusionaron. */
+  font-size: var(--t-0);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   opacity: var(--fundido-dim);
@@ -6215,7 +6236,7 @@
 :root[data-theme="caelestia"] .cae-ws-n {
   font-style: normal;
   font-family: var(--font-mono);
-  font-size: var(--t-00);
+  font-size: var(--t-0);
   opacity: 0.55;
   margin-right: 0.3125rem;
 }
@@ -6732,7 +6753,7 @@
   :root[data-theme="caelestia"] .cae-meta {
     display: block;
     margin-top: 0.375rem;
-    font-size: var(--t-00);
+    font-size: var(--t-0);
   }
   :root[data-theme="caelestia"] .cae-tit {
     margin-top: 7.5rem; /* el titular a media altura: aire, no relleno */
@@ -6769,7 +6790,7 @@
     gap: 0.25rem 1rem;
     margin: 1.375rem 0 0;
     font-family: var(--font-mono);
-    font-size: var(--t-00);
+    font-size: var(--t-0);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--cae-on-surface-variant);
@@ -6783,9 +6804,9 @@
     color: var(--cae-on-surface);
     margin-right: 0.25rem;
   }
-  /* El `<small>` del rotulo hereda `font-size: var(--t-00)` de `.cae-mv-cifras`,
-     pero el navegador aplica su propio `smaller` encima (~80%): 9,5px caian a
-     7,60px, fuera de la escala y sin ningun literal que la familia estatica
+  /* El `<small>` del rotulo hereda `font-size: var(--t-0)` de `.cae-mv-cifras`,
+     pero el navegador aplica su propio `smaller` encima (~80%): 10,67px caian
+     a 8,53px, fuera de la escala y sin ningun literal que la familia estatica
      pudiera leer. `measure-escala-tipografica.py` (familia viva) lo caza. */
   :root[data-theme="caelestia"] .cae-mv-cifras small {
     font-size: inherit;
@@ -7030,12 +7051,13 @@
      Medido: el `pointerdown` cae sobre GSAP, la escena se reordena al
      llegar el foco y el `click` posterior aterriza sobre Next.js --
      tocabas una pieza y se te elegia otra. El hueco reservado es el peor
-     caso real de las 23, vuelto a medir tras la escala tipografica (el
-     nombre de pieza baja de 32 a 28,43px): 248 px a 360, 390 y 430. */
+     caso real de las 23, vuelto a medir el 2026-09-08 tras fundir `--t-00`
+     en `--t-0` (`.cae-cred-cab .cae-cred-terr` sube de 9,5 a 10,67px): 251
+     px a 360 y 390, 245 a 430 -- «CSS» es la pieza mas alta. */
   :root[data-theme="caelestia"] .cae-cred-cab {
     flex-wrap: wrap;
     align-content: flex-start;
-    min-height: 15.5rem;
+    min-height: 15.6875rem;
   }
   :root[data-theme="caelestia"] .cae-cred-cruce {
     flex: 1 0 100%;
@@ -7056,7 +7078,7 @@
     margin: 0 auto;
   }
   :root[data-theme="caelestia"] .cae-cred-nom {
-    font-size: var(--t-00);
+    font-size: var(--t-0);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

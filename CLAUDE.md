@@ -335,10 +335,12 @@
   — a perfect fourth, ratio 1.333, ten steps from 12 to 159.66px — but **nothing obliged anyone to
   use it**: 69 of 177 `font-size` declarations carried a literal, 39 distinct values, and 57 of
   those literals were Caelestia's.
-  **What changed:** two steps below the floor, `--t-00` (9.5px) and `--t-0` (10.67px), at ratio
-  **1.125 instead of 1.333** — deliberate, because at 10px the eye resolves a 1px step and at 120px
-  it does not resolve fifteen, so one ratio across the whole range leaves you either with no small
-  sizes or with fifteen large ones nobody uses. The scale is declared **once, on bare `:root`**,
+  **What changed:** one step below the floor, `--t-0` (10.67px), at ratio **1.125 instead of
+  1.333** — deliberate, because at 10px the eye resolves a 1px step and at 120px it does not
+  resolve fifteen, so one ratio across the whole range leaves you either with no small sizes or
+  with fifteen large ones nobody uses. (It shipped as **two** steps below the floor, `--t-00` at
+  9.5px and `--t-0` at 10.67px — see "The steps that merged" below for why there is only one now.)
+  The scale is declared **once, on bare `:root`**,
   where it lived three times over — once per theme, identical — while `style.css` consumed it with
   **17 fallbacks** (`var(--t-1, 0.53rem)`), a second scale in the shadows: the number that would
   paint if the token were missing. All 57 literals moved to their nearest step, median shift
@@ -365,6 +367,16 @@
      falls to **4.21:1 in Obra at 04:30**, below AA. It is `--t-2` now.
   Hyprland's literals are deliberately out of scope until its redesign closes; Vice only lost the
   duplicated declaration — the same numbers.
+  **The steps that merged (2026-09-08):** `vera-art-director` measured the two steps below the
+  floor at triple density and found `--t-00` (9.5px) and `--t-0` (10.67px) — 1.17px apart — read as
+  a single size wherever they actually sit in the same frame: the bar (`.cae-mark` at 10.67 next to
+  `.cae-ws-n` at 9.5) and the Obra drawer (`.cae-obra-drawer-kick` at 10.67 next to
+  `.cae-obra-drawer-meta dt` and `.cae-obra-prose h4` at 9.5). If two steps read as one, they are
+  one: they merged into a single `--t-0` at 10.67px, so the scale has **eleven** tokens, not twelve,
+  and the 18 declarations that read `var(--t-00)` now read `var(--t-0)` (the 6 that already read
+  `var(--t-0)` are unchanged). Growing 1.17px moved Stack's worst-case header (`.cae-cred-cab`)
+  from 248 to **251px**, so its phone `min-height` moved from `15.5rem` to `15.6875rem` — gate 5b of
+  `measure-caelestia-movil.py` confirms `[251]` uniform across all 23 pieces.
 
 
 ## Architecture Notes

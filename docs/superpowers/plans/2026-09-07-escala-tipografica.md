@@ -17,6 +17,12 @@ Playwright (Python) para los arneses.
 
 **Spec:** `docs/superpowers/specs/2026-09-07-escala-tipografica-design.md`
 
+> **Actualización 2026-09-08:** este plan describe la ejecución original, con **doce** escalones
+> (dos por debajo del suelo: `--t-00` a 9,5px y `--t-0` a 10,67px, razón 1,125). `vera-art-director`
+> midió que a 1,17px de distancia se leían como uno solo donde conviven en el mismo encuadre (la
+> barra y el cajón de Obra) y se fusionaron en un único `--t-0` a 10,67px: la escala tiene **once**
+> tokens, no doce. Detalle en el spec, apartado «El escalón que se fusionó (2026-09-08)».
+
 ## Global Constraints
 
 - **Rama:** `design/escala-tipografica`, ya creada desde `main` (`a73fa11`). Sin push.
@@ -350,11 +356,15 @@ nuevo = """/*
  * abajo. El cambio de razon es deliberado: a 10px el ojo distingue un escalon
  * de 1px y a 120px no distingue quince, asi que una razon unica en todo el
  * rango deja o sin tallas abajo (1,333 bajo 12 solo da 9, y luego 6,75) o con
- * quince arriba que nadie usa. Los dos escalones de abajo salen de los siete
- * valores a ojo que hacian un unico trabajo: rotular.
+ * quince arriba que nadie usa.
+ *
+ * NOTA 2026-09-08: hubo un segundo escalon bajo el suelo, --t-00 a 9.5px.
+ * Vera Holm midio que a 1,17px de distancia se leia como el mismo escalon
+ * que --t-0 en los dos sitios donde conviven en el mismo encuadre (la barra
+ * y el cajon de Obra), y se fusionaron. La escala tiene once tokens, no
+ * doce; ver docs/superpowers/specs/2026-09-07-escala-tipografica-design.md.
  */
 :root {
-  --t-00: 9.5px;
   --t-0: 10.67px;
   --t-1: 12px;
   --t-2: 16px;
@@ -463,19 +473,19 @@ Vice y Hyprland sin cambios: son exactamente los mismos numeros."
 
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
-| `.cae-meta` | 10px | `var(--t-00)` | +0,50 |
+| `.cae-meta` | 10px | `var(--t-0)` | +0,67 |
 | `.cae-v2` | 26px | `var(--t-4)` | −2,43 |
-| `.cae-k` | 9px | `var(--t-00)` | −0,50 |
+| `.cae-k` | 9px | `var(--t-0)` | +1,67 |
 | `.cae-wsub` | 13px | `var(--t-1)` | +1,00 |
 | `.cae-mark` | 0.6875rem | `var(--t-0)` | +0,33 |
 | `.cae-ws` | 0.75rem | `var(--t-1)` | 0 |
-| `.cae-ws-n` | 0.625rem | `var(--t-00)` | +0,50 |
+| `.cae-ws-n` | 0.625rem | `var(--t-0)` | +0,67 |
 | `.cae-clock` | 0.8125rem | `var(--t-1)` | +1,00 |
 | `.cae-ws-n` (banda ≤640) | 0.75rem | `var(--t-1)` | 0 |
 | `.cae-dock-item::after` | 0.65625rem | `var(--t-0)` | −0,17 |
 | `.cae-toast-t` | 0.71875rem | `var(--t-1)` | −0,50 |
 | `.cae-toast-s` | 0.65625rem | `var(--t-0)` | −0,17 |
-| `.cae-meta` (banda ≤900) | 0.5625rem | `var(--t-00)` | −0,50 |
+| `.cae-meta` (banda ≤900) | 0.5625rem | `var(--t-0)` | +1,67 |
 
 **`.cae-ws-n` y `.cae-meta` aparecen dos veces cada uno, en bandas de `@media` distintas.** Un
 reemplazo por texto aterriza en la equivocada. Sustituir por número de línea, releyendo el fichero
@@ -546,14 +556,14 @@ maximo 2,43px (.cae-v2), mediana 0,50. Arnes de hora en verde."
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
 | `.cae-obra-caption` | 14px | `var(--t-1)` | +2,00 |
-| `.cae-obra-tag` | 9px | `var(--t-00)` | −0,50 |
+| `.cae-obra-tag` | 9px | `var(--t-0)` | +1,67 |
 | `.cae-obra-drawer-kick` | 10.5px | `var(--t-0)` | −0,17 |
 | **`.cae-obra-drawer-title h3`** | **34px** | **`var(--t-5)`** | **+3,90** |
 | `.cae-obra-drawer-lead` | 14px | `var(--t-1)` | +2,00 |
-| `.cae-obra-drawer-meta dt` | 9.5px | `var(--t-00)` | 0 |
+| `.cae-obra-drawer-meta dt` | 9.5px | `var(--t-0)` | +1,17 |
 | `.cae-obra-drawer-meta dd` | 13px | `var(--t-1)` | +1,00 |
 | `.cae-obra-stack-text` | 10.5px | `var(--t-0)` | −0,17 |
-| `.cae-obra-prose h4` | 10px | `var(--t-00)` | +0,50 |
+| `.cae-obra-prose h4` | 10px | `var(--t-0)` | +0,67 |
 | `.cae-obra-prose p` | 14px | `var(--t-1)` | +2,00 |
 | `.cae-obra-prose p` (segunda regla) | 13.5px | `var(--t-1)` | +1,50 |
 | `.cae-obra-foot a` | 12.5px | `var(--t-1)` | +0,50 |
@@ -627,15 +637,15 @@ de contraste conocidos y ninguno mas."
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
 | `.cae-cred-rot h4` | 16px | `var(--t-2)` | 0 |
-| `.cae-cred-nom` | 10px | `var(--t-00)` | +0,50 |
+| `.cae-cred-nom` | 10px | `var(--t-0)` | +0,67 |
 | **`.cae-cred-nombre`** | **32px** | **`var(--t-4)`** | **−3,57** |
 | `.cae-cred-detalle` | 17px | `var(--t-2)` | +1,00 |
-| `.cae-cred-cab .cae-cred-terr` | 10px | `var(--t-00)` | +0,50 |
-| `.cae-cred-cruce > span` | 9.5px | `var(--t-00)` | 0 |
+| `.cae-cred-cab .cae-cred-terr` | 10px | `var(--t-0)` | +0,67 |
+| `.cae-cred-cruce > span` | 9.5px | `var(--t-0)` | +1,17 |
 | `.cae-cred-cruce-lista li` | 26px | `var(--t-4)` | −2,43 |
 | `.cae-cred-cruce-lista li.is-vacia` | 21px | `var(--t-3)` | −0,33 |
 | `.cae-cred-cruce-lista li` (banda ≤640) | 1.0625rem | `var(--t-2)` | +1,00 |
-| `.cae-cred-nom` (banda ≤900) | 0.53rem | `var(--t-00)` | −1,02 |
+| `.cae-cred-nom` (banda ≤900) | 0.53rem | `var(--t-0)` | +2,19 |
 | `.credit-name` | 0.8rem | `var(--t-1)` | +0,80 |
 
 - [x] **Step 2: Volver a medir la altura de la cabecera en el teléfono**
@@ -796,13 +806,13 @@ filete medido con Range guarda su relacion con el retrato."
 | `.cae-firma` | 30px | `var(--t-4)` | +1,57 |
 | `.cae-firma` (segunda regla) | 1.125rem | `var(--t-2)` | −2,00 |
 | `.cae-term-line` | 20px | `var(--t-3)` | −1,33 |
-| `.cae-whd` | 9.5px | `var(--t-00)` | 0 |
+| `.cae-whd` | 9.5px | `var(--t-0)` | +1,17 |
 | `.cae-wnow` | 27px | `var(--t-4)` | −1,43 |
-| `.cae-wfecha` | 9.5px | `var(--t-00)` | 0 |
+| `.cae-wfecha` | 9.5px | `var(--t-0)` | +1,17 |
 | `.cae-wnombre` | 12.5px | `var(--t-1)` | +0,50 |
 | `.cae-pilla` | 10.5px | `var(--t-0)` | −0,17 |
 | `.cae-mv-prosa` | 0.8125rem | `var(--t-1)` | +1,00 |
-| `.cae-mv-cifras` | 0.625rem | `var(--t-00)` | +0,50 |
+| `.cae-mv-cifras` | 0.625rem | `var(--t-0)` | +0,67 |
 | `.cae-mv-cifra b` | 0.9375rem | `var(--t-2)` | −1,00 |
 
 **No tocar `#hero .cae-ln`**: el titular se justifica desde TS (`caelestia.titulo.ts:48-52`) y su
