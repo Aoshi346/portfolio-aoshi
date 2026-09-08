@@ -49,7 +49,8 @@ export function mountCaelestiaShell(root: HTMLElement): CaelestiaShellHandle {
   // ---------------------------------------------------------------- la barra
   const pastillas = sceneIndex.map((escena, indice) => {
     const numero = el("i", "cae-ws-n", [String(indice + 1)]);
-    const boton = el("button", "cae-ws", [numero, escena.label]);
+    const nombre = el("span", "cae-ws-label", [escena.label]);
+    const boton = el("button", "cae-ws", [numero, nombre]);
     boton.type = "button";
     boton.dataset.caeWs = escena.id;
     boton.setAttribute("aria-current", indice === 0 ? "true" : "false");

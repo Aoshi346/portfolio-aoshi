@@ -3715,11 +3715,17 @@
     0 14px 26px -8px rgb(0 0 0 / 0.45);
 }
 
+/* Era 14px, y 14 empata a la misma distancia (2px) de `--t-1` (12) y de
+   `--t-2` (16) -- el desempate no es tipografico, es de accesibilidad: a
+   `--t-1` el glifo adelgaza y bajo el derrame de la gota (`caelestiaCursor.ts`)
+   el contraste de la leyenda cae a 4,21:1 a las 04:30, por debajo del piso AA
+   de 4,5. Se rompe hacia `--t-2`. Lo vigila el gate 6 de
+   `scripts/measure-caelestia-cursor.py` (barrido de 24 horas). */
 :root[data-theme="caelestia"] .cae-obra-caption {
   font-family: "Fraunces", serif;
   font-style: italic;
   font-variation-settings: "opsz" 30, "wght" 520;
-  font-size: var(--t-1);
+  font-size: var(--t-2);
   text-align: center;
   color: var(--cae-on-surface);
   line-height: 1.25;
@@ -4899,10 +4905,15 @@
   color: var(--cae-on-surface);
 }
 
+/* Era `font-size: 0.92em`: relativo al `var(--t-2)` de `.ficha-fila` (16px),
+   calculaba 14,72px -- fuera de la escala, y la estatica no lo ve porque no
+   hay ningun literal que leer (es una talla que RESULTA, no que se declara).
+   Lo caza `measure-escala-tipografica.py`, familia viva. Al rungo mas cercano
+   por debajo: `--t-1`. */
 :root[data-theme="caelestia"] .ficha-s {
   display: block;
   margin-top: 0.16rem;
-  font-size: 0.92em;
+  font-size: var(--t-1);
   color: var(--cae-on-surface-variant);
 }
 
@@ -6245,10 +6256,13 @@
  * nombres caben de sobra y sin ellos la barra son cinco numeros a ciegas,
  * hallazgo de Lidia sobre esta misma banda. Medido antes de moverlo.
  *
- * `font-size: 0` en el boton y tamano real en el `<i>` del numero deja el
- * nombre fuera de la caja visual pero DENTRO del arbol de accesibilidad. No
- * cambiar por `display: none` sobre el texto: eso si lo sacaria del lector
- * de pantalla.
+ * El nombre ahora vive en su propio `<span class="cae-ws-label">`
+ * (`caelestiaShell.ts`) y aqui se esconde con el patron VISUALMENTE OCULTO
+ * (el de `.sr-only` en `style.css`) en vez de `font-size: 0` en el boton: un
+ * `font-size: 0` es una talla, y la escala tipografica (2026-09-07) exige que
+ * toda talla PINTADA este en los doce tokens -- 0 no lo es y `measure-escala-
+ * tipografica.py` lo cazaba. `display: none`/`visibility: hidden` sacarian el
+ * nombre del arbol de accesibilidad, que es justo lo que esto evita.
  */
 @media (max-width: 40rem) {
   :root[data-theme="caelestia"] .cae-bar {
@@ -6257,8 +6271,11 @@
   }
 
   :root[data-theme="caelestia"] .cae-ws {
-    font-size: 0;
     padding: 0.375rem 0.5rem;
+  }
+
+  :root[data-theme="caelestia"] .cae-ws-label {
+    @apply sr-only;
   }
 
   :root[data-theme="caelestia"] .cae-ws-n {
@@ -6765,6 +6782,13 @@
     text-transform: none;
     color: var(--cae-on-surface);
     margin-right: 0.25rem;
+  }
+  /* El `<small>` del rotulo hereda `font-size: var(--t-00)` de `.cae-mv-cifras`,
+     pero el navegador aplica su propio `smaller` encima (~80%): 9,5px caian a
+     7,60px, fuera de la escala y sin ningun literal que la familia estatica
+     pudiera leer. `measure-escala-tipografica.py` (familia viva) lo caza. */
+  :root[data-theme="caelestia"] .cae-mv-cifras small {
+    font-size: inherit;
   }
   :root[data-theme="caelestia"] .cae-mv-pie {
     margin-top: 1.375rem;
