@@ -1,4 +1,47 @@
 /*
+ * La escala tipografica del sitio entero. UNA sola declaracion y en `:root` a
+ * secas: hasta el 2026-09-07 vivia repetida dentro de los tres bloques de tema
+ * con valores identicos, y `style.css` -- que es comun a los tres -- la
+ * consumia con respaldo (`var(--t-1, 0.53rem)`, nueve respaldos distintos para
+ * tres tokens). Un token que puede valer 8,48 o 12 segun donde se escriba no es
+ * un token, es una sugerencia. Con la declaracion aqui, el respaldo sobra.
+ *
+ * Razon 1,333 (cuarta justa) de --t-1 hacia arriba, y 1,125 de --t-1 hacia
+ * abajo. El cambio de razon es deliberado: a 10px el ojo distingue un escalon
+ * de 1px y a 120px no distingue quince, asi que una razon unica en todo el
+ * rango deja o sin tallas abajo (1,333 bajo 12 solo da 9, y luego 6,75) o con
+ * quince arriba que nadie usa.
+ *
+ * `--t-0` (10,67px) NO es texto de lectura: existe para la rotulacion mono
+ * (esquina, rotulo de acto/destino, estado). Caelestia llego a declarar su
+ * propio `--t-0: 9px` en su bloque de tema para cubrir ese mismo hueco -- la
+ * sexta vez que un literal sin declarar se colaba ahi. Vive solo aqui.
+ *
+ * Hubo un segundo escalon bajo el suelo, `--t-00` a 9,5px, para separar la
+ * rotulacion mas pequena de la rotulacion normal. Se fusiono con `--t-0` el
+ * 2026-09-08: Vera Holm midio los dos a triple densidad en los dos sitios
+ * donde conviven en el mismo encuadre -- la barra (`.cae-mark` a 10,67 junto
+ * a `.cae-ws-n` a 9,5) y el cajon de Obra (`.cae-obra-drawer-kick` a 10,67
+ * junto a `.cae-obra-drawer-meta dt` y `.cae-obra-prose h4` a 9,5) -- y a
+ * 1,17px de distancia se leen como una unica talla. Si dos escalones se leen
+ * como uno, son uno: la escala tiene once tokens, no doce, y todo lo que
+ * pedia `--t-00` pide ahora `--t-0`.
+ */
+:root {
+  --t-0: 10.67px;
+  --t-1: 12px;
+  --t-2: 16px;
+  --t-3: 21.33px;
+  --t-4: 28.43px;
+  --t-5: 37.9px;
+  --t-6: 50.52px;
+  --t-7: 67.4px;
+  --t-8: 89.85px;
+  --t-9: 119.77px;
+  --t-10: 159.66px;
+}
+
+/*
  * Skins por tema. Cada bloque redefine los mismos tokens que declara `@theme`
  * en style.css, colgados de `:root[data-theme="…"]` (mayor especificidad que
  * `:root`, asi que ganan siempre). Como Tailwind 4 compila sus utilidades a
@@ -74,16 +117,6 @@
    *   1. Todo clamp() lleva LOS DOS extremos en pasos de esta escala.
    *   2. Maximo cuatro tamanos por encuadre.
    */
-  --t-1: 12px;
-  --t-2: 16px;
-  --t-3: 21.33px;
-  --t-4: 28.43px;
-  --t-5: 37.9px;
-  --t-6: 50.52px;
-  --t-7: 67.4px;
-  --t-8: 89.85px;
-  --t-9: 119.77px;
-  --t-10: 159.66px;
 
   --bg-fallback: linear-gradient(180deg, #150726 0%, #4b1146 55%, #ff5c3d 100%);
 }
@@ -1182,16 +1215,6 @@
 
   /* Escala cerrada: los MISMOS diez pasos que Vice (base 16, razon 1,333).
      Espejar el sistema numerico es parte de organizarse como Vice. */
-  --t-1: 12px;
-  --t-2: 16px;
-  --t-3: 21.33px;
-  --t-4: 28.43px;
-  --t-5: 37.9px;
-  --t-6: 50.52px;
-  --t-7: 67.4px;
-  --t-8: 89.85px;
-  --t-9: 119.77px;
-  --t-10: 159.66px;
 
   --slow: cubic-bezier(0.16, 0.84, 0.28, 1);
   --hard: cubic-bezier(0.7, 0, 0.2, 1);
@@ -3545,27 +3568,12 @@
    * Las dos reglas de la escala valen aqui igual que en los otros dos temas:
    *   1. Todo clamp() lleva LOS DOS extremos en pasos de esta escala.
    *   2. Maximo cuatro tamanos por encuadre.
+   *
+   * `--t-0` (rotulacion mono de Fundido, no texto de lectura) se declara una
+   * sola vez, en el bloque de `:root` al principio del fichero -- no aqui.
+   * Una segunda declaracion por tema es exactamente el defecto que esa
+   * escala vino a eliminar.
    */
-  --t-1: 12px;
-  --t-2: 16px;
-  --t-3: 21.33px;
-  --t-4: 28.43px;
-  --t-5: 37.9px;
-  --t-6: 50.52px;
-  --t-7: 67.4px;
-  --t-8: 89.85px;
-  --t-9: 119.77px;
-  --t-10: 159.66px;
-  /*
-   * `--t-0`: UN ESCALON POR DEBAJO DEL SUELO (`--t-1`, 12px), en la misma
-   * razon de la escala (1,333): 12 / 1,333 = 9px. El suelo de `--t-1` es para
-   * texto de LECTURA corrida; esto no lo es — existe solo para la rotulacion
-   * mono de Fundido (la esquina, el rotulo de acto/destino, el estado), que
-   * es una palabra en versalitas, no un parrafo. Antes de este token esos tres
-   * sitios llevaban literales sin declarar (10px, 9px, 9.5px) — la sexta vez
-   * que ese defecto aparecia en el proyecto. No usar para texto de lectura.
-   */
-  --t-0: 9px;
 
   /* Los ejes del display, escritos a mano. Fraunces por defecto no es esto. */
   --cae-display-axes: "opsz" 9, "wght" 900, "SOFT" 0, "WONK" 1;
@@ -3715,11 +3723,17 @@
     0 14px 26px -8px rgb(0 0 0 / 0.45);
 }
 
+/* Era 14px, y 14 empata a la misma distancia (2px) de `--t-1` (12) y de
+   `--t-2` (16) -- el desempate no es tipografico, es de accesibilidad: a
+   `--t-1` el glifo adelgaza y bajo el derrame de la gota (`caelestiaCursor.ts`)
+   el contraste de la leyenda cae a 4,21:1 a las 04:30, por debajo del piso AA
+   de 4,5. Se rompe hacia `--t-2`. Lo vigila el gate 6 de
+   `scripts/measure-caelestia-cursor.py` (barrido de 24 horas). */
 :root[data-theme="caelestia"] .cae-obra-caption {
   font-family: "Fraunces", serif;
   font-style: italic;
   font-variation-settings: "opsz" 30, "wght" 520;
-  font-size: 14px;
+  font-size: var(--t-2);
   text-align: center;
   color: var(--cae-on-surface);
   line-height: 1.25;
@@ -3730,7 +3744,7 @@
   display: block;
   font-family: "Martian Mono", monospace;
   font-style: normal;
-  font-size: 9px;
+  font-size: var(--t-0);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--cae-on-surface-variant);
@@ -3884,7 +3898,7 @@
 
 :root[data-theme="caelestia"] .cae-obra-drawer-kick {
   font-family: "Martian Mono", monospace;
-  font-size: 10.5px;
+  font-size: var(--t-0);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--cae-primary);
@@ -3893,14 +3907,14 @@
 :root[data-theme="caelestia"] .cae-obra-drawer-title h3 {
   font-family: "Fraunces", serif;
   font-variation-settings: "opsz" 60, "wght" 640;
-  font-size: 34px;
+  font-size: var(--t-5);
   margin: 4px 0 8px;
   line-height: 1.04;
   color: var(--cae-on-surface);
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-lead {
-  font-size: 14px;
+  font-size: var(--t-1);
   color: var(--cae-on-surface-variant);
   line-height: 1.4;
 }
@@ -3952,14 +3966,14 @@
 
 :root[data-theme="caelestia"] .cae-obra-drawer-meta dt {
   font-family: "Martian Mono", monospace;
-  font-size: 9.5px;
+  font-size: var(--t-0);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
 }
 
 :root[data-theme="caelestia"] .cae-obra-drawer-meta dd {
-  font-size: 13px;
+  font-size: var(--t-1);
   color: var(--cae-on-surface);
   margin: 3px 0 0;
 }
@@ -3989,7 +4003,7 @@
 
 :root[data-theme="caelestia"] .cae-obra-stack-text {
   font-family: "Martian Mono", monospace;
-  font-size: 10.5px;
+  font-size: var(--t-0);
   padding: 0 7px;
   height: 24px;
   display: flex;
@@ -4026,7 +4040,7 @@
 
 :root[data-theme="caelestia"] .cae-obra-prose h4 {
   font-family: "Martian Mono", monospace;
-  font-size: 10px;
+  font-size: var(--t-0);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4034,22 +4048,28 @@
 }
 
 :root[data-theme="caelestia"] .cae-obra-prose p {
-  /* Tercera vuelta 2026-09-05: con el grid de tres columnas / dos filas,
-     14px/1.5 cabe sin scroll a 1440x900 (panel #obra 1412x748, cajon
+  /* Tercera vuelta 2026-09-05: con el grid de tres columnas / dos filas, la
+     talla base cabe sin scroll a 1440x900 (panel #obra 1412x748, cajon
      interior 436, titulo+prosa comparten columna: HyprFinance cabe con
      margen). A 1366x768 (panel 616 de alto en vez de 748) el titulo mas la
-     prosa a 14px no cabian: se aplico un recorte a 13.5px/1.45 bajo
+     prosa no cabian a esa talla: se aplico un recorte de interlineado bajo
      `max-height: 800px` que AUN ASI dejaba HyprFinance desbordando #obra en
      ~22px, porque el problema real no era el tamano de la fuente — era que
      la columna de la captura crecia con el propio texto (ver la cuarta
      vuelta en el comentario de cabecera de `.cae-obra-drawer`, mas arriba).
      Cuarta vuelta, mismo dia: arreglada la causa (captura con alto fijo via
      `cqh`), HyprFinance cabe en el mismo cajon SIN este recorte — medido:
-     #obra 616/616 (sin scroll) con `.cae-obra-prose p` en 14px/1.5 en las
-     CINCO tarjetas a 1366x768. El recorte de `max-height: 800px` se deja
-     puesto (no estorba, y cubre portatiles mas bajos aun que 768 de alto que
-     no se han medido), pero HyprFinance a 1366x768 ya no depende de el. */
-  font-size: 14px;
+     #obra 616/616 (sin scroll) con `.cae-obra-prose p` a interlineado base
+     en las CINCO tarjetas a 1366x768. El recorte de `max-height: 800px` se
+     deja puesto (no estorba, y cubre portatiles mas bajos aun que 768 de
+     alto que no se han medido), pero HyprFinance a 1366x768 ya no depende
+     de el.
+     Revision de hallazgos 2026-09-08: la escala (spec
+     2026-09-07-escala-tipografica) dejo la talla base y el recorte en el
+     mismo token, `--t-1` -- el override de `font-size` que llevaba esta
+     media query era ya un no-op, y se retira. Solo el interlineado (1.45
+     contra 1.5 de la base) sigue diferenciando la banda. */
+  font-size: var(--t-1);
   line-height: 1.5;
   color: var(--cae-on-surface);
   margin: 0;
@@ -4057,7 +4077,6 @@
 
 @media (max-height: 800px) {
   :root[data-theme="caelestia"] .cae-obra-prose p {
-    font-size: 13.5px;
     line-height: 1.45;
   }
 }
@@ -4075,7 +4094,7 @@
 :root[data-theme="caelestia"] .cae-obra-foot a {
   color: var(--cae-primary);
   text-decoration: none;
-  font-size: 12.5px;
+  font-size: var(--t-1);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -4101,7 +4120,7 @@
      sobreescribir explicitamente. */
   font-family: var(--font-body, "Hanken Grotesk", sans-serif);
   color: var(--cae-on-surface-variant);
-  font-size: 13px;
+  font-size: var(--t-1);
   text-transform: none;
   letter-spacing: normal;
   display: inline-flex;
@@ -4167,11 +4186,11 @@
 
 :root[data-theme="caelestia"] .cae-firma {
   font-family: var(--font-display);
-  /* Los ejes del SHELL, no los del cartel: aqui se lee a 30px. Y `nowrap`
-     porque esta linea es el destino del trazo de la entrada — si partiera en
-     dos, el aterrizaje no cuadraria. */
+  /* Los ejes del SHELL, no los del cartel: aqui se lee a 28,43px (`--t-4`).
+     Y `nowrap` porque esta linea es el destino del trazo de la entrada — si
+     partiera en dos, el aterrizaje no cuadraria. */
   font-variation-settings: var(--cae-display-axes-texto);
-  font-size: 30px;
+  font-size: var(--t-4);
   line-height: 1;
   letter-spacing: -0.015em;
   white-space: nowrap;
@@ -4187,7 +4206,7 @@
 
 :root[data-theme="caelestia"] .cae-meta {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--t-0);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4213,7 +4232,7 @@
   display: block;
   font-family: var(--font-display);
   font-variation-settings: var(--cae-display-axes-texto);
-  font-size: 26px;
+  font-size: var(--t-4);
   line-height: 1;
   font-feature-settings: "tnum";
 }
@@ -4222,7 +4241,7 @@
   display: block;
   margin-top: 3px;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--t-0);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4318,7 +4337,7 @@
   background: var(--cae-elev-2);
   border: 1px solid var(--cae-outline);
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: var(--t-3);
   letter-spacing: 0.01em;
   color: var(--cae-on-surface);
   box-shadow: 0 18px 48px rgb(0 0 0 / 0.22);
@@ -4394,7 +4413,7 @@
 :root[data-theme="caelestia"] .cae-whd {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--t-0);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -4430,14 +4449,14 @@
   margin: 0;
   font-family: var(--font-display);
   font-variation-settings: var(--cae-display-axes-ficha);
-  font-size: 27px;
+  font-size: var(--t-4);
   line-height: 1;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
 :root[data-theme="caelestia"] .cae-wsub {
   margin: 5px 0 0;
-  font-size: 13px;
+  font-size: var(--t-1);
   color: var(--cae-on-surface-variant);
 }
 :root[data-theme="caelestia"] .cae-wdos {
@@ -4451,7 +4470,7 @@
 :root[data-theme="caelestia"] .cae-wfecha {
   display: block;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--t-0);
   letter-spacing: 0.04em;
   color: var(--cae-on-surface-variant);
   margin-bottom: 3px;
@@ -4460,7 +4479,7 @@
 :root[data-theme="caelestia"] .cae-wnombre {
   display: block;
   font-weight: 500;
-  font-size: 12.5px;
+  font-size: var(--t-1);
   line-height: 1.25;
 }
 :root[data-theme="caelestia"] .cae-wpie {
@@ -4481,6 +4500,12 @@
  * con la MISMA ventana de 748 de alto del resto del arnes -- esta media
  * query tambien se activa ahi, a proposito). Medido: bottom pasa de 366 a
  * 326, hueco con `.cae-statcol` de -22px a +18px.
+ *
+ * Task 6 (escala tipografica, 2026-09-07): `.cae-wnow` pasa de 27px a
+ * `var(--t-4)` (28,43px), la tarjeta crece ~1,4px y el hueco baja de 18px a
+ * 7px, bajo el piso de 8. Se recorta `.cae-wpie` (margin-top 8px -> 6px en
+ * esta misma media query, la fila con mas aire de las cuatro) en vez de
+ * tocar `.cae-wnow`: el tamano de esa linea no se toca, esta migrado.
  */
 @media (max-height: 800px) {
   :root[data-theme="caelestia"] .cae-widget {
@@ -4497,8 +4522,21 @@
     padding-top: 8px;
   }
   :root[data-theme="caelestia"] .cae-wpie {
-    margin-top: 8px;
+    margin-top: 6px;
     padding-top: 8px;
+  }
+  /* Escala tipografica (2026-09-08, fusion de --t-00 en --t-0): `.cae-k`
+     crece de 9,5 a 10,67px en las cuatro filas de la columna de cifras, que
+     cuelga de `bottom: 0` -- crecer empuja su `top` HACIA ARRIBA y comia el
+     hueco con `.cae-widget` (a 1366x768 bajo de 9 a 0px, gate `tarjeta_portatil`).
+     Medido donde estaba la holgura antes de tocar nada: `.cae-wdos` y
+     `.cae-wpie` ya estan en su limite (recortados en una ronda anterior, ver
+     el comentario de `.cae-wpie` arriba); el hueco mas generoso que quedaba
+     era el `gap` ENTRE filas de la columna de cifras (14px, sin tocar desde
+     que existe). Se recorta ahi, no en la tarjeta: 14 -> 10px devuelve el
+     hueco a >=8px con margen (12px medido). */
+  :root[data-theme="caelestia"] .cae-statcol {
+    gap: 10px;
   }
 }
 
@@ -4512,7 +4550,7 @@
   background: var(--cae-anchor);
   color: var(--cae-on-anchor);
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--t-0);
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
@@ -4634,7 +4672,7 @@
   width: 100%;
   max-width: 1180px;
   margin-inline: auto;
-  font-size: 0.95rem;
+  font-size: var(--t-2);
   letter-spacing: 0.01em;
   color: var(--cae-on-surface-variant);
 }
@@ -4729,7 +4767,7 @@
   margin: 0 0 0.5rem;
   font-family: "Fraunces", Georgia, serif;
   font-variation-settings: var(--cae-display-axes-cartel);
-  font-size: 3.35rem;
+  font-size: var(--t-6);
   line-height: 0.95;
   letter-spacing: -0.018em;
   white-space: nowrap;
@@ -4746,7 +4784,7 @@
 /* La cabecera del comando es el correo, y es pulsable: la via de contacto
    principal y la unica parada de tabulador legitima de la escena. */
 :root[data-theme="caelestia"] .ficha-host {
-  font-size: 0.95rem;
+  font-size: var(--t-2);
   letter-spacing: 0.02em;
   color: var(--cae-primary);
   text-decoration: none;
@@ -4775,7 +4813,7 @@
   padding-left: 0.9rem;
   margin-left: 0.15rem;
   border-left: 1px solid var(--cae-outline);
-  font-size: 0.78rem;
+  font-size: var(--t-1);
   letter-spacing: 0.06em;
   white-space: nowrap;
   color: var(--cae-on-surface-variant);
@@ -4819,7 +4857,7 @@
   margin: 0 0 1.45rem;
   max-width: 44rem;
   font-family: "Hanken Grotesk", system-ui, sans-serif;
-  font-size: 1.06rem;
+  font-size: var(--t-2);
   line-height: 1.5;
   color: var(--cae-on-surface);
 }
@@ -4837,7 +4875,7 @@
   padding: 0.2rem 0.55rem;
   margin-left: -0.55rem;
   border-radius: 0.4rem;
-  font-size: 0.92rem;
+  font-size: var(--t-2);
   line-height: 1.45;
   transition: background 0.18s ease;
 }
@@ -4893,10 +4931,15 @@
   color: var(--cae-on-surface);
 }
 
+/* Era `font-size: 0.92em`: relativo al `var(--t-2)` de `.ficha-fila` (16px),
+   calculaba 14,72px -- fuera de la escala, y la estatica no lo ve porque no
+   hay ningun literal que leer (es una talla que RESULTA, no que se declara).
+   Lo caza `measure-escala-tipografica.py`, familia viva. Al rungo mas cercano
+   por debajo: `--t-1`. */
 :root[data-theme="caelestia"] .ficha-s {
   display: block;
   margin-top: 0.16rem;
-  font-size: 0.92em;
+  font-size: var(--t-1);
   color: var(--cae-on-surface-variant);
 }
 
@@ -4940,7 +4983,7 @@
 /* La tira no se explica en reposo: solo habla cuando la rozas. */
 :root[data-theme="caelestia"] .ficha-rotulo {
   margin-left: 0.7rem;
-  font-size: 0.72rem;
+  font-size: var(--t-1);
   opacity: 0;
   color: var(--cae-on-surface-variant);
   transition: opacity 0.15s ease;
@@ -5066,7 +5109,7 @@
 :root[data-theme="caelestia"] .cae-cred-rot h4 {
   margin: 0;
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: 16px;
+  font-size: var(--t-2);
   font-style: normal;
   font-variation-settings: normal;
   letter-spacing: 0.04em;
@@ -5113,15 +5156,16 @@
   padding: 0;
 }
 
-/* Subordinada a `.cae-cred-rot h4`: mismo eje monoespaciado, 10px — el mismo
-   tamano que ya lleva `.cae-cred-cab .cae-cred-terr` para el mismo dato
-   (territorio) en la cabecera, asi que el par «rotulo grande / etiqueta
-   pequena» es coherente en las dos lecturas de la escena. Sin versalitas:
-   son nombres propios de marca ("TypeScript", "Django"), no un epigrafe. */
+/* Subordinada a `.cae-cred-rot h4`: mismo eje monoespaciado, `--t-0`
+   (10,67px) — el mismo tamano que ya lleva `.cae-cred-cab .cae-cred-terr`
+   para el mismo dato (territorio) en la cabecera, asi que el par «rotulo
+   grande / etiqueta pequena» es coherente en las dos lecturas de la escena.
+   Sin versalitas: son nombres propios de marca ("TypeScript", "Django"), no
+   un epigrafe. */
 :root[data-theme="caelestia"] .cae-cred-nom {
   margin: 0;
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: 10px;
+  font-size: var(--t-0);
   font-style: normal;
   font-variation-settings: normal;
   letter-spacing: 0.01em;
@@ -5184,7 +5228,7 @@
 :root[data-theme="caelestia"] .cae-cred-nombre {
   font-family: "Fraunces", Georgia, serif;
   font-variation-settings: var(--cae-display-axes-cartel);
-  font-size: 32px;
+  font-size: var(--t-4);
   line-height: 1;
   margin: 0 0 4px;
   color: var(--cae-on-surface);
@@ -5195,7 +5239,7 @@
   font-family: "Fraunces", Georgia, serif;
   font-style: italic;
   font-variation-settings: "opsz" 24, "wght" 400, "SOFT" 0, "WONK" 1;
-  font-size: 17px;
+  font-size: var(--t-2);
   color: var(--cae-on-surface-variant);
 }
 
@@ -5203,10 +5247,11 @@
    (0,1,0): `.cae-cred-cab p` le ganaba y el territorio se pintaba en Fraunces
    itálica pese a pedir la monoespaciada, obedeciendo solo el tracking. Y no
    basta con repetir la familia: hay que apagar tambien `font-style` y los ejes
-   heredados. Sin versalitas ni tracking largo — a 10 px separaba las letras. */
+   heredados. Sin versalitas ni tracking largo — a `--t-0` (10,67px) separaba
+   las letras. */
 :root[data-theme="caelestia"] .cae-cred-cab .cae-cred-terr {
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: 10px;
+  font-size: var(--t-0);
   letter-spacing: 0.01em;
   font-style: normal;
   font-variation-settings: normal;
@@ -5228,7 +5273,7 @@
 :root[data-theme="caelestia"] .cae-cred-cruce > span {
   display: block;
   font-family: "Martian Mono", ui-monospace, monospace;
-  font-size: 9.5px;
+  font-size: var(--t-0);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--cae-on-surface-variant);
@@ -5250,7 +5295,7 @@
   font-family: "Fraunces", Georgia, serif;
   font-style: italic;
   font-variation-settings: "opsz" 48, "wght" 500, "SOFT" 0, "WONK" 1;
-  font-size: 26px;
+  font-size: var(--t-4);
   line-height: 1.16;
   color: var(--cae-on-surface);
 }
@@ -5267,7 +5312,7 @@
    dice la PALABRA. Apagar la tinta para decir «esto pesa menos» es la misma
    opacidad recalibrada que ya fallo en B1. */
 :root[data-theme="caelestia"] .cae-cred-cruce-lista li.is-vacia {
-  font-size: 21px;
+  font-size: var(--t-3);
   color: var(--cae-on-surface-variant);
 }
 
@@ -5503,8 +5548,10 @@
   padding-bottom: 0.875rem;
   border-bottom: 1px solid currentColor;
   font-family: var(--font-mono);
-  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
-     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  /* `--t-0` (10,67px): rotulacion mono, no texto de lectura. Ver el
+     comentario junto a su declaracion, en el bloque de tokens (:root). Fue
+     `--t-00` (9,5px) hasta el 2026-09-08, cuando Vera Holm midio que los dos
+     escalones bajo el suelo se leian como uno y se fusionaron. */
   font-size: var(--t-0);
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -5798,8 +5845,10 @@
 
 :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar-label {
   font-family: var(--font-mono);
-  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
-     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  /* `--t-0` (10,67px): rotulacion mono, no texto de lectura. Ver el
+     comentario junto a su declaracion, en el bloque de tokens (:root). Fue
+     `--t-00` (9,5px) hasta el 2026-09-08, cuando Vera Holm midio que los dos
+     escalones bajo el suelo se leian como uno y se fusionaron. */
   font-size: var(--t-0);
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -5830,8 +5879,10 @@
   align-items: center;
   gap: 0.5625rem;
   font-family: var(--font-mono);
-  /* `--t-0` (9px): rotulacion mono, no texto de lectura. Ver el comentario
-     junto a su declaracion, en el bloque de tokens de Caelestia. */
+  /* `--t-0` (10,67px): rotulacion mono, no texto de lectura. Ver el
+     comentario junto a su declaracion, en el bloque de tokens (:root). Fue
+     `--t-00` (9,5px) hasta el 2026-09-08, cuando Vera Holm midio que los dos
+     escalones bajo el suelo se leian como uno y se fusionaron. */
   font-size: var(--t-0);
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -6151,7 +6202,7 @@
 
 :root[data-theme="caelestia"] .cae-mark {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--t-0);
   letter-spacing: 0.06em;
   color: var(--cae-primary);
 }
@@ -6164,7 +6215,7 @@
 
 :root[data-theme="caelestia"] .cae-ws {
   font-family: var(--font-body);
-  font-size: 0.75rem;
+  font-size: var(--t-1);
   padding: 0.3125rem 0.6875rem;
   border: 0;
   border-radius: 999px;
@@ -6192,7 +6243,7 @@
 :root[data-theme="caelestia"] .cae-ws-n {
   font-style: normal;
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: var(--t-0);
   opacity: 0.55;
   margin-right: 0.3125rem;
 }
@@ -6214,7 +6265,7 @@
 /* El reloj no es adorno: es lo que gobierna el tema. */
 :root[data-theme="caelestia"] .cae-clock {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--t-1);
   color: var(--cae-primary);
 }
 
@@ -6233,10 +6284,13 @@
  * nombres caben de sobra y sin ellos la barra son cinco numeros a ciegas,
  * hallazgo de Lidia sobre esta misma banda. Medido antes de moverlo.
  *
- * `font-size: 0` en el boton y tamano real en el `<i>` del numero deja el
- * nombre fuera de la caja visual pero DENTRO del arbol de accesibilidad. No
- * cambiar por `display: none` sobre el texto: eso si lo sacaria del lector
- * de pantalla.
+ * El nombre ahora vive en su propio `<span class="cae-ws-label">`
+ * (`caelestiaShell.ts`) y aqui se esconde con el patron VISUALMENTE OCULTO
+ * (el de `.sr-only` en `style.css`) en vez de `font-size: 0` en el boton: un
+ * `font-size: 0` es una talla, y la escala tipografica (2026-09-07) exige que
+ * toda talla PINTADA este en los doce tokens -- 0 no lo es y `measure-escala-
+ * tipografica.py` lo cazaba. `display: none`/`visibility: hidden` sacarian el
+ * nombre del arbol de accesibilidad, que es justo lo que esto evita.
  */
 @media (max-width: 40rem) {
   :root[data-theme="caelestia"] .cae-bar {
@@ -6245,12 +6299,15 @@
   }
 
   :root[data-theme="caelestia"] .cae-ws {
-    font-size: 0;
     padding: 0.375rem 0.5rem;
   }
 
+  :root[data-theme="caelestia"] .cae-ws-label {
+    @apply sr-only;
+  }
+
   :root[data-theme="caelestia"] .cae-ws-n {
-    font-size: 0.75rem;
+    font-size: var(--t-1);
     opacity: 1;
     margin-right: 0;
   }
@@ -6418,7 +6475,7 @@
   transform: translateX(-50%) translateY(0.25rem);
   white-space: nowrap;
   pointer-events: none;
-  font-size: 0.65625rem;
+  font-size: var(--t-0);
   padding: 0.3125rem 0.625rem;
   border-radius: 0.5625rem;
   background: var(--cae-on-surface);
@@ -6526,13 +6583,13 @@
 
 :root[data-theme="caelestia"] .cae-toast-t {
   display: block;
-  font-size: 0.71875rem;
+  font-size: var(--t-1);
   margin-bottom: 0.125rem;
   color: var(--cae-on-surface);
 }
 
 :root[data-theme="caelestia"] .cae-toast-s {
-  font-size: 0.65625rem;
+  font-size: var(--t-0);
   line-height: 1.4;
   color: var(--cae-on-surface-variant);
 }
@@ -6695,7 +6752,7 @@
     display: block;
   }
   :root[data-theme="caelestia"] .cae-firma {
-    font-size: 1.125rem; /* 18px */
+    font-size: var(--t-2);
   }
   :root[data-theme="caelestia"] .cae-regla {
     display: none;
@@ -6703,7 +6760,7 @@
   :root[data-theme="caelestia"] .cae-meta {
     display: block;
     margin-top: 0.375rem;
-    font-size: 0.5625rem;
+    font-size: var(--t-0);
   }
   :root[data-theme="caelestia"] .cae-tit {
     margin-top: 7.5rem; /* el titular a media altura: aire, no relleno */
@@ -6723,7 +6780,7 @@
   }
   :root[data-theme="caelestia"] .cae-mv-prosa {
     margin: 1.625rem 0 0;
-    font-size: 0.8125rem;
+    font-size: var(--t-1);
     line-height: 1.7;
     color: var(--cae-on-surface-variant);
   }
@@ -6740,7 +6797,7 @@
     gap: 0.25rem 1rem;
     margin: 1.375rem 0 0;
     font-family: var(--font-mono);
-    font-size: 0.625rem;
+    font-size: var(--t-0);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--cae-on-surface-variant);
@@ -6748,11 +6805,18 @@
   :root[data-theme="caelestia"] .cae-mv-cifra b {
     font-family: var(--font-display);
     font-variation-settings: var(--cae-display-axes-ficha);
-    font-size: 0.9375rem;
+    font-size: var(--t-2);
     letter-spacing: 0;
     text-transform: none;
     color: var(--cae-on-surface);
     margin-right: 0.25rem;
+  }
+  /* El `<small>` del rotulo hereda `font-size: var(--t-0)` de `.cae-mv-cifras`,
+     pero el navegador aplica su propio `smaller` encima (~80%): 10,67px caian
+     a 8,53px, fuera de la escala y sin ningun literal que la familia estatica
+     pudiera leer. `measure-escala-tipografica.py` (familia viva) lo caza. */
+  :root[data-theme="caelestia"] .cae-mv-cifras small {
+    font-size: inherit;
   }
   :root[data-theme="caelestia"] .cae-mv-pie {
     margin-top: 1.375rem;
@@ -6800,7 +6864,7 @@
     width: 100%;
   }
   :root[data-theme="caelestia"] .ficha-nombre {
-    font-size: 1.625rem;
+    font-size: var(--t-4);
     line-height: 1.05;
     white-space: normal;
   }
@@ -6969,14 +7033,15 @@
     flex: 0 0 auto;
   }
   /* El cruce «Aparece en» es lo que mas empuja: dos nombres de obra en
-     Fraunces a 26 px no caben en un telefono. Baja de cuerpo, puede encoger
-     (`min-width: 0`, que un hijo de flex no tiene por defecto) y envuelve. */
+     Fraunces a 28,43px (`--t-4`) no caben en un telefono. Baja de cuerpo,
+     puede encoger (`min-width: 0`, que un hijo de flex no tiene por
+     defecto) y envuelve. */
   :root[data-theme="caelestia"] .cae-cred-cruce {
     min-width: 0;
     max-width: none;
   }
   :root[data-theme="caelestia"] .cae-cred-cruce-lista li {
-    font-size: 1.0625rem;
+    font-size: var(--t-2);
     line-height: 1.2;
   }
 }
@@ -6989,16 +7054,18 @@
    vertical, donde la cabecera mide 105 px y la fila de tres cabe bien. */
 @media (max-width: 40rem) {
   /* Altura fija, como en escritorio (`height: 96px`) y por la misma razon,
-     que aqui ademas rompe el toque: la cabecera mide entre 164 y 254 px
-     segun la pieza, asi que al elegir una larga la tira entera baja hasta
-     90 px BAJO EL DEDO. Medido: el `pointerdown` cae sobre GSAP, la escena
-     se reordena al llegar el foco y el `click` posterior aterriza sobre
-     Next.js -- tocabas una pieza y se te elegia otra. El hueco reservado es
-     el peor caso real de las 23 (254 px a 360, 390 y 430). */
+     que aqui ademas rompe el toque: la cabecera cambia de alto segun la
+     pieza, asi que al elegir una larga la tira entera baja BAJO EL DEDO.
+     Medido: el `pointerdown` cae sobre GSAP, la escena se reordena al
+     llegar el foco y el `click` posterior aterriza sobre Next.js --
+     tocabas una pieza y se te elegia otra. El hueco reservado es el peor
+     caso real de las 23, vuelto a medir el 2026-09-08 tras fundir `--t-00`
+     en `--t-0` (`.cae-cred-cab .cae-cred-terr` sube de 9,5 a 10,67px): 251
+     px a 360 y 390, 245 a 430 -- «CSS» es la pieza mas alta. */
   :root[data-theme="caelestia"] .cae-cred-cab {
     flex-wrap: wrap;
     align-content: flex-start;
-    min-height: 15.875rem;
+    min-height: 15.6875rem;
   }
   :root[data-theme="caelestia"] .cae-cred-cruce {
     flex: 1 0 100%;
@@ -7019,7 +7086,7 @@
     margin: 0 auto;
   }
   :root[data-theme="caelestia"] .cae-cred-nom {
-    font-size: 0.53rem;
+    font-size: var(--t-0);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7060,13 +7127,22 @@
     min-width: 0;
   }
   /*
-   * La leyenda en Fraunces italica es la pieza que menos margen de sobra
-   * tiene con tarjetas mas estrechas (16 px base, dos lineas a 250px de
-   * ancho de tarjeta); baja un paso para seguir cabiendo en una sola linea
-   * a las anchuras medidas (1024 y 1180) sin partirse.
+   * Esta banda bajaba la leyenda a `--t-1` para seguir cabiendo en una sola
+   * linea a las anchuras medidas (1024 y 1180), pero `--t-1` es exactamente
+   * la talla que la regla base (`:3732`) rechazo por accesibilidad: medido
+   * (revision de hallazgos, 2026-09-08) el contraste bajo el derrame de la
+   * gota cae a **4,15:1 a las 04:30 en 1024x768**, por debajo del piso AA de
+   * 4,5 -- el mismo fallo de `--t-1` que el gate 6 de
+   * `measure-caelestia-cursor.py` ya vigila a 1440x900, solo que en esta
+   * banda no habia arnes que lo viera. Se deja en `--t-2`, igual que la
+   * base (la regla queda como no-op deliberado y documentado, no se borra:
+   * si algun dia esta banda necesita otro ajuste, este es el sitio). La
+   * leyenda mas larga pasa de dos a tres lineas a 1024x768 (comprobado: las
+   * cinco tarjetas siguen alineadas, la fila crece con la mas alta, ninguna
+   * se recorta).
    */
   :root[data-theme="caelestia"] .cae-obra-caption {
-    font-size: 12px;
+    font-size: var(--t-2);
   }
 
   /*
@@ -8474,7 +8550,7 @@
 
 :root[data-theme="caelestia"] .credit-name {
   font-family: var(--font-body);
-  font-size: 0.8rem;
+  font-size: var(--t-1);
   text-transform: none;
   color: var(--color-paper);
 }
@@ -9941,7 +10017,7 @@
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--color-accent);
   font-family: inherit;
-  font-size: var(--t-1, 0.75rem);
+  font-size: var(--t-1);
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -10017,7 +10093,7 @@
    * Hyprland/Caelestia se quedan en --t-1: su caja compartida ya les da
    * peso propio, la que Vice acaba de retirar.
    */
-  font-size: var(--t-2, 1rem);
+  font-size: var(--t-2);
 }
 
 :root[data-theme="vice"] .scene-nav-trigger:hover,
@@ -10115,7 +10191,7 @@
 
 .scene-index-title {
   margin: 0 0 1.1rem var(--sangria);
-  font-size: var(--t-1, 0.75rem);
+  font-size: var(--t-1);
   font-weight: 700;
   letter-spacing: 0.28em;
   text-transform: uppercase;
@@ -10163,7 +10239,7 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  font-size: var(--t-1, 0.75rem);
+  font-size: var(--t-1);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.14em;
@@ -10212,7 +10288,7 @@
 
 .scene-index-blurb {
   flex: none;
-  font-size: var(--t-2, 1rem);
+  font-size: var(--t-2);
   font-weight: 600;
   line-height: 1;
   color: color-mix(in srgb, var(--color-paper) var(--nav-dim-soft, 50%), transparent);
@@ -11253,5 +11329,22 @@
   /* Los tres pixeles que quedaban: el aire sobre el pie baja de 16 a 8. */
   :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado {
     margin-top: 0.5rem;
+  }
+
+  /*
+   * Los cinco pixeles que faltaban tras fundirse la escala tipografica: las
+   * etiquetas de `.contacto-bars` pasaron de un escalon de 9,5px a 10,67
+   * (refactor(escala): un solo escalon bajo el suelo, no dos) y cada una
+   * crecio 1,17px, empujando el pie fuera de la caja del workspace (medido a
+   * 1024x768: caja [68,684], pie terminando en 689 — 5px de sobra).
+   * El relleno superior de `.contacto-bars` (encima del filete, antes de la
+   * primera fila de canales) es el unico hueco de este reparto que no se
+   * habia tocado todavia en esta banda: baja de 18 a 13px, que sigue dejando
+   * aire visible sobre "CORREO" sin tocar el gap ENTRE canales (el que
+   * separa las dianas tactiles, mas importante que el margen decorativo del
+   * filete).
+   */
+  :root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bars {
+    padding-top: 0.8125rem;
   }
 }
