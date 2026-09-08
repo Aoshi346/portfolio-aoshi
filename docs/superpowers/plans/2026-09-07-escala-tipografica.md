@@ -65,7 +65,7 @@ Playwright (Python) para los arneses.
   lea uno lea el otro.
 - Consumes: nada de tareas anteriores.
 
-- [ ] **Step 1: Escribir el arnés entero**
+- [x] **Step 1: Escribir el arnés entero**
 
 Crear `scripts/measure-escala-tipografica.py` con este contenido:
 
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Correr la familia estática y verla en ROJO**
+- [x] **Step 2: Correr la familia estática y verla en ROJO**
 
 ```bash
 python3 scripts/measure-escala-tipografica.py --solo 1
@@ -275,7 +275,7 @@ Esperado: **FALLA** con al menos cuatro fallos — 56 literales en Caelestia, 9 
 la escala declarada 3 veces, y `--t-00`/`--t-0` que no existen. Este rojo no es un sabotaje
 montado: es el estado real del repo, que es lo que este trabajo viene a arreglar.
 
-- [ ] **Step 3: Levantar el preview y correr la familia viva, también en ROJO**
+- [x] **Step 3: Levantar el preview y correr la familia viva, también en ROJO**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -287,7 +287,7 @@ PID=$!; until ! kill -0 $PID 2>/dev/null; do sleep 5; done; tail -30 /tmp/escala
 
 Esperado: **FALLA**, con nodos fuera de la escala en las cinco escenas.
 
-- [ ] **Step 4: Commit del arnés en rojo**
+- [x] **Step 4: Commit del arnés en rojo**
 
 ```bash
 git add scripts/measure-escala-tipografica.py
@@ -315,7 +315,7 @@ vienen a cazar."
 - Produces: los doce tokens `--t-00` … `--t-10` disponibles en `:root` para todo el sitio, sin
   necesidad de respaldo. Las tareas 2 a 6 los consumen.
 
-- [ ] **Step 1: Quitar las tres declaraciones por tema y poner una en `:root`**
+- [x] **Step 1: Quitar las tres declaraciones por tema y poner una en `:root`**
 
 Las tres son idénticas. Localizarlas y borrarlas:
 
@@ -372,7 +372,7 @@ nuevo = """/*
 p.write_text(nuevo + s, encoding="utf-8")
 ```
 
-- [ ] **Step 2: Quitar los diecisiete respaldos, y reapuntar los tres consumidores de `--t-0`**
+- [x] **Step 2: Quitar los diecisiete respaldos, y reapuntar los tres consumidores de `--t-0`**
 
 Son 17, no 9: doce en `style.css` y cinco en `themes.css` (`.scene-nav-trigger`).
 
@@ -400,7 +400,7 @@ p.write_text(s, encoding="utf-8")
 print(f"{n} consumidores reapuntados")   # esperado: 3
 ```
 
-- [ ] **Step 3: Build y familia estática, comprobando qué queda rojo**
+- [x] **Step 3: Build y familia estática, comprobando qué queda rojo**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -411,7 +411,7 @@ python3 scripts/measure-escala-tipografica.py --solo 1
 Esperado: los checks 1b, 1c y 1d **en VERDE** (sin respaldos, una sola declaración, doce tokens con
 su valor). El 1a sigue **ROJO** con 56 literales: eso lo cierran las tareas 2 a 6.
 
-- [ ] **Step 4: Comprobar que Vice y Hyprland siguen intactos**
+- [x] **Step 4: Comprobar que Vice y Hyprland siguen intactos**
 
 Los tokens son los mismos números, así que ninguna talla puede haber cambiado. Confirmarlo, no
 asumirlo:
@@ -428,7 +428,7 @@ declaración en `:root` tiene MENOS especificidad que la de tema, así que cualq
 redefiniera un token dentro de un tema ahora gana): revisar `grep -n -- '--t-' src/themes/themes.css`
 antes de seguir.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css src/style.css
@@ -459,7 +459,7 @@ Vice y Hyprland sin cambios: son exactamente los mismos numeros."
 - Consumes: los doce tokens de la Task 1.
 - Produces: nada que otras tareas usen.
 
-- [ ] **Step 1: Sustituir las trece**
+- [x] **Step 1: Sustituir las trece**
 
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
@@ -481,7 +481,7 @@ Vice y Hyprland sin cambios: son exactamente los mismos numeros."
 reemplazo por texto aterriza en la equivocada. Sustituir por número de línea, releyendo el fichero
 tras cada cambio, o comprobar después con `grep -o` sobre el CSS **construido**.
 
-- [ ] **Step 2: Build y comprobar el CSS construido**
+- [x] **Step 2: Build y comprobar el CSS construido**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -491,7 +491,7 @@ grep -o 'cae-clock{[^}]*}' dist/assets/*.css | head -1
 
 Esperado: el bloque de `.cae-clock` cita `var(--t-1)`, no `0.8125rem`.
 
-- [ ] **Step 3: Arnés del shell**
+- [x] **Step 3: Arnés del shell**
 
 ```bash
 nohup python3 scripts/measure-caelestia-hora.py --base http://127.0.0.1:4173 > /tmp/hora.log 2>&1 &
@@ -501,7 +501,7 @@ PID=$!; until ! kill -0 $PID 2>/dev/null; do sleep 5; done; tail -20 /tmp/hora.l
 Esperado: 0 fallos. Vigila el contraste del reloj y de la marca sobre el fondo real de la barra, que
 es justo lo que estas dos tallas mueven.
 
-- [ ] **Step 4: Captura y mirarla**
+- [x] **Step 4: Captura y mirarla**
 
 ```bash
 python3 - <<'PY'
@@ -521,7 +521,7 @@ Abrir `/tmp/shell.png` y mirarla de verdad: la barra con las cinco pastillas y e
 Lo que se busca es que el reloj no haya crecido de más contra la marca (pasa de 13 a 12) y que las
 pastillas sigan alineadas.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -541,7 +541,7 @@ maximo 2,43px (.cae-v2), mediana 0,50. Arnes de hora en verde."
 **Interfaces:**
 - Consumes: los tokens de la Task 1.
 
-- [ ] **Step 1: Sustituir las catorce**
+- [x] **Step 1: Sustituir las catorce**
 
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
@@ -562,7 +562,7 @@ maximo 2,43px (.cae-v2), mediana 0,50. Arnes de hora en verde."
 
 `.cae-obra-caption` y `.cae-obra-prose p` aparecen dos veces cada uno: mismo aviso que en la Task 2.
 
-- [ ] **Step 2: Build y arnés de Obra**
+- [x] **Step 2: Build y arnés de Obra**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -575,7 +575,7 @@ Esperado: **los mismos tres fallos de contraste de siempre y ninguno más.** Ese
 hallazgos (`bg=rgba(0, 0, 0, 0)`) desde antes de fusionar B5, y es su propio instrumento, que no
 resuelve el fondo pintado. Si aparece un cuarto, es de este cambio.
 
-- [ ] **Step 3: Captura del cajón abierto, con el titular que se mueve 3,9px**
+- [x] **Step 3: Captura del cajón abierto, con el titular que se mueve 3,9px**
 
 ```bash
 python3 - <<'PY'
@@ -598,7 +598,7 @@ PY
 Mirar la captura y el número: **si el titular pasa a dos líneas o se sale del cajón, se arregla la
 CAJA** (el ancho del cajón, su relleno o el `line-height` del titular), nunca devolviendo los 34px.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -622,7 +622,7 @@ de contraste conocidos y ninguno mas."
 - Produces: el valor nuevo de `min-height` de `.cae-cred-cab` en la banda ≤640, que sustituye a los
   `15.875rem` (254px) actuales.
 
-- [ ] **Step 1: Sustituir las once**
+- [x] **Step 1: Sustituir las once**
 
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
@@ -638,7 +638,7 @@ de contraste conocidos y ninguno mas."
 | `.cae-cred-nom` (banda ≤900) | 0.53rem | `var(--t-00)` | −1,02 |
 | `.credit-name` | 0.8rem | `var(--t-1)` | +0,80 |
 
-- [ ] **Step 2: Volver a medir la altura de la cabecera en el teléfono**
+- [x] **Step 2: Volver a medir la altura de la cabecera en el teléfono**
 
 `.cae-cred-cab` tiene `min-height: 15.875rem` (254px) en la banda ≤640, y ese número **no es
 decorativo**: se fijó al peor caso de las 23 piezas porque si la cabecera cambia de alto al elegir,
@@ -681,7 +681,7 @@ Tomar el mayor de los tres anchos, redondear hacia arriba al cuarto de píxel y 
 `rem` (dividir entre 16). Ejemplo: si el peor caso sale 248px, `min-height: 15.5rem`. Dejar el
 comentario que ya está encima explicando por qué existe, actualizando el número medido.
 
-- [ ] **Step 3: Arneses de Stack, uno detrás de otro**
+- [x] **Step 3: Arneses de Stack, uno detrás de otro**
 
 ```bash
 nohup python3 scripts/measure-caelestia-creditos.py --base http://127.0.0.1:4173 > /tmp/cred.log 2>&1 &
@@ -696,7 +696,7 @@ como aserción roja. Esperado en móvil: **0 fallos**, incluida la familia 5b, q
 cabecera mide siempre lo mismo elijas la pieza que elijas. Si 5b sale roja, el `min-height` del
 Step 2 está mal medido.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -720,7 +720,7 @@ Arnes de movil en verde, familia 5b incluida."
 **Interfaces:**
 - Consumes: los tokens de la Task 1.
 
-- [ ] **Step 1: Sustituir las ocho**
+- [x] **Step 1: Sustituir las ocho**
 
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
@@ -733,7 +733,7 @@ Arnes de movil en verde, familia 5b incluida."
 | `.ficha-rotulo` | 0.72rem | `var(--t-1)` | −0,48 |
 | **`.ficha-nombre`** (banda ≤900) | **1.625rem** | **`var(--t-4)`** | **+2,43** |
 
-- [ ] **Step 2: Build y arnés de Quién soy**
+- [x] **Step 2: Build y arnés de Quién soy**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -746,7 +746,7 @@ Esperado: 0 fallos. Ese arnés comprueba explícitamente que **el nombre no se p
 que el filete medido con `Range` guarda su relación con el retrato: son las dos cosas que un cambio
 de 3px en el nombre puede romper.
 
-- [ ] **Step 3: Captura en los dos anchos y mirarlas**
+- [x] **Step 3: Captura en los dos anchos y mirarlas**
 
 ```bash
 python3 - <<'PY'
@@ -768,7 +768,7 @@ PY
 Mirar las dos. El nombre es el ancla de identidad de la escena: si a 50,52px pierde presencia contra
 el retrato, **se ajusta el retrato o la medida de la columna**, no se devuelven los 53,6px.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -789,7 +789,7 @@ filete medido con Range guarda su relacion con el retrato."
 **Interfaces:**
 - Consumes: los tokens de la Task 1.
 
-- [ ] **Step 1: Sustituir las once**
+- [x] **Step 1: Sustituir las once**
 
 | selector | hoy | pasa a | Δ |
 |---|---|---|---|
@@ -812,7 +812,7 @@ tamaño lo decide el ancho de la medida. Es la única excepción del gate, por s
 sobre los tokens, incluida su cuarta voz tipográfica a `--t-10`. Es la prueba de que la escala se
 podía respetar desde el principio.
 
-- [ ] **Step 2: Build y arnés de Título**
+- [x] **Step 2: Build y arnés de Título**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -825,7 +825,7 @@ Esperado: 0 fallos. Vigila que la tarjeta «Ahora mismo» no pise la columna de 
 (`tarjeta_portatil`), que es lo que puede mover `.cae-wnow` al bajar 1,43px, y que las tres líneas
 del titular siguen midiendo lo mismo.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/themes/themes.css
@@ -846,7 +846,7 @@ Es la unica excepcion del gate, y va por selector."
 - Modify: `.claude/rules/verification.md`
 - Modify: `CLAUDE.md` y `.claude/CLAUDE.md`
 
-- [ ] **Step 1: El gate entero, las dos familias en verde**
+- [x] **Step 1: El gate entero, las dos familias en verde**
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
@@ -859,7 +859,7 @@ Esperado: **0 fallos**. Si la familia viva encuentra algo fuera de la escala, es
 por un camino que la estática no ve (Tailwind, `style.css`, estilo en línea): perseguirla hasta el
 origen, no añadirla a `EXCEPCIONES`.
 
-- [ ] **Step 2: Ver la familia VIVA en rojo contra un fallo que la estática no puede ver**
+- [x] **Step 2: Ver la familia VIVA en rojo contra un fallo que la estática no puede ver**
 
 Este es el sabotaje que da valor a la segunda familia. Con el build ya migrado y verde:
 
@@ -885,7 +885,7 @@ Comprobar a mano que 13,7px no está en `VALORES` y que la familia viva lo marca
 arnés un `pg.evaluate` que ponga ese estilo antes de medir, correr `--solo 2`, ver el FALLO, y
 quitarlo. Dejar constancia del número en el commit.
 
-- [ ] **Step 3: Los siete arneses de Caelestia, uno detrás de otro, y `verify.py`**
+- [x] **Step 3: Los siete arneses de Caelestia, uno detrás de otro, y `verify.py`**
 
 ```bash
 for a in hora titulo quien-soy obra creditos fundido cursor movil; do
@@ -899,7 +899,7 @@ python3 scripts/verify.py --url http://127.0.0.1:4173
 Esperado: cero fallos nuevos. Los conocidos que siguen valiendo: los tres de contraste de Obra y el
 `hover` que expira en Créditos. `verify.py` con código 0 (12 conocidos, 0 nuevos).
 
-- [ ] **Step 4: Vera sobre las cinco escenas**
+- [x] **Step 4: Vera sobre las cinco escenas**
 
 Lanzar `vera-art-director` con `model: sonnet`, sobre `http://127.0.0.1:4173/?theme=caelestia`, a
 1440x900 y 390x844. La pregunta concreta no es «¿está la escala?» sino **«¿se nota que las tallas
@@ -907,7 +907,7 @@ ahora son doce?»**: si la jerarquía no se lee mejor, el trabajo ha sido contab
 En el brief: que no edite nada de `src/`, que no use `pkill` y que espere por PID dentro del mismo
 comando.
 
-- [ ] **Step 5: Documentación y cierre**
+- [x] **Step 5: Documentación y cierre**
 
 - Spec a `Estado: implementado` y añadir `## Registro de implementación` con: el desplazamiento real
   de las seis que se movían más de 2px, qué cajas hubo que tocar, el valor nuevo del `min-height` de
@@ -918,7 +918,7 @@ comando.
   única excepción es el titular justificado de B1.
 - Marcar las casillas de este plan conforme se van cerrando, no en bloque al final.
 
-- [ ] **Step 6: Commit del cierre**
+- [x] **Step 6: Commit del cierre**
 
 ```bash
 git add -A
@@ -929,11 +929,11 @@ git commit -m "docs(escala): registro de implementacion y cierre de la escala ti
 
 ## Verificación final
 
-- [ ] `npm run build` y `npm run lint` limpios
-- [ ] `measure-escala-tipografica.py` con 0 fallos, y su familia viva vista en rojo contra un
+- [x] `npm run build` y `npm run lint` limpios
+- [x] `measure-escala-tipografica.py` con 0 fallos, y su familia viva vista en rojo contra un
       `font-size` en línea
-- [ ] Los ocho arneses de Caelestia sin fallos nuevos
-- [ ] `verify.py` con código 0
-- [ ] Capturas miradas de las seis tallas que se mueven más de 2px
-- [ ] Vera pasada, con su veredicto anotado en el spec
-- [ ] Spec en `implementado` y este plan con todas las casillas marcadas
+- [x] Los ocho arneses de Caelestia sin fallos nuevos
+- [x] `verify.py` con código 0
+- [x] Capturas miradas de las seis tallas que se mueven más de 2px
+- [x] Vera pasada, con su veredicto anotado en el spec
+- [x] Spec en `implementado` y este plan con todas las casillas marcadas

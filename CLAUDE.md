@@ -313,8 +313,8 @@
   splits both ways and the top half is unreachable. It is `safe center` now (a no-op wherever it
   already fit), and in the media band the box grows. **The same fault was on `main`** at 1366x768
   and 1280x720 — ordinary laptops — with 11 and 35px of the `~ $ neofetch` command under the bar.
-  Open and recorded, not fixed here: the typographic-scale debt (Vera's 7th sighting, a phase of
-  its own). **Two other open items were closed by Aoshi on his own phone** (2026-09-07, against the
+  Open and recorded, not fixed here: the typographic-scale debt (Vera's 7th sighting) — **closed on
+  2026-09-07, see the type-scale block below**. **Two other open items were closed by Aoshi on his own phone** (2026-09-07, against the
   merged `main` over Tailscale): the headline still typing at 1.5s and a 27px black band under the
   panel. Neither exists on a real device — both were the instrument (the `swiftshader` stopwatch and
   the headless compositor under device emulation; the band showed identically on `main` without B6
@@ -328,6 +328,43 @@
   selection (164 to 254px), so the tira moved under the finger between `pointerdown` and `click` —
   you tapped one piece and a different one was selected**. The header now has a fixed height, as
   desktop already did. The harness gained a 360x800 band and a walk over all 23 headers.
+
+- **The type scale is closed and gated** (`2026-09-07-escala-tipografica`, branch
+  `design/escala-tipografica`). Vera had flagged "no type scale" **seven times** across phase A, B1,
+  the "Ahora mismo" card, B4 and B6, and each time it was accepted as known debt. The scale existed
+  — a perfect fourth, ratio 1.333, ten steps from 12 to 159.66px — but **nothing obliged anyone to
+  use it**: 69 of 177 `font-size` declarations carried a literal, 39 distinct values, and 57 of
+  those literals were Caelestia's.
+  **What changed:** two steps below the floor, `--t-00` (9.5px) and `--t-0` (10.67px), at ratio
+  **1.125 instead of 1.333** — deliberate, because at 10px the eye resolves a 1px step and at 120px
+  it does not resolve fifteen, so one ratio across the whole range leaves you either with no small
+  sizes or with fifteen large ones nobody uses. The scale is declared **once, on bare `:root`**,
+  where it lived three times over — once per theme, identical — while `style.css` consumed it with
+  **17 fallbacks** (`var(--t-1, 0.53rem)`), a second scale in the shadows: the number that would
+  paint if the token were missing. All 57 literals moved to their nearest step, median shift
+  **0.50px**, max 3.90px.
+  **The one exception is named by selector** (`#hero .cae-ln`): B1's headline justifies by measuring
+  the text and stretching it to the measure, so its size is decided by the box's width and cannot be
+  on the scale by construction. A second element with an inline size turns the gate red.
+  Gated by `scripts/measure-escala-tipografica.py`, **two families that watch each other**. The
+  static one reads the source; the live one reads the **computed** `font-size` of everything that
+  paints text, and it is not redundant — it caught four sizes no regex could see: a `0.92em` that
+  computed to 14.72px, a `font-size: 0` used as a hiding trick (now a proper visually-hidden span,
+  better than before: the name stays in the accessibility tree), and a `<small>` the browser shrank
+  to 7.60px with its own `smaller`.
+  **Two lessons this cost:**
+  1. **`--t-0` already existed at 9px**, declared by B5 for Fundido's mono labels, with a comment
+     making this spec's own argument — *the sixth time that defect appeared*. This repair had been
+     started once already, in miniature, and stopped at three selectors. Worse: after moving the
+     scale to `:root`, that old declaration **survived and won on specificity**, so inside Caelestia
+     the token still read 9px — and **the gate was blind to it**, because it checked that `--t-1`
+     was declared once, not all twelve.
+  2. **A tie is decided by the accessibility floor, not by list order.** `.cae-obra-caption` sat at
+     14px, exactly 2px from both `--t-1` and `--t-2`; the script that built the plan's table broke
+     the tie downwards for no reason. At 12px the glyph thins and contrast under the cursor's spill
+     falls to **4.21:1 in Obra at 04:30**, below AA. It is `--t-2` now.
+  Hyprland's literals are deliberately out of scope until its redesign closes; Vice only lost the
+  duplicated declaration — the same numbers.
 
 
 ## Architecture Notes

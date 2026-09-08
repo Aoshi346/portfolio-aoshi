@@ -1,6 +1,6 @@
 # La escala tipográfica de Caelestia
 
-Estado: en diseno
+Estado: implementado
 Fecha: 2026-09-07
 Rama de trabajo: `design/escala-tipografica`, desde `main` (`a73fa11`)
 Origen: `vera-art-director` marca «ausencia de escala tipográfica» por **séptima vez** en el
@@ -188,3 +188,89 @@ Al cerrar, `vera-art-director` sobre las cinco escenas, que es quien lleva siete
 señalándolo. La pregunta concreta que tiene que responder no es «¿está la escala?» sino **«¿se nota
 que las tallas ahora son doce?»** — si la jerarquía no se lee mejor, el trabajo ha sido contable y
 no de diseño.
+
+---
+
+## Registro de implementación
+
+Doce commits en `design/escala-tipografica`, ejecutados con un subagente por tarea sobre el worktree
+`portfolio-aoshi-escala`. El gate se escribió PRIMERO y se vio rojo contra el repo tal cual estaba
+—57 literales, 17 respaldos, la escala declarada tres veces— porque ese rojo no había que fabricarlo:
+era el estado del proyecto.
+
+### Lo que el gate encontró y el spec no sabía
+
+**1. `--t-0` ya existía, y valía 9 px.** Lo declaró B5 (Fundido) con un comentario que dice
+exactamente lo que este spec argumenta: que hacía falta un escalón bajo el suelo porque tres sitios
+llevaban literales sin declarar, «la sexta vez que ese defecto aparecía en el proyecto». **Esta
+reparación ya se había empezado una vez, en pequeño, y se quedó en tres selectores.** Se respetó el
+orden de los nombres (`--t-00` = 9,5 y `--t-0` = 10,67) y sus tres consumidores se reapuntaron al de
+abajo, de 9 a 9,5 px.
+
+**2. La declaración vieja sobrevivió al primer intento y ganaba por especificidad.** Tras mover la
+escala a `:root`, el `--t-0: 9px` seguía dentro de `:root[data-theme="caelestia"]`, que pesa más, así
+que dentro del tema el token seguía valiendo 9. Las tareas siguientes iban a asignarlo a nueve
+selectores esperando 10,67. **El gate no lo vio**: comprobaba que `--t-1` se declarara una vez, no
+los doce. Se generalizó a los doce y se vio rojo devolviendo el fantasma.
+
+**3. Los respaldos eran 17, no 9,** y los literales 57, no 56. Mi conteo solo casaba respaldos
+escritos en `rem` y una guardia de comentarios mal puesta se saltaba `.cae-firma` a 18 px.
+
+### Las cuatro tallas que solo vio la familia viva
+
+Ninguna de estas es un literal, así que **ninguna regex sobre el CSS podía encontrarlas.** Son la
+razón de que el gate tenga dos familias:
+
+| dónde | qué pasaba | arreglo |
+|---|---|---|
+| `.ficha-s` | `font-size: 0.92em`, relativo: calculaba 14,72 px | `var(--t-1)` |
+| `.cae-ws` (móvil) | `font-size: 0` para esconder el nombre de la pastilla | el nombre pasa a un `<span>` propio con el patrón visualmente oculto |
+| `.cae-mv-cifras small` | el `smaller` que aplica el navegador bajaba 9,5 a 7,60 px | `font-size: inherit` |
+| `.cae-obra-caption` | a `--t-1` caía a 4,21:1 bajo el derrame del cursor | `var(--t-2)` |
+
+El segundo dejó el sitio mejor de lo que estaba: `font-size: 0` era una talla haciendo de truco de
+ocultación, y ahora el nombre se esconde con el patrón que ya usa el resto del proyecto, sin salir
+del árbol de accesibilidad.
+
+### El empate que decidió la accesibilidad
+
+`.cae-obra-caption` estaba a 14 px, **exactamente equidistante de `--t-1` (12) y `--t-2` (16)**: dos
+píxeles a cada lado. El script que armó la tabla del plan rompió el empate hacia abajo por orden de
+lista, sin criterio ninguno. El criterio lo puso `measure-caelestia-cursor.py`: a 12 px el glifo
+adelgaza y el contraste bajo el derrame de la gota cae a **4,21:1 en Obra a las 04:30**, por debajo
+del piso AA. **En un empate manda el suelo de accesibilidad**, así que sube a `--t-2`.
+
+Es el séptimo movimiento de más de 2 px y el único que no estaba previsto: los seis de la tabla de
+arriba se movieron por escala, este por contraste.
+
+### Las seis que se movían más de 2 px
+
+Las seis se aplicaron **sin devolver ni un número**, que era la regla. Solo una obligó a tocar caja:
+el titular del cajón de Obra (+3,90) se quedó en una línea y dentro del cajón sin ajustar nada, el
+nombre de Quién soy (−3,08 en escritorio, +2,43 en móvil) aguantó con el filete medido por `Range`
+igualando el ancho del correo (249 contra 249), y **la tarjeta «Ahora mismo» sí pidió caja**: al
+subir `.cae-wnow` de 27 a 28,43 el hueco contra la columna de cifras a 1366x768 bajó a 7 px, por
+debajo del piso de 8 que vigila el gate. Se recortó el margen del pie de la tarjeta hasta 9 px
+medidos. La talla no se tocó.
+
+### La cabecera de Stack, remedida
+
+`.cae-cred-cab` lleva altura fija en el teléfono porque si cambia de alto al elegir pieza, la tira se
+mueve bajo el dedo entre el `pointerdown` y el `click` y tocas una pieza pero se elige otra. Al bajar
+`.cae-cred-nombre` de 32 a 28,43 el peor caso de las 23 pasó de **254 a 248 px**, así que el
+`min-height` bajó de `15.875rem` a `15.5rem`. La familia 5b de `measure-caelestia-movil.py` confirma
+`[248]` uniforme en las 23.
+
+### Números finales
+
+- **57 declaraciones migradas**, mediana del desplazamiento 0,50 px, máximo 3,90 px.
+- **39 valores distintos a 12**, más una excepción nombrada.
+- `measure-escala-tipografica.py`: **dos familias, 0 fallos**, con la viva vista en rojo dos veces
+  sobre `SPAN.cae-clock = 13.70px` y el arnés restaurado sin diferencias.
+- Los ocho arneses de Caelestia en verde (Créditos con su `hover` que expira, conocido y ajeno).
+- `verify.py` con código 0.
+
+### Gates de crítica
+
+`vera-art-director` sobre las cinco escenas, con la pregunta explícita de si **se nota que las tallas
+ahora son doce**. Veredicto en el apartado siguiente.
