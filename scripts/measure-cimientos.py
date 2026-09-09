@@ -179,11 +179,19 @@ ENTRADA_JS = """() => {
 
 def gate_3_la_entrada_se_ve(b, url: str, errores: list, fallos: list) -> None:
     """Paso A: seccion encendida (is-lit) y los cimientos ENTEROS bajo el
-    pliegue; tras 1500ms nada ha arrancado. Paso B: los cimientos al 80% y
-    tras 2000ms todo aterrizo. Anclado a ESTADO (con setTimeout el gate 13
-    de B5 salia rojo bajo carga y verde en vacio). Si el paso A no puede
-    colocar los cimientos bajo el pliegue, el arnes FALLA en vez de medir
-    otra cosa."""
+    pliegue; tras 1500ms nada ha arrancado (asentamiento tras el scroll, la
+    asercion es que NADA paso, asi que un tiempo fijo aqui solo endurece la
+    prueba). Paso B: los cimientos al 80% y se sondea el estado DENTRO de la
+    pagina (sin ida y vuelta de Playwright por muestra) hasta que aterriza o
+    se agota una fecha limite de 6000ms, que es un tope de FALLO, nunca un
+    tiempo de espera. Anclado a ESTADO de verdad en los dos pasos (con
+    setTimeout fijo el gate 13 de B5 salia rojo bajo carga y verde en vacio,
+    y este mismo gate 3 tuvo el mismo defecto en su paso B hasta la ronda de
+    arreglo 1: el docstring decia "anclado a estado" mientras el corte era un
+    wait_for_timeout(2500) fijo, con solo 900ms de margen sobre el peor caso
+    real de la coreografia -- 520 + 2*90 + 900 = 1600ms). Si el paso A no
+    puede colocar los cimientos bajo el pliegue, el arnes FALLA en vez de
+    medir otra cosa."""
     for nombre, w, h in VIEWPORTS:
         pg = abrir(b, url, "hyprland", w, h, errores)
         top = pg.evaluate(
@@ -208,13 +216,27 @@ def gate_3_la_entrada_se_ve(b, url: str, errores: list, fallos: list) -> None:
                 f"[{nombre}] gate 3 paso A: la entrada arranco con los cimientos bajo el pliegue "
                 f"(lit={a['lit']}, linea={a['lineaTrazada']}, cols={a['colsAbiertas']}, lenguajes={a['lensEncendidos']})"
             )
-        # B: los cimientos al 80%
+        # B: los cimientos al 80%. Anclado a ESTADO: se sondea DENTRO de la
+        # pagina hasta que aterriza, con fecha limite de FALLO (no de espera).
         pg.evaluate(f"window.scrollTo(0, {top - h * 0.8 + 40})")
-        pg.wait_for_timeout(2500)
-        bst = pg.evaluate(ENTRADA_JS)
-        if not (bst["lit"] and bst["lineaTrazada"] and bst["colsAbiertas"] == 3 and bst["lensEncendidos"] == 5):
+        bst = pg.evaluate(
+            f"""async () => {{
+              const leer = {ENTRADA_JS};
+              const dl = performance.now() + 6000;
+              let ult = leer();
+              while (performance.now() < dl) {{
+                ult = leer();
+                if (ult.lit && ult.lineaTrazada && ult.colsAbiertas === 3 && ult.lensEncendidos === 5) {{
+                  return {{ ok: true, ...ult }};
+                }}
+                await new Promise(r => setTimeout(r, 25));
+              }}
+              return {{ ok: false, ...ult }};
+            }}"""
+        )
+        if not bst["ok"]:
             fallos.append(
-                f"[{nombre}] gate 3 paso B: la entrada no aterrizo "
+                f"[{nombre}] gate 3 paso B: la entrada no aterrizo en 6000ms "
                 f"(lit={bst['lit']}, linea={bst['lineaTrazada']}, cols={bst['colsAbiertas']}/3, lenguajes={bst['lensEncendidos']}/5)"
             )
         pg.context.close()
