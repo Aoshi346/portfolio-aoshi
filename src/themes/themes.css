@@ -2245,12 +2245,20 @@
   retardo el texto se ve cortado a media llegada contra el `overflow: hidden`
   de su celda, y lee como fallo en vez de como pieza encajando. Se detecto
   mirando el fotograma intermedio, no razonando.
+
+  El disparador es la caja de LA PLACA (`placa-lit`), no `is-lit` de la
+  seccion que la contiene: la placa esta 239px por debajo del borde superior
+  de la seccion en escritorio y 161px en movil, asi que con `is-lit` de la
+  seccion (que arranca a `top 90%` de la seccion) las siete celdas
+  aterrizaban a los 1200ms con la placa 119px bajo el pliegue en una ventana
+  de 900 (1019 sobre 900) y 41px bajo el pliegue en una de 844 (885 sobre
+  844) — la entrada corria entera fuera de pantalla y nunca se veia.
 */
 :root[data-theme="hyprland"] .placa-in {
   opacity: 0;
   transform: translate(var(--placa-tx, 0), var(--placa-ty, 0));
 }
-:root[data-theme="hyprland"] .is-lit .placa-in {
+:root[data-theme="hyprland"] [data-placa].placa-lit .placa-in {
   opacity: 1;
   transform: none;
   transition:

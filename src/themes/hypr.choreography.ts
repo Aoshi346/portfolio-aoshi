@@ -85,6 +85,7 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
   for (const n of Array.from(root.querySelectorAll<HTMLElement>("[data-credit].is-caught"))) {
     n.classList.remove("is-caught", "is-caught-still");
   }
+  root.querySelector<HTMLElement>("[data-placa]")?.classList.remove("placa-lit");
   delete (window as unknown as { __hyprSkills?: unknown }).__hyprSkills;
 
   const scenes = Array.from(root.querySelectorAll<HTMLElement>("[data-scene]"));
@@ -222,6 +223,22 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
         fila === 1 ? "-18px" : filaFin >= (explicita ? 4 : ultimaFila) ? "18px" : "0px",
       );
     });
+
+    // La placa dispara su propia entrada, no la de la seccion: la placa
+    // vive 239px por debajo del borde superior de la seccion en escritorio
+    // y 161px en movil. Con `is-lit` de la seccion (arranca a `top 90%` de
+    // la SECCION), las siete celdas aterrizaban a los 1200ms con la placa
+    // 119px bajo el pliegue en una ventana de 900 (1019 sobre 900) y 41px
+    // bajo el pliegue en una de 844 (885 sobre 844) — la entrada corria
+    // entera fuera de pantalla. Umbral propio, anclado a la caja de la
+    // placa, no a la seccion que la contiene.
+    ScrollTrigger.create({
+      id: `${ID}-placa`,
+      trigger: placa,
+      start: "top 80%",
+      once: true,
+      onEnter: () => placa.classList.add("placa-lit"),
+    });
   }
 
   // Gesto 1 — la escena se enciende. Las clases hacen el trabajo; GSAP solo
@@ -237,12 +254,18 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
   });
 
   // Red: cualquier escena ya dentro del cuadro se enciende sin esperar a un
-  // callback. Sin esto, un scroll rapido deja secciones en blanco.
+  // callback. Sin esto, un scroll rapido deja secciones en blanco. La placa
+  // entra en la misma red, con su propio umbral (0.8), para que un scroll
+  // rapido tampoco la deje sin encender.
   const net = (): void => {
     scenes.forEach((scene) => {
       const r = scene.getBoundingClientRect();
       if (r.top < window.innerHeight * 0.9 && r.bottom > 0) scene.classList.add("is-lit");
     });
+    if (placa) {
+      const r = placa.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.8 && r.bottom > 0) placa.classList.add("placa-lit");
+    }
   };
   net();
   window.addEventListener("scroll", net, { passive: true });
