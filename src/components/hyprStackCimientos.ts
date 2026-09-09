@@ -71,8 +71,41 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
   cim.setAttribute("data-cimientos", "");
   escena.append(cim);
 
+  // El retardo de cada lenguaje sale de SU x real sobre el ancho del suelo:
+  // la linea tarda 500ms en cruzar, y el nombre se enciende cuando la linea
+  // llega a su columna. Se mide tras el append, con layout ya disponible.
+  const anchoSuelo = lenguajes.getBoundingClientRect().width || 1;
+  const izq = lenguajes.getBoundingClientRect().left;
+  for (const boton of Array.from(lenguajes.querySelectorAll<HTMLElement>(".cim-nombre"))) {
+    const x = boton.getBoundingClientRect().left - izq;
+    boton.style.setProperty("--cim-d", `${Math.round((x / anchoSuelo) * 500)}ms`);
+  }
+
+  // Disparo anclado a la caja de los cimientos: top al 80% de la ventana.
+  // `rootMargin` negativo abajo recorta el 20% inferior del viewport, asi que
+  // "intersecta" equivale a "el borde superior ha cruzado el 80%". Con
+  // movimiento reducido no hay entrada: el estado final se pone al montar.
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let observador: IntersectionObserver | null = null;
+  if (reduce) {
+    cim.classList.add("cimientos-lit");
+  } else {
+    observador = new IntersectionObserver(
+      (entradas) => {
+        if (entradas.some((e) => e.isIntersecting)) {
+          cim.classList.add("cimientos-lit");
+          observador?.disconnect();
+          observador = null;
+        }
+      },
+      { rootMargin: "0px 0px -20% 0px", threshold: 0 },
+    );
+    observador.observe(cim);
+  }
+
   return {
     destroy: () => {
+      observador?.disconnect();
       cim.remove();
     },
   };

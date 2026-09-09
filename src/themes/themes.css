@@ -8718,6 +8718,42 @@
   font-size: var(--t-5);
 }
 
+/*
+  ENTRADA — el suelo se enciende primero. La linea se traza (500ms corte);
+  cada lenguaje se enciende cuando la linea llega a su columna (`--cim-d`,
+  que escribe hyprStackCimientos.ts a partir de su x real); despues las
+  columnas crecen del suelo por recorte (900ms atmosfera, 90ms por columna).
+  Nada por opacidad. El disparo (`cimientos-lit`) lo pone el modulo con un
+  IntersectionObserver anclado a la caja de los cimientos, no a la seccion.
+*/
+:root[data-theme="hyprland"] .cim-linea {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+:root[data-theme="hyprland"] .cimientos-lit .cim-linea {
+  transform: scaleX(1);
+  transition: transform 0.5s var(--hard);
+}
+:root[data-theme="hyprland"] .cim-lenguajes .cim-txt,
+:root[data-theme="hyprland"] .cim-lenguajes .cim-icono {
+  color: var(--rule);
+}
+:root[data-theme="hyprland"] .cimientos-lit .cim-lenguajes .cim-txt {
+  color: var(--text);
+  transition: color 0.42s var(--hard) var(--cim-d, 0ms);
+}
+:root[data-theme="hyprland"] .cimientos-lit .cim-lenguajes .cim-icono {
+  color: var(--haze);
+  transition: color 0.42s var(--hard) var(--cim-d, 0ms);
+}
+:root[data-theme="hyprland"] .cim-col {
+  clip-path: inset(100% 0 0 0);
+}
+:root[data-theme="hyprland"] .cimientos-lit .cim-col {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.9s var(--slow) calc(520ms + var(--cim-c, 0) * 90ms);
+}
+
 /* Movil y tableta vertical: las columnas se apilan como filas. */
 @media (max-width: 820px) {
   :root[data-theme="hyprland"] [data-cimientos] {

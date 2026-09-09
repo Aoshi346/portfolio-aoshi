@@ -160,6 +160,66 @@ def gate_7_8_9_12_geometria(pg, nombre: str, w: int, fallos: list) -> None:
             fallos.append(f"[{nombre}] gate 12: diana tactil minima {min(g['dianas']):.1f}px, piso {DIANA_MINIMA}")
 
 
+ENTRADA_JS = """() => {
+  const cim = document.querySelector('[data-cimientos]');
+  if (!cim) return null;
+  const linea = cim.querySelector('.cim-linea');
+  const cols = Array.from(cim.querySelectorAll('.cim-col'));
+  const lens = Array.from(cim.querySelectorAll('.cim-lenguajes .cim-txt'));
+  const tf = getComputedStyle(linea).transform;
+  return {
+    top: cim.getBoundingClientRect().top, innerH: innerHeight,
+    lit: cim.classList.contains('cimientos-lit'),
+    lineaTrazada: tf === 'none' || /matrix\\(1,/.test(tf),
+    colsAbiertas: cols.filter(c => { const cp = getComputedStyle(c).clipPath; return cp === 'none' || cp === 'inset(0px)' || cp === 'inset(0px 0px 0px 0px)'; }).length,
+    lensEncendidos: lens.filter(t => getComputedStyle(t).color === 'rgb(255, 234, 230)').length,
+  };
+}"""
+
+
+def gate_3_la_entrada_se_ve(b, url: str, errores: list, fallos: list) -> None:
+    """Paso A: seccion encendida (is-lit) y los cimientos ENTEROS bajo el
+    pliegue; tras 1500ms nada ha arrancado. Paso B: los cimientos al 80% y
+    tras 2000ms todo aterrizo. Anclado a ESTADO (con setTimeout el gate 13
+    de B5 salia rojo bajo carga y verde en vacio). Si el paso A no puede
+    colocar los cimientos bajo el pliegue, el arnes FALLA en vez de medir
+    otra cosa."""
+    for nombre, w, h in VIEWPORTS:
+        pg = abrir(b, url, "hyprland", w, h, errores)
+        top = pg.evaluate(
+            "() => { const c = document.querySelector('[data-cimientos]');"
+            " return c ? c.getBoundingClientRect().top + window.scrollY : -1; }"
+        )
+        if top < 0:
+            fallos.append(f"[{nombre}] gate 3: no existe [data-cimientos]")
+            pg.context.close()
+            continue
+        # A: la seccion pasa el 90% (is-lit) pero los cimientos quedan enteros bajo el pliegue
+        seccion_top = pg.evaluate(
+            "() => document.querySelector('[data-scene=\"credits\"]').getBoundingClientRect().top + window.scrollY"
+        )
+        pg.evaluate(f"window.scrollTo(0, {seccion_top - h * 0.9 + 20})")
+        pg.wait_for_timeout(1500)
+        a = pg.evaluate(ENTRADA_JS)
+        if a["top"] < a["innerH"]:
+            fallos.append(f"[{nombre}] gate 3: el arnes no pudo dejar los cimientos bajo el pliegue (top {a['top']:.0f} < {a['innerH']})")
+        elif a["lit"] or a["lineaTrazada"] or a["colsAbiertas"] > 0 or a["lensEncendidos"] > 0:
+            fallos.append(
+                f"[{nombre}] gate 3 paso A: la entrada arranco con los cimientos bajo el pliegue "
+                f"(lit={a['lit']}, linea={a['lineaTrazada']}, cols={a['colsAbiertas']}, lenguajes={a['lensEncendidos']})"
+            )
+        # B: los cimientos al 80%
+        pg.evaluate(f"window.scrollTo(0, {top - h * 0.8 + 40})")
+        pg.wait_for_timeout(2500)
+        bst = pg.evaluate(ENTRADA_JS)
+        if not (bst["lit"] and bst["lineaTrazada"] and bst["colsAbiertas"] == 3 and bst["lensEncendidos"] == 5):
+            fallos.append(
+                f"[{nombre}] gate 3 paso B: la entrada no aterrizo "
+                f"(lit={bst['lit']}, linea={bst['lineaTrazada']}, cols={bst['colsAbiertas']}/3, lenguajes={bst['lensEncendidos']}/5)"
+            )
+        pg.context.close()
+
+
 def gate_7_anchos(b, url: str, errores: list, fallos: list) -> None:
     """El desborde se mide en los cinco anchos del spec, no solo en los dos
     viewports principales: el hueco 1200-1439 del cartel se pago por no
@@ -199,6 +259,7 @@ def main() -> int:
 
         gate_2_no_existen_en_otros(b, args.url, errores, fallos)
         gate_7_anchos(b, args.url, errores, fallos)
+        gate_3_la_entrada_se_ve(b, args.url, errores, fallos)
         b.close()
 
     for e in errores:
