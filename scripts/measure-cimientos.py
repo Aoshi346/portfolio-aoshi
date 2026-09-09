@@ -26,8 +26,10 @@ que tapa la senal real. Una vez exista `[data-cimientos]`, el contador vuelve
 a mandar de verdad.
 """
 import argparse
+import io
 import sys
 
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
 VIEWPORTS = [("escritorio", 1440, 900), ("movil", 390, 844)]
@@ -395,6 +397,90 @@ def gate_11_movimiento_reducido(b, url: str, errores: list, fallos: list) -> Non
         pg.context.close()
 
 
+PARES_CONTRASTE = [
+    ("[data-cimientos] .cim-col .cim-txt", 4.5, "nombre --text"),
+    ("[data-cimientos] .cim-rot", 4.5, "rotulo --haze"),
+    ("[data-cimientos] .cim-lenguajes .cim-txt", 4.5, "lenguaje --text"),
+    ("[data-cimientos] .cim-icono", 3.0, "icono decorativo --haze"),
+    ("[data-cimientos] .cim-nombre[aria-pressed='true'] .cim-txt", 4.5, "apuntado --l3"),
+    ("[data-cimientos] .cim-cab.is-viva .cim-frase", 4.5, "frase --catch"),
+]
+
+
+def _lum(rgb: tuple[int, int, int]) -> float:
+    def c(v: int) -> float:
+        s = v / 255
+        return s / 12.92 if s <= 0.03928 else ((s + 0.055) / 1.055) ** 2.4
+
+    r, g, b = rgb
+    return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b)
+
+
+def _contraste(fg: tuple[int, int, int], bg: tuple[int, int, int]) -> float:
+    a, b = _lum(fg), _lum(bg)
+    hi, lo = max(a, b), min(a, b)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _rgb(css: str) -> tuple[int, int, int]:
+    n = [int(float(x)) for x in css[css.index("(") + 1 : css.index(")")].split(",")[:3]]
+    return (n[0], n[1], n[2])
+
+
+def gate_10_contraste_fondo_real(b, url: str, errores: list, fallos: list) -> None:
+    """Contraste POR GLIFO contra el fondo real: rects y colores computados
+    ANTES de ocultar el contenido; despues solo queda el shader y se toman
+    24 fotogramas a 350ms; por cada par, el peor (p99,5) de la luminancia en
+    una franja de 5px alrededor de su rect. La primera medida del cartel
+    muestreo el viewport entero y sobrestimo el problema (1,01:1): no se
+    repite. Los iconos son decorativos: piso 3:1 (WCAG 1.4.11)."""
+    pg = abrir(b, url, "hyprland", 1440, 900, errores)
+    if not ir_a_credits(pg):
+        pg.context.close()
+        return
+    pg.wait_for_timeout(2500)
+    pg.query_selector("[data-cimientos] .cim-nombre").hover()
+    pg.wait_for_timeout(800)
+    dianas = []
+    for sel, piso, nombre in PARES_CONTRASTE:
+        info = pg.evaluate(
+            """(sel) => { const e = document.querySelector(sel); if (!e) return null;
+              const r = e.getBoundingClientRect(); const s = getComputedStyle(e);
+              return { l: r.left, t: r.top, w: r.width, h: r.height, color: s.color }; }""",
+            sel,
+        )
+        if info is None:
+            fallos.append(f"gate 10: no existe '{nombre}' ({sel})")
+        else:
+            dianas.append((nombre, piso, info))
+    pg.add_style_tag(content="#app > *:not(.bg-theme):not(.bg-noise) { visibility: hidden !important; }")
+    pg.wait_for_timeout(300)
+    peores: dict[str, list[float]] = {n: [] for n, _, _ in dianas}
+    for _ in range(24):
+        pg.wait_for_timeout(350)
+        img = Image.open(io.BytesIO(pg.screenshot())).convert("RGB")
+        px = img.load()
+        for nombre, _piso, info in dianas:
+            x0, y0 = max(0, int(info["l"]) - 5), max(0, int(info["t"]) - 5)
+            x1, y1 = min(img.width, int(info["l"] + info["w"]) + 5), min(img.height, int(info["t"] + info["h"]) + 5)
+            lums = sorted(_lum(px[x, y]) for y in range(y0, y1, 2) for x in range(x0, x1, 2))
+            if lums:
+                peores[nombre].append(lums[int(len(lums) * 0.995) - 1])
+    for nombre, piso, info in dianas:
+        if not peores[nombre]:
+            fallos.append(f"gate 10: sin muestras para '{nombre}'")
+            continue
+        fg = _rgb(info["color"])
+        peor_lum = max(peores[nombre])
+        # el ratio se calcula contra un gris de esa luminancia: es el techo real
+        v = int(round(255 * (peor_lum ** (1 / 2.2))))
+        ratio = _contraste(fg, (v, v, v))
+        print(f"  gate 10: {nombre}: peor caso {ratio:.2f}:1 (piso {piso})")
+        if ratio < piso:
+            fallos.append(f"gate 10: '{nombre}' cae a {ratio:.2f}:1 bajo el piso {piso}")
+    pg.context.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:4173")
@@ -421,6 +507,8 @@ def main() -> int:
         gate_3_la_entrada_se_ve(b, args.url, errores, fallos)
         gate_4_5_6_apuntado(b, args.url, errores, fallos)
         gate_11_movimiento_reducido(b, args.url, errores, fallos)
+        if args.contraste:
+            gate_10_contraste_fondo_real(b, args.url, errores, fallos)
         b.close()
 
     for e in errores:
