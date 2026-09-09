@@ -371,6 +371,30 @@ def gate_4_5_6_apuntado(b, url: str, errores: list, fallos: list) -> None:
     pg.context.close()
 
 
+def gate_11_movimiento_reducido(b, url: str, errores: list, fallos: list) -> None:
+    """Bajo reduce: todo en su estado final sin haber hecho scroll (el
+    modulo pone cimientos-lit al montar), y ninguna transicion viva sobre
+    los nodos del dispositivo (transition-duration 0s en todos). `*` en una
+    media query NO alcanza a los pseudo-elementos (pagado en B2): aqui no hay
+    pseudo-elementos, y este gate lo comprueba tambien."""
+    for nombre, w, h in VIEWPORTS:
+        pg = abrir(b, url, "hyprland", w, h, errores, reduce=True)
+        if not ir_a_credits(pg):
+            pg.context.close()
+            continue
+        st = pg.evaluate(ENTRADA_JS)
+        if not (st and st["lit"] and st["lineaTrazada"] and st["colsAbiertas"] == 3 and st["lensEncendidos"] == 5):
+            fallos.append(f"[{nombre} reduce] gate 11: el dispositivo no esta en su estado final: {st}")
+        vivas = pg.evaluate(
+            """() => Array.from(document.querySelectorAll('[data-cimientos], [data-cimientos] *'))
+              .flatMap(e => [getComputedStyle(e), getComputedStyle(e, '::before'), getComputedStyle(e, '::after')])
+              .filter(s => s.transitionDuration.split(',').some(d => parseFloat(d) > 0.02) || (s.animationName && s.animationName !== 'none')).length"""
+        )
+        if vivas != 0:
+            fallos.append(f"[{nombre} reduce] gate 11: {vivas} nodos con transicion o animacion viva bajo reduce")
+        pg.context.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:4173")
@@ -396,6 +420,7 @@ def main() -> int:
         gate_7_anchos(b, args.url, errores, fallos)
         gate_3_la_entrada_se_ve(b, args.url, errores, fallos)
         gate_4_5_6_apuntado(b, args.url, errores, fallos)
+        gate_11_movimiento_reducido(b, args.url, errores, fallos)
         b.close()
 
     for e in errores:

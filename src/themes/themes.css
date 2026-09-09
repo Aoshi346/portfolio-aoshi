@@ -8835,6 +8835,41 @@
   }
 }
 
+/* Movimiento reducido: el dispositivo aterriza en su estado final al
+ * montar (lo hace hyprStackCimientos.ts con `cimientos-lit` sin observador),
+ * y aqui se apaga toda transicion/animacion viva. Selector a selector, NO
+ * un `*`: el comodin no alcanza a los pseudo-elementos (pagado en B2). */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="hyprland"] .cim-linea,
+  :root[data-theme="hyprland"] .cimientos-lit .cim-linea {
+    transform: none;
+    transition: none;
+  }
+  :root[data-theme="hyprland"] .cim-col,
+  :root[data-theme="hyprland"] .cimientos-lit .cim-col {
+    clip-path: none;
+    transition: none;
+  }
+  :root[data-theme="hyprland"] .cim-lenguajes .cim-txt,
+  :root[data-theme="hyprland"] .cimientos-lit .cim-lenguajes .cim-txt {
+    color: var(--text);
+    transition: none;
+  }
+  :root[data-theme="hyprland"] .cim-lenguajes .cim-icono,
+  :root[data-theme="hyprland"] .cimientos-lit .cim-lenguajes .cim-icono {
+    color: var(--haze);
+    transition: none;
+  }
+  :root[data-theme="hyprland"] .cim-txt,
+  :root[data-theme="hyprland"] .cim-nombre[aria-pressed="true"] .cim-txt {
+    transition: none;
+  }
+  :root[data-theme="hyprland"] .cim-frase,
+  :root[data-theme="hyprland"] .cim-cab.is-viva .cim-frase {
+    transition: none;
+  }
+}
+
 /* ------------------------------------------------- Hyprland: las bandas */
 /*
   LAS BANDAS — equivale a la carta de ajuste de Vice: el cierre. Alli eran
