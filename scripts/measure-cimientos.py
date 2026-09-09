@@ -34,12 +34,17 @@ VIEWPORTS = [("escritorio", 1440, 900), ("movil", 390, 844)]
 ANCHOS_DESBORDE = [390, 821, 1024, 1200, 1440]
 
 
-def abrir(b, url: str, tema: str, w: int, h: int, errores: list, reduce: bool = False):
+def abrir(b, url: str, tema: str, w: int, h: int, errores: list, reduce: bool = False, tactil: bool = False):
     """Pagina nueva con oyente de consola SIEMPRE puesto. `errores` acumula
-    los de todas las paginas: el gate 13 los lee al final."""
+    los de todas las paginas: el gate 13 los lee al final. `tactil` monta un
+    contexto con soporte de toque real (is_mobile/has_touch) para los gates
+    que verifican el gesto de tap en movil."""
     ctx = b.new_context(
         viewport={"width": w, "height": h},
         reduced_motion="reduce" if reduce else "no-preference",
+        is_mobile=tactil,
+        has_touch=tactil,
+        device_scale_factor=2 if tactil else 1,
     )
     pg = ctx.new_page()
     etiqueta = f"{tema} {w}x{h}"
@@ -258,6 +263,82 @@ def gate_7_anchos(b, url: str, errores: list, fallos: list) -> None:
         pg.context.close()
 
 
+L3 = "rgb(255, 160, 60)"
+
+
+def gate_4_5_6_apuntado(b, url: str, errores: list, fallos: list) -> None:
+    """4: ningun nombre en --l3 en reposo, y el apuntado se apaga al salir
+    (el P0 del catastro: tras un barrido quedaban cuatro encendidos). Con
+    hover() REAL: un MouseEvent sintetico no dispara :hover. 5: la frase no
+    mueve nada: rects del suelo y de los lenguajes identicos al pixel antes
+    y despues de rozar cinco nombres. 6: la frase es el `detail` literal y
+    en reposo la linea esta vacia."""
+    pg = abrir(b, url, "hyprland", 1440, 900, errores)
+    if not ir_a_credits(pg):
+        fallos.append("[escritorio] gate 4-6: no existe la escena")
+        pg.context.close()
+        return
+    pg.wait_for_timeout(2500)  # entrada aterrizada
+    RECTS = """() => Array.from(document.querySelectorAll('[data-cimientos] .cim-linea, [data-cimientos] .cim-lenguajes .cim-nombre, [data-cimientos] .cim-col'))
+      .map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; })"""
+    antes = pg.evaluate(RECTS)
+    frase0 = pg.evaluate("() => document.querySelector('[data-cimientos] .cim-frase').textContent.trim()")
+    if frase0 != "":
+        fallos.append(f"[escritorio] gate 6: la frase no esta vacia en reposo: '{frase0}'")
+    encendidos0 = pg.evaluate(
+        "() => Array.from(document.querySelectorAll('[data-cimientos] .cim-txt')).filter(t => getComputedStyle(t).color === '%s').length" % L3
+    )
+    if encendidos0 != 0:
+        fallos.append(f"[escritorio] gate 4: {encendidos0} nombres en --l3 en reposo")
+
+    nombres = pg.query_selector_all("[data-cimientos] .cim-nombre")
+    muestra = [nombres[i] for i in (0, 3, 9, 14, 20)]
+    for n in muestra:
+        n.hover()
+        pg.wait_for_timeout(600)
+        esperado = n.get_attribute("data-cim-detail")
+        visto = pg.evaluate("() => document.querySelector('[data-cimientos] .cim-frase').textContent.trim()")
+        if visto != esperado:
+            fallos.append(f"[escritorio] gate 6: al rozar '{n.get_attribute('data-cim-nombre')}' la frase es '{visto}', esperada '{esperado}'")
+        pressed = pg.evaluate("() => document.querySelectorAll('[data-cimientos] .cim-nombre[aria-pressed=\"true\"]').length")
+        if pressed != 1:
+            fallos.append(f"[escritorio] gate 4: {pressed} nombres con aria-pressed=true al rozar uno")
+    despues = pg.evaluate(RECTS)
+    if antes != despues:
+        fallos.append("[escritorio] gate 5: rozar movio el suelo, las columnas o los lenguajes")
+
+    pg.mouse.move(5, 5)
+    pg.wait_for_timeout(1200)
+    encendidos1 = pg.evaluate(
+        "() => Array.from(document.querySelectorAll('[data-cimientos] .cim-txt')).filter(t => getComputedStyle(t).color === '%s').length" % L3
+    )
+    pressed1 = pg.evaluate("() => document.querySelectorAll('[data-cimientos] .cim-nombre[aria-pressed=\"true\"]').length")
+    if encendidos1 != 0 or pressed1 != 0:
+        fallos.append(f"[escritorio] gate 4: tras salir quedan {encendidos1} en --l3 y {pressed1} con aria-pressed")
+    pg.context.close()
+
+    # Movil: el toque abre, el segundo toque sobre el mismo cierra, y la altura no cambia.
+    pg = abrir(b, url, "hyprland", 390, 844, errores, tactil=True)
+    if ir_a_credits(pg):
+        pg.wait_for_timeout(2500)
+        alto0 = pg.evaluate("() => document.querySelector('[data-cimientos]').getBoundingClientRect().height")
+        primero = pg.query_selector("[data-cimientos] .cim-nombre")
+        primero.tap()
+        pg.wait_for_timeout(600)
+        visto = pg.evaluate("() => document.querySelector('[data-cimientos] .cim-frase').textContent.trim()")
+        if visto != primero.get_attribute("data-cim-detail"):
+            fallos.append(f"[movil] gate 6: al tocar, la frase es '{visto}'")
+        alto1 = pg.evaluate("() => document.querySelector('[data-cimientos]').getBoundingClientRect().height")
+        if round(alto0) != round(alto1):
+            fallos.append(f"[movil] gate 5: tocar cambio la altura de los cimientos {alto0:.0f} -> {alto1:.0f}")
+        primero.tap()
+        pg.wait_for_timeout(600)
+        pressed = pg.evaluate("() => document.querySelectorAll('[data-cimientos] .cim-nombre[aria-pressed=\"true\"]').length")
+        if pressed != 0:
+            fallos.append(f"[movil] gate 4: el segundo toque no apago el nombre ({pressed} con aria-pressed)")
+    pg.context.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:4173")
@@ -282,6 +363,7 @@ def main() -> int:
         gate_2_no_existen_en_otros(b, args.url, errores, fallos)
         gate_7_anchos(b, args.url, errores, fallos)
         gate_3_la_entrada_se_ve(b, args.url, errores, fallos)
+        gate_4_5_6_apuntado(b, args.url, errores, fallos)
         b.close()
 
     for e in errores:

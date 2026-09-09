@@ -8754,6 +8754,37 @@
   transition: clip-path 0.9s var(--slow) calc(520ms + var(--cim-c, 0) * 90ms);
 }
 
+/*
+  APUNTADO — la frase al rozar. El nombre pasa a --l3 (encender es un
+  corte, 420ms) y vuelve a --text enfriandose (900ms atmosfera). La frase
+  entra y sale por recorte lateral en la linea del rotulo del suelo, que ya
+  tiene su altura: nada se mueve.
+*/
+:root[data-theme="hyprland"] .cim-txt {
+  transition: color 0.9s var(--slow);
+}
+:root[data-theme="hyprland"] .cim-nombre[aria-pressed="true"] .cim-txt {
+  color: var(--l3);
+  transition: color 0.42s var(--hard);
+}
+:root[data-theme="hyprland"] .cim-frase {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 0.9s var(--slow);
+}
+:root[data-theme="hyprland"] .cim-cab.is-viva .cim-frase {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.42s var(--hard);
+}
+/*
+  El retardo de entrada `--cim-d` solo hace falta la primera vez: una vez
+  aterrizada la entrada (`cim-entrado`), soltar un lenguaje apuntado se
+  enfria SIN el retardo — de lo contrario heredaria la transicion de
+  entrada y tardaria hasta 500ms de mas en apagarse.
+*/
+:root[data-theme="hyprland"] .cim-entrado .cim-lenguajes .cim-nombre:not([aria-pressed="true"]) .cim-txt {
+  transition-delay: 0ms;
+}
+
 /* Movil y tableta vertical: las columnas se apilan como filas. */
 @media (max-width: 820px) {
   :root[data-theme="hyprland"] [data-cimientos] {

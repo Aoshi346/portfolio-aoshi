@@ -103,9 +103,101 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
     observador.observe(cim);
   }
 
+  // El retardo `--cim-d` de la entrada solo hace falta la primera vez: sin
+  // esta marca, soltar un lenguaje apuntado heredaria la transicion retardada
+  // de la entrada y tardaria hasta medio segundo de mas en apagarse.
+  const marcarEntrado = (ev: TransitionEvent): void => {
+    if (ev.propertyName === "clip-path") cim.classList.add("cim-entrado");
+  };
+  cim.addEventListener("transitionend", marcarEntrado);
+  if (reduce) cim.classList.add("cim-entrado");
+
+  // El apuntado. Rozar (puntero) o dar foco escribe la frase; en tactil el
+  // toque abre y el segundo toque sobre el mismo nombre cierra. `click` se
+  // ignora cuando viene de raton: el hover ya lo ha hecho, y un toggle lo
+  // cerraria. Un solo nombre encendido a la vez, y NUNCA se queda encendido
+  // al salir: es el P0 del catastro.
+  const botones = Array.from(cim.querySelectorAll<HTMLButtonElement>(".cim-nombre"));
+  let activo: HTMLButtonElement | null = null;
+  let ultimoPuntero = "mouse";
+
+  const encender = (boton: HTMLButtonElement): void => {
+    if (activo === boton) return;
+    if (activo) activo.setAttribute("aria-pressed", "false");
+    activo = boton;
+    boton.setAttribute("aria-pressed", "true");
+    frase.textContent = boton.dataset.cimDetail ?? "";
+    cab.classList.add("is-viva");
+  };
+  const apagar = (): void => {
+    if (!activo) return;
+    activo.setAttribute("aria-pressed", "false");
+    activo = null;
+    cab.classList.remove("is-viva");
+    // El texto se queda mientras la frase se retira por recorte y se vacia al
+    // terminar la transicion. Con movimiento reducido no hay transicion ni
+    // `transitionend`: se vacia en seco.
+    if (reduce) frase.textContent = "";
+  };
+  const alTerminar = (ev: TransitionEvent): void => {
+    if (ev.propertyName === "clip-path" && !cab.classList.contains("is-viva")) frase.textContent = "";
+  };
+  frase.addEventListener("transitionend", alTerminar);
+
+  const escuchas: Array<() => void> = [];
+  for (const boton of botones) {
+    const entrar = (ev: PointerEvent): void => {
+      if (ev.pointerType === "mouse") encender(boton);
+    };
+    // El foco de teclado (:focus-visible) SI enciende. El foco de un
+    // puntero/toque NO: medido con una sonda temporal, el navegador enfoca
+    // el boton durante el propio gesto de tap, ANTES del `click` — si
+    // `foco` encendiera siempre, el primer toque quedaria ya activo cuando
+    // `clic` decide, y su toggle ("si ya esta activo, apagar") lo apagaria
+    // en el mismo tap en que debia abrir, desfasando el ciclo un toque para
+    // siempre.
+    const foco = (): void => {
+      if (boton.matches(":focus-visible")) encender(boton);
+    };
+    const salir = (): void => apagar();
+    // Igual que `entrar`, solo actua para raton: el touch no tiene hover
+    // real y el navegador emite `pointerleave` al levantar el dedo, justo
+    // ANTES del `click` (medido con la misma sonda) — sin la guarda, ese
+    // pointerleave apagaba el nombre antes de que `clic` pudiera ver el
+    // estado "ya activo", y el toggle nunca llegaba a cerrar por toque.
+    const salirPointer = (ev: PointerEvent): void => {
+      if (ev.pointerType === "mouse") salir();
+    };
+    const pulsar = (ev: PointerEvent): void => {
+      ultimoPuntero = ev.pointerType;
+    };
+    const clic = (): void => {
+      if (ultimoPuntero === "mouse") return;
+      if (activo === boton) salir();
+      else encender(boton);
+    };
+    boton.addEventListener("pointerenter", entrar);
+    boton.addEventListener("pointerleave", salirPointer);
+    boton.addEventListener("focus", foco);
+    boton.addEventListener("blur", salir);
+    boton.addEventListener("pointerdown", pulsar);
+    boton.addEventListener("click", clic);
+    escuchas.push(() => {
+      boton.removeEventListener("pointerenter", entrar);
+      boton.removeEventListener("pointerleave", salirPointer);
+      boton.removeEventListener("focus", foco);
+      boton.removeEventListener("blur", salir);
+      boton.removeEventListener("pointerdown", pulsar);
+      boton.removeEventListener("click", clic);
+    });
+  }
+
   return {
     destroy: () => {
       observador?.disconnect();
+      cim.removeEventListener("transitionend", marcarEntrado);
+      for (const off of escuchas) off();
+      frase.removeEventListener("transitionend", alTerminar);
       cim.remove();
     },
   };
