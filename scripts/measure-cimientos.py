@@ -417,7 +417,25 @@ def _lum(rgb: tuple[int, int, int]) -> float:
 
 
 def _contraste(fg: tuple[int, int, int], bg: tuple[int, int, int]) -> float:
-    a, b = _lum(fg), _lum(bg)
+    return _contraste_lum(_lum(fg), _lum(bg))
+
+
+def _contraste_lum(a: float, b: float) -> float:
+    """WCAG a partir de dos luminancias relativas ya calculadas (no de dos
+    RGB). Existe porque el fondo real de este gate NO es un RGB leido de la
+    pagina: es un `peor_lum` ya en luminancia WCAG (mismo `_lum` por tramos
+    de todo el fichero, tras percentilar sobre fotogramas). La version
+    anterior reconstruia un RGB gris sintetico a partir de esa luminancia
+    con gamma PLANA de 2,2 (`v = 255 * lum ** (1/2.2)`) y lo releia con
+    `_lum` (formula EXACTA por tramos): ese viaje de ida y vuelta NO cierra,
+    son dos curvas distintas, y el sesgo cambia de signo segun el tramo --
+    a L=0,5 el viaje devuelve 0,491 (subestima, INFLA el ratio si esa
+    luminancia es el fondo), pero en el rango casi negro donde vive el
+    fondo real de este gate (peor_lum medido entre 0,003 y 0,04) el viaje
+    SOBRESTIMA -- a L=0,0035 devuelve 0,0070, el doble -- y por tanto
+    DEFLACTABA el ratio (lo hacia de mas, no de menos, en este gate en
+    concreto). En ningun caso hay una direccion fiable: por eso se compara
+    `_lum(fg)` directamente contra la luminancia ya medida, sin viaje."""
     hi, lo = max(a, b), min(a, b)
     return (hi + 0.05) / (lo + 0.05)
 
@@ -433,7 +451,16 @@ def gate_10_contraste_fondo_real(b, url: str, errores: list, fallos: list) -> No
     24 fotogramas a 350ms; por cada par, el peor (p99,5) de la luminancia en
     una franja de 5px alrededor de su rect. La primera medida del cartel
     muestreo el viewport entero y sobrestimo el problema (1,01:1): no se
-    repite. Los iconos son decorativos: piso 3:1 (WCAG 1.4.11)."""
+    repite. Los iconos son decorativos: piso 3:1 (WCAG 1.4.11).
+
+    Segunda trampa ya pagada con este mismo shader: todas las medidas de
+    contraste del cursor de este tema se tomaron durante semanas contra una
+    pagina cuya coreografia reventaba con `gsap is not defined`, asi que el
+    shader se veia mucho mas brillante de lo que le toca y los numeros eran
+    de otra pagina. Por eso el oyente de consola de `abrir()` (que alimenta
+    `errores`, comprobado por el gate 13) es obligatorio en esta pagina
+    tambien: si aparece un error, se anota en vez de seguir midiendo contra
+    una pagina rota."""
     pg = abrir(b, url, "hyprland", 1440, 900, errores)
     if not ir_a_credits(pg):
         pg.context.close()
@@ -472,9 +499,9 @@ def gate_10_contraste_fondo_real(b, url: str, errores: list, fallos: list) -> No
             continue
         fg = _rgb(info["color"])
         peor_lum = max(peores[nombre])
-        # el ratio se calcula contra un gris de esa luminancia: es el techo real
-        v = int(round(255 * (peor_lum ** (1 / 2.2))))
-        ratio = _contraste(fg, (v, v, v))
+        # Comparacion directa de luminancias -- ver el docstring de
+        # _contraste_lum: NO reconstruir un RGB gris a partir de peor_lum.
+        ratio = _contraste_lum(_lum(fg), peor_lum)
         print(f"  gate 10: {nombre}: peor caso {ratio:.2f}:1 (piso {piso})")
         if ratio < piso:
             fallos.append(f"gate 10: '{nombre}' cae a {ratio:.2f}:1 bajo el piso {piso}")
