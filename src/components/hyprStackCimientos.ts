@@ -118,6 +118,9 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
   // cerraria. Un solo nombre encendido a la vez, y NUNCA se queda encendido
   // al salir: es el P0 del catastro.
   const botones = Array.from(cim.querySelectorAll<HTMLButtonElement>(".cim-nombre"));
+  // Un solo nombre encendido en TODO el dispositivo (no por columna): el
+  // raton gana al foco si compiten (ver `encender`, que apaga cualquier
+  // otro `activo` antes de encender el nuevo).
   let activo: HTMLButtonElement | null = null;
   let ultimoPuntero = "mouse";
 
@@ -171,7 +174,15 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
     const pulsar = (ev: PointerEvent): void => {
       ultimoPuntero = ev.pointerType;
     };
-    const clic = (): void => {
+    // `detail === 0` es la senal del propio evento (no historia acumulada en
+    // `ultimoPuntero`) para un `click` que viene de Enter/Espacio sobre un
+    // <button>: el foco de teclado ya encendio el nombre, y este `click` no
+    // tiene nada que hacer. Sin esto, un aparato hibrido que pasa de tactil a
+    // teclado deja `ultimoPuntero` rancio en "touch", y una pulsacion normal
+    // de Enter sobre un nombre recien encendido por Tab lo apagaba en el
+    // acto (activo === boton -> salir()).
+    const clic = (ev: MouseEvent): void => {
+      if (ev.detail === 0) return;
       if (ultimoPuntero === "mouse") return;
       if (activo === boton) salir();
       else encender(boton);

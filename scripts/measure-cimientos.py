@@ -338,6 +338,38 @@ def gate_4_5_6_apuntado(b, url: str, errores: list, fallos: list) -> None:
             fallos.append(f"[movil] gate 4: el segundo toque no apago el nombre ({pressed} con aria-pressed)")
     pg.context.close()
 
+    # Aparato hibrido (tactil + teclado): un toque deja `ultimoPuntero` rancio
+    # en "touch"; Tab fuera y Tab a OTRO nombre lo enciende por foco de
+    # teclado (:focus-visible); Enter sobre el (click con detail===0) NO debe
+    # apagarlo. Sin la guarda de `detail`, el click de teclado ve
+    # `ultimoPuntero !== "mouse"` (rancio) y `activo === boton` (ya encendido
+    # por el foco), y lo apaga en el acto -- una pulsacion normal de Enter
+    # desactivando lo que ella misma acaba de activar.
+    pg = abrir(b, url, "hyprland", 1440, 900, errores, tactil=True)
+    if ir_a_credits(pg):
+        pg.wait_for_timeout(2500)
+        nombres_h = pg.query_selector_all("[data-cimientos] .cim-nombre")
+        nombres_h[0].tap()
+        pg.wait_for_timeout(300)
+        pg.keyboard.press("Tab")
+        pg.wait_for_timeout(200)
+        pg.keyboard.press("Tab")
+        pg.wait_for_timeout(200)
+        segundo_nombre = pg.evaluate("() => document.activeElement.getAttribute('data-cim-nombre')")
+        pressed_tras_foco = pg.evaluate("() => document.activeElement.getAttribute('aria-pressed')")
+        pg.keyboard.press("Enter")
+        pg.wait_for_timeout(300)
+        pressed_tras_enter = pg.evaluate("() => document.activeElement.getAttribute('aria-pressed')")
+        color_tras_enter = pg.evaluate("() => getComputedStyle(document.activeElement.querySelector('.cim-txt')).color")
+        if pressed_tras_foco != "true":
+            fallos.append(f"[hibrido] gate 4: el Tab no encendio '{segundo_nombre}' (aria-pressed={pressed_tras_foco})")
+        if pressed_tras_enter != "true" or color_tras_enter != L3:
+            fallos.append(
+                f"[hibrido] gate 4: Enter de teclado sobre '{segundo_nombre}' (encendido por Tab) lo dejo "
+                f"aria-pressed={pressed_tras_enter}, color {color_tras_enter} (--l3 esperado {L3})"
+            )
+    pg.context.close()
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()

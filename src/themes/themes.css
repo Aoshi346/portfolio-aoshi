@@ -8702,6 +8702,8 @@
   font-size: var(--t-3);
   line-height: 28px;
   color: var(--catch);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 0.9s var(--slow);
 }
 :root[data-theme="hyprland"] .cim-lenguajes {
   display: flex;
@@ -8766,10 +8768,6 @@
 :root[data-theme="hyprland"] .cim-nombre[aria-pressed="true"] .cim-txt {
   color: var(--l3);
   transition: color 0.42s var(--hard);
-}
-:root[data-theme="hyprland"] .cim-frase {
-  clip-path: inset(0 100% 0 0);
-  transition: clip-path 0.9s var(--slow);
 }
 :root[data-theme="hyprland"] .cim-cab.is-viva .cim-frase {
   clip-path: inset(0 0 0 0);
