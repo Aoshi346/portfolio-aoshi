@@ -77,7 +77,7 @@ argumenta desde el spec; quien ejecute lee los dos.
   tareas siguientes anaden funciones `gate_N(...)` a este mismo fichero y las registran en
   `main()`.
 
-- [ ] **Step 1: Escribir el arnes con los gates 1, 2 y 13**
+- [x] **Step 1: Escribir el arnes con los gates 1, 2 y 13**
 
 ```python
 """Arnes de los cimientos de "Stack" en Hyprland (spec 2026-09-09).
@@ -211,7 +211,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Servir el build actual (sin cimientos) y ver el gate 1 en rojo**
+- [x] **Step 2: Servir el build actual (sin cimientos) y ver el gate 1 en rojo**
 
 ```bash
 cd /home/aoshi/proyectos/portfolio-aoshi-hypr
@@ -225,7 +225,7 @@ Esperado: `FALLO: [escritorio] gate 1: [data-cimientos] NO se ve en Hyprland`, l
 movil, y `gate 1: el generico .credits-grid SE PINTA bajo Hyprland` en los dos; gate 2 y 13 sin
 fallos. `4 fallo(s)`. Pegar la salida literal en el informe de la tarea.
 
-- [ ] **Step 3: El spec pasa a `en ejecucion` y commit**
+- [x] **Step 3: El spec pasa a `en ejecucion` y commit**
 
 En `docs/superpowers/specs/2026-09-09-hyprland-stack-cimientos-design.md`, la linea `Estado:
 pendiente de plan` pasa a `Estado: en ejecucion` (vocabulario cerrado de `verify.py`).
@@ -254,7 +254,7 @@ git commit -m "test(credits): arnes de los cimientos, gates 1, 2 y 13, en rojo c
   [data-cim-nombre]` con `span.cim-icono` y `span.cim-txt`. Clases de estado que ponen las tareas
   4 y 5: `cimientos-lit` sobre `.cim`, `is-viva` sobre `.cim-cab`.
 
-- [ ] **Step 1: Anadir al arnes los gates 7, 8, 9 y 12 y verlos en rojo (no existe el nodo)**
+- [x] **Step 1: Anadir al arnes los gates 7, 8, 9 y 12 y verlos en rojo (no existe el nodo)**
 
 Anadir a `scripts/measure-cimientos.py`, antes de `main()`:
 
@@ -347,7 +347,7 @@ Correr contra el build servido de la Task 1. Esperado: los `gates 7-12: no exist
 [data-cimientos]` en escritorio y movil y `gate 7: no existe` en los cinco anchos, ademas de los
 cuatro de la Task 1. Pegar la salida.
 
-- [ ] **Step 2: Crear el modulo**
+- [x] **Step 2: Crear el modulo**
 
 `src/components/hyprStackCimientos.ts`:
 
@@ -433,7 +433,7 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
 }
 ```
 
-- [ ] **Step 3: La puerta de montaje en `main.ts` y el `destroy()` en `pagehide`**
+- [x] **Step 3: La puerta de montaje en `main.ts` y el `destroy()` en `pagehide`**
 
 Tras el bloque del cartel (`src/main.ts:172-178`):
 
@@ -454,7 +454,7 @@ Y en el `pagehide` (`src/main.ts:335`), tras `cartelHandle?.destroy();`:
     cimientosHandle?.destroy();
 ```
 
-- [ ] **Step 4: El `display: none` de base y la ocultacion del generico**
+- [x] **Step 4: El `display: none` de base y la ocultacion del generico**
 
 En `src/style.css`, junto a `.credits-parcela, .credits-strip { display: none; }` (~linea 1404):
 
@@ -671,7 +671,7 @@ En `src/themes/themes.css`, justo antes de `/* ---- Hyprland: el catastro */` (l
 }
 ```
 
-- [ ] **Step 5: Build, lint, y el arnes en verde en los gates 1, 7, 8, 9 y 12**
+- [x] **Step 5: Build, lint, y el arnes en verde en los gates 1, 7, 8, 9 y 12**
 
 ```bash
 npm run build && npm run lint
@@ -683,7 +683,7 @@ Esperado: `0 fallo(s)`. Si el gate 8 da un aire distinto de 48 o el 9 una talla 
 el CSS (no el gate) hasta que el numero coincida con el spec. Si alguna talla del `h2.hero-kick`
 compartido entra en la medida, esta fuera de `[data-cimientos]` y no cuenta.
 
-- [ ] **Step 6: Captura de reposo en los dos anchos y en Vice, con oyente**
+- [x] **Step 6: Captura de reposo en los dos anchos y en Vice, con oyente**
 
 ```bash
 python3 - <<'EOF'
@@ -704,7 +704,7 @@ EOF
 
 Mirar las tres capturas. En Vice tiene que seguir el rodillo de creditos de siempre.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/components/hyprStackCimientos.ts src/main.ts src/style.css src/themes/themes.css scripts/measure-cimientos.py
@@ -725,7 +725,7 @@ git commit -m "feat(credits): los cimientos en reposo, modulo propio y generico 
 - Consumes: el DOM de la Task 2 (`[data-cimientos]`, `.credits-grid` oculto).
 - Produces: `hyprChoreography` sin gestos 4 y 5; `verify.py` con el marcador nuevo de Hyprland.
 
-- [ ] **Step 1: Retirar los gestos 4 y 5 de la coreografia**
+- [x] **Step 1: Retirar los gestos 4 y 5 de la coreografia**
 
 En `src/themes/hypr.choreography.ts`:
 1. Borrar desde el comentario `// Gesto 4 — la corriente.` (linea 266) hasta el cierre del
@@ -742,14 +742,14 @@ En `src/themes/hypr.choreography.ts`:
    coreografia de Hyprland ya no crea tweens; si en el futuro los crea, vuelve a desestructurarse
    (nunca un `gsap` suelto: el `gsap is not defined` de este tema se pago semanas).
 
-- [ ] **Step 2: Retirar el bloque CSS del catastro**
+- [x] **Step 2: Retirar el bloque CSS del catastro**
 
 En `src/themes/themes.css` borrar desde `/* ---- Hyprland: el catastro */` (linea 8575, ya
 desplazada por el bloque nuevo de la Task 2: buscar el comentario, no el numero) hasta la linea
 anterior a `/* ---- Hyprland: las bandas */`. Incluye `Hyprland: contenido de la franja` y el
 `@media (max-width: 820px)` del catastro. Comprobar con `grep -n "credits-parcela\|credit-group-toggle\|credits-strip\|hypr-lampara" src/themes/themes.css`: cero resultados bajo Hyprland (los de `style.css` base se quedan).
 
-- [ ] **Step 3: Borrar el arnes del catastro y cambiar el marcador de `verify.py`**
+- [x] **Step 3: Borrar el arnes del catastro y cambiar el marcador de `verify.py`**
 
 ```bash
 git rm scripts/measure-catastro.py
@@ -790,7 +790,7 @@ Actualizar el docstring de esa funcion (parrafo *"Hyprland: el catastro (2026-08
 una frase: *"Hyprland: los cimientos (2026-09-09). El generico se oculta entero y el dispositivo
 propio `[data-cimientos]` lo sustituye."*
 
-- [ ] **Step 4: Build, lint, arnes, verify.py**
+- [x] **Step 4: Build, lint, arnes, verify.py**
 
 ```bash
 npm run build && npm run lint
@@ -803,7 +803,7 @@ Esperado: cimientos `0 fallo(s)`; `verify.py` *"TODO OK — 12 fallos conocidos,
 codigo 0. Si `verify.py` marca un fallo nuevo en Vice o Caelestia, la Task 2 o esta han tocado
 algo compartido: parar y mirar el diff de `themes.css` fuera del bloque de Hyprland.
 
-- [ ] **Step 5: Vice y Caelestia identicos a `main`**
+- [x] **Step 5: Vice y Caelestia identicos a `main`**
 
 ```bash
 git worktree add /tmp/cim-main main
@@ -831,7 +831,7 @@ Esperado: `vice True`, `caelestia True`. (El DOM de la escena bajo Vice y Caeles
 `[data-cimientos]` porque el modulo solo monta bajo Hyprland; si sale `False`, mirar que ha
 cambiado en el `outerHTML` antes de seguir.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A src/themes/hypr.choreography.ts src/themes/themes.css scripts/measure-catastro.py scripts/verify.py
@@ -851,7 +851,7 @@ git commit -m "refactor(credits): retira el catastro de Hyprland: gestos 4 y 5, 
 - Produces: clase `cimientos-lit` sobre `[data-cimientos]`; variable `--cim-d` (ms) inline en cada
   `.cim-lenguajes .cim-nombre`; `--cim-c` (indice) en cada `.cim-col` (ya puesta en la Task 2).
 
-- [ ] **Step 1: Gate 3 en el arnes, y verlo en rojo (hoy todo se pinta al montar)**
+- [x] **Step 1: Gate 3 en el arnes, y verlo en rojo (hoy todo se pinta al montar)**
 
 ```python
 ENTRADA_JS = """() => {
@@ -920,7 +920,7 @@ Correr contra el build de la Task 3. Esperado: `gate 3 paso A: la entrada arranc
 `linea=True, cols=3, lenguajes=5` en los dos anchos (todo se pinta ya al montar: es el sabotaje
 natural). Pegar la salida.
 
-- [ ] **Step 2: Los estados de entrada en CSS**
+- [x] **Step 2: Los estados de entrada en CSS**
 
 Anadir al bloque `LOS CIMIENTOS` de `themes.css`, antes del `@media (max-width: 820px)`:
 
@@ -962,7 +962,7 @@ Anadir al bloque `LOS CIMIENTOS` de `themes.css`, antes del `@media (max-width: 
 }
 ```
 
-- [ ] **Step 3: El disparo en el modulo**
+- [x] **Step 3: El disparo en el modulo**
 
 En `mountHyprStackCimientos`, tras `escena.append(cim);` y antes del `return`:
 
@@ -1009,7 +1009,7 @@ Y en `destroy`:
     },
 ```
 
-- [ ] **Step 4: Build, lint, arnes en verde, captura a media entrada**
+- [x] **Step 4: Build, lint, arnes en verde, captura a media entrada**
 
 ```bash
 npm run build && npm run lint
@@ -1041,7 +1041,7 @@ EOF
 Mirar `/tmp/cim-t4-mitad.png`: el suelo trazado o trazandose, lenguajes encendiendose, columnas
 aun recortadas (o apenas asomando).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/hyprStackCimientos.ts src/themes/themes.css scripts/measure-cimientos.py
@@ -1061,7 +1061,7 @@ git commit -m "feat(credits): la entrada de los cimientos, el suelo se enciende 
 - Produces: `aria-pressed="true"` en el unico nombre apuntado; `is-viva` en `.cim-cab`; el texto de
   `.cim-frase` es el `detail` del nombre apuntado.
 
-- [ ] **Step 1: Gates 4, 5 y 6 en el arnes, y verlos en rojo (hoy rozar no hace nada)**
+- [x] **Step 1: Gates 4, 5 y 6 en el arnes, y verlos en rojo (hoy rozar no hace nada)**
 
 ```python
 L3 = "rgb(255, 160, 60)"
@@ -1149,7 +1149,7 @@ Correr contra el build de la Task 4. Esperado: `gate 6: al rozar 'React' la fras
 `gate 4: 0 nombres con aria-pressed=true al rozar uno` (x5), y en movil `gate 6: al tocar, la
 frase es ''`. Pegar la salida.
 
-- [ ] **Step 2: El apuntado en el modulo**
+- [x] **Step 2: El apuntado en el modulo**
 
 En `mountHyprStackCimientos`, tras el bloque del observador:
 
@@ -1225,7 +1225,7 @@ Y en `destroy`, antes de `cim.remove()`:
       frase.removeEventListener("transitionend", alTerminar);
 ```
 
-- [ ] **Step 3: El apuntado en CSS**
+- [x] **Step 3: El apuntado en CSS**
 
 Anadir al bloque `LOS CIMIENTOS`, antes del `@media (max-width: 820px)`:
 
@@ -1275,7 +1275,7 @@ enfriado de los lenguajes va sin retardo.
 }
 ```
 
-- [ ] **Step 4: Build, lint, arnes en verde, captura rozando**
+- [x] **Step 4: Build, lint, arnes en verde, captura rozando**
 
 ```bash
 npm run build && npm run lint
@@ -1287,7 +1287,7 @@ Esperado `0 fallo(s)`. Captura con `hover()` real sobre "React" a 1440x900 y con
 "Python" a 390x844 (contexto tactil), `/tmp/cim-t5-hover.png` y `/tmp/cim-t5-tap.png`, y mirarlas:
 la frase a la derecha de "LENGUAJES BASE" en escritorio, bajo el rotulo en movil.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/hyprStackCimientos.ts src/themes/themes.css scripts/measure-cimientos.py
@@ -1302,7 +1302,7 @@ git commit -m "feat(credits): la frase al rozar en la linea del suelo, sin mover
 - Modify: `src/themes/themes.css` (bloque `LOS CIMIENTOS`)
 - Modify: `scripts/measure-cimientos.py`
 
-- [ ] **Step 1: Gate 11 en el arnes, y verlo en rojo**
+- [x] **Step 1: Gate 11 en el arnes, y verlo en rojo**
 
 ```python
 def gate_11_movimiento_reducido(b, url: str, errores: list, fallos: list) -> None:
@@ -1333,7 +1333,7 @@ Registrar tras el gate 4-6. Correr: esperado `gate 11: N nodos con transicion o 
 en los dos anchos (las transiciones de `.cim-txt`, `.cim-frase`, `.cim-col`, `.cim-linea` siguen
 declaradas). Pegar la salida.
 
-- [ ] **Step 2: La guardia, selector a selector**
+- [x] **Step 2: La guardia, selector a selector**
 
 Al final del bloque `LOS CIMIENTOS`:
 
@@ -1370,7 +1370,7 @@ Al final del bloque `LOS CIMIENTOS`:
 }
 ```
 
-- [ ] **Step 3: Build, lint, arnes en verde, y el gate 4-6 sigue verde bajo reduce**
+- [x] **Step 3: Build, lint, arnes en verde, y el gate 4-6 sigue verde bajo reduce**
 
 ```bash
 npm run build && npm run lint
@@ -1380,7 +1380,7 @@ python3 scripts/measure-cimientos.py --url http://localhost:4213
 
 Esperado `0 fallo(s)`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/themes/themes.css scripts/measure-cimientos.py
@@ -1394,7 +1394,7 @@ git commit -m "feat(credits): los cimientos bajo movimiento reducido, guardia po
 **Files:**
 - Modify: `scripts/measure-cimientos.py`
 
-- [ ] **Step 1: Gate 10, detras de `--contraste`**
+- [x] **Step 1: Gate 10, detras de `--contraste`**
 
 `verify.py` no expone una funcion por par (`check_contrast_wcag` barre el viewport entero). La
 tecnica se copia de `scripts/measure-cartel.py::contraste_fondo_real` (lineas 1002-1100): el
@@ -1493,7 +1493,7 @@ Correr con `--contraste` y pegar la tabla en el informe: son los numeros que van
 `.cim-rot` (`--haze`) cae bajo 4,5 en su peor caso, es el techo de brillo del shader ya conocido:
 se anota literal en el registro del spec y no se recalibra aqui.
 
-- [ ] **Step 2: Los arneses vecinos, uno detras de otro, nunca a la vez**
+- [x] **Step 2: Los arneses vecinos, uno detras de otro, nunca a la vez**
 
 ```bash
 python3 scripts/measure-placa.py --url http://localhost:4213
@@ -1506,7 +1506,7 @@ Esperado: 0 fallos en los tres. `measure-cursor-luz.py` tiene 23 dianas nuevas (
 sobre el shader): si su gate de familia "oscurece" las coge y una cae, anotar el numero literal;
 no se recalibra el cursor aqui (es el fallo 3 del repaso).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add scripts/measure-cimientos.py
@@ -1521,7 +1521,7 @@ git commit -m "test(credits): contraste de los cimientos contra el fondo real, t
 - Modify: `.claude/rules/verification.md` (tabla de arneses)
 - Modify: `docs/superpowers/specs/2026-09-09-hyprland-stack-cimientos-design.md`
 
-- [ ] **Step 1: Fila del arnes nuevo en `rules/verification.md`**
+- [x] **Step 1: Fila del arnes nuevo en `rules/verification.md`**
 
 Anadir a la tabla, tras la fila de `measure-placa.py`:
 
@@ -1529,12 +1529,12 @@ Anadir a la tabla, tras la fila de `measure-placa.py`:
 | `measure-cimientos.py` | Los cimientos de Stack en Hyprland (spec 2026-09-09): que se ven y el generico no; que no existen en Vice ni Caelestia; **que la entrada se ve** (anclada a estado, con el dispositivo bajo el pliegue nada arranca y al 80 % aterriza todo); que ningun nombre queda encendido al salir (el P0 del catastro); que la frase al rozar es el `detail` literal y no mueve nada; desborde en cinco anchos medido con rects, nunca con `scrollWidth`; pies de columna y suelo a 48 px; tallas en la escala; diana tactil; movimiento reducido por selector; contraste contra el fondo real tras `--contraste`; y consola en las tres paginas. Sustituye a `measure-catastro.py`. | `npm run build && npx vite preview --port 4173 &`<br>`python3 scripts/measure-cimientos.py --url http://localhost:4173` |
 ```
 
-- [ ] **Step 2: Capturas finales con oyente**
+- [x] **Step 2: Capturas finales con oyente**
 
 A 390x844, 821x1024 y 1440x900, `?theme=hyprland`: reposo, a media entrada (sondeo por estado
 como en la Task 4) y con "React" apuntado. Rutas `/tmp/cim-final-<ancho>-<estado>.png`. Mirarlas.
 
-- [ ] **Step 3: `verify.py` completo y el spec cerrado**
+- [x] **Step 3: `verify.py` completo y el spec cerrado**
 
 ```bash
 python3 scripts/verify.py --url http://localhost:4213   # codigo 0, 0 nuevos
@@ -1545,7 +1545,7 @@ contraste de la Task 7, las medidas finales (anchos de columna, aire al suelo, a
 cualquier desviacion respecto al plan y su motivo, y los gates vistos en rojo (con su salida
 resumida) antes de aceptarse. Marcar todas las casillas de este plan.
 
-- [ ] **Step 4: Commit y matar el preview por PID**
+- [x] **Step 4: Commit y matar el preview por PID**
 
 ```bash
 git add .claude/rules/verification.md docs/superpowers/specs/2026-09-09-hyprland-stack-cimientos-design.md docs/superpowers/plans/2026-09-09-hyprland-stack-cimientos.md
@@ -1553,7 +1553,7 @@ git commit -m "docs(credits): cierra los cimientos: registro de implementacion y
 ss -ltnp | grep 4213   # y `kill <pid>` del que escucha
 ```
 
-- [ ] **Step 5: Gates de critica**
+- [x] **Step 5: Gates de critica**
 
 Con el build servido por tailnet (`--host 0.0.0.0`) para que Aoshi lo vea en el sitio real:
 lanzar `lidia-naive-tester` y `vera-art-director` (pineados a `sonnet`), en secuencia, contra

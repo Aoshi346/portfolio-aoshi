@@ -1,6 +1,6 @@
 # Los cimientos — "Stack" en Hyprland deja de ser un catastro y pasa a ser tres areas sobre un suelo
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-09-09-hyprland-stack-cimientos.md`
 Fecha: 2026-09-09
 Alcance: **solo el tema Hyprland**. `[data-scene="credits"]` (la escena que el selector llama
@@ -438,3 +438,145 @@ con 0 fallos nuevos sobre `verify-baseline.json`.
   que Aoshi pidio dejar para el final.
 - **Retirar los nodos muertos del catastro de `credits.ts`**: tarea aparte, posterior a que esta
   escena este TERMINADA (ver `## Restricciones de DOM`).
+
+---
+
+## Registro de implementacion
+
+### La tabla de contraste final (gate 10, tras la ronda de arreglo del sesgo)
+
+Peor caso de cada par en 24 fotogramas sobre el shader real, con `.cim-nombre` (React) apuntado
+para que la frase (`--catch`) este viva:
+
+| Par | Peor caso medido | Piso |
+|---|---|---|
+| nombre `--text` | 9,66:1 | 4,5 |
+| rotulo `--haze` | 5,81:1 | 4,5 |
+| lenguaje `--text` | 15,60:1 | 4,5 |
+| icono decorativo `--haze` | 6,53:1 | 3,0 (decorativo) |
+| apuntado `--l3` | 9,66:1 | 4,5 |
+| frase `--catch` | 9,30:1 | 4,5 |
+
+Ninguno cae bajo su piso. `.cim-rot` (rotulo, `--haze`) era el candidato mas probable a tocar el
+techo de brillo conocido del shader de Hyprland y aguanta 5,81:1, mas de un punto por encima del
+4,5 exigido: a diferencia del cartel, este dispositivo no roza ese techo.
+
+### El sesgo del gate de contraste, y su direccion real
+
+El calculo original de `gate_10_contraste_fondo_real` hacia un viaje luminancia -> gris (gamma
+plana 2,2) -> luminancia (formula exacta por tramos) antes de calcular el ratio final, y ese viaje
+no cierra: las dos curvas no son inversas exactas entre si. La revision de la ronda de arreglo dijo
+que el viaje **inflaba** el ratio — y eso es falso en esta escena concreta. Comprobado
+aritmeticamente con las mismas 24 muestras pasadas por las dos formulas (script
+`compara_gate10.py`, fuera del repo): a media luminancia (L≈0,5) el viaje SUBESTIMA la luminancia
+recuperada, lo que si inflaria el ratio si el fondo viviera ahi. Pero el fondo real de este gate
+(`peor_lum`) vive casi negro, entre 0,003 y 0,04, y en ese rango el viaje hace lo contrario:
+SOBRESTIMA la luminancia recuperada (a L=0,0035 el viaje devuelve ~0,0070, el doble) porque el
+tramo lineal bajo 0,04045 de la curva exacta no es el mismo tramo que el de una gamma 2,2 plana.
+Con el fondo sobrestimado, el ratio calculado saliá mas BAJO que el real: el calculo viejo era
+**conservador**, no optimista, en los seis pares medidos (diferencias entre +0,36 y +0,91 puntos,
+todas a favor del nuevo calculo, ningun par cambia de lado respecto a su piso). La diferencia que
+importa retener: no es "quitamos un sesgo que favorecia al gate", es "quitamos una conversion cuyo
+sesgo cambia de signo segun el tramo de luminancia y por eso no se puede corregir con una
+constante" — la primera frase es falsa para esta escena, la segunda es la que motivo el fix.
+
+### Las medidas de la maquetacion
+
+- **Columnas**: 550 / 344 / 344 px a 1440px de ancho de contenedor — razon 1,6 : 1 : 1, el 8/5/5
+  del spec, sobre un contenedor real de **1238px** (no los 1296px del prototipo aprobado: 1238px
+  es el ancho real de la escena compartida con Vice/Caelestia, y el propio spec manda que las
+  proporciones pesen mas que los pixeles absolutos).
+- **Suelo**: a 48px exactos por debajo del pie de la columna mas alta, y las tres columnas nacen a
+  la misma cota (mismo `top`).
+- **Movil**: alto de la escena 1184px, con las tres areas y los cinco lenguajes base alcanzables
+  porque en Hyprland el documento se desplaza (no hay scroll interno que perseguir, al reves que en
+  los workspaces de Caelestia).
+
+### Lo que el catastro se llevo por delante
+
+1662 lineas borradas en total: 797 de `themes.css` (el bloque `Hyprland: el catastro`), 526 de
+`scripts/measure-catastro.py` (borrado entero) y 339 de `src/themes/hypr.choreography.ts` (los
+gestos 4 "la corriente" y 5 "el apuntado"). Vice y Caelestia quedaron **identicos** a `main`,
+comprobado por `git worktree` (nunca `git stash`): el hash `sha1` del `outerHTML` de
+`[data-scene="credits"]` bajo los dos temas coincide entre esta rama y `main` (`d489e05`).
+
+### `verify.py` SI invocaba el arnes del catastro como subproceso
+
+Al contrario de lo que dice `rules/verification.md` ("un solo `subprocess`... son arneses Playwright
+independientes"), `scripts/verify.py` llevaba una funcion `check_catastro_measure()` que lanzaba
+`measure-catastro.py` como subproceso desde su flujo normal (`if theme == "hyprland" and not
+reduced: ...`). Se retiro junto con el arnes (y el import `subprocess`, que quedaba sin uso). El
+arnes nuevo, `measure-cimientos.py`, NO se engancha a `verify.py`: sigue el patron real del
+proyecto, independiente y lanzado a mano, tal como describe `rules/verification.md`.
+
+### `gsap` sale del destructuring de `hyprChoreography`
+
+Al retirar los gestos 4 y 5 (los unicos que creaban tweens de GSAP en la coreografia de Hyprland),
+la firma de la funcion paso de `({ gsap, ScrollTrigger, root })` a `({ ScrollTrigger, root })` y se
+dejo un comentario de aviso exactamente en ese punto. Es la forma precisa del fallo ya pagado en
+este tema: sin la palabra en el destructuring, `tsc` y `eslint` pasan igual (el identificador
+`gsap` existe como global en los tipos), pero el chunk construido revienta con `gsap is not
+defined` en cuanto `reveal.ts` llama a la coreografia — el fallo que dejo la seccion de creditos sin
+sus gestos durante semanas sin que nada lo avisara salvo la consola del navegador.
+
+### El arnes del cursor quedaba ciego, y como se dejo
+
+`scripts/measure-cursor-luz.py` no llegaba ni a dar un recuento: su diana `PULSABLE_FONDO =
+".credit"` (la UNICA diana OCLUIDA del arnes — la que ejercita el mecanismo de `background-image`
+en vez del de lienzo, porque un ancestro opaco se interpone entre ella y el lienzo del hueco) quedo
+oculta bajo Hyprland (`display: none` en `.credits-grid`, commit `ffb62ca`, tarea 2 de este mismo
+plan) sin que el arnes se actualizara. `scroll_into_view_if_needed()` sobre un nodo invisible no
+falla con un mensaje: se cuelga en un timeout de ~30s sin imprimir ningun recuento.
+
+La correccion NO sustituye la diana — los cimientos no tienen fondo propio detras de sus nombres,
+asi que `.cim-nombre` no vale como reemplazo, y hacerlo dejaria a la familia "ilumina" (la unica
+ocluida) sin representante real, ablandando el gate por la puerta de atras. En vez de eso se anadio
+`_diana_pinta()`, que comprueba `display`/`visibility`/`opacity` computados y el
+`getBoundingClientRect()` de la diana ANTES de tocarla; si no se pinta, el arnes anade un fallo
+explicito (que cita el commit y la fecha del cambio que la dejo ciega, y deja escrito que la
+familia ocluida necesita una diana nueva) y salta solo esa diana con `continue`, dejando correr el
+resto del arnes hasta su recuento final. No se recalibro nada de `hyprCursor.ts`, ningun piso ni
+umbral del cursor.
+
+### Los gates vistos en rojo antes de aceptarse
+
+| Gate(s) | Fallo visto | Salida resumida |
+|---|---|---|
+| 1, 2, 13 | Tarea 1: contra el catastro vivo | 4 fallos: `[data-cimientos]` no se ve, `.credits-grid` se pinta (x2 anchos) |
+| 7, 8, 9, 12 | Tarea 2: antes del modulo | 11 fallos: "no existe `[data-cimientos]`" por gate y por ancho |
+| 3 (paso A y B) | Tarea 4: entrada sin disparo | 4 fallos: todo pintado desde el reposo, sin disparo bajo el pliegue |
+| 3 paso B (ronda 1) | Tarea 4: sabotaje `colsAbiertas===4` | 2 fallos: agota la fecha limite de 6000ms con la ultima lectura real (3/3, 5/5) |
+| 4, 5, 6 | Tarea 5: antes del apuntado | 11 fallos: frase vacia al rozar (x5 escritorio + 1 movil), 0 `aria-pressed` (x5) |
+| 4, 5, 6 (ronda hibrida) | Tarea 5: Enter de teclado apaga el nombre que Tab acaba de encender | 1 fallo: `TypeScript` queda `aria-pressed=false` tras Enter |
+| 11 | Tarea 6: sin guardia de `reduce` | 2 fallos: 33 nodos con transicion/animacion viva bajo `reduce` |
+| 10 | Tarea 7, ronda 1: sesgo del viaje RGB (visto por comparacion pareada, no por rojo binario) | tabla comparada, ningun par cambia de lado |
+
+Cada familia se vio dar rojo contra el fallo exacto que dice cazar antes de aceptar su gate en
+verde, siguiendo la regla del proyecto de no aceptar instrumentos sin sabotear primero.
+
+### Las dos rondas de arreglo, y que las provoco
+
+1. **Tarea 4, ronda 1**: el paso B de `gate_3_la_entrada_se_ve` se titulaba "anclado a ESTADO,
+   nunca a cronometro" y su punto de corte real era `pg.wait_for_timeout(2500)` fijo — un
+   cronometro con solo 900ms de margen sobre el peor caso real de la coreografia (1600ms). Se
+   sustituyo por un sondeo asincrono dentro de la pagina con una fecha limite de FALLO (6000ms),
+   nunca de espera.
+2. **Tarea 5, ronda 1**: `ultimoPuntero`, una sola variable compartida por los 23 botones,
+   quedaba rancia entre modalidades — un toque la dejaba en `"touch"` y no la resetean ni `focus`
+   ni `blur`, asi que un Enter de teclado sobre un nombre que el propio Tab acababa de encender lo
+   apagaba en el acto. Arreglo: `clic()` ignora las activaciones de teclado leyendo
+   `event.detail === 0` (la senal que el motor pone en el `MouseEvent` sintetico de Enter/Espacio),
+   en vez de fiarse de la historia acumulada en `ultimoPuntero`.
+
+### Lo que queda abierto
+
+- **El canto naranja del cursor** sobre los pulsables (fallo 3 del repaso de Hyprland): reproducido
+  otra vez sobre estos 23 botones nuevos; es de todo el tema, no de esta escena, y esta pendiente
+  de decision (ver `## Pendiente de decision`).
+- **Las siluetas del selector de escenas** que dibujan el catastro (fallo 4 del repaso): Aoshi pidio
+  dejarlo para el final; sigue sin tocar.
+- **La limpieza de los nodos muertos de `credits.ts`**: tarea aparte, posterior a que la escena
+  este TERMINADA.
+- **La diana ocluida del arnes del cursor** (`measure-cursor-luz.py`): falla explicito con la nueva
+  guarda `_diana_pinta()`, pero la familia "ilumina" sigue sin una diana ocluida real que medir —
+  encargo pendiente para quien retome el cursor de Hyprland.
