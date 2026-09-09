@@ -1553,7 +1553,7 @@ git commit -m "docs(credits): cierra los cimientos: registro de implementacion y
 ss -ltnp | grep 4213   # y `kill <pid>` del que escucha
 ```
 
-- [x] **Step 5: Gates de critica**
+- [ ] **Step 5: Gates de critica**
 
 Con el build servido por tailnet (`--host 0.0.0.0`) para que Aoshi lo vea en el sitio real:
 lanzar `lidia-naive-tester` y `vera-art-director` (pineados a `sonnet`), en secuencia, contra

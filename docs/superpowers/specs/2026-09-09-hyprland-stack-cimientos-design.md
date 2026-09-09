@@ -1,6 +1,6 @@
 # Los cimientos — "Stack" en Hyprland deja de ser un catastro y pasa a ser tres areas sobre un suelo
 
-Estado: implementado
+Estado: en ejecucion
 Plan: `docs/superpowers/plans/2026-09-09-hyprland-stack-cimientos.md`
 Fecha: 2026-09-09
 Alcance: **solo el tema Hyprland**. `[data-scene="credits"]` (la escena que el selector llama
@@ -487,7 +487,7 @@ constante" — la primera frase es falsa para esta escena, la segunda es la que 
   es el ancho real de la escena compartida con Vice/Caelestia, y el propio spec manda que las
   proporciones pesen mas que los pixeles absolutos).
 - **Suelo**: a 48px exactos por debajo del pie de la columna mas alta, y las tres columnas nacen a
-  la misma cota (mismo `top`).
+  la misma cota (mismo `top`). La linea del suelo (`.cim-linea`) mide 2px de grosor.
 - **Movil**: alto de la escena 1184px, con las tres areas y los cinco lenguajes base alcanzables
   porque en Hyprland el documento se desplaza (no hay scroll interno que perseguir, al reves que en
   los workspaces de Caelestia).
@@ -570,6 +570,15 @@ verde, siguiendo la regla del proyecto de no aceptar instrumentos sin sabotear p
 
 ### Lo que queda abierto
 
+El resto del registro (la tabla de contraste, las medidas de maquetacion, lo que se llevo el
+catastro, `verify.py`, el destructuring de `gsap`, la guarda del arnes del cursor y los gates
+vistos en rojo) esta cerrado. Lo que sigue abierto, y lo que mas cierra de los cinco puntos:
+
+- **El Step 5 del plan (gates de critica): sin ejecutar.** `lidia-naive-tester` y
+  `vera-art-director` (umbral 7,5/10) contra el sitio servido, con foco en la escena Stack, y **la
+  revision de Aoshi en el sitio real por tailnet** — sin la cual el plan no declara DONE ("No se
+  declara DONE sin la revision de Aoshi en el sitio real", texto literal del Step 5). Nadie lo ha
+  corrido todavia: lo dirige el coordinador de la sesion.
 - **El canto naranja del cursor** sobre los pulsables (fallo 3 del repaso de Hyprland): reproducido
   otra vez sobre estos 23 botones nuevos; es de todo el tema, no de esta escena, y esta pendiente
   de decision (ver `## Pendiente de decision`).
