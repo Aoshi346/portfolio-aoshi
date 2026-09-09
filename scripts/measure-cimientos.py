@@ -104,6 +104,78 @@ def gate_2_no_existen_en_otros(b, url: str, errores: list, fallos: list) -> None
         pg.context.close()
 
 
+ESCALA = [12, 16, 21.33, 28.43, 37.9, 50.52, 67.4, 89.85, 119.77, 159.66]
+DIANA_MINIMA = 44
+
+GEOMETRIA_JS = """() => {
+  const cim = document.querySelector('[data-cimientos]');
+  if (!cim) return null;
+  const r = e => { const b = e.getBoundingClientRect(); return {l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height}; };
+  const visible = e => { const s = getComputedStyle(e); return s.display !== 'none' && s.visibility !== 'hidden' && e.getClientRects().length > 0; };
+  const caja = r(cim);
+  const cols = Array.from(cim.querySelectorAll('.cim-col')).map(r);
+  const suelo = r(cim.querySelector('.cim-linea'));
+  const fuera = Array.from(cim.querySelectorAll('.cim-txt, .cim-rot, .cim-frase, .cim-icono'))
+    .filter(visible)
+    .map(e => ({ t: e.textContent.trim().slice(0, 24), ...r(e) }))
+    .filter(x => x.l < caja.l - 1 || x.r > caja.r + 1 || x.t < caja.t - 1 || x.b > caja.b + 1);
+  const tallas = Array.from(cim.querySelectorAll('*'))
+    .filter(e => e.childElementCount === 0 && e.textContent.trim() && visible(e))
+    .map(e => ({ t: e.textContent.trim().slice(0, 24), s: parseFloat(getComputedStyle(e).fontSize) }));
+  const dianas = Array.from(cim.querySelectorAll('.cim-nombre')).filter(visible).map(e => r(e).h);
+  return { caja, cols, suelo, fuera, tallas, dianas };
+}"""
+
+
+def gate_7_8_9_12_geometria(pg, nombre: str, w: int, fallos: list) -> None:
+    """7: nada desborda la caja de [data-cimientos], medido con rects, nunca
+    con scrollWidth/scrollHeight (mienten con un transform dentro de un
+    overflow: clip, pagado en B6). 8: las columnas nacen a la misma cota y el
+    suelo esta a 48px del pie de la mas alta (solo en escritorio). 9: tallas
+    en la escala. 12: diana tactil >= 44px en movil, solo sobre visibles."""
+    g = pg.evaluate(GEOMETRIA_JS)
+    if g is None:
+        fallos.append(f"[{nombre}] gates 7-12: no existe [data-cimientos]")
+        return
+    for x in g["fuera"]:
+        fallos.append(f"[{nombre}] gate 7: '{x['t']}' desborda la caja de los cimientos")
+    if w >= 821:
+        if len(g["cols"]) != 3:
+            fallos.append(f"[{nombre}] gate 8: {len(g['cols'])} columnas, esperadas 3")
+        else:
+            tops = {round(c["t"]) for c in g["cols"]}
+            if len(tops) != 1:
+                fallos.append(f"[{nombre}] gate 8: las columnas no nacen a la misma cota: {sorted(tops)}")
+            pie = max(c["b"] for c in g["cols"])
+            aire = g["suelo"]["t"] - pie
+            if abs(aire - 48) > 1:
+                fallos.append(f"[{nombre}] gate 8: el suelo esta a {aire:.1f}px del pie de las columnas, esperados 48")
+    for t in g["tallas"]:
+        if not any(abs(t["s"] - paso) < 0.06 for paso in ESCALA):
+            fallos.append(f"[{nombre}] gate 9: '{t['t']}' a {t['s']}px, fuera de la escala")
+    if w < 821:
+        if not g["dianas"]:
+            fallos.append(f"[{nombre}] gate 12: ningun nombre visible que medir")
+        elif min(g["dianas"]) < DIANA_MINIMA:
+            fallos.append(f"[{nombre}] gate 12: diana tactil minima {min(g['dianas']):.1f}px, piso {DIANA_MINIMA}")
+
+
+def gate_7_anchos(b, url: str, errores: list, fallos: list) -> None:
+    """El desborde se mide en los cinco anchos del spec, no solo en los dos
+    viewports principales: el hueco 1200-1439 del cartel se pago por no
+    ejercitar el tramo intermedio."""
+    for w in ANCHOS_DESBORDE:
+        pg = abrir(b, url, "hyprland", w, 900, errores)
+        if ir_a_credits(pg):
+            g = pg.evaluate(GEOMETRIA_JS)
+            if g is None:
+                fallos.append(f"[{w}px] gate 7: no existe [data-cimientos]")
+            else:
+                for x in g["fuera"]:
+                    fallos.append(f"[{w}px] gate 7: '{x['t']}' desborda la caja de los cimientos")
+        pg.context.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:4173")
@@ -122,9 +194,11 @@ def main() -> int:
                 pg.context.close()
                 continue
             gate_1_se_ven(pg, nombre, fallos)
+            gate_7_8_9_12_geometria(pg, nombre, w, fallos)
             pg.context.close()
 
         gate_2_no_existen_en_otros(b, args.url, errores, fallos)
+        gate_7_anchos(b, args.url, errores, fallos)
         b.close()
 
     for e in errores:

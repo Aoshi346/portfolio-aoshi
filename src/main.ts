@@ -174,6 +174,15 @@ if (theme.id === "hyprland") {
   });
 }
 
+// Los cimientos de Stack en Hyprland: tres areas sobre un suelo de lenguajes
+// base. Import diferido, igual que el resto de modulos de tema.
+let cimientosHandle: { destroy: () => void } | null = null;
+if (theme.id === "hyprland") {
+  void import("./components/hyprStackCimientos").then(({ mountHyprStackCimientos }) => {
+    cimientosHandle = mountHyprStackCimientos(app);
+  });
+}
+
 // La Editorial de Obra en Caelestia: fila de cinco tarjetas + cajon. Import
 // diferido, igual que el resto de modulos de tema.
 let caeObraHandle: { destroy: () => void } | null = null;
@@ -333,6 +342,7 @@ window.addEventListener(
     hyprCursorHandle?.destroy();
     ignitionHandle?.destroy();
     cartelHandle?.destroy();
+    cimientosHandle?.destroy();
     caeColorHandle?.destroy();
     caeShellHandle?.destroy();
     caeObraHandle?.destroy();

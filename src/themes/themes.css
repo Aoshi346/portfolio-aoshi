@@ -9369,6 +9369,204 @@
   :root[data-theme="hyprland"] .credits-strip.is-open { display: block; }
 }
 
+/* ------------------------------------------------ Hyprland: los cimientos */
+/*
+  LOS CIMIENTOS — spec docs/superpowers/specs/2026-09-09-hyprland-stack-cimientos-design.md.
+  Dos estratos dentro del margen: tres areas en columnas proporcionales (8/5/5)
+  y, debajo, la linea del suelo con los cinco lenguajes base. Sin perimetro,
+  sin tapa ni suelo cerrado: el gate del catastro dictamino que su envase era
+  identico al de la placa.
+
+  El DOM generico de credits.ts (`.credits-grid`) se oculta ENTERO: el
+  catastro construia sus nodos ahi y este dispositivo tiene los suyos
+  (`hyprStackCimientos.ts`). credits.ts no se toca en esta fase.
+*/
+:root[data-theme="hyprland"] .credits-grid {
+  display: none;
+}
+
+:root[data-theme="hyprland"] [data-cimientos] {
+  display: block;
+  width: 100%;
+  max-width: 1296px;
+  margin: 40px auto 0;
+  color: var(--text);
+}
+
+:root[data-theme="hyprland"] .cim-cols {
+  display: grid;
+  grid-template-columns: minmax(240px, 8fr) minmax(240px, 5fr) minmax(240px, 5fr);
+  align-items: start;
+}
+
+:root[data-theme="hyprland"] .cim-col {
+  padding: 0 32px;
+}
+:root[data-theme="hyprland"] .cim-col:first-child {
+  padding-left: 0;
+}
+:root[data-theme="hyprland"] .cim-col + .cim-col {
+  border-left: 1px solid var(--rule);
+}
+
+:root[data-theme="hyprland"] .cim-rot {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--t-1);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--haze);
+  line-height: 15px;
+}
+
+:root[data-theme="hyprland"] .cim-lista,
+:root[data-theme="hyprland"] .cim-lenguajes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+:root[data-theme="hyprland"] .cim-lista {
+  margin-top: 24px;
+  display: grid;
+  row-gap: 8px;
+}
+
+:root[data-theme="hyprland"] .cim-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  /* Caja de 34px: nombre a --t-4 con line-height 1.2 */
+  min-height: 34px;
+}
+:root[data-theme="hyprland"] .cim-nombre:focus-visible {
+  outline: 2px solid var(--l1);
+  outline-offset: -2px;
+}
+
+:root[data-theme="hyprland"] .cim-icono {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  color: var(--haze);
+}
+:root[data-theme="hyprland"] .cim-icono svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+:root[data-theme="hyprland"] .cim-txt {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--t-4);
+  line-height: 1.2;
+  letter-spacing: var(--display-tracking);
+  color: var(--text);
+}
+
+/* El suelo */
+:root[data-theme="hyprland"] .cim-suelo {
+  margin-top: 48px;
+}
+:root[data-theme="hyprland"] .cim-linea {
+  display: block;
+  height: 2px;
+  background: var(--l1);
+}
+:root[data-theme="hyprland"] .cim-cab {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  margin-top: 22px;
+  /* La linea del rotulo tiene la altura de la frase desde el principio:
+     nada se mueve al rozar. */
+  min-height: 28px;
+}
+:root[data-theme="hyprland"] .cim-frase {
+  margin: 0;
+  font-family: var(--font-said);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--t-3);
+  line-height: 28px;
+  color: var(--catch);
+}
+:root[data-theme="hyprland"] .cim-lenguajes {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.55em;
+  row-gap: 8px;
+  margin-top: 8px;
+  font-size: var(--t-5);
+}
+:root[data-theme="hyprland"] .cim-lenguajes .cim-nombre {
+  min-height: 45px;
+}
+:root[data-theme="hyprland"] .cim-lenguajes .cim-txt {
+  font-size: var(--t-5);
+}
+
+/* Movil y tableta vertical: las columnas se apilan como filas. */
+@media (max-width: 820px) {
+  :root[data-theme="hyprland"] [data-cimientos] {
+    margin-top: 24px;
+  }
+  :root[data-theme="hyprland"] .cim-cols {
+    grid-template-columns: 1fr;
+  }
+  :root[data-theme="hyprland"] .cim-col {
+    padding: 0;
+  }
+  :root[data-theme="hyprland"] .cim-col + .cim-col {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+  :root[data-theme="hyprland"] .cim-lista {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+    row-gap: 0;
+    margin-top: 16px;
+  }
+  :root[data-theme="hyprland"] .cim-nombre {
+    min-height: 44px; /* diana tactil: 34 de caja + 5 y 5 */
+    gap: 8px;
+  }
+  :root[data-theme="hyprland"] .cim-icono {
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
+  }
+  :root[data-theme="hyprland"] .cim-txt,
+  :root[data-theme="hyprland"] .cim-lenguajes .cim-txt {
+    font-size: var(--t-3);
+  }
+  :root[data-theme="hyprland"] .cim-cab {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 0;
+  }
+  :root[data-theme="hyprland"] .cim-frase {
+    font-size: var(--t-2);
+    line-height: 24px;
+    min-height: 48px; /* dos lineas fijas: al tocar nada se mueve (aceptado por Aoshi) */
+  }
+  :root[data-theme="hyprland"] .cim-lenguajes .cim-nombre {
+    min-height: 44px;
+  }
+}
+
 /* ------------------------------------------------- Hyprland: las bandas */
 /*
   LAS BANDAS — equivale a la carta de ajuste de Vice: el cierre. Alli eran
