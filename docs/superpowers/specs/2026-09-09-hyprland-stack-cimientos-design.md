@@ -1,6 +1,7 @@
 # Los cimientos — "Stack" en Hyprland deja de ser un catastro y pasa a ser tres areas sobre un suelo
 
 Estado: pendiente de plan
+Plan: `docs/superpowers/plans/2026-09-09-hyprland-stack-cimientos.md`
 Fecha: 2026-09-09
 Alcance: **solo el tema Hyprland**. `[data-scene="credits"]` (la escena que el selector llama
 "Stack" y cuyo rotulo interior es "Con que construyo"). Modulo nuevo
