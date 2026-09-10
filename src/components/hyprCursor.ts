@@ -88,6 +88,15 @@ const HUECO_MEDIO = 0.5;
 const LUZ_CENTRO = 0.14;
 const LUZ_MEDIO = 0.07;
 
+/*
+ * La pluma del recorte. El charco SIGUE recortado a la caja de la diana
+ * —eso es lo unico que dice hasta donde llega la zona pulsable— pero el
+ * filo se difumina 14px hacia dentro, que es lo que se leia como caja. Se
+ * difumina el filo, no se quita el limite: el charco sigue muriendo dentro
+ * de la diana y nunca fuera.
+ */
+const PLUMA = 14;
+
 export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   const controller = new AbortController();
   const { signal } = controller;
@@ -404,6 +413,12 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
         Math.max(rect.height * RADIO_FACTOR, RADIO_MINIMO) * (pressed ? RADIO_PULSADO : 1);
       // Paso 3: un solo mecanismo activo por diana, nunca los dos.
       if (imagenDiana === pressable) {
+        // La pluma del recorte (spec 2026-09-10) NO se aplica aqui a
+        // proposito. Este mecanismo hoy no pinta en ningun sitio: su unica
+        // diana era `.credit` y se fue con el catastro de creditos, asi que
+        // ningun gate podria verlo en rojo. Cuando esta familia tenga diana
+        // ocluida nueva —encargo abierto, ver el docstring del arnes— la pluma
+        // entra con ella y se mide entonces, no antes.
         // Mismo centro, radio y rampa que el lienzo, escritos como
         // `radial-gradient` en linea. El centro va en coordenadas relativas
         // al elemento (`rect.left`/`rect.top` restados), porque
@@ -437,6 +452,28 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
         luz.addColorStop(1, `rgb(${tinta} / 0)`);
         huecoCtx.fillStyle = luz;
         huecoCtx.fillRect(rect.left, rect.top, rect.width, rect.height);
+
+        // Se borra hacia dentro desde cada arista con `destination-out`. La
+        // pluma se acota a la mitad del lado para que en una diana estrecha no
+        // se coma el charco entero. Las esquinas se borran dos veces, lo que
+        // las deja mas blandas todavia: es lo que se quiere.
+        huecoCtx.globalCompositeOperation = "destination-out";
+        const plumaX = Math.min(PLUMA, rect.width / 2);
+        const plumaY = Math.min(PLUMA, rect.height / 2);
+        const aristas: Array<[number, number, number, number, number, number, number, number]> = [
+          [rect.left, 0, rect.left + plumaX, 0, rect.left, rect.top, plumaX, rect.height],
+          [rect.right, 0, rect.right - plumaX, 0, rect.right - plumaX, rect.top, plumaX, rect.height],
+          [0, rect.top, 0, rect.top + plumaY, rect.left, rect.top, rect.width, plumaY],
+          [0, rect.bottom, 0, rect.bottom - plumaY, rect.left, rect.bottom - plumaY, rect.width, plumaY],
+        ];
+        for (const [gx0, gy0, gx1, gy1, bx, by, bw, bh] of aristas) {
+          const borrado = huecoCtx.createLinearGradient(gx0, gy0, gx1, gy1);
+          borrado.addColorStop(0, "rgb(0 0 0 / 1)");
+          borrado.addColorStop(1, "rgb(0 0 0 / 0)");
+          huecoCtx.fillStyle = borrado;
+          huecoCtx.fillRect(bx, by, bw, bh);
+        }
+
         huecoCtx.restore();
       }
 

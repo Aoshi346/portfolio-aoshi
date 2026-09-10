@@ -629,7 +629,16 @@ ENCENDIDO_SESGO = 15
 # `pot`, no el reloj. Si no asienta a tiempo, el gate FALLA explicitamente
 # (nunca sigue para medir otra cosa con el charco a medio apagar).
 APAGADO_POT_MAXIMO = 0.02
-APAGADO_TIMEOUT_MS = 6000
+# 12000, no 6000: decaer `pot` de 1,0 a 0,02 con `POT_SMOOTHING` 0.22 toma
+# unos 16 fotogramas (0.78^16 ~= 0.019), y bajo `--use-gl=swiftshader` el
+# `requestAnimationFrame` de esta sandbox llega cada 200-400ms en vez de cada
+# ~16 -- 16 fotogramas son entre 3,2s y 6,4s, ya rozando o superando el techo
+# viejo de 6000ms. Con carga de maquina (otro proceso, otro arnes) el mismo
+# calculo se va a 4,8-6,4s de sobra, asi que el techo viejo podia poner el
+# gate en rojo por lentitud del instrumento, no por un defecto del cursor.
+# 12000ms deja el doble de margen sobre el peor caso calculado sin tocar el
+# mecanismo: sigue siendo sondeo por estado con fallo explicito si no asienta.
+APAGADO_TIMEOUT_MS = 12000
 APAGADO_INTERVALO_MS = 100
 
 
@@ -755,6 +764,96 @@ def gate_brasa_sigue(pg, fallos: list) -> None:
         )
 
 
+# --- Familia 10: el charco no tiene canto duro ------------------------------
+#
+# El charco va recortado a la caja de la diana, y eso NO se quita: es lo unico
+# que dice hasta donde llega la zona pulsable. Lo que se quita es el CORTE, que
+# es lo que se leia como caja. El gate cruza la arista pixel a pixel y exige
+# que no haya escalon.
+#
+# La primera version de este gate (la del brief, perfil CRUDO de una sola
+# captura sobre la arista IZQUIERDA de PULSABLE_SCROLL) salio en VERDE contra
+# el codigo sin la pluma -- paso 2, rojo obligatorio, y no lo dio. Dos fallos
+# de instrumento, verificados con `elementFromPoint` en la pagina real:
+#   1. ".obra-abrir" es `inset: 0` sobre la fila ENTERA (x de 0 a 1440, el
+#      ancho del viewport). Su arista izquierda coincide con el borde del
+#      viewport: no hay franja "fuera de la caja" que capturar, y el clip
+#      con x negativo se recorta contra el viewport, asi que las dos mitades
+#      de la franja miden el mismo interior.
+#   2. La arista SUPERIOR si tiene exterior, pero justo ahi el DOM pinta un
+#      `border-t border-line` de la SIGUIENTE `.scene` (Tailwind, ajeno por
+#      completo al cursor) -- un escalon real de ~0,013 de luminancia que
+#      dominaba el perfil crudo y hacia indistinguible el corte del charco
+#      del borde de la maqueta.
+#
+# La correccion no toca la arista (sigue siendo el filo del recorte) ni el
+# fondo (el `border-t` es de layout, fuera de alcance de esta tarea): mide la
+# DIFERENCIA fila a fila entre "encendido" y "apagado" (delta = luminancia
+# encendido - luminancia apagado) en vez del perfil crudo de una sola
+# captura. Cualquier cosa que ya estuviera pintada ANTES del cursor -- el
+# `border-t`, el fondo generativo en ese instante -- esta en las DOS capturas
+# por igual y se cancela en la resta; lo unico que sobrevive en el delta es
+# el propio efecto del hueco. Verificado contra la corrida en rojo: el delta
+# es ruido (banda +-0,002) en toda la franja hasta la arista y salta de golpe
+# a unos -0,026 en la fila exacta donde `huecoCtx.clip()` empieza a pintar --
+# el `border-t` no aparece en el delta.
+#
+# El umbral compara el escalon mas brusco entre dos filas contiguas del
+# delta contra lo que dejaria una rampa lineal de al menos `RAMPA_MINIMA_PX`
+# filas repartiendo la MISMA amplitud total medida (paso maximo esperado =
+# amplitud / RAMPA_MINIMA_PX). Es mas exigente que la pluma real (14px): deja
+# margen sin exigir que la rampa entera quepa en la franja de 20px que se
+# captura. RUIDO_SUELO es la banda de ruido del delta medida en la franja
+# exterior de la corrida en rojo (+-0,002), redondeada al alza.
+PLUMA_MARGEN = 1.5
+RAMPA_MINIMA_PX = 7
+RUIDO_SUELO = 0.003
+
+
+def gate_pluma(pg, fallos: list) -> None:
+    """Familia 10: el charco muere hacia dentro, sin escalon en la arista."""
+    pg.locator(PULSABLE_SCROLL).first.scroll_into_view_if_needed()
+    pg.wait_for_timeout(600)
+    caja = pg.locator(PULSABLE_SCROLL).first.bounding_box()
+    # Franja vertical que cruza la arista SUPERIOR: 20px fuera (encima), 20px
+    # dentro, centrada en la x donde `apuntar()` deja el puntero (no en el
+    # centro geometrico de la caja: el gradiente esta centrado en el puntero,
+    # no en la caja). 8 columnas de ancho para que el ruido del shader no
+    # decida.
+    punto = (caja["x"] + caja["width"] * 0.4, caja["y"] + caja["height"] / 2)
+    clip = {
+        "x": punto[0] - 4,
+        "y": caja["y"] - 20,
+        "width": 8,
+        "height": 40,
+    }
+
+    def perfil(img) -> list:
+        px = img.load()
+        w, h = img.size
+        return [sum(_lum(px[x, y]) for x in range(w)) / w for y in range(h)]
+
+    pg.mouse.move(4, 4)
+    if not _esperar_pot_apagada(pg, fallos, f"{PULSABLE_SCROLL} (capturando 'apagado', familia 10)"):
+        return
+    apagado = perfil(Image.open(io.BytesIO(pg.screenshot(clip=clip))).convert("RGB"))
+
+    apuntar(pg, PULSABLE_SCROLL, punto)
+    esperar_pot_asentada(pg)
+    encendido = perfil(Image.open(io.BytesIO(pg.screenshot(clip=clip))).convert("RGB"))
+
+    delta = [e - a for e, a in zip(encendido, apagado)]
+    amplitud = max(abs(v) for v in delta)
+    escalon = max(abs(delta[i + 1] - delta[i]) for i in range(len(delta) - 1))
+
+    tope = (amplitud / RAMPA_MINIMA_PX) * PLUMA_MARGEN + RUIDO_SUELO
+    if escalon > tope:
+        fallos.append(
+            f"el charco corta a canto vivo en la arista de {PULSABLE_SCROLL}: escalon maximo "
+            f"del delta encendido-apagado {escalon:.4f} (amplitud total {amplitud:.4f}), tope {tope:.4f}"
+        )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -794,6 +893,10 @@ def main() -> int:
         # asercion 3.
         gate_brasa(pg, fallos)
         gate_brasa_sigue(pg, fallos)
+
+        # 10. el charco muere hacia dentro, sin escalon en la arista (ver el
+        # bloque de comentarios junto a gate_pluma mas abajo).
+        gate_pluma(pg, fallos)
 
         # 7. contraste por glifo contra el peor fotograma del shader. Solo
         # sobre las dianas donde el charco enciende. ".obra-abrir" no tiene
