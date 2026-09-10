@@ -1397,12 +1397,24 @@ body {
 }
 
 /*
- * Nodos del catastro de Hyprland. Nacen apagados para los tres temas y solo
- * `:root[data-theme="hyprland"]` los enciende. El patron aditivo se ha roto
- * cuatro veces por saltarse esto.
+ * Nodos del catastro de Hyprland, retirado el 2026-09-09 (plan "los
+ * cimientos"). Ya no los enciende ningun tema -- el bloque de Hyprland que
+ * los encendia se sustituyo por el de LOS CIMIENTOS. Se dejan apagados aqui
+ * en vez de borrarse porque estos nodos siguen existiendo en el DOM que
+ * monta `credits.ts` (limpieza pendiente, anotada en el spec de los
+ * cimientos).
  */
 .credits-parcela,
 .credits-strip {
+  display: none;
+}
+
+/*
+ * Los cimientos de Hyprland. Nacen apagados para los tres temas y solo
+ * `:root[data-theme="hyprland"]` los enciende. Mismo motivo que las parcelas
+ * de arriba: el patron aditivo se ha roto cuatro veces por saltarse esto.
+ */
+[data-cimientos] {
   display: none;
 }
 

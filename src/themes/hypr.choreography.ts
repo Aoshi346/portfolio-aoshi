@@ -1,29 +1,6 @@
-import { STRIP_REPAINT_EVENT, type StripRepaintDetail } from "../components/credits";
-import type { Choreography, Gsap } from "./choreography";
+import type { Choreography } from "./choreography";
 
 const ID = "hypr";
-
-// Los dos regimenes de tiempo del vocabulario global (corte / atmosfera),
-// mismos valores que `--hard`/`--slow` en themes.css. Duplicados aqui porque
-// GSAP no puede leer un `cubic-bezier()` desde una custom property de CSS.
-const HARD = "cubic-bezier(0.7, 0, 0.2, 1)";
-const SLOW = "cubic-bezier(0.16, 0.84, 0.28, 1)";
-
-/**
- * Sonda de temporizadores del gesto 4: la lampara programa un `setTimeout`
- * de 1100ms para pasar de `is-caught` a `is-caught-still` (ver mas abajo).
- * `Choreography` devuelve `void` — ningun tema tiene `destroy()`, y
- * `main.ts` solo llama `destroy()` en `pagehide` sobre fondo/carril/cursor/
- * ignicion/nav — asi que este tema se limpia como ya limpia sus
- * ScrollTrigger: matando por prefijo AL ENTRAR, no al salir. Sin este
- * registro, un remonte (HMR de Vite recargando este modulo sin recargar la
- * pagina entera; la produccion real solo invoca la coreografia una vez por
- * carga) deja temporizadores del montaje anterior corriendo sueltos: si uno
- * dispara pasado el remonte, añade `is-caught-still` a nombres que el nuevo
- * montaje puede estar animando en ese mismo instante, cortando su lampara
- * antes de los 400ms que le tocan.
- */
-type HyprTimerWindow = Window & { __hyprSkillTimers?: number[] };
 
 /**
  * Ascua: tres gestos, no uno repetido a distintas escalas.
@@ -37,55 +14,39 @@ type HyprTimerWindow = Window & { __hyprSkillTimers?: number[] };
  * rapido se pierden callbacks y el contenido se queda invisible para siempre.
  * Va con red por posicion, que es justo lo que hace ScrollTrigger.
  *
- * Movimiento reducido: esta funcion entera (y por tanto sus 5 gestos) NUNCA
+ * Movimiento reducido: esta funcion entera (y por tanto sus 3 gestos) NUNCA
  * se ejecuta bajo `prefers-reduced-motion: reduce` — `initScrollReveal`
  * (`src/utils/reveal.ts`) hace early-return antes de invocar
  * `theme.choreography()`, y ese guardian es compartido por los tres temas
- * (no se toca aqui: tocarlo afectaria a Vice y Caelestia). Medido en el
- * arbol: con `reduce`, `window.__hyprSkills` es `undefined`, no aparece
- * ninguna clase `.hypr-cut`/`.hypr-up`/`.is-lit`/`.is-caught` y GSAP no
- * llega a importarse. Un `gsap.matchMedia` para `reduce` DENTRO de esta
- * funcion seria codigo muerto: nunca se registraria porque la funcion que lo
- * contiene no corre. Lo que SI sobrevive bajo `reduce` es contenido base
- * (HTML/CSS, sin JS: las 4 parcelas, los 4 rotulos, los 23 nombres en su
- * color de reposo y las 4 franjas se ven por la cascada normal) mas el
- * `:hover`/`:focus-visible` puro de `.credit-name` (themes.css) y el cambio
- * de contenido de la franja (`credits.ts::repintarFranja`, que hace
- * `replaceChildren` SIEMPRE, fuera de esta coreografia). Lo unico que faltaba
- * ahi era que ese `:hover` seguia animando 900ms bajo `reduce` porque
- * `:not(.is-caught)` es SIEMPRE cierto cuando `.is-caught` nunca se aplica —
- * arreglado en themes.css con `transition: none` bajo la media query, no
- * aqui. La luz decorativa del lindero (`.credits-glow`, `aria-hidden`) y el
- * resto del apuntado por GSAP no tienen equivalente CSS y quedan ausentes
- * bajo `reduce`, igual que en Vice: es una capa de refuerzo, no el canal por
- * el que se entiende que nombre esta enfocado.
+ * (no se toca aqui: tocarlo afectaria a Vice y Caelestia). Lo que sobrevive
+ * bajo `reduce` es el contenido base en HTML/CSS, sin ninguna de las clases
+ * que reparte el gesto 0 ni el escalonado de `--hypr-d`.
  */
 /*
- * `gsap` se desestructura del contexto, no se toma del ambito global: el
- * contrato de `ChoreographyContext` lo entrega precisamente para eso, y Vice
- * lo hace asi desde el principio. Sin esta palabra el modulo compilaba y
- * pasaba el lint —el identificador existe como global en los tipos— pero el
- * chunk construido reventaba con `gsap is not defined` en cuanto `reveal.ts`
- * llamaba a la coreografia, y con el la seccion de creditos se quedaba sin
- * sus gestos. No lo caza `tsc` ni `eslint`: solo se ve en el navegador.
+ * La coreografia de Hyprland ya no crea ningun tween: los gestos que lo
+ * hacian (4 y 5, el catastro de creditos) se retiraron el 2026-09-09 junto
+ * con su CSS y su arnes. Por eso `gsap` YA NO se desestructura del contexto
+ * aqui — sin uso, `eslint` lo marca como variable muerta. Si un gesto futuro
+ * vuelve a necesitar GSAP, desestructuralo de nuevo del contexto que recibe
+ * esta funcion (`({ gsap, ScrollTrigger, root }) => {...}`), NUNCA de un
+ * `gsap` suelto del ambito global: sin la palabra en el destructuring el
+ * modulo compila y pasa el lint —el identificador existe como global en los
+ * tipos— pero el chunk construido revienta con `gsap is not defined` en
+ * cuanto `reveal.ts` llama a la coreografia, y la seccion de creditos se
+ * queda sin sus gestos durante semanas sin que nada lo avise salvo la
+ * consola del navegador. Ya paso una vez en este mismo tema.
  */
-export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) => {
+export const hyprChoreography: Choreography = ({ ScrollTrigger, root }) => {
   ScrollTrigger.getAll()
     .filter((t) => typeof t.vars.id === "string" && t.vars.id.startsWith(ID))
     .forEach((t) => t.kill());
 
-  // Limpieza de un remonte anterior (ver comentario de `HyprTimerWindow`
-  // arriba): borra los temporizadores pendientes de la lampara, el estado
-  // `is-caught`/`is-caught-still` que hubieran dejado y la sonda del arnes,
-  // para que la entrada vuelva a correr entera y `window.__hyprSkills`
-  // apunte siempre a LA timeline de este montaje, no a la anterior.
-  const timerWindow = window as HyprTimerWindow;
-  for (const id of timerWindow.__hyprSkillTimers ?? []) window.clearTimeout(id);
-  timerWindow.__hyprSkillTimers = [];
-  for (const n of Array.from(root.querySelectorAll<HTMLElement>("[data-credit].is-caught"))) {
-    n.classList.remove("is-caught", "is-caught-still");
-  }
-  delete (window as unknown as { __hyprSkills?: unknown }).__hyprSkills;
+  // Limpieza de un remonte anterior: la placa puede haber quedado
+  // `placa-lit` de un montaje previo (HMR de Vite recargando este modulo sin
+  // recargar la pagina entera; la produccion real solo invoca la
+  // coreografia una vez por carga), asi que se retira para que su entrada
+  // (gesto 0b) vuelva a correr entera.
+  root.querySelector<HTMLElement>("[data-placa]")?.classList.remove("placa-lit");
 
   const scenes = Array.from(root.querySelectorAll<HTMLElement>("[data-scene]"));
 
@@ -222,6 +183,22 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
         fila === 1 ? "-18px" : filaFin >= (explicita ? 4 : ultimaFila) ? "18px" : "0px",
       );
     });
+
+    // La placa dispara su propia entrada, no la de la seccion: la placa
+    // vive 239px por debajo del borde superior de la seccion en escritorio
+    // y 161px en movil. Con `is-lit` de la seccion (arranca a `top 90%` de
+    // la SECCION), las siete celdas aterrizaban a los 1200ms con la placa
+    // 119px bajo el pliegue en una ventana de 900 (1019 sobre 900) y 41px
+    // bajo el pliegue en una de 844 (885 sobre 844) — la entrada corria
+    // entera fuera de pantalla. Umbral propio, anclado a la caja de la
+    // placa, no a la seccion que la contiene.
+    ScrollTrigger.create({
+      id: `${ID}-placa`,
+      trigger: placa,
+      start: "top 80%",
+      once: true,
+      onEnter: () => placa.classList.add("placa-lit"),
+    });
   }
 
   // Gesto 1 — la escena se enciende. Las clases hacen el trabajo; GSAP solo
@@ -237,12 +214,18 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
   });
 
   // Red: cualquier escena ya dentro del cuadro se enciende sin esperar a un
-  // callback. Sin esto, un scroll rapido deja secciones en blanco.
+  // callback. Sin esto, un scroll rapido deja secciones en blanco. La placa
+  // entra en la misma red, con su propio umbral (0.8), para que un scroll
+  // rapido tampoco la deje sin encender.
   const net = (): void => {
     scenes.forEach((scene) => {
       const r = scene.getBoundingClientRect();
       if (r.top < window.innerHeight * 0.9 && r.bottom > 0) scene.classList.add("is-lit");
     });
+    if (placa) {
+      const r = placa.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.8 && r.bottom > 0) placa.classList.add("placa-lit");
+    }
   };
   net();
   window.addEventListener("scroll", net, { passive: true });
@@ -262,259 +245,6 @@ export const hyprChoreography: Choreography = ({ gsap, ScrollTrigger, root }) =>
       root.style.setProperty("--by", `${26 + p * 32}%`);
     },
   });
-
-  // Gesto 4 — la corriente. El orden ES el orden del argumento: primero el
-  // limite (el carril), luego el nombre del sitio (el rotulo), luego lo que
-  // hay dentro (los nombres), y al final donde se comprueba (las franjas).
-  // Si los nombres entraran antes que los rotulos, la escena diria "23
-  // tecnologias agrupadas de alguna manera", que es lo que decia antes.
-  const parcelas = Array.from(root.querySelectorAll<HTMLElement>("[data-credit-parcela]"));
-  if (parcelas.length > 0) {
-    const R = 0.09; // entre territorios, no los 70ms del paso interno del tema
-    const tl = gsap.timeline({
-      scrollTrigger: { id: `${ID}-skills`, trigger: parcelas[0], start: "top 82%", once: true },
-    });
-
-    parcelas.forEach((parcela, c) => {
-      const at = c * R;
-      const rail = parcela.querySelector<HTMLElement>(".credits-rail");
-      const spark = parcela.querySelector<HTMLElement>(".credits-spark");
-      const gi = parcela.dataset.parcela ?? "0";
-      const label = root.querySelector<HTMLElement>(`[data-credit-group="${gi}"]`);
-      const nombres = Array.from(
-        root.querySelectorAll<HTMLElement>(`[data-credit][data-parcela="${gi}"]`),
-      );
-
-      if (rail) {
-        tl.fromTo(
-          rail,
-          { scaleY: 0, transformOrigin: "0 0" },
-          { scaleY: 1, duration: 0.5, ease: HARD, immediateRender: false },
-          at,
-        );
-      }
-      if (label) {
-        tl.fromTo(
-          label,
-          { clipPath: "inset(0 100% 0 0)" },
-          { clipPath: "inset(0 0% 0 0)", duration: 0.42, ease: HARD, immediateRender: false },
-          at + 0.14,
-        );
-      }
-      if (spark) {
-        // Velocidad constante y misma duracion en las cuatro: como las
-        // parcelas miden lo mismo, las cuatro chispas llegan abajo A LA VEZ.
-        tl.fromTo(
-          spark,
-          { yPercent: 0, opacity: 1 },
-          {
-            yPercent: 100 * (parcela.offsetHeight / spark.offsetHeight),
-            opacity: 0,
-            duration: 0.62,
-            ease: "none",
-            immediateRender: false,
-          },
-          at + 0.26,
-        );
-      }
-      tl.call(
-        () => {
-          for (const n of nombres) n.classList.add("is-caught");
-          /*
-           * La lampara es un gesto de ENTRADA, no un estado permanente de
-           * la `animation`. En movil solo la parcela activa muestra sus
-           * nombres (`display: none` en las otras tres) y un nombre oculto
-           * no ejecuta una animation aunque ya tenga la clase — el
-           * navegador la retoma de cero en cuanto el nodo vuelve a
-           * pintarse. Sin este ajuste, abrir despues un territorio plegado
-           * hace destellar sus nombres como si acabaran de entrar, fuera
-           * del scroll que le daba sentido al gesto.
-           *
-           * 1100ms cubre el peor caso real: 620ms (el maximo de
-           * `--skill-d`) + 400ms (duracion de la lampara) + margen. Pasado
-           * ese tiempo, `is-caught-still` apaga la `animation` (ver
-           * themes.css) — visible o no en ese instante — y el color que
-           * queda es el de reposo normal de la cascada: el fotograma 100%
-           * de `hypr-lampara` ya esta vacio, asi que apagar la animation o
-           * dejarla corriendo mas alla de su fin da el MISMO resultado
-           * visual. `animation: none` de verdad libera el objeto
-           * `Animation`, en vez de dejarlo para siempre en fase "after".
-           */
-          const timerId = window.setTimeout(() => {
-            for (const n of nombres) n.classList.add("is-caught-still");
-          }, 1100);
-          timerWindow.__hyprSkillTimers?.push(timerId);
-        },
-        [],
-        at + 0.26,
-      );
-    });
-
-    const strips = Array.from(root.querySelectorAll<HTMLElement>("[data-credit-strip]"));
-    tl.fromTo(
-      strips,
-      { opacity: 0, y: 14 },
-      { opacity: 1, y: 0, duration: 0.62, ease: SLOW, immediateRender: false },
-      0.9,
-    );
-
-    // Sonda del arnes: el ritmo se mide con tl.progress() desde dentro de la
-    // pagina; page.screenshot() en headless perturba GSAP.
-    (window as unknown as { __hyprSkills?: ReturnType<Gsap["timeline"]> }).__hyprSkills = tl;
-
-    // Colores resueltos una vez, fuera del bucle de interaccion: `--l3` y
-    // `--haze` son estaticos en Hyprland (themes.css), y GSAP interpola mejor
-    // un hex resuelto que un `var()` crudo, que no siempre se parsea igual en
-    // todos los navegadores dentro de un tween de color.
-    const vars = getComputedStyle(root);
-    const L3 = vars.getPropertyValue("--l3").trim() || "#ffa03c";
-    const HAZE = vars.getPropertyValue("--haze").trim() || "#b18c86";
-
-    // Gesto 5 — el apuntado. Vive FUERA de `tl` a proposito: la asercion 13
-    // del arnes cuenta los targets de `window.__hyprSkills`, y estos tweens
-    // no son del gesto de entrada (que pasa UNA vez) sino de una interaccion
-    // que se repite sin fin. Colgarlos de `tl` los mezclaria y ademas
-    // rompería esa cuenta.
-    parcelas.forEach((parcela, gi) => {
-      const glow = parcela.querySelector<HTMLElement>(".credits-glow");
-      if (!glow) return;
-
-      const strip = root.querySelector<HTMLElement>(`[data-credit-strip][data-parcela="${gi}"]`);
-      const marcasRow = root.querySelector<HTMLElement>(
-        `[data-credit-marks-row][data-parcela="${gi}"]`,
-      );
-      const marcas = marcasRow
-        ? Array.from(marcasRow.querySelectorAll<HTMLElement>(".credits-mark"))
-        : [];
-      const label = root.querySelector<HTMLElement>(`[data-credit-group="${gi}"]`);
-      const nombres = Array.from(
-        root.querySelectorAll<HTMLElement>(`[data-credit][data-parcela="${gi}"]`),
-      );
-
-      /*
-       * La luz del lindero no salta a la fila: la lleva un `quickTo`, asi
-       * que al recorrer nombres VIAJA por el carril y un salto de Git a
-       * Gemini CLI se ve recorrer. Es la misma idea de la entrada —
-       * corriente por un cable — sostenida dentro del apuntado en vez de
-       * abandonada al acabar: hay un objeto fisico moviendose, no estados
-       * relevandose.
-       */
-      const mover = gsap.quickTo(glow, "y", { duration: 0.42, ease: "power4.out" });
-
-      const apuntar = (boton: HTMLElement, i: number): void => {
-        mover(boton.offsetTop + boton.offsetHeight / 2 - 19);
-        gsap.to(glow, { opacity: 1, duration: 0.42 });
-        // Se realza QUITANDO, no anadiendo: nada de `filter` ni
-        // `box-shadow`, la linea roja con un shader a pantalla completa
-        // detras.
-        if (marcas.length > 0) {
-          gsap.to(marcas, { opacity: 0.42, scale: 1, duration: 0.42, ease: "power3.out" });
-          const marcaActiva = marcas[i];
-          if (marcaActiva) {
-            gsap.to(marcaActiva, { opacity: 1, scale: 1.28, duration: 0.42, ease: "power3.out" });
-          }
-        }
-        // El rotulo del area va lento A PROPOSITO: apuntar Django no solo
-        // enciende Django, calienta despacio "Backend y datos". Lo rapido es
-        // la accion, lo lento es el contexto.
-        if (label) gsap.to(label, { color: L3, duration: 0.9, ease: "power3.out" });
-      };
-
-      const apagar = (relatedTarget: EventTarget | null): void => {
-        // Moverse ENTRE nombres de la MISMA parcela no apaga nada: solo la
-        // luz viaja de uno a otro. Apagar aqui reintroduciria el parpadeo
-        // fila a fila que el `quickTo` existe para evitar.
-        if (relatedTarget instanceof HTMLElement && nombres.includes(relatedTarget)) return;
-        gsap.to(glow, { opacity: 0, duration: 0.9 });
-        if (marcas.length > 0) {
-          gsap.to(marcas, { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" });
-        }
-        if (label) gsap.to(label, { color: HAZE, duration: 0.9, ease: "power3.out" });
-      };
-
-      /*
-       * `credits.ts` registra SUS propios `mouseenter`/`focus`/`click` en
-       * `select()` sobre estos mismos botones — pinta el panel/franja
-       * compartidos y marca `.is-active`/`data-credit-picked`. Los dos
-       * conjuntos de listeners son independientes (ninguno lee ni cancela
-       * lo que escribe el otro: este solo mueve la luz, el friso y el
-       * rotulo) y el navegador los ejecuta en el orden en que se
-       * registraron, asi que el orden importa solo si algun dia uno de los
-       * dos empieza a depender de un efecto secundario del otro dentro del
-       * mismo evento — hoy no ocurre.
-       */
-      nombres.forEach((boton, i) => {
-        boton.addEventListener("mouseenter", () => apuntar(boton, i));
-        boton.addEventListener("focus", () => apuntar(boton, i));
-        boton.addEventListener("mouseleave", (ev) => apagar((ev as MouseEvent).relatedTarget));
-        boton.addEventListener("focusout", (ev) => apagar((ev as FocusEvent).relatedTarget));
-      });
-
-      /*
-       * El rodillo de la franja: escucha `STRIP_REPAINT_EVENT` (ver
-       * `credits.ts`, `repintarFranja`) en vez de parchear el
-       * `replaceChildren` nativo del nodo. Diferencia real frente a la
-       * version anterior: el gancho ahora es un evento tipado con nombre
-       * propio, declarado y exportado por `credits.ts` — grepeable desde el
-       * fichero que de verdad pinta la franja — en vez de depender de una
-       * firma implicita ("select() llama `strip.replaceChildren(<nodo>)`")
-       * que ningun tipo protegia. Si `repintarFranja` cambiara de metodo de
-       * insercion, el rodillo se enteraria del cambio de compilar, no
-       * dejaria de dispararse en silencio.
-       *
-       * `dataset.hyprRodillo` evita el enganche doble: `hyprChoreography`
-       * puede volver a ejecutarse (resize, refresh de ScrollTrigger) sobre
-       * el MISMO nodo `strip`, y un segundo `addEventListener` produciria
-       * dos rodillos corriendo a la vez sobre la misma franja.
-       */
-      if (strip && !strip.dataset.hyprRodillo) {
-        strip.dataset.hyprRodillo = "1";
-        // Solo un `viejo` puede estar "saliendo" a la vez: si llega un
-        // repintado nuevo mientras el anterior sigue en su animacion de
-        // salida (barrido rapido, varias selecciones dentro de los 420ms
-        // del rodillo), se corta ya en vez de dejar que se apilen dos
-        // salidas — verificado con 6 selecciones en 600ms: debe quedar 1
-        // `.credits-strip-in`.
-        let saliendo: HTMLElement | null = null;
-        strip.addEventListener(STRIP_REPAINT_EVENT, ((ev: CustomEvent<StripRepaintDetail>) => {
-          const { nuevo, viejo } = ev.detail;
-          if (saliendo) {
-            gsap.killTweensOf(saliendo);
-            saliendo.remove();
-            saliendo = null;
-          }
-          // Lo nuevo entra por abajo. `credits.ts` ya lo dejo como hijo
-          // real de `strip` antes de disparar el evento — `immediateRender`
-          // (por defecto en `fromTo`) aplica el estado inicial en el mismo
-          // tick, asi que no hay fotograma intermedio visible con el nodo a
-          // pelo.
-          gsap.fromTo(
-            nuevo,
-            { yPercent: 100, opacity: 0 },
-            { yPercent: 0, opacity: 1, duration: 0.42, ease: "power4.out" },
-          );
-          // Lo viejo sale por arriba. `replaceChildren` ya lo retiro del
-          // DOM antes de que este listener lo viera — se reinserta para
-          // poder animarlo, superpuesto a `nuevo` (los dos van siempre en
-          // `position: absolute`, ver `.credits-strip-in` en themes.css).
-          if (viejo) {
-            strip.appendChild(viejo);
-            saliendo = viejo;
-            gsap.to(viejo, {
-              yPercent: -100,
-              opacity: 0,
-              duration: 0.3,
-              ease: "power2.in",
-              onComplete: () => {
-                viejo.remove();
-                if (saliendo === viejo) saliendo = null;
-              },
-            });
-          }
-        }) as EventListener);
-      }
-    });
-  }
 };
 
 export default hyprChoreography;

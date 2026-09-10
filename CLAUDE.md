@@ -67,8 +67,8 @@
   viewport-wide, which overstated it): only the resting title dips below AA, and only in the
   shader's brightest 0.5% of frames (3.88:1) — a shader brightness ceiling, pending a product
   decision, not an illegibility problem (see the spec's `Registro de implementación` /
-  `Color y contraste`). The "Con qué construyo" section is still being redesigned on a separate
-  branch — Hyprland overall stays IN PROGRESS.
+  `Color y contraste`). The "Con qué construyo" section (the Stack scene) was redesigned and
+  merged on 2026-09-10 — see its own block below. Hyprland overall stays IN PROGRESS.
 - **Hyprland's cursor is DONE and merged** (`2026-08-19-hyprland-cursor-luz`): "the adaptive
   hollow". Pointing at something pressable opens a pool clipped to the element — it **darkens
   where the background is bright and lights up where it is already dark**, with the edge lit and a
@@ -81,6 +81,67 @@
   perceptible*. One gate for both could only demand what holds for both, which is nothing, and that
   already slipped through once. Read the spec's epilogue before re-tuning anything: the whole
   calibration predates the `gsap` fix.
+
+- **Hyprland's Stack scene is MERGED** (`2026-09-09-hyprland-stack-cimientos`, spec state
+  `en ejecucion` until Aoshi reviews it on the real site): the catastro is retired and
+  `[data-scene="credits"]` is now **"los cimientos"** — three area columns from `skillGroups`
+  (Interfaz 8, Backend y datos 5, Herramientas 5, widths 550/344/344 at 1440, ratio 1.6/1/1) over a
+  2px `--l1` floor line carrying the five base languages one type step **above** the names. The
+  composition is the sentence: three things he builds, resting on five things he knows. **There is
+  no hierarchy between the 23 names** — the old device sized them by how many projects used them,
+  and that data does not stretch (seven technologies appear in no public project, the four
+  transversal ones appear in all five). The hierarchy is between strata.
+  New module `src/components/hyprStackCimientos.ts`, **no GSAP**: an `IntersectionObserver` decides
+  when, CSS marks the times. **`credits.ts` is NOT touched** — its generic DOM is hidden whole,
+  the pattern Caelestia's B3/B4 proved. Retiring the catastro removed 1,662 lines (797 CSS, 526
+  harness, 339 choreography) with Vice and Caelestia byte-identical, verified by `git worktree`.
+  Gated by `scripts/measure-cimientos.py` (14 families; gate 10, the contrast one, sits behind
+  `--contraste`). Contrast per glyph against the live shader: name 9.66:1, area label 5.79:1,
+  language 15.65:1, icon 6.53:1 against a 3:1 decorative floor, hovered 9.66:1, phrase 9.35:1.
+  - **The entrance is commanded by the floor**: the ember line traces left to right, lights the
+    five languages in its wake (each delay derived from its own x, not written by hand), and only
+    then do the columns grow from it by clipping. One lighting in the scene, not twenty-three.
+    Its trigger is anchored to the **device's own box**, never the section's — the same fix this
+    branch made to the placa, where an entrance ran to completion 119px below the fold for a month
+    with the harness green.
+  - **The phrase lives in the air, not under the floor's label.** Hovering, focusing or tapping a
+    name lights it `--l3` and writes that technology's literal `detail` in Instrument Serif italic
+    inside the 48px of air between the columns and the floor. It first sat beside "LENGUAJES BASE",
+    and **both critique gates independently called that a defect**: for the 18 names that are not
+    base languages it read as a template bug. Moving it up costs zero pixels — the air was already
+    there — and the 48px gap the gate measures is unchanged.
+  - **What the harness had to learn the hard way, twice.** A mouse click used to extinguish the
+    name under the cursor: `blur` on the previously focused button fired `apagar()` without
+    checking who was active. And **gate 4 never clicked with a mouse anywhere** — it hovered,
+    tapped and used the keyboard — so a gate titled "the hover extinguishes on leaving" was green
+    while ordinary clicking blanked the device. Separately, `gate 6` compared the painted phrase
+    against the DOM's own copy of the string, both written by the same line: it now parses the 23
+    `detail` values out of `content.ts` and fails loudly if the parse comes back empty.
+  - **Two rulings worth keeping.** The reduced-motion guard is written selector by selector on
+    purpose (`*` does not reach pseudo-elements) and the apuntado rule is scoped with
+    `[data-cimientos]` so it beats the entrance rule **structurally**, not because it appears later
+    in the sheet. Below 1024px the device stacks: between 821 and 1023 the 8/5/5 proportion
+    collapses to equal columns and "Claude Code" wraps, so the stacked band runs to 1023 and gate
+    8 only measures three columns from 1024 up.
+  - **`measure-cursor-luz.py` now exits with exactly 1 expected failure**, and that is written in
+    its own docstring. Retiring the catastro removed `.credit`, its **only occluded target** — the
+    one exercising the `background-image` mechanism instead of the canvas. `.cim-nombre` is not a
+    replacement (the cimientos have no opaque background), so the harness says what is missing and
+    since when instead of substituting a softer target. **Giving that family a new occluded target
+    is an open commission.**
+  - Open, and recorded in the spec: the cursor's orange edge around the 23 new buttons (that is the
+    separate cursor commission), the scene selector's stale silhouettes, retiring the dead nodes
+    `credits.ts` still builds (`.credits-rail`, `.credits-glow`, `.credits-spark` and
+    `STRIP_REPAINT_EVENT`, which now has no listener), that `8fr 5fr 5fr` is hand-written and
+    mirrors counts that live in `content.ts` with no gate comparing them, and that
+    `measure-cimientos.py` is hooked nowhere — it is launched by hand, by decision.
+  - Gates: `lidia-naive-tester` 6.3/10 red on the phrase's old placement, **fixed**;
+    `vera-art-director` **BLOCK residual 6.22→7.42/10**, 0.08 under the gate, **zero actionable
+    P0s**, and she certifies that the two findings which blocked the catastro are closed by
+    construction. Residual accepted: the 1px `--rule` dividers are indistinguishable from the
+    shader in the lower third of each column (measured pixel by pixel; it is the token's luminance
+    sitting inside the shader's range, the same brightness ceiling the theme already carries), and
+    GSAP's icon is a wordmark that does not scale like the rest of the set at 20px.
 
 - **Caelestia's cursor is BUILT and gated, pending merge** (`2026-09-04-caelestia-cursor`, branch
   `design/caelestia-cursor` in the `portfolio-aoshi-cursor` worktree): **"la gota"** — a drop of the

@@ -1,5 +1,17 @@
 """Arnes del cursor "luz de mano" de Hyprland.
 
+AVISO (2026-09-09, revision final de la rama "los cimientos"): a partir de
+este commit este arnes sale con **1 fallo esperado** -- la diana ocluida
+'.credit', que sostenia la familia "ilumina" y se retiro con el catastro de
+creditos (commit ffb62ca). Los cimientos no tienen fondo propio detras de
+sus nombres, asi que no hay diana ocluida de recambio todavia; es un
+encargo pendiente, no una regresion. Cualquier recuento de fallos DISTINTO
+de 1 es un fallo nuevo -- este proyecto ya pago el modo de fallo contrario
+("un gate que nunca se pone verde no se lee"), y la correccion no es dejarlo
+en rojo sin mas: es escribir aqui cual es el rojo esperado para que alguien
+lo lea. No cambiar pisos, umbrales ni la calibracion del cursor para forzar
+un verde falso.
+
 Cada asercion nace de un fallo real ya pagado en este repo:
   1. El lienzo EXISTE en Hyprland y NO existe en Vice ni en Caelestia. Sin
      esto el arnes sale verde con el cursor apagado: el patron aditivo se ha
@@ -256,6 +268,39 @@ def hay_lienzo(pg) -> bool:
 def potencia(pg) -> float:
     """Potencia del charco publicada por el modulo. 0 = apagado."""
     return pg.evaluate("() => window.__hyprCursor__ ? window.__hyprCursor__.pot() : -1")
+
+
+def _diana_pinta(pg, selector: str) -> bool:
+    """True solo si `selector` existe Y se pinta de verdad: `display`,
+    `visibility` y `opacity` computados no lo esconden, y su
+    `getBoundingClientRect()` tiene caja real (ancho y alto > 0).
+
+    Nace del 2026-09-09: `PULSABLE_FONDO` (".credit") era la UNICA diana
+    OCLUIDA del arnes -- tenia un ancestro opaco entre ella y el lienzo del
+    hueco, y por eso ejercitaba el mecanismo de `background-image` en vez del
+    de lienzo (ver el comentario de Task 9 junto a `PULSABLE_FONDO`). El plan
+    de "los cimientos" oculto `.credits-grid` entero bajo Hyprland
+    (`display: none`, commit `ffb62ca`) sin actualizar esta diana, y
+    `scroll_into_view_if_needed()` sobre un nodo invisible no falla con un
+    mensaje claro: se cuelga en un timeout de ~30s sin llegar a imprimir
+    ningun recuento. Comprobar el pintado ANTES de tocar el nodo convierte
+    ese colgado silencioso en un fallo explicito y deja correr el resto del
+    arnes."""
+    return bool(
+        pg.evaluate(
+            """(sel) => {
+                const el = document.querySelector(sel);
+                if (!el) return false;
+                const cs = getComputedStyle(el);
+                if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) {
+                    return false;
+                }
+                const r = el.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
+            }""",
+            selector,
+        )
+    )
 
 
 # Umbral de espera para "pot asentado" (Ronda de arreglo, asercion 2). `pot`
@@ -727,6 +772,31 @@ def main() -> int:
         )
 
         for diana, glifo, color_sel, punto_sel, margen, mecanismo_esperado, signo in DIANAS_CONTRASTE:
+            # Guarda de diana ocluida (ver `_diana_pinta`): antes de tocar el
+            # nodo con `scroll_into_view_if_needed()` -- que se cuelga en un
+            # timeout sin avisar sobre un nodo con `display: none` -- se
+            # comprueba que de verdad se pinta. Si no, es un fallo EXPLICITO
+            # de instrumento, y se salta solo esta familia: el resto del
+            # arnes (las otras dianas de este mismo bucle, el estado rancio,
+            # movimiento reducido, movil y limpieza) sigue corriendo y
+            # dando su recuento. Nunca se sustituye la diana por otra: esta
+            # es la UNICA diana OCLUIDA del arnes (ver el comentario junto a
+            # `PULSABLE_FONDO`) y la familia "ilumina" se queda sin
+            # representante hasta que exista una diana ocluida nueva.
+            if not _diana_pinta(pg, diana):
+                fallos.append(
+                    f"la diana ocluida {diana!r} ya no se pinta bajo Hyprland: "
+                    "el catastro de creditos que la sostenia se retiro el "
+                    "2026-09-09 (commit ffb62ca, plan 'los cimientos'), y "
+                    "`.credits-grid` quedo con `display: none` bajo este tema. "
+                    "La familia 'ilumina' (la unica diana OCLUIDA del arnes, "
+                    "la que ejercita el mecanismo de background-image en vez "
+                    "de lienzo) se queda sin diana representante -- los "
+                    "cimientos no tienen fondo propio detras de sus nombres, "
+                    "asi que '.cim-nombre' NO vale como reemplazo. Encargo "
+                    "pendiente: darle a esta familia una diana ocluida nueva."
+                )
+                continue
             if punto_sel is not None:
                 # Scroll PRIMERO, leer la caja del punto DESPUES: leerla
                 # antes de `scroll_into_view_if_needed()` (como hacia una
