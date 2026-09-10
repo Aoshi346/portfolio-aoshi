@@ -8676,26 +8676,31 @@
   color: var(--text);
 }
 
-/* El suelo */
-:root[data-theme="hyprland"] .cim-suelo {
-  margin-top: 48px;
-}
-:root[data-theme="hyprland"] .cim-linea {
-  display: block;
-  height: 2px;
-  background: var(--l1);
-}
-:root[data-theme="hyprland"] .cim-cab {
-  display: flex;
-  align-items: baseline;
-  gap: 24px;
-  margin-top: 22px;
-  /* La linea del rotulo tiene la altura de la frase desde el principio:
-     nada se mueve al rozar. */
-  min-height: 28px;
-}
+/*
+  La frase (revision final de la rama, arreglo 2): HERMANA de `.cim-cols` y
+  `.cim-suelo`, dentro del aire de 48px que ya separaba el pie de las
+  columnas de la linea -- antes vivia en `.cim-cab`, junto al rotulo
+  "Lenguajes base", y se leia como si fuera SU pie de foto (P0 de
+  `lidia-naive-tester`: "parece un bug de plantilla"; confirmado por
+  `vera-art-director` en 18 de las 23 piezas, el 78%). Los 48px se reparten
+  en tres: 10px de aire, 28px de frase (misma caja de siempre: --t-3 con
+  line-height 28px, la que ya reservaba `.cim-cab`), 10px de aire hasta la
+  linea -- el total NO cambia, lo vigila el gate 8 (48px exactos entre el
+  pie de la columna mas alta y el borde superior de `.cim-linea`). Alineada
+  al margen izquierdo de las columnas (misma x que "INTERFAZ"): sin padding
+  propio, hija directa de `.cim` igual que `.cim-cols`.
+*/
 :root[data-theme="hyprland"] .cim-frase {
-  margin: 0;
+  margin: 10px 0 0;
+  /* Vacia en reposo: sin altura reservada, un <p> sin contenido no genera
+     caja de linea (line-height no basta) y queda a 0px de alto -- una caja
+     de 0px sin borde ni padding hace que sus dos margenes (10px arriba, 0
+     abajo) colapsen entre si Y con los de sus vecinos (.cim-cols y
+     .cim-suelo), asi que los 48px de aire se quedaban en 10 (medido: gate 8
+     rojo, "el suelo esta a 10.0px") -- y al escribir la frase al rozar la
+     caja deja de colapsar y todo lo de abajo se desplazaba (gate 5 rojo).
+     `min-height` fija la caja SIEMPRE, vacia o no. */
+  min-height: 28px;
   font-family: var(--font-said);
   font-style: italic;
   font-weight: 400;
@@ -8704,6 +8709,22 @@
   color: var(--catch);
   clip-path: inset(0 100% 0 0);
   transition: clip-path 0.9s var(--slow);
+}
+/* El suelo */
+:root[data-theme="hyprland"] .cim-suelo {
+  margin-top: 10px;
+}
+:root[data-theme="hyprland"] .cim-linea {
+  display: block;
+  height: 2px;
+  background: var(--l1);
+}
+/* `.cim-cab` se queda solo con el rotulo del suelo (la frase ya no es su
+   hija): no necesita ser flex, ni el `min-height` que antes reservaba el
+   alto de la frase para que nada se moviera al rozar -- eso ya no aplica
+   aqui, lo hace la caja fija de `.cim-frase` en su nueva posicion. */
+:root[data-theme="hyprland"] .cim-cab {
+  margin: 22px 0 0;
 }
 :root[data-theme="hyprland"] .cim-lenguajes {
   display: flex;
@@ -8759,8 +8780,10 @@
 /*
   APUNTADO — la frase al rozar. El nombre pasa a --l3 (encender es un
   corte, 420ms) y vuelve a --text enfriandose (900ms atmosfera). La frase
-  entra y sale por recorte lateral en la linea del rotulo del suelo, que ya
-  tiene su altura: nada se mueve.
+  entra y sale por recorte lateral en su propia caja de 28px, que ya tiene
+  su altura: nada se mueve. `is-viva` se anada a `cim` y no a `cab`: la
+  frase ya no es descendiente de `cab`, y `cim` es el ancestro comun mas
+  cercano de los dos.
 */
 :root[data-theme="hyprland"] .cim-txt {
   transition: color 0.9s var(--slow);
@@ -8775,7 +8798,7 @@
   color: var(--l3);
   transition: color 0.42s var(--hard);
 }
-:root[data-theme="hyprland"] .cim-cab.is-viva .cim-frase {
+:root[data-theme="hyprland"] .cim.is-viva .cim-frase {
   clip-path: inset(0 0 0 0);
   transition: clip-path 0.42s var(--hard);
 }
@@ -8871,7 +8894,7 @@
     transition: none;
   }
   :root[data-theme="hyprland"] .cim-frase,
-  :root[data-theme="hyprland"] .cim-cab.is-viva .cim-frase {
+  :root[data-theme="hyprland"] .cim.is-viva .cim-frase {
     transition: none;
   }
 }

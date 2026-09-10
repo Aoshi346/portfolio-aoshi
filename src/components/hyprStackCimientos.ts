@@ -67,11 +67,17 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
   linea.setAttribute("aria-hidden", "true");
   const frase = el("p", "cim-frase", []);
   frase.setAttribute("aria-live", "polite");
-  const cab = el("div", "cim-cab", [el("h3", "cim-rot", [suelo.label]), frase]);
+  // `.cim-cab` se queda solo con el rotulo del suelo. La frase sube al aire
+  // que ya existia entre el pie de las columnas y la linea y pasa a ser
+  // HERMANA de `.cim-cols` y `.cim-suelo` (revision final de la rama: la
+  // frase se leia bajo "LENGUAJES BASE" -- P0 de `lidia-naive-tester`, 78%
+  // de las piezas segun `vera-art-director`).
+  const cab = el("div", "cim-cab", [el("h3", "cim-rot", [suelo.label])]);
   const lenguajes = construirLista("cim-lenguajes", suelo.items);
 
   const cim = el("div", "cim", [
     el("div", "cim-cols", columnas),
+    frase,
     el("div", "cim-suelo", [linea, cab, lenguajes]),
   ]);
   cim.setAttribute("data-cimientos", "");
@@ -135,26 +141,30 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
   let activo: HTMLButtonElement | null = null;
   let ultimoPuntero = "mouse";
 
+  // `is-viva` se anade a `cim` (no a `cab`): la frase ya no es descendiente
+  // de `cab` -- es hermana de `.cim-cols`/`.cim-suelo`, asi que el ancla
+  // comun mas cercana para el selector CSS (`.cim.is-viva .cim-frase`) es
+  // el propio `cim`.
   const encender = (boton: HTMLButtonElement): void => {
     if (activo === boton) return;
     if (activo) activo.setAttribute("aria-pressed", "false");
     activo = boton;
     boton.setAttribute("aria-pressed", "true");
     frase.textContent = boton.dataset.cimDetail ?? "";
-    cab.classList.add("is-viva");
+    cim.classList.add("is-viva");
   };
   const apagar = (): void => {
     if (!activo) return;
     activo.setAttribute("aria-pressed", "false");
     activo = null;
-    cab.classList.remove("is-viva");
+    cim.classList.remove("is-viva");
     // El texto se queda mientras la frase se retira por recorte y se vacia al
     // terminar la transicion. Con movimiento reducido no hay transicion ni
     // `transitionend`: se vacia en seco.
     if (reduce) frase.textContent = "";
   };
   const alTerminar = (ev: TransitionEvent): void => {
-    if (ev.propertyName === "clip-path" && !cab.classList.contains("is-viva")) frase.textContent = "";
+    if (ev.propertyName === "clip-path" && !cim.classList.contains("is-viva")) frase.textContent = "";
   };
   frase.addEventListener("transitionend", alTerminar);
 
