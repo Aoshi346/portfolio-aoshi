@@ -106,7 +106,7 @@ const LUZ_MEDIO = 0.07;
  * `HUECO_CENTRO`, `HUECO_MEDIO`, `LUZ_CENTRO`, `LUZ_MEDIO` ni `LUM_OSCURA`
  * para recuperar contraste: se recorta la pluma, nunca la calibracion.
  */
-const PLUMA = 5;
+const PLUMA = 14;
 
 export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   const controller = new AbortController();
