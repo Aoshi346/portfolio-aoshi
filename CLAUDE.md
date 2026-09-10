@@ -81,6 +81,69 @@
   perceptible*. One gate for both could only demand what holds for both, which is nothing, and that
   already slipped through once. Read the spec's epilogue before re-tuning anything: the whole
   calibration predates the `gsap` fix.
+  - **The edge is gone: it is "la brasa" now** (`2026-09-10-hyprland-cursor-brasa`, merged
+    2026-09-10, spec `implementado`). The device used to draw a 1px `--l1` `strokeRect` around each
+    pressable's **whole box**, and Aoshi rejected it twice over: the box, whatever its colour, and
+    that it was the *complete* box. It is replaced by a 2px segment of the **bottom edge only**,
+    centred on the pointer's x, feathered to zero at both ends and clamped to the box. The width
+    inherits the pool's own law (`radio · 0.75`, and `radio` is dictated by the element's height,
+    not the section): ~90px on a Stack name, ~194 on an obra row 1440 wide. **Clamping makes the
+    wide case contain the narrow one for free** — on a target narrower than the segment the brasa
+    covers the whole edge, which was the discarded option A, with nobody coding the case. 2px in
+    `--l1` is not a free choice: it is the same token and thickness as `.cim-suelo`'s `border-top`,
+    the ember floor the Stack scene had shipped the day before.
+  - **The pool's clip is feathered, not removed.** `PLUMA = 14`px inward from each edge, erased with
+    `globalCompositeOperation = "destination-out"` on the `hueco` canvas. The clip itself stays —
+    it is the only thing that says how far the pressable area reaches — but its hard cut was reading
+    as a box in its own right on the shader's bright frames, where the pool darkens.
+  - **`PLUMA = 14` was chosen against a rule this spec itself had written**, and that is the
+    decision most worth not undoing. The rule said "the contrast family must come back with today's
+    numbers or better; if it drops, cut the pluma". Followed literally it drove `PLUMA` to 5 — and
+    at 5 the clipped pool paints a dark rectangle with straight edges around the name, which is the
+    exact defect the spec exists to remove. Measured A/B on one build: `PLUMA` 0 → 15,06:1,
+    5 → 15,06:1, **14 → 13,96:1**, 24 → 13,68:1, 36 → 13,47:1 (worst-case per-glyph on
+    `.obra-abrir`). What the gate actually demands is not a ratio, it is that the pool **improve**
+    contrast by at least 0,15; at 14 it improves it by 0,64, **4,3x the floor**, with the absolute
+    worst case at 13,96:1 — 3,1x AA. The order of priorities is now written in the spec: first the
+    accessibility floor, then that it must not read as a box, and only then the absolute ratio.
+    The pool's calibration (`HUECO_*`, `LUZ_*`, `LUM_OSCURA`) stays untouchable either way.
+  - **The pluma is for the canvas mechanism only.** The inline `background-image` branch keeps its
+    hard cut plus a comment tying the feather to an open commission: that mechanism paints nowhere
+    today (its only target, `.credit`, went with the catastro), so no gate could ever see it red.
+  - **The harness had never once looked at this signal.** An orange rectangle framed every link on
+    the site for weeks with `measure-cursor-luz.py` green, because it watched the pool and never the
+    edge. Three families were added — the signal does not enclose the target (only the bottom edge,
+    never the four), the brasa follows the hand (its centre of mass moves with the pointer), and the
+    pool dies inward with no hard step at the edge — **plus a fourth on a narrow target**, because
+    on `.obra-abrir` (1440px) the clamp never executes and a regression removing it would go
+    unnoticed. All four were seen red against the real failure before being accepted.
+  - **Two of those gates were themselves tautological on the first pass, and both were caught.** The
+    step-based one came out **green** against the un-feathered code: `.obra-abrir` spans the whole
+    viewport so it has no "outside" on the left, and the top edge shares a pixel with the next
+    scene's `border-t`, a static element that dominated the reading. It measures the delta row by
+    row between lit and unlit now, which cancels anything static, and the metric is the **width of
+    the ramp** (rows from 10% to 90% of the plateau), calibrated live: 11/11/11/11 rows at
+    `PLUMA = 14` against 5/4/4/4 at `PLUMA = 5`, threshold 8. The earlier threshold accepted a ramp
+    of ~3px, so **`PLUMA = 5` passed the gate that existed to defend `14`** — the only thing holding
+    the value was a comment. It also gained an amplitude floor: with no pool to measure (module
+    absent, `pot` never rising) it used to compare noise against noise and pass; it now fails
+    saying so, and that was seen red by aborting the `hyprCursor` chunk over the network.
+  - Gates: `lidia-naive-tester` **7,8/10, would contact, zero P0** — she checked the contiguous
+    Stack names ("C" next to "C++" and "CSS") and the brasa never picks the neighbour.
+    `vera-art-director` **BLOCK residual 7,3/10, zero actionable P0s**, same shape as Vice (7,12)
+    and the cimientos (7,42); she verifies per-pixel that all four edges are single smooth peaks
+    with no step, and that the signal went from **+0,003 to +100/255** of luminance delta on
+    `.hero-mail` — from imperceptible to unmistakable.
+  - Open, and recorded in the spec: **`.hero-mail:focus-visible` under Hyprland is
+    `color: var(--l1); outline: none`** — tabbing to the hero's mail link shows no focus indicator
+    at all (WCAG 2.4.7). It is **identical on `main`**, predates this branch, and `themes.css` was
+    out of scope here. Also: the keyboard focus ring on `.obra-abrir`/`.cim-nombre` is still the
+    2px `--l1` full box Aoshi just vetoed for the mouse (not an error — a strong outline is correct
+    for accessibility — but the two channels now speak different vocabularies, and whether to close
+    that gap is a product decision); and the pool goes out entirely over an obra row's thumbnail,
+    because the image paints above the button covering the row and the cursor resolves the image,
+    which is not in `PRESSABLE`. That last one is **not a regression** — the old edge died there
+    too — and it is the same family as the occluded-target commission.
 
 - **Hyprland's Stack scene is MERGED** (`2026-09-09-hyprland-stack-cimientos`, spec state
   `en ejecucion` until Aoshi reviews it on the real site): the catastro is retired and

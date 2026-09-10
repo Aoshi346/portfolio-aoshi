@@ -25,6 +25,27 @@ Cada asercion nace de un fallo real ya pagado en este repo:
   5. En movil (390x844) el modulo NO se descarga. Se comprueba por red, no
      por inspeccion visual: un modulo cargado y luego oculto sigue costando.
   6. `destroy()` deja el DOM sin lienzo y sin la clase `.hypr-cursor-ready`.
+  8. La senal del pulsable no encierra la diana: solo un tramo corto de la
+     arista inferior se enciende, nunca las otras tres. Nace de un fallo
+     real: hasta el 2026-09-10 el cursor pintaba `ctx.strokeRect` sobre la
+     caja ENTERA de cada pulsable y este arnes estuvo semanas en verde con
+     un rectangulo naranja rodeando cada enlace de la pagina -- vigilaba el
+     charco por familias y nunca miro la senal en si.
+  9. El tramo encendido se mueve con la mano: su centro se desplaza al pasar
+     el raton del 25% al 75% del ancho de la diana, en el mismo sentido.
+  10. El charco muere hacia dentro (emplumado), sin escalon a canto vivo en
+      la arista. La version del brief de este mismo gate (perfil crudo de
+      una sola captura sobre la arista IZQUIERDA de ".obra-abrir") salio en
+      VERDE contra el codigo sin la pluma -- un instrumento que no podia
+      cazar el fallo que decia cazar, por dos motivos de la pagina real: esa
+      arista no tiene exterior que capturar (`inset: 0` sobre la fila
+      entera, coincide con el borde del viewport) y la arista superior lleva
+      un `border-t` ajeno de la escena siguiente que dominaba el perfil. Se
+      reescribio para medir el DELTA fila a fila entre encendido y apagado,
+      que cancela lo que ya estaba pintado antes del cursor. Y su piso de
+      ruido (`RUIDO_SUELO`) estaba calibrado contra UNA sola corrida en rojo
+      leida a ojo; se recalibro contra 10 repeticiones de la misma medida en
+      apagado-apagado (detalle junto a la constante, mas abajo).
 
 Selectores de la asercion 2, verificados contra la pagina real servida (no
 adivinados): el brief traia ".obra-titular, [data-cartel] button, button" a
@@ -592,6 +613,426 @@ def contraste_pareado(
     return pares, texto_rgb
 
 
+# --- Familias 8 y 9: la senal del pulsable no encierra la diana -------------
+#
+# Nacen de un fallo real: hasta el 2026-09-10 el cursor pintaba
+# `ctx.strokeRect` sobre la caja ENTERA de cada pulsable, y este arnes estuvo
+# semanas en verde con un rectangulo naranja rodeando cada enlace de la
+# pagina. Vigilaba el charco por familias y NUNCA miro la senal. Un gate que
+# no mira la pieza que el visitante ve no vigila nada.
+
+# Un pixel esta "encendido" si la diferencia contra la captura sin puntero es
+# a la vez FUERTE y NARANJA. Solo por magnitud no vale: el fondo generativo se
+# mueve entre las dos capturas y produce diferencias de varias unidades en
+# todo el encuadre.
+ENCENDIDO_DELTA_R = 30
+ENCENDIDO_SESGO = 15
+
+# Techo de espera a que el charco se apague antes de capturar "apagado"
+# (Familias 8 y 9). Un `pg.wait_for_timeout` fijo (900ms, como usa el resto
+# del arnes para RELEVO_ESPERA_MS) es un cronometro, y en esta sandbox
+# miente: `pot` decae fotograma a fotograma con `POT_SMOOTHING` 0.22 y, bajo
+# `--use-gl=swiftshader`, `requestAnimationFrame` llega cada 200-400ms en vez
+# de cada ~16 -- 900ms pueden ser solo tres fotogramas, y `pot` seguir muy
+# por encima de apagado. Capturar ahi mediria la mitad del efecto encendido
+# como si fuera el fondo "apagado" y el gate podria salir VERDE por
+# accidente, no porque la senal encierre menos, sino porque la resta contra
+# un fondo todavia iluminado se queda corta. La correccion es la misma que
+# `esperar_pot_asentada()` ya aplica en sentido contrario: sondear el propio
+# `pot`, no el reloj. Si no asienta a tiempo, el gate FALLA explicitamente
+# (nunca sigue para medir otra cosa con el charco a medio apagar).
+APAGADO_POT_MAXIMO = 0.02
+# 12000, no 6000: decaer `pot` de 1,0 a 0,02 con `POT_SMOOTHING` 0.22 toma
+# unos 16 fotogramas (0.78^16 ~= 0.019), y bajo `--use-gl=swiftshader` el
+# `requestAnimationFrame` de esta sandbox llega cada 200-400ms en vez de cada
+# ~16 -- 16 fotogramas son entre 3,2s y 6,4s, ya rozando o superando el techo
+# viejo de 6000ms. Con carga de maquina (otro proceso, otro arnes) el mismo
+# calculo se va a 4,8-6,4s de sobra, asi que el techo viejo podia poner el
+# gate en rojo por lentitud del instrumento, no por un defecto del cursor.
+# 12000ms deja el doble de margen sobre el peor caso calculado sin tocar el
+# mecanismo: sigue siendo sondeo por estado con fallo explicito si no asienta.
+APAGADO_TIMEOUT_MS = 12000
+APAGADO_INTERVALO_MS = 100
+
+
+def _esperar_pot_apagada(pg, fallos: list, contexto: str) -> bool:
+    """Sondea `potencia(pg)` hasta que baje de `APAGADO_POT_MAXIMO` o se agote
+    `APAGADO_TIMEOUT_MS`. Devuelve True si asento a tiempo; si no, anade un
+    fallo EXPLICITO a `fallos` y devuelve False -- el llamador tiene que
+    abortar esa medida en vez de capturar con el charco todavia encendido."""
+    transcurrido = 0
+    while transcurrido < APAGADO_TIMEOUT_MS:
+        actual = potencia(pg)
+        if actual < APAGADO_POT_MAXIMO:
+            return True
+        pg.wait_for_timeout(APAGADO_INTERVALO_MS)
+        transcurrido += APAGADO_INTERVALO_MS
+    fallos.append(
+        f"el charco no se apaga en {contexto}: pot={potencia(pg)} tras "
+        f"{APAGADO_TIMEOUT_MS}ms, esperado por debajo de {APAGADO_POT_MAXIMO}"
+    )
+    return False
+
+
+def _pixeles_encendidos(pg, fallos: list, caja: dict, selector: str, punto=None):
+    """Devuelve (ancho, alto, set de (x, y) encendidos) dentro de la caja.
+
+    Captura "apagado" y "encendido" con el puntero FIJO sobre `selector`
+    durante toda la medida -- nunca se aparta -- conmutando el propio EFECTO
+    (los dos `<canvas>`, ocultos por `visibility`) en vez de la mano. Es el
+    mismo metodo que `contraste_pareado()` (ver punto 6 de la cabecera del
+    modulo): apartar el raton de `.obra-abrir` deshace `relevo()` del cartel
+    y el titular cambia de color, asi que "apagado" (raton lejos) y
+    "encendido" (raton puesto) eran dos escenas de DOM DISTINTAS -- la
+    diferencia medida no era solo el charco. Aqui la unica variable entre
+    las dos capturas es si el lienzo esta pintado o no.
+
+    Se queda con los pixeles cuya diferencia es fuerte y naranja (`--l1` es
+    255 90 52: sube mucho el rojo y casi nada el azul). La mano no cuenta
+    como encendida: es `--catch` (255 217 204), que sube el azul tanto como
+    el rojo.
+    """
+    clip = {"x": caja["x"], "y": caja["y"], "width": caja["width"], "height": caja["height"]}
+
+    apuntar(pg, selector, punto)
+    esperar_pot_asentada(pg)
+
+    _selectores_js = ", ".join(f"'{sel}'" for sel in LIENZOS)
+    ocultar = (
+        f"() => {{ [{_selectores_js}].forEach((sel) => {{ const c = document.querySelector(sel);"
+        " if (c) c.style.setProperty('visibility', 'hidden', 'important'); }); }"
+    )
+    mostrar = (
+        f"() => {{ [{_selectores_js}].forEach((sel) => {{ const c = document.querySelector(sel);"
+        " if (c) c.style.removeProperty('visibility'); }); }"
+    )
+
+    pg.evaluate(ocultar)
+    apagado = Image.open(io.BytesIO(pg.screenshot(clip=clip))).convert("RGB")
+    pg.evaluate(mostrar)
+    encendido = Image.open(io.BytesIO(pg.screenshot(clip=clip))).convert("RGB")
+
+    w, h = encendido.size
+    a, e = apagado.load(), encendido.load()
+    vivos = set()
+    for y in range(h):
+        for x in range(w):
+            dr = e[x, y][0] - a[x, y][0]
+            db = e[x, y][2] - a[x, y][2]
+            if dr >= ENCENDIDO_DELTA_R and (dr - db) >= ENCENDIDO_SESGO:
+                vivos.add((x, y))
+    return w, h, vivos
+
+
+def gate_brasa(pg, fallos: list) -> None:
+    """Familia 8: la senal no encierra la diana."""
+    # Estas familias corren ANTES de la asercion 3 (que es la que hasta ahora
+    # desplazaba hasta PULSABLE_SCROLL): sin este scroll explicito la caja se
+    # calcula con la diana todavia fuera de pantalla y `page.screenshot(clip=...)`
+    # revienta con "Clipped area is either empty or outside the resulting
+    # image" -- medido en la corrida en rojo de este mismo gate.
+    pg.locator(PULSABLE_SCROLL).first.scroll_into_view_if_needed()
+    pg.wait_for_timeout(600)
+    caja = pg.locator(PULSABLE_SCROLL).first.bounding_box()
+    resultado = _pixeles_encendidos(pg, fallos, caja, PULSABLE_SCROLL)
+    if resultado is None:
+        return
+    w, h, vivos = resultado
+
+    banda = 3  # px de tolerancia por arista: el antialias del trazo
+    for nombre, conjunto in (
+        ("SUPERIOR", {p for p in vivos if p[1] < banda}),
+        ("IZQUIERDA", {p for p in vivos if p[0] < banda}),
+        ("DERECHA", {p for p in vivos if p[0] >= w - banda}),
+    ):
+        if conjunto:
+            fallos.append(
+                f"la senal enciende la arista {nombre} de {PULSABLE_SCROLL}: "
+                f"{len(conjunto)} px encendidos, esperado 0"
+            )
+
+    abajo = {p for p in vivos if p[1] >= h - banda}
+    if not abajo:
+        fallos.append(f"la senal no enciende nada en la arista INFERIOR de {PULSABLE_SCROLL}")
+        return
+
+    xs = sorted({p[0] for p in abajo})
+    tramo = xs[-1] - xs[0] + 1
+    # Umbral calibrado contra el tramo real medido en esta misma diana
+    # (informe final, MENOR 6): 10,6% del ancho de `.obra-abrir` (152 de
+    # 1440 px) con la calibracion actual (`BRASA_ANCHO_FACTOR = 0.75`). El
+    # 60% original dejaba 5,7x de margen sobre ese numero -- una regresion
+    # que ensanchara la brasa hasta una barra de 700px cruzando media
+    # pantalla (49%) habria seguido pasando. 25% deja ~2,4x de margen real
+    # sobre el 10,6% medido y sigue cazando esa barra de 700px.
+    if tramo >= w * 0.25:
+        fallos.append(
+            f"el tramo encendido de {PULSABLE_SCROLL} ocupa {tramo} px sobre {w} "
+            f"({tramo / w:.0%}), esperado por debajo del 25%"
+        )
+
+
+def gate_brasa_sigue(pg, fallos: list) -> None:
+    """Familia 9: el tramo encendido se mueve con la mano y en su mismo sentido."""
+    pg.locator(PULSABLE_SCROLL).first.scroll_into_view_if_needed()
+    pg.wait_for_timeout(600)
+    caja = pg.locator(PULSABLE_SCROLL).first.bounding_box()
+    centros = []
+    for frac in (0.25, 0.75):
+        punto = (caja["x"] + caja["width"] * frac, caja["y"] + caja["height"] / 2)
+        resultado = _pixeles_encendidos(pg, fallos, caja, PULSABLE_SCROLL, punto)
+        if resultado is None:
+            return
+        _, h, vivos = resultado
+        abajo = [p[0] for p in vivos if p[1] >= h - 3]
+        if not abajo:
+            fallos.append(
+                f"no hay tramo encendido con la mano al {int(frac * 100)}% de {PULSABLE_SCROLL}"
+            )
+            return
+        centros.append(sum(abajo) / len(abajo))
+
+    desplazamiento = centros[1] - centros[0]
+    minimo = caja["width"] * 0.2
+    if desplazamiento <= minimo:
+        fallos.append(
+            f"el tramo no sigue a la mano en {PULSABLE_SCROLL}: su centro se mueve "
+            f"{desplazamiento:.0f} px al pasar el raton del 25% al 75% del ancho "
+            f"(minimo exigido {minimo:.0f} px)"
+        )
+
+
+# La diana donde el acotado (`Math.min(anchoBrasa, rect.width)` y el `clamp`
+# del centro en `hyprCursor.ts`) es lo que decide: en ".obra-abrir" (1440px)
+# el tramo mide 194px y ni el Math.min ni el clamp llegan a activarse nunca,
+# asi que las familias 8 y 9 (que solo miden esa diana) no ejercitan la
+# pieza de diseno "B contiene a A gratis" que el spec declara. Los nombres
+# de los cimientos (105x34, el tramo sin acotar ocuparia el 86% del ancho)
+# son la diana donde el acotado SI decide.
+DIANA_ESTRECHA = "[data-cimientos] .cim-nombre"
+
+
+def gate_brasa_contenida(pg, fallos: list) -> None:
+    """Familia 8b: en una diana ESTRECHA lo encendido no se sale de su caja.
+
+    Nace del INFORME FINAL, IMPORTANTE 4: una regresion que borrase el
+    `Math.min` o el `clamp` de `anchoBrasa`/`centroBrasa` dejaria la brasa
+    invadiendo la caja del nombre vecino -- el riesgo B que el spec anota
+    como "no confirmado por captura" -- con las familias 8, 9 y 10 en verde,
+    porque ninguna de las tres corre sobre una diana lo bastante estrecha
+    para que el acotado tenga algo que hacer.
+
+    Captura una franja PADEADA (`PAD` px a cada lado, fuera de la caja de la
+    diana) y comprueba que ningun pixel encendido de la arista inferior cae
+    en el margen exterior. No es la asercion de proporcion de la familia 8
+    (el tramo real aqui ocupa ~86% del ancho, muy por encima de cualquier
+    umbral razonable de proporcion): es de CONTENCION -- no invadir, no
+    importa cuanto ocupe dentro de la propia caja.
+    """
+    loc = pg.locator(DIANA_ESTRECHA).first
+    loc.scroll_into_view_if_needed()
+    pg.wait_for_timeout(600)
+    caja = loc.bounding_box()
+    if caja is None:
+        fallos.append(f"{DIANA_ESTRECHA} no tiene caja: no se pudo medir el acotado de la brasa")
+        return
+
+    pad = 12
+    clip = {
+        "x": caja["x"] - pad,
+        "y": caja["y"],
+        "width": caja["width"] + 2 * pad,
+        "height": caja["height"],
+    }
+    resultado = _pixeles_encendidos(pg, fallos, clip, DIANA_ESTRECHA)
+    if resultado is None:
+        return
+    w, _, vivos = resultado
+
+    fuera = {p for p in vivos if p[0] < pad or p[0] >= w - pad}
+    if fuera:
+        fallos.append(
+            f"la brasa de {DIANA_ESTRECHA} se sale de su propia caja: {len(fuera)} px "
+            f"encendidos en el margen exterior (pad={pad}px) -- riesgo B del spec, "
+            f"invadiria la caja del nombre vecino"
+        )
+
+
+# --- Familia 10: el charco no tiene canto duro ------------------------------
+#
+# El charco va recortado a la caja de la diana, y eso NO se quita: es lo unico
+# que dice hasta donde llega la zona pulsable. Lo que se quita es el CORTE, que
+# es lo que se leia como caja. El gate cruza la arista pixel a pixel y exige
+# que no haya escalon.
+#
+# La primera version de este gate (la del brief, perfil CRUDO de una sola
+# captura sobre la arista IZQUIERDA de PULSABLE_SCROLL) salio en VERDE contra
+# el codigo sin la pluma -- paso 2, rojo obligatorio, y no lo dio. Dos fallos
+# de instrumento, verificados con `elementFromPoint` en la pagina real:
+#   1. ".obra-abrir" es `inset: 0` sobre la fila ENTERA (x de 0 a 1440, el
+#      ancho del viewport). Su arista izquierda coincide con el borde del
+#      viewport: no hay franja "fuera de la caja" que capturar, y el clip
+#      con x negativo se recorta contra el viewport, asi que las dos mitades
+#      de la franja miden el mismo interior.
+#   2. La arista SUPERIOR si tiene exterior, pero justo ahi el DOM pinta un
+#      `border-t border-line` de la SIGUIENTE `.scene` (Tailwind, ajeno por
+#      completo al cursor) -- un escalon real de ~0,013 de luminancia que
+#      dominaba el perfil crudo y hacia indistinguible el corte del charco
+#      del borde de la maqueta.
+#
+# La correccion no toca la arista (sigue siendo el filo del recorte) ni el
+# fondo (el `border-t` es de layout, fuera de alcance de esta tarea): mide la
+# DIFERENCIA fila a fila entre "encendido" y "apagado" (delta = luminancia
+# encendido - luminancia apagado) en vez del perfil crudo de una sola
+# captura. Cualquier cosa que ya estuviera pintada ANTES del cursor -- el
+# `border-t`, el fondo generativo en ese instante -- esta en las DOS capturas
+# por igual y se cancela en la resta; lo unico que sobrevive en el delta es
+# el propio efecto del hueco. Verificado contra la corrida en rojo: el delta
+# es ruido (banda +-0,002) en toda la franja hasta la arista y salta de golpe
+# a unos -0,026 en la fila exacta donde `huecoCtx.clip()` empieza a pintar --
+# el `border-t` no aparece en el delta.
+#
+# RUIDO_SUELO -- calibrado contra REPETICIONES, no contra una sola corrida
+# (ronda de arreglo 1: el 0,003 original salia de UNA lectura de la corrida
+# en rojo, "+-0,002" a ojo). Medido con `/tmp/calibrar-ruido-suelo.py` --
+# misma franja, mismo punto, comparando DOS capturas "apagado" consecutivas
+# (raton lejos en las dos): eso aisla justo el ruido que preocupa, cuanto se
+# mueve el shader por su cuenta entre dos capturas, sin que ningun efecto del
+# cursor lo contamine. 10 repeticiones contra este mismo build (2026-09-10):
+#   [0.00298, 0.00253, 0.00341, 0.00261, 0.00257, 0.00153, 0.00229, 0.00280,
+#    0.00244, 0.00266]
+#   min 0.00153 -- max 0.00341 -- mediana 0.00259
+# El piso se fija con margen sobre el MAXIMO observado (0,00341), no sobre
+# la mediana: 0,005 deja un 47% de margen sobre el peor caso visto en las 10
+# repeticiones.
+RUIDO_SUELO = 0.005
+
+# INFORME FINAL, CRITICO 1 y CRITICO 2 (2026-09-10). La version anterior de
+# este gate comparaba el ESCALON mas brusco entre dos filas contiguas contra
+# un tope proporcional a `amplitud / RAMPA_MINIMA_PX`. Dos fallos reales,
+# los dos verificados con datos, no por inspeccion:
+#
+#   CRITICO 1 -- el tope se movia EN LA MISMA PROPORCION que `amplitud`, asi
+#   que si `amplitud` caia al nivel del propio ruido del shader (el modulo
+#   sin montar, el charco que no llega a encenderse, la diana que cambia de
+#   caja, o una pluma tan grande que se coma el charco entero), `escalon`
+#   tambien caia al nivel del ruido y el gate SEGUIA saliendo verde: no podia
+#   distinguir "emplumado perfecto" de "no hay nada que emplumar". El
+#   disparador no era hipotetico -- con `window.__hyprCursor__` ausente,
+#   `potencia()` devuelve -1, `_esperar_pot_apagada` vuelve `True` al
+#   instante (-1 < 0,02) y `esperar_pot_asentada` devuelve -1 en la primera
+#   vuelta: con el modulo del cursor completamente ausente, la familia 10
+#   salia en VERDE.
+#
+#   CRITICO 2 -- el escalon de UN solo paso es una medida de un pixel de
+#   resolucion, sensible al ruido de cada fila por separado, y con
+#   `RAMPA_MINIMA_PX = 7` / `PLUMA_MARGEN = 1,5` el tope aceptaba cualquier
+#   rampa mas ancha que ~4,7 filas. Medido contra este build: `PLUMA = 5`
+#   (el valor que el defecto original -- el charco recortado volviendo a
+#   leerse como caja de cantos rectos -- exige rechazar) pasaba el gate viejo
+#   con margen (escalon 0,0069-0,0091 contra un tope de 0,0112).
+#
+# La correccion no ajusta el tope del escalon -- cambia la METRICA. En vez
+# del paso mas brusco, se mide cuantas FILAS tarda el delta en pasar del 10%
+# al 90% de su propia meseta (la media de las ultimas 5 filas capturadas, ya
+# dentro de la diana -- no un maximo puntual, que es sensible al ruido de una
+# sola fila). Esa anchura sigue a `PLUMA` casi 1:1 y es mucho mas estable
+# fila a fila que un escalon puntual. Medido con 4 repeticiones consecutivas
+# contra este mismo build, alternando el valor de `PLUMA` sin tocar nada mas
+# (revertido con `git checkout -- src/components/hyprCursor.ts` entre una
+# serie y la otra, nunca `git stash`):
+#   PLUMA=14 (el valor final): 11, 11, 11, 11 filas -- las CUATRO idénticas.
+#   PLUMA=5  (el que el defecto exige rechazar): 5, 4, 4, 4 filas.
+# El hueco entre 4-5 y 11 es mas de 2x, muy por encima del ruido de +-1 fila
+# observado en las repeticiones.
+AMPLITUD_MINIMA_FACTOR = 4  # ver CRITICO 1: multiplo de RUIDO_SUELO por
+# debajo del cual la meseta medida no se distingue del ruido del shader y el
+# gate no puede seguir (falla explicito en vez de dar por buena una rampa
+# que no midio).
+RAMPA_MINIMA_FILAS = 8  # ver CRITICO 2: entre el techo rojo (4-5, PLUMA=5) y
+# el suelo verde (11, PLUMA=14) medidos arriba, con margen real a los dos
+# lados (1,6x sobre el peor rojo, 1,375x bajo el peor verde).
+
+
+def gate_pluma(pg, fallos: list) -> None:
+    """Familia 10: el charco muere hacia dentro, sin escalon en la arista."""
+    pg.locator(PULSABLE_SCROLL).first.scroll_into_view_if_needed()
+    pg.wait_for_timeout(600)
+    caja = pg.locator(PULSABLE_SCROLL).first.bounding_box()
+    # Franja vertical que cruza la arista SUPERIOR: 20px fuera (encima), 20px
+    # dentro, centrada en la x donde `apuntar()` deja el puntero (no en el
+    # centro geometrico de la caja: el gradiente esta centrado en el puntero,
+    # no en la caja). 8 columnas de ancho para que el ruido del shader no
+    # decida.
+    punto = (caja["x"] + caja["width"] * 0.4, caja["y"] + caja["height"] / 2)
+    clip = {
+        "x": punto[0] - 4,
+        "y": caja["y"] - 20,
+        "width": 8,
+        "height": 40,
+    }
+
+    def perfil(img) -> list:
+        px = img.load()
+        w, h = img.size
+        return [sum(_lum(px[x, y]) for x in range(w)) / w for y in range(h)]
+
+    pg.mouse.move(4, 4)
+    if not _esperar_pot_apagada(pg, fallos, f"{PULSABLE_SCROLL} (capturando 'apagado', familia 10)"):
+        return
+    apagado = perfil(Image.open(io.BytesIO(pg.screenshot(clip=clip))).convert("RGB"))
+
+    apuntar(pg, PULSABLE_SCROLL, punto)
+    esperar_pot_asentada(pg)
+    encendido = perfil(Image.open(io.BytesIO(pg.screenshot(clip=clip))).convert("RGB"))
+
+    delta = [e - a for e, a in zip(encendido, apagado)]
+
+    # CRITICO 1: precondicion. La meseta (media de las 5 ultimas filas, ya
+    # dentro de la diana) tiene que superar con claridad el ruido del shader
+    # antes de comparar nada.
+    meseta = sum(delta[-5:]) / 5
+    amplitud_minima = RUIDO_SUELO * AMPLITUD_MINIMA_FACTOR
+    if abs(meseta) < amplitud_minima:
+        fallos.append(
+            f"la familia 10 no midio charco alguno en {PULSABLE_SCROLL}: meseta "
+            f"{meseta:.4f} esta al nivel del ruido del shader (suelo {amplitud_minima:.4f}) "
+            f"-- el modulo pudo no montarse, el charco no encenderse, la diana haber "
+            f"cambiado de caja, o la pluma haberse comido el charco entero; sin una "
+            f"meseta clara el gate no puede distinguir 'emplumado perfecto' de "
+            f"'no hay nada que emplumar'"
+        )
+        return
+
+    # CRITICO 2: cuantas filas tarda el delta en pasar del 10% al 90% de su
+    # propia meseta.
+    umbral10 = 0.10 * meseta
+    umbral90 = 0.90 * meseta
+    fila10 = fila90 = None
+    for i, v in enumerate(delta):
+        if fila10 is None and abs(v) >= abs(umbral10):
+            fila10 = i
+        if abs(v) >= abs(umbral90):
+            fila90 = i
+            break
+
+    if fila10 is None or fila90 is None or fila90 <= fila10:
+        fallos.append(
+            f"no se pudo medir la anchura de la rampa en {PULSABLE_SCROLL}: "
+            f"fila10={fila10}, fila90={fila90} sobre {len(delta)} filas capturadas "
+            f"(meseta {meseta:.4f})"
+        )
+        return
+
+    ancho = fila90 - fila10
+    if ancho < RAMPA_MINIMA_FILAS:
+        fallos.append(
+            f"el charco corta a canto vivo en la arista de {PULSABLE_SCROLL}: el delta "
+            f"encendido-apagado pasa del 10% al 90% de su meseta ({meseta:.4f}) en "
+            f"{ancho} filas, esperado un minimo de {RAMPA_MINIMA_FILAS}"
+        )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -624,6 +1065,23 @@ def main() -> int:
         apuntar(pg, PARRAFO)
         if potencia(pg) > 0.05:
             fallos.append(f"charco encendido sobre texto: pot={potencia(pg)}")
+
+        # 8 y 9. la senal no encierra la diana, y el tramo sigue a la mano
+        # (ver el bloque de comentarios junto a `_pixeles_encendidos` mas
+        # arriba). Corre sobre la misma pagina de Hyprland a 1440x900 que la
+        # asercion 3.
+        gate_brasa(pg, fallos)
+        gate_brasa_sigue(pg, fallos)
+
+        # 8b. el acotado de la brasa (Math.min/clamp en hyprCursor.ts) sobre
+        # una diana ESTRECHA -- las familias 8 y 9 solo corren sobre
+        # ".obra-abrir" (1440px), donde el acotado nunca llega a activarse
+        # (ver el comentario junto a `gate_brasa_contenida` mas arriba).
+        gate_brasa_contenida(pg, fallos)
+
+        # 10. el charco muere hacia dentro, sin escalon en la arista (ver el
+        # bloque de comentarios junto a gate_pluma mas abajo).
+        gate_pluma(pg, fallos)
 
         # 7. contraste por glifo contra el peor fotograma del shader. Solo
         # sobre las dianas donde el charco enciende. ".obra-abrir" no tiene

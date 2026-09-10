@@ -6,7 +6,11 @@ export interface HyprCursorHandle {
  * Cursor propio de Hyprland: no dibuja un objeto, ilumina.
  *
  * El charco de luz existe SOLO dentro de lo que se puede pulsar, recortado a
- * canto vivo por el borde del elemento. Sobre texto corrido no se enciende
+ * la caja del elemento con el filo emplumado hacia dentro (spec
+ * 2026-09-10: ya no a canto vivo -- ese corte se leia como una caja de
+ * formulario sobre el fondo brillante). La arista de la caja se marca con
+ * la brasa, un tramo de la arista inferior centrado en la mano, no con un
+ * filete alrededor de todo el borde. Sobre texto corrido no se enciende
  * nada. La lectura es anterior al lenguaje: lo que se ilumina responde.
  *
  * Reparto de senales, identico al ya cerrado en Vice porque el problema es el
@@ -46,6 +50,23 @@ const RADIO_PULSADO = 1.25;
 const PUNTO_REPOSO = 3.2;
 const PUNTO_PULSADO = 2.4;
 
+/*
+ * La brasa que sustituye al canto (spec 2026-09-10). El ancho NO es un numero
+ * suelto: sale del mismo `radio` que ya calcula el charco, que a su vez lo
+ * dicta la altura del elemento y no la seccion. Asi una fila de obra de 108px
+ * y un nombre de Stack de 34 reciben la misma ley.
+ *
+ * Va acotado a la caja de la diana, y esa cota tiene consecuencia de diseno:
+ * en una diana mas estrecha que el tramo la brasa cubre la arista entera, que
+ * es exactamente la opcion A que se descarto por si sola. B contiene a A sin
+ * que nadie programe el caso.
+ */
+const BRASA_ANCHO_FACTOR = 0.75;
+// 2px en `--l1`: es la linea de brasa que los cimientos estrenaron como suelo
+// de la escena Stack. La senal del cursor habla la gramatica que el tema ya
+// tiene en vez de anadir una forma propia.
+const BRASA_GROSOR = 2;
+
 // El DPR se acota: por encima de 2 el coste de pintado sube sin que se note.
 const DPR_MAXIMO = 2;
 
@@ -66,10 +87,36 @@ const HUECO_MEDIO = 0.5;
  * Rampa que ilumina (fondo ya oscuro). Mucho mas baja a proposito: sobre un
  * panel casi negro el contraste de partida es ~9,7:1 y aclarar SI lo baja,
  * asi que aqui el limite lo pone AA y no el diseno. `--l3` (255 160 60) es
- * el ambar del tema, el mismo que ya usa el canto.
+ * el ambar del tema -- un tono distinto del `--l1` (255 90 52) que pinta la
+ * brasa. El hueco que ilumina y la brasa son dos senales, no una, y no
+ * comparten color.
  */
 const LUZ_CENTRO = 0.14;
 const LUZ_MEDIO = 0.07;
+
+/*
+ * La pluma del recorte. El charco SIGUE recortado a la caja de la diana
+ * —eso es lo unico que dice hasta donde llega la zona pulsable— pero el
+ * filo se difumina hacia dentro, que es lo que se leia como caja. Se
+ * difumina el filo, no se quita el limite: el charco sigue muriendo dentro
+ * de la diana y nunca fuera.
+ *
+ * El valor final (14) se decidio con la matriz completa del gate de
+ * contraste (familia de `.obra-abrir`), no con un umbral leido de una sola
+ * pasada -- ver el spec, seccion `## Registro de implementacion`, riesgo C.
+ * A PLUMA=5 el peor caso queda en 15,06:1 (margen amplisimo) pero el
+ * recorte casi no se difumina y vuelve a leerse como una caja de cantos
+ * rectos sobre el fondo brillante -- exactamente lo que este spec vino a
+ * quitar. A PLUMA=14 el peor caso baja a 13,96:1: sigue cerca de 3 veces el
+ * suelo de accesibilidad AA (4,5:1) y cerca de 4,3 veces el minimo que
+ * exige el propio gate (0,15 de mejora), y el filo ya deja de leerse como
+ * caja. Orden de prioridad si algun dia hay que volver a tocar esto:
+ * primero el suelo de accesibilidad, despues que el corte no se lea como
+ * caja, y solo despues el ratio absoluto. No tocar `HUECO_CENTRO`,
+ * `HUECO_MEDIO`, `LUZ_CENTRO`, `LUZ_MEDIO` ni `LUM_OSCURA` para recuperar
+ * contraste: se recorta la pluma, nunca la calibracion.
+ */
+const PLUMA = 14;
 
 export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   const controller = new AbortController();
@@ -78,7 +125,7 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   // Dos lienzos, no uno: el de abajo (`hueco`, z-index -4, debajo del
   // contenido) oscurece el fondo detras de las letras sin tocarlas. El de
   // arriba (`canvas`, z-index 70, el de siempre) se queda solo con el punto
-  // de la mano y el filete del canto. Invertir el signo del efecto (oscurecer
+  // de la mano y la brasa. Invertir el signo del efecto (oscurecer
   // en vez de aclarar) es lo que resuelve el conflicto con AA de raiz: ver
   // cabecera del modulo.
   const hueco = document.createElement("canvas");
@@ -151,7 +198,8 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
    * TAMBIEN debajo de cualquier fondo opaco propio de la diana o de un
    * ancestro suyo (una fila de creditos con rejilla al 78%, una fila de
    * indice con `--shot-fondo` solido): ahi el hueco queda tapado y el
-   * dispositivo degrada a un filete de 1px. La causa decide el mecanismo, no
+   * dispositivo degrada a la brasa y el punto de la mano, sin el charco que
+   * oscurece o ilumina. La causa decide el mecanismo, no
    * una lista de selectores -- una lista se desactualiza en cuanto cambia el
    * marcado de una seccion.
    *
@@ -387,6 +435,12 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
         Math.max(rect.height * RADIO_FACTOR, RADIO_MINIMO) * (pressed ? RADIO_PULSADO : 1);
       // Paso 3: un solo mecanismo activo por diana, nunca los dos.
       if (imagenDiana === pressable) {
+        // La pluma del recorte (spec 2026-09-10) NO se aplica aqui a
+        // proposito. Este mecanismo hoy no pinta en ningun sitio: su unica
+        // diana era `.credit` y se fue con el catastro de creditos, asi que
+        // ningun gate podria verlo en rojo. Cuando esta familia tenga diana
+        // ocluida nueva —encargo abierto, ver el docstring del arnes— la pluma
+        // entra con ella y se mide entonces, no antes.
         // Mismo centro, radio y rampa que el lienzo, escritos como
         // `radial-gradient` en linea. El centro va en coordenadas relativas
         // al elemento (`rect.left`/`rect.top` restados), porque
@@ -405,8 +459,10 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
             `rgb(${tinta} / 0) ${radio.toFixed(1)}px)`;
         }
       } else {
-        // El recorte ES el canto: el hueco termina en el filo exacto del
-        // elemento. Se pinta en el lienzo de ABAJO (-4), debajo del
+        // El hueco se recorta a la caja del elemento -- eso no cambia, es lo
+        // unico que dice hasta donde llega la zona pulsable -- pero el filo
+        // ya no es el canto: se empluma hacia dentro mas abajo, con
+        // `destination-out`. Se pinta en el lienzo de ABAJO (-4), debajo del
         // contenido: oscurece el fondo detras de las letras sin tocar el
         // texto, asi que el contraste sube en vez de bajar.
         huecoCtx.save();
@@ -420,15 +476,53 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
         luz.addColorStop(1, `rgb(${tinta} / 0)`);
         huecoCtx.fillStyle = luz;
         huecoCtx.fillRect(rect.left, rect.top, rect.width, rect.height);
+
+        // Se borra hacia dentro desde cada arista con `destination-out`. La
+        // pluma se acota a la mitad del lado para que en una diana estrecha no
+        // se coma el charco entero. Las esquinas se borran dos veces, lo que
+        // las deja mas blandas todavia: es lo que se quiere.
+        huecoCtx.globalCompositeOperation = "destination-out";
+        const plumaX = Math.min(PLUMA, rect.width / 2);
+        const plumaY = Math.min(PLUMA, rect.height / 2);
+        const aristas: Array<[number, number, number, number, number, number, number, number]> = [
+          [rect.left, 0, rect.left + plumaX, 0, rect.left, rect.top, plumaX, rect.height],
+          [rect.right, 0, rect.right - plumaX, 0, rect.right - plumaX, rect.top, plumaX, rect.height],
+          [0, rect.top, 0, rect.top + plumaY, rect.left, rect.top, rect.width, plumaY],
+          [0, rect.bottom, 0, rect.bottom - plumaY, rect.left, rect.bottom - plumaY, rect.width, plumaY],
+        ];
+        for (const [gx0, gy0, gx1, gy1, bx, by, bw, bh] of aristas) {
+          const borrado = huecoCtx.createLinearGradient(gx0, gy0, gx1, gy1);
+          borrado.addColorStop(0, "rgb(0 0 0 / 1)");
+          borrado.addColorStop(1, "rgb(0 0 0 / 0)");
+          huecoCtx.fillStyle = borrado;
+          huecoCtx.fillRect(bx, by, bw, bh);
+        }
+
         huecoCtx.restore();
       }
 
-      // El canto del elemento, encendido a la potencia del charco. Es lo que
-      // delimita la zona pulsable. Se queda en el lienzo de ARRIBA: es
-      // senal, no relleno, y necesita quedar por encima del contenido.
-      ctx.strokeStyle = `rgb(255 90 52 / ${(0.85 * pot).toFixed(3)})`;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(rect.left + 0.5, rect.top + 0.5, rect.width - 1, rect.height - 1);
+      // La brasa: un tramo de la arista inferior, centrado en la mano y
+      // acotado a la caja. Sustituye al filete de la caja ENTERA, que se leia
+      // como campo de formulario sobre texto y, sobre una diana de 1440px de
+      // ancho, como una caja que cruza la pantalla — y que ademas era
+      // indistinguible del anillo de foco de teclado, que es un `outline` de
+      // 2px en el mismo `--l1`. Se queda en el lienzo de ARRIBA: es senal, no
+      // relleno, y necesita ir por encima del contenido.
+      const anchoBrasa = Math.min(radio * BRASA_ANCHO_FACTOR, rect.width);
+      const centroBrasa = Math.min(
+        Math.max(pointerX, rect.left + anchoBrasa / 2),
+        rect.right - anchoBrasa / 2,
+      );
+      const brasaX = centroBrasa - anchoBrasa / 2;
+      // Extremos difuminados a cero: sin esto es una barra recortada, que es
+      // otra vez una forma con cantos duros.
+      const brasa = ctx.createLinearGradient(brasaX, 0, brasaX + anchoBrasa, 0);
+      const brasaAlfa = (0.85 * pot).toFixed(3);
+      brasa.addColorStop(0, "rgb(255 90 52 / 0)");
+      brasa.addColorStop(0.5, `rgb(255 90 52 / ${brasaAlfa})`);
+      brasa.addColorStop(1, "rgb(255 90 52 / 0)");
+      ctx.fillStyle = brasa;
+      ctx.fillRect(brasaX, rect.bottom - BRASA_GROSOR, anchoBrasa, BRASA_GROSOR);
     }
 
     // La mano. El anillo oscuro no es decoracion: garantiza contraste del
