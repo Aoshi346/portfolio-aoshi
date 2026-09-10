@@ -122,8 +122,9 @@ Contacto): son dos estratos dentro del margen.
 ## Composicion
 
 Numeros del prototipo `cimientos-a2.html`, medidos con Playwright el 2026-09-09 sobre un encuadre
-de contenido de **1294 px** (equivale al ancho de contenido a 1440 con margenes de `5vw`). Al
-portar, **las proporciones mandan sobre los pixeles**.
+de contenido de **1294 px**. El relleno real de la escena de Hyprland es `7vw` a cada lado, no
+`5vw` — a 1440 px de viewport eso da **1238 px** de contenido, no 1294. Al portar,
+**las proporciones mandan sobre los pixeles**.
 
 ### Escritorio (>= 1200 px)
 
@@ -305,10 +306,13 @@ los alcanza (pagado en B2 de Caelestia).
 
 **Modulo propio, DOM propio, y el generico se oculta entero.** Es el patron que Caelestia dejo
 probado dos veces (B3 con `projectScene.ts`, B4 con `credits.ts`): `hyprStackCimientos.ts` construye
-su propio arbol a partir de `skillGroups` y lo monta como hermano de `.credits` dentro de
-`[data-scene="credits"]`; `themes.css` oculta `.credits` entero bajo Hyprland (`display: none`) y
-oculta `[data-cimientos]` en Vice y Caelestia desde la hoja **base**, no desde cada tema — el
-patron aditivo se ha roto cuatro veces por olvidar el `display: none` de base.
+su propio arbol a partir de `skillGroups` y lo monta como **hijo** de `.credits`
+(`[data-scene="credits"]` es la SECCION misma, no un contenedor distinto: `src/sections/skills.ts`
+pone la clase `.credits` y `data-scene="credits"` en el mismo `<section>`) — hermano de
+`.credits-grid` y del `<h2>` de la seccion, no de `.credits`. `themes.css` oculta `.credits-grid`
+entero bajo Hyprland (`display: none`; ocultar `.credits` ocultaria tambien los cimientos, que
+cuelgan de ella) y oculta `[data-cimientos]` en Vice y Caelestia desde la hoja **base**, no desde
+cada tema — el patron aditivo se ha roto cuatro veces por olvidar el `display: none` de base.
 
 **`credits.ts` no se toca en esta fase.** Hoy construye, para los tres temas, las parcelas, franjas,
 frisos y conmutadores de grupo del catastro (comentario *"El catastro de Hyprland"* en el propio
@@ -329,7 +333,7 @@ despues, nunca a la vez que el rediseno. Queda anotado como deuda con nombre, no
 - `scripts/measure-catastro.py` (sus diez aserciones miden un dispositivo que ya no existe) y las
   tres aserciones de `verify.py` que comprueban `.credits-list { display: contents }` y la columna
   de rejilla de cada `.credit` bajo Hyprland. Se sustituyen por `measure-cimientos.py` y por un
-  marcador nuevo: bajo Hyprland `.credits` no se pinta y `[data-cimientos]` si.
+  marcador nuevo: bajo Hyprland `.credits-grid` no se pinta y `[data-cimientos]` si.
 
 **`data-scene` no se toca**: es como el sitio marca sus cinco secciones y como la coreografia las
 recorre. El modulo monta dentro de la escena, nunca la sustituye.
@@ -370,8 +374,11 @@ proyecto). Contra el build de produccion servido, nunca `npm run dev`. Con oyent
 todas las paginas, incluidas las de Vice y Caelestia.
 
 1. **Los cimientos se VEN en Hyprland.** Sin esto los demas gates se autoanulan: un nodo con
-   `display: none` no desborda ni descuadra. Y `.credits` (el generico) **no** se pinta bajo
-   Hyprland.
+   `display: none` no desborda ni descuadra. Y `.credits-grid` (el generico) **no** se pinta bajo
+   Hyprland — no `.credits`, que es la SECCION misma (`src/sections/skills.ts` pone esa clase y
+   `data-scene` en el mismo elemento): ocultar `.credits` ocultaria tambien los cimientos, que
+   estan montados dentro. El codigo y el arnes ya apuntan a `.credits-grid`; esta era la unica
+   frase del registro que decia lo contrario.
 2. **Los cimientos no existen en Vice ni en Caelestia** (comprobados por separado, no con un `AND`).
    Y la bandeja de Caelestia sigue con sus 23 piezas.
 3. **La entrada se ve.** Con la seccion encendida (`is-lit`) y `[data-cimientos]` entero bajo el
@@ -407,7 +414,7 @@ todas las paginas, incluidas las de Vice y Caelestia.
     Caelestia). Sin oyente en Vice y Caelestia, un fallo global en `themes.css` deja el gate en
     verde (pagado en el cursor de Caelestia).
 
-Y en `verify.py`: el marcador de Hyprland pasa a comprobar que `.credits` no se pinta y
+Y en `verify.py`: el marcador de Hyprland pasa a comprobar que `.credits-grid` no se pinta y
 `[data-cimientos]` si; los dos marcadores de Vice y Caelestia no cambian. `verify.py` debe salir
 con 0 fallos nuevos sobre `verify-baseline.json`.
 
@@ -585,7 +592,21 @@ vistos en rojo) esta cerrado. Lo que sigue abierto, y lo que mas cierra de los c
 - **Las siluetas del selector de escenas** que dibujan el catastro (fallo 4 del repaso): Aoshi pidio
   dejarlo para el final; sigue sin tocar.
 - **La limpieza de los nodos muertos de `credits.ts`**: tarea aparte, posterior a que la escena
-  este TERMINADA.
+  este TERMINADA. `STRIP_REPAINT_EVENT` de ese fichero ya no tiene ningun oyente (su unico
+  consumidor era el gesto 4 retirado de `hypr.choreography.ts`) y se va con la limpieza, igual que
+  `.credits-rail`, `.credits-glow` y `.credits-spark`, que ya no tienen CSS en ningun tema.
 - **La diana ocluida del arnes del cursor** (`measure-cursor-luz.py`): falla explicito con la nueva
   guarda `_diana_pinta()`, pero la familia "ilumina" sigue sin una diana ocluida real que medir —
   encargo pendiente para quien retome el cursor de Hyprland.
+- **`8fr 5fr 5fr` esta escrito a mano** en el bloque `LOS CIMIENTOS` de `themes.css`, no calculado.
+  Son los recuentos de las tres areas de `content.ts` (Interfaz 8, Backend y datos 5, Herramientas
+  5) — el catastro retirado los calculaba en runtime. La frase "de ancho proporcional a su
+  recuento" deja de ser cierta el dia que alguien anada o quite una tecnologia de un area, y ningun
+  gate compara las dos cosas: `measure-cimientos.py` mide que las columnas no se desborden, no que
+  su ancho siga la proporcion real de `skillGroups`.
+- **`check_catastro_measure()` se retiro de `verify.py`** junto con el catastro, y con ella
+  desaparecio la unica comprobacion automatica que vigilaba el relleno de `7vw` de la escena.
+  **`measure-cimientos.py` no esta enganchado a ningun sitio**: se lanza a mano, por decision
+  documentada (sigue el patron real del proyecto — `verify.py` no invoca ningun `measure-*.py`),
+  pero conviene que quede escrito aqui y no descubierto por quien busque por que nadie lo corre
+  solo.
