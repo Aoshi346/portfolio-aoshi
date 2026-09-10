@@ -9,8 +9,10 @@ export interface HyprStackCimientosHandle {
 /**
  * Los cimientos (spec 2026-09-09-hyprland-stack-cimientos): tres areas en
  * columnas sobre un suelo de brasa con los cinco lenguajes base. DOM propio
- * montado como hermano de `.credits` dentro de `[data-scene="credits"]`; el
- * generico se oculta entero desde themes.css (patron B3/B4 de Caelestia).
+ * montado como HIJO de `.credits` (`[data-scene="credits"]` es la seccion
+ * misma, no un contenedor distinto -- ver `src/sections/skills.ts`), hermano
+ * de `.credits-grid` y del `<h2>` de la seccion; el generico (`.credits-grid`)
+ * se oculta entero desde themes.css (patron B3/B4 de Caelestia).
  *
  * Sin GSAP: el disparo de la entrada es un IntersectionObserver anclado a la
  * caja del PROPIO dispositivo (top 80%), no a la seccion — con `is-lit` de
@@ -21,7 +23,11 @@ export interface HyprStackCimientosHandle {
 const ROTULO_SUELO = "Lenguajes base";
 
 function construirNombre(name: string, slug: string, detail: string): HTMLButtonElement {
-  const icono = elFromMarkup("cim-icono", getIconMarkup(slug));
+  // `elFromMarkup` devuelve un <div>, y un <div> dentro de un <button> (cuyo
+  // modelo de contenido es contenido de frase) es invalido -- se envuelve en
+  // un <span>, el mismo patron de `caelestiaCreditosBandeja.ts::construirPieza`
+  // por este mismo motivo.
+  const icono = el("span", "cim-icono", [elFromMarkup("", getIconMarkup(slug))]);
   icono.setAttribute("aria-hidden", "true");
   icono.setAttribute("data-decorative", "");
   const boton = el("button", "cim-nombre", [icono, el("span", "cim-txt", [name])]);
@@ -107,7 +113,12 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
   // esta marca, soltar un lenguaje apuntado heredaria la transicion retardada
   // de la entrada y tardaria hasta medio segundo de mas en apagarse.
   const marcarEntrado = (ev: TransitionEvent): void => {
-    if (ev.propertyName === "clip-path") cim.classList.add("cim-entrado");
+    // `transitionend` burbujea: `.cim-frase` tambien transiciona
+    // `clip-path` (el recorte del apuntado), asi que sin `ev.target === cim`
+    // cualquier apagado de una frase marcaria "entrado" de nuevo -- hoy
+    // inalcanzable porque el listener se desconecta solo tras el primer
+    // disparo real del propio `cim`, pero es gratis dejarlo explicito.
+    if (ev.target === cim && ev.propertyName === "clip-path") cim.classList.add("cim-entrado");
   };
   cim.addEventListener("transitionend", marcarEntrado);
   if (reduce) cim.classList.add("cim-entrado");
@@ -163,6 +174,17 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
       if (boton.matches(":focus-visible")) encender(boton);
     };
     const salir = (): void => apagar();
+    // El foco perdido solo apaga si ESTE boton es el activo. Sin la guarda:
+    // clic en A (foco en A) -> mover a B (pointerleave de A apaga, pointerenter
+    // de B enciende B, activo = B) -> clic en B. El `pointerdown` del segundo
+    // clic mueve el foco de A a B, asi que el `blur` de A dispara y
+    // `apagar()` mata B, el nombre que esta bajo el cursor. Reproducido y
+    // arreglado en la revision final de la rama (arreglo 1): un clic normal
+    // despues del primero apagaba el nombre que el visitante tenia debajo
+    // del puntero y vaciaba la frase hasta salir y volver a entrar.
+    const desenfocar = (): void => {
+      if (activo === boton) apagar();
+    };
     // Igual que `entrar`, solo actua para raton: el touch no tiene hover
     // real y el navegador emite `pointerleave` al levantar el dedo, justo
     // ANTES del `click` (medido con la misma sonda) — sin la guarda, ese
@@ -190,14 +212,14 @@ export function mountHyprStackCimientos(root: HTMLElement): HyprStackCimientosHa
     boton.addEventListener("pointerenter", entrar);
     boton.addEventListener("pointerleave", salirPointer);
     boton.addEventListener("focus", foco);
-    boton.addEventListener("blur", salir);
+    boton.addEventListener("blur", desenfocar);
     boton.addEventListener("pointerdown", pulsar);
     boton.addEventListener("click", clic);
     escuchas.push(() => {
       boton.removeEventListener("pointerenter", entrar);
       boton.removeEventListener("pointerleave", salirPointer);
       boton.removeEventListener("focus", foco);
-      boton.removeEventListener("blur", salir);
+      boton.removeEventListener("blur", desenfocar);
       boton.removeEventListener("pointerdown", pulsar);
       boton.removeEventListener("click", clic);
     });
