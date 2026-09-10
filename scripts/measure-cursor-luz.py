@@ -1,5 +1,17 @@
 """Arnes del cursor "luz de mano" de Hyprland.
 
+AVISO (2026-09-09, revision final de la rama "los cimientos"): a partir de
+este commit este arnes sale con **1 fallo esperado** -- la diana ocluida
+'.credit', que sostenia la familia "ilumina" y se retiro con el catastro de
+creditos (commit ffb62ca). Los cimientos no tienen fondo propio detras de
+sus nombres, asi que no hay diana ocluida de recambio todavia; es un
+encargo pendiente, no una regresion. Cualquier recuento de fallos DISTINTO
+de 1 es un fallo nuevo -- este proyecto ya pago el modo de fallo contrario
+("un gate que nunca se pone verde no se lee"), y la correccion no es dejarlo
+en rojo sin mas: es escribir aqui cual es el rojo esperado para que alguien
+lo lea. No cambiar pisos, umbrales ni la calibracion del cursor para forzar
+un verde falso.
+
 Cada asercion nace de un fallo real ya pagado en este repo:
   1. El lienzo EXISTE en Hyprland y NO existe en Vice ni en Caelestia. Sin
      esto el arnes sale verde con el cursor apagado: el patron aditivo se ha

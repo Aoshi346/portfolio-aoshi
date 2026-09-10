@@ -27,13 +27,33 @@ a mandar de verdad.
 """
 import argparse
 import io
+import re
 import sys
+from pathlib import Path
 
 from PIL import Image
 from playwright.sync_api import sync_playwright
 
 VIEWPORTS = [("escritorio", 1440, 900), ("movil", 390, 844)]
 ANCHOS_DESBORDE = [390, 821, 1024, 1200, 1440]
+
+
+def _leer_detalles_content_ts() -> dict[str, str]:
+    """Los 23 pares name/detail leidos de `src/data/content.ts`, la unica
+    fuente de verdad -- NUNCA de `data-cim-detail`, la copia que el propio
+    modulo escribe en el DOM. Comparar la frase contra esa copia (como hacia
+    este gate hasta la revision final de la rama) es tautologico: si
+    `construirLista` pasara el campo equivocado (`it.name`, `role`, una
+    cadena recortada), la referencia y la medida compartirian la misma
+    fuente rota y el gate seguiria en verde. El spec pide "cero cadenas que
+    no esten en `content.ts`", y eso solo se comprueba leyendo `content.ts`."""
+    ruta = Path(__file__).resolve().parent.parent / "src" / "data" / "content.ts"
+    texto = ruta.read_text(encoding="utf-8")
+    inicio = texto.index("export const skillGroups")
+    fin = texto.index("\n];", inicio)
+    bloque = texto[inicio:fin]
+    pares = re.findall(r'name:\s*"([^"]*)"\s*,\s*slug:\s*"[^"]*"\s*,\s*detail:\s*"([^"]*)"', bloque)
+    return dict(pares)
 
 
 def abrir(b, url: str, tema: str, w: int, h: int, errores: list, reduce: bool = False, tactil: bool = False):
@@ -101,7 +121,10 @@ def gate_1_se_ven(pg, nombre: str, fallos: list) -> None:
 def gate_2_no_existen_en_otros(b, url: str, errores: list, fallos: list) -> None:
     for tema in ("vice", "caelestia"):
         pg = abrir(b, url, tema, 1440, 900, errores)
-        ir_a_credits(pg)
+        if not ir_a_credits(pg):
+            fallos.append(f"[{tema}] gate 2: no existe [data-scene=credits]")
+            pg.context.close()
+            continue
         if se_ve(pg, "[data-cimientos]"):
             fallos.append(f"[{tema}] gate 2: [data-cimientos] esta VISIBLE y no deberia")
         if tema == "caelestia":
@@ -255,13 +278,16 @@ def gate_7_anchos(b, url: str, errores: list, fallos: list) -> None:
     ejercitar el tramo intermedio."""
     for w in ANCHOS_DESBORDE:
         pg = abrir(b, url, "hyprland", w, 900, errores)
-        if ir_a_credits(pg):
-            g = pg.evaluate(GEOMETRIA_JS)
-            if g is None:
-                fallos.append(f"[{w}px] gate 7: no existe [data-cimientos]")
-            else:
-                for x in g["fuera"]:
-                    fallos.append(f"[{w}px] gate 7: '{x['t']}' desborda la caja de los cimientos")
+        if not ir_a_credits(pg):
+            fallos.append(f"[{w}px] gate 7: no existe [data-scene=credits]")
+            pg.context.close()
+            continue
+        g = pg.evaluate(GEOMETRIA_JS)
+        if g is None:
+            fallos.append(f"[{w}px] gate 7: no existe [data-cimientos]")
+        else:
+            for x in g["fuera"]:
+                fallos.append(f"[{w}px] gate 7: '{x['t']}' desborda la caja de los cimientos")
         pg.context.close()
 
 
@@ -271,10 +297,18 @@ L3 = "rgb(255, 160, 60)"
 def gate_4_5_6_apuntado(b, url: str, errores: list, fallos: list) -> None:
     """4: ningun nombre en --l3 en reposo, y el apuntado se apaga al salir
     (el P0 del catastro: tras un barrido quedaban cuatro encendidos). Con
-    hover() REAL: un MouseEvent sintetico no dispara :hover. 5: la frase no
-    mueve nada: rects del suelo y de los lenguajes identicos al pixel antes
-    y despues de rozar cinco nombres. 6: la frase es el `detail` literal y
-    en reposo la linea esta vacia."""
+    hover() REAL: un MouseEvent sintetico no dispara :hover. Incluye tambien
+    un CLIC de verdad (clic en A, rozar B, clic en B): la version anterior de
+    este gate solo rozaba y apartaba el puntero, y estuvo en verde mientras
+    un clic normal dejaba el nombre bajo el cursor apagado (fallo real de la
+    revision final de la rama, arreglo 1 -- el `blur` del nombre que pierde
+    el foco al mover el clic apagaba lo que estuviera activo, que para
+    entonces era el nuevo). 5: la frase no mueve nada: rects del suelo y de
+    los lenguajes identicos al pixel antes y despues de rozar los 23
+    nombres. 6: la frase es el `detail` literal de `content.ts` -- se
+    compara contra el fuente, no contra `data-cim-detail` (la copia que el
+    propio DOM guarda, ver `_leer_detalles_content_ts`) -- comprobado en los
+    23, no en una muestra, y en reposo la linea esta vacia."""
     pg = abrir(b, url, "hyprland", 1440, 900, errores)
     if not ir_a_credits(pg):
         fallos.append("[escritorio] gate 4-6: no existe la escena")
@@ -293,15 +327,23 @@ def gate_4_5_6_apuntado(b, url: str, errores: list, fallos: list) -> None:
     if encendidos0 != 0:
         fallos.append(f"[escritorio] gate 4: {encendidos0} nombres en --l3 en reposo")
 
+    detalles = _leer_detalles_content_ts()
+    if len(detalles) != 23:
+        fallos.append(f"[escritorio] gate 6: content.ts dio {len(detalles)} pares name/detail, esperados 23")
+
     nombres = pg.query_selector_all("[data-cimientos] .cim-nombre")
-    muestra = [nombres[i] for i in (0, 3, 9, 14, 20)]
-    for n in muestra:
+    if len(nombres) != 23:
+        fallos.append(f"[escritorio] gate 6: {len(nombres)} nombres en el DOM, esperados 23")
+    for n in nombres:
         n.hover()
-        pg.wait_for_timeout(600)
-        esperado = n.get_attribute("data-cim-detail")
+        pg.wait_for_timeout(400)
+        nombre_n = n.get_attribute("data-cim-nombre")
+        esperado = detalles.get(nombre_n)
         visto = pg.evaluate("() => document.querySelector('[data-cimientos] .cim-frase').textContent.trim()")
-        if visto != esperado:
-            fallos.append(f"[escritorio] gate 6: al rozar '{n.get_attribute('data-cim-nombre')}' la frase es '{visto}', esperada '{esperado}'")
+        if esperado is None:
+            fallos.append(f"[escritorio] gate 6: '{nombre_n}' no aparece en content.ts")
+        elif visto != esperado:
+            fallos.append(f"[escritorio] gate 6: al rozar '{nombre_n}' la frase es '{visto}', esperada (content.ts) '{esperado}'")
         pressed = pg.evaluate("() => document.querySelectorAll('[data-cimientos] .cim-nombre[aria-pressed=\"true\"]').length")
         if pressed != 1:
             fallos.append(f"[escritorio] gate 4: {pressed} nombres con aria-pressed=true al rozar uno")
@@ -317,6 +359,26 @@ def gate_4_5_6_apuntado(b, url: str, errores: list, fallos: list) -> None:
     pressed1 = pg.evaluate("() => document.querySelectorAll('[data-cimientos] .cim-nombre[aria-pressed=\"true\"]').length")
     if encendidos1 != 0 or pressed1 != 0:
         fallos.append(f"[escritorio] gate 4: tras salir quedan {encendidos1} en --l3 y {pressed1} con aria-pressed")
+
+    # El defecto real (arreglo 1, revision final de la rama): clic en A,
+    # mover a B, clic en B. El `pointerdown` del segundo clic mueve el foco
+    # de A a B, y el `blur` de A apagaba lo que estuviera activo -- que para
+    # entonces era B, el nombre bajo el cursor. Con hover()/click() reales.
+    nombre_a, nombre_b = nombres[0], nombres[1]
+    nombre_a.click()
+    pg.wait_for_timeout(300)
+    nombre_b.hover()
+    pg.wait_for_timeout(300)
+    nombre_b.click()
+    pg.wait_for_timeout(300)
+    encendidos_tras_clic = pg.evaluate(
+        "() => Array.from(document.querySelectorAll('[data-cimientos] .cim-nombre[aria-pressed=\"true\"]')).map(e => e.dataset.cimNombre)"
+    )
+    id_b = nombre_b.get_attribute("data-cim-nombre")
+    if encendidos_tras_clic != [id_b]:
+        fallos.append(
+            f"[escritorio] gate 4: clic en A, rozar B, clic en B deja encendidos {encendidos_tras_clic}, esperado solo ['{id_b}']"
+        )
     pg.context.close()
 
     # Movil: el toque abre, el segundo toque sobre el mismo cierra, y la altura no cambia.
@@ -378,10 +440,23 @@ def gate_11_movimiento_reducido(b, url: str, errores: list, fallos: list) -> Non
     modulo pone cimientos-lit al montar), y ninguna transicion viva sobre
     los nodos del dispositivo (transition-duration 0s en todos). `*` en una
     media query NO alcanza a los pseudo-elementos (pagado en B2): aqui no hay
-    pseudo-elementos, y este gate lo comprueba tambien."""
+    pseudo-elementos, y este gate lo comprueba tambien.
+
+    Aviso de honestidad del instrumento: de las cuatro condiciones que
+    ENTRADA_JS lee (lit, lineaTrazada, colsAbiertas, lensEncendidos), TRES
+    (`transform: none`, `clip-path: none` y el color de los lenguajes) estan
+    garantizadas por el propio CSS de la guardia -- se aplican sin condicion
+    sobre `.cim-linea`/`.cim-col`/`.cim-lenguajes .cim-txt`, no solo bajo
+    `.cimientos-lit` -- asi que pasarian igual aunque el modulo nunca anadiera
+    la clase. La UNICA de las cuatro que de verdad vigila el comportamiento
+    del modulo (que `cimientos-lit` se ponga al montar, sin scroll) es `lit`.
+    No es un gate tautologico -- si el modulo dejara de poner la clase, `lit`
+    lo cazaria -- pero no hay que confiar de mas en que las otras tres esten
+    demostrando algo del JS."""
     for nombre, w, h in VIEWPORTS:
         pg = abrir(b, url, "hyprland", w, h, errores, reduce=True)
         if not ir_a_credits(pg):
+            fallos.append(f"[{nombre} reduce] gate 11: no existe [data-scene=credits]")
             pg.context.close()
             continue
         st = pg.evaluate(ENTRADA_JS)
@@ -463,6 +538,7 @@ def gate_10_contraste_fondo_real(b, url: str, errores: list, fallos: list) -> No
     una pagina rota."""
     pg = abrir(b, url, "hyprland", 1440, 900, errores)
     if not ir_a_credits(pg):
+        fallos.append("gate 10: no existe [data-scene=credits]")
         pg.context.close()
         return
     pg.wait_for_timeout(2500)
@@ -492,7 +568,11 @@ def gate_10_contraste_fondo_real(b, url: str, errores: list, fallos: list) -> No
             x1, y1 = min(img.width, int(info["l"] + info["w"]) + 5), min(img.height, int(info["t"] + info["h"]) + 5)
             lums = sorted(_lum(px[x, y]) for y in range(y0, y1, 2) for x in range(x0, x1, 2))
             if lums:
-                peores[nombre].append(lums[int(len(lums) * 0.995) - 1])
+                # `int(len * 0.995) - 1` con len==2 da indice -1+... en
+                # realidad 0 (la muestra MAS OSCURA, lo contrario del
+                # p99,5) e infla el ratio. Con `min(len-1, int(len*0.995))`
+                # el indice es exacto para cualquier tamano.
+                peores[nombre].append(lums[min(len(lums) - 1, int(len(lums) * 0.995))])
     for nombre, piso, info in dianas:
         if not peores[nombre]:
             fallos.append(f"gate 10: sin muestras para '{nombre}'")
