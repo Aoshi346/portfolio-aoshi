@@ -46,6 +46,23 @@ const RADIO_PULSADO = 1.25;
 const PUNTO_REPOSO = 3.2;
 const PUNTO_PULSADO = 2.4;
 
+/*
+ * La brasa que sustituye al canto (spec 2026-09-10). El ancho NO es un numero
+ * suelto: sale del mismo `radio` que ya calcula el charco, que a su vez lo
+ * dicta la altura del elemento y no la seccion. Asi una fila de obra de 108px
+ * y un nombre de Stack de 34 reciben la misma ley.
+ *
+ * Va acotado a la caja de la diana, y esa cota tiene consecuencia de diseno:
+ * en una diana mas estrecha que el tramo la brasa cubre la arista entera, que
+ * es exactamente la opcion A que se descarto por si sola. B contiene a A sin
+ * que nadie programe el caso.
+ */
+const BRASA_ANCHO_FACTOR = 0.75;
+// 2px en `--l1`: es la linea de brasa que los cimientos estrenaron como suelo
+// de la escena Stack. La senal del cursor habla la gramatica que el tema ya
+// tiene en vez de anadir una forma propia.
+const BRASA_GROSOR = 2;
+
 // El DPR se acota: por encima de 2 el coste de pintado sube sin que se note.
 const DPR_MAXIMO = 2;
 
@@ -423,12 +440,28 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
         huecoCtx.restore();
       }
 
-      // El canto del elemento, encendido a la potencia del charco. Es lo que
-      // delimita la zona pulsable. Se queda en el lienzo de ARRIBA: es
-      // senal, no relleno, y necesita quedar por encima del contenido.
-      ctx.strokeStyle = `rgb(255 90 52 / ${(0.85 * pot).toFixed(3)})`;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(rect.left + 0.5, rect.top + 0.5, rect.width - 1, rect.height - 1);
+      // La brasa: un tramo de la arista inferior, centrado en la mano y
+      // acotado a la caja. Sustituye al filete de la caja ENTERA, que se leia
+      // como campo de formulario sobre texto y, sobre una diana de 1440px de
+      // ancho, como una caja que cruza la pantalla — y que ademas era
+      // indistinguible del anillo de foco de teclado, que es un `outline` de
+      // 2px en el mismo `--l1`. Se queda en el lienzo de ARRIBA: es senal, no
+      // relleno, y necesita ir por encima del contenido.
+      const anchoBrasa = Math.min(radio * BRASA_ANCHO_FACTOR, rect.width);
+      const centroBrasa = Math.min(
+        Math.max(pointerX, rect.left + anchoBrasa / 2),
+        rect.right - anchoBrasa / 2,
+      );
+      const brasaX = centroBrasa - anchoBrasa / 2;
+      // Extremos difuminados a cero: sin esto es una barra recortada, que es
+      // otra vez una forma con cantos duros.
+      const brasa = ctx.createLinearGradient(brasaX, 0, brasaX + anchoBrasa, 0);
+      const brasaAlfa = (0.85 * pot).toFixed(3);
+      brasa.addColorStop(0, "rgb(255 90 52 / 0)");
+      brasa.addColorStop(0.5, `rgb(255 90 52 / ${brasaAlfa})`);
+      brasa.addColorStop(1, "rgb(255 90 52 / 0)");
+      ctx.fillStyle = brasa;
+      ctx.fillRect(brasaX, rect.bottom - BRASA_GROSOR, anchoBrasa, BRASA_GROSOR);
     }
 
     // La mano. El anillo oscuro no es decoracion: garantiza contraste del

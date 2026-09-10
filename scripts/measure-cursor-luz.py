@@ -25,6 +25,14 @@ Cada asercion nace de un fallo real ya pagado en este repo:
   5. En movil (390x844) el modulo NO se descarga. Se comprueba por red, no
      por inspeccion visual: un modulo cargado y luego oculto sigue costando.
   6. `destroy()` deja el DOM sin lienzo y sin la clase `.hypr-cursor-ready`.
+  8. La senal del pulsable no encierra la diana: solo un tramo corto de la
+     arista inferior se enciende, nunca las otras tres. Nace de un fallo
+     real: hasta el 2026-09-10 el cursor pintaba `ctx.strokeRect` sobre la
+     caja ENTERA de cada pulsable y este arnes estuvo semanas en verde con
+     un rectangulo naranja rodeando cada enlace de la pagina -- vigilaba el
+     charco por familias y nunca miro la senal en si.
+  9. El tramo encendido se mueve con la mano: su centro se desplaza al pasar
+     el raton del 25% al 75% del ancho de la diana, en el mismo sentido.
 
 Selectores de la asercion 2, verificados contra la pagina real servida (no
 adivinados): el brief traia ".obra-titular, [data-cartel] button, button" a
@@ -592,6 +600,161 @@ def contraste_pareado(
     return pares, texto_rgb
 
 
+# --- Familias 8 y 9: la senal del pulsable no encierra la diana -------------
+#
+# Nacen de un fallo real: hasta el 2026-09-10 el cursor pintaba
+# `ctx.strokeRect` sobre la caja ENTERA de cada pulsable, y este arnes estuvo
+# semanas en verde con un rectangulo naranja rodeando cada enlace de la
+# pagina. Vigilaba el charco por familias y NUNCA miro la senal. Un gate que
+# no mira la pieza que el visitante ve no vigila nada.
+
+# Un pixel esta "encendido" si la diferencia contra la captura sin puntero es
+# a la vez FUERTE y NARANJA. Solo por magnitud no vale: el fondo generativo se
+# mueve entre las dos capturas y produce diferencias de varias unidades en
+# todo el encuadre.
+ENCENDIDO_DELTA_R = 30
+ENCENDIDO_SESGO = 15
+
+# Techo de espera a que el charco se apague antes de capturar "apagado"
+# (Familias 8 y 9). Un `pg.wait_for_timeout` fijo (900ms, como usa el resto
+# del arnes para RELEVO_ESPERA_MS) es un cronometro, y en esta sandbox
+# miente: `pot` decae fotograma a fotograma con `POT_SMOOTHING` 0.22 y, bajo
+# `--use-gl=swiftshader`, `requestAnimationFrame` llega cada 200-400ms en vez
+# de cada ~16 -- 900ms pueden ser solo tres fotogramas, y `pot` seguir muy
+# por encima de apagado. Capturar ahi mediria la mitad del efecto encendido
+# como si fuera el fondo "apagado" y el gate podria salir VERDE por
+# accidente, no porque la senal encierre menos, sino porque la resta contra
+# un fondo todavia iluminado se queda corta. La correccion es la misma que
+# `esperar_pot_asentada()` ya aplica en sentido contrario: sondear el propio
+# `pot`, no el reloj. Si no asienta a tiempo, el gate FALLA explicitamente
+# (nunca sigue para medir otra cosa con el charco a medio apagar).
+APAGADO_POT_MAXIMO = 0.02
+APAGADO_TIMEOUT_MS = 6000
+APAGADO_INTERVALO_MS = 100
+
+
+def _esperar_pot_apagada(pg, fallos: list, contexto: str) -> bool:
+    """Sondea `potencia(pg)` hasta que baje de `APAGADO_POT_MAXIMO` o se agote
+    `APAGADO_TIMEOUT_MS`. Devuelve True si asento a tiempo; si no, anade un
+    fallo EXPLICITO a `fallos` y devuelve False -- el llamador tiene que
+    abortar esa medida en vez de capturar con el charco todavia encendido."""
+    transcurrido = 0
+    while transcurrido < APAGADO_TIMEOUT_MS:
+        actual = potencia(pg)
+        if actual < APAGADO_POT_MAXIMO:
+            return True
+        pg.wait_for_timeout(APAGADO_INTERVALO_MS)
+        transcurrido += APAGADO_INTERVALO_MS
+    fallos.append(
+        f"el charco no se apaga en {contexto}: pot={potencia(pg)} tras "
+        f"{APAGADO_TIMEOUT_MS}ms, esperado por debajo de {APAGADO_POT_MAXIMO}"
+    )
+    return False
+
+
+def _pixeles_encendidos(pg, fallos: list, caja: dict, selector: str, punto=None):
+    """Devuelve (ancho, alto, set de (x, y) encendidos) dentro de la caja, o
+    None si el charco no llego a apagarse a tiempo (ver `_esperar_pot_apagada`).
+
+    Captura con el puntero sobre `selector` y con el puntero lejos, y se queda
+    con los pixeles cuya diferencia es fuerte y naranja (`--l1` es 255 90 52:
+    sube mucho el rojo y casi nada el azul). La mano no cuenta como encendida:
+    es `--catch` (255 217 204), que sube el azul tanto como el rojo.
+    """
+    clip = {"x": caja["x"], "y": caja["y"], "width": caja["width"], "height": caja["height"]}
+
+    pg.mouse.move(4, 4)
+    if not _esperar_pot_apagada(pg, fallos, f"{selector} (capturando 'apagado')"):
+        return None
+    apagado = Image.open(io.BytesIO(pg.screenshot(clip=clip))).convert("RGB")
+
+    apuntar(pg, selector, punto)
+    esperar_pot_asentada(pg)
+    encendido = Image.open(io.BytesIO(pg.screenshot(clip=clip))).convert("RGB")
+
+    w, h = encendido.size
+    a, e = apagado.load(), encendido.load()
+    vivos = set()
+    for y in range(h):
+        for x in range(w):
+            dr = e[x, y][0] - a[x, y][0]
+            db = e[x, y][2] - a[x, y][2]
+            if dr >= ENCENDIDO_DELTA_R and (dr - db) >= ENCENDIDO_SESGO:
+                vivos.add((x, y))
+    return w, h, vivos
+
+
+def gate_brasa(pg, fallos: list) -> None:
+    """Familia 8: la senal no encierra la diana."""
+    # Estas familias corren ANTES de la asercion 3 (que es la que hasta ahora
+    # desplazaba hasta PULSABLE_SCROLL): sin este scroll explicito la caja se
+    # calcula con la diana todavia fuera de pantalla y `page.screenshot(clip=...)`
+    # revienta con "Clipped area is either empty or outside the resulting
+    # image" -- medido en la corrida en rojo de este mismo gate.
+    pg.locator(PULSABLE_SCROLL).first.scroll_into_view_if_needed()
+    pg.wait_for_timeout(600)
+    caja = pg.locator(PULSABLE_SCROLL).first.bounding_box()
+    resultado = _pixeles_encendidos(pg, fallos, caja, PULSABLE_SCROLL)
+    if resultado is None:
+        return
+    w, h, vivos = resultado
+
+    banda = 3  # px de tolerancia por arista: el antialias del trazo
+    for nombre, conjunto in (
+        ("SUPERIOR", {p for p in vivos if p[1] < banda}),
+        ("IZQUIERDA", {p for p in vivos if p[0] < banda}),
+        ("DERECHA", {p for p in vivos if p[0] >= w - banda}),
+    ):
+        if conjunto:
+            fallos.append(
+                f"la senal enciende la arista {nombre} de {PULSABLE_SCROLL}: "
+                f"{len(conjunto)} px encendidos, esperado 0"
+            )
+
+    abajo = {p for p in vivos if p[1] >= h - banda}
+    if not abajo:
+        fallos.append(f"la senal no enciende nada en la arista INFERIOR de {PULSABLE_SCROLL}")
+        return
+
+    xs = sorted({p[0] for p in abajo})
+    tramo = xs[-1] - xs[0] + 1
+    if tramo >= w * 0.6:
+        fallos.append(
+            f"el tramo encendido de {PULSABLE_SCROLL} ocupa {tramo} px sobre {w} "
+            f"({tramo / w:.0%}), esperado por debajo del 60%"
+        )
+
+
+def gate_brasa_sigue(pg, fallos: list) -> None:
+    """Familia 9: el tramo encendido se mueve con la mano y en su mismo sentido."""
+    pg.locator(PULSABLE_SCROLL).first.scroll_into_view_if_needed()
+    pg.wait_for_timeout(600)
+    caja = pg.locator(PULSABLE_SCROLL).first.bounding_box()
+    centros = []
+    for frac in (0.25, 0.75):
+        punto = (caja["x"] + caja["width"] * frac, caja["y"] + caja["height"] / 2)
+        resultado = _pixeles_encendidos(pg, fallos, caja, PULSABLE_SCROLL, punto)
+        if resultado is None:
+            return
+        _, h, vivos = resultado
+        abajo = [p[0] for p in vivos if p[1] >= h - 3]
+        if not abajo:
+            fallos.append(
+                f"no hay tramo encendido con la mano al {int(frac * 100)}% de {PULSABLE_SCROLL}"
+            )
+            return
+        centros.append(sum(abajo) / len(abajo))
+
+    desplazamiento = centros[1] - centros[0]
+    minimo = caja["width"] * 0.2
+    if desplazamiento <= minimo:
+        fallos.append(
+            f"el tramo no sigue a la mano en {PULSABLE_SCROLL}: su centro se mueve "
+            f"{desplazamiento:.0f} px al pasar el raton del 25% al 75% del ancho "
+            f"(minimo exigido {minimo:.0f} px)"
+        )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
@@ -624,6 +787,13 @@ def main() -> int:
         apuntar(pg, PARRAFO)
         if potencia(pg) > 0.05:
             fallos.append(f"charco encendido sobre texto: pot={potencia(pg)}")
+
+        # 8 y 9. la senal no encierra la diana, y el tramo sigue a la mano
+        # (ver el bloque de comentarios junto a `_pixeles_encendidos` mas
+        # arriba). Corre sobre la misma pagina de Hyprland a 1440x900 que la
+        # asercion 3.
+        gate_brasa(pg, fallos)
+        gate_brasa_sigue(pg, fallos)
 
         # 7. contraste por glifo contra el peor fotograma del shader. Solo
         # sobre las dianas donde el charco enciende. ".obra-abrir" no tiene
