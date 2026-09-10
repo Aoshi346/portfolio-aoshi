@@ -491,7 +491,7 @@ PARES_CONTRASTE = [
     ("[data-cimientos] .cim-lenguajes .cim-txt", 4.5, "lenguaje --text"),
     ("[data-cimientos] .cim-icono", 3.0, "icono decorativo --haze"),
     ("[data-cimientos] .cim-nombre[aria-pressed='true'] .cim-txt", 4.5, "apuntado --l3"),
-    ("[data-cimientos] .cim-cab.is-viva .cim-frase", 4.5, "frase --catch"),
+    ("[data-cimientos].is-viva .cim-frase", 4.5, "frase --catch"),
 ]
 
 
