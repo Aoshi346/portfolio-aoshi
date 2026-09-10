@@ -459,8 +459,10 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
             `rgb(${tinta} / 0) ${radio.toFixed(1)}px)`;
         }
       } else {
-        // El recorte ES el canto: el hueco termina en el filo exacto del
-        // elemento. Se pinta en el lienzo de ABAJO (-4), debajo del
+        // El hueco se recorta a la caja del elemento -- eso no cambia, es lo
+        // unico que dice hasta donde llega la zona pulsable -- pero el filo
+        // ya no es el canto: se empluma hacia dentro mas abajo, con
+        // `destination-out`. Se pinta en el lienzo de ABAJO (-4), debajo del
         // contenido: oscurece el fondo detras de las letras sin tocar el
         // texto, asi que el contraste sube en vez de bajar.
         huecoCtx.save();
