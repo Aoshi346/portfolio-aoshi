@@ -8765,7 +8765,13 @@
 :root[data-theme="hyprland"] .cim-txt {
   transition: color 0.9s var(--slow);
 }
-:root[data-theme="hyprland"] .cim-nombre[aria-pressed="true"] .cim-txt {
+/* `[data-cimientos]` anadido a proposito: sin el, esta regla y la de
+   ENTRADA (`.cimientos-lit .cim-lenguajes .cim-txt`, mas arriba) tienen la
+   MISMA especificidad (0,5,0), y el apuntado solo gana porque aparece
+   despues en la hoja -- mover el bloque de entrada por debajo de este
+   apagaria los cinco lenguajes base. Con el selector extra la relacion es
+   estructural (0,6,0 > 0,5,0), no posicional. */
+:root[data-theme="hyprland"] [data-cimientos] .cim-nombre[aria-pressed="true"] .cim-txt {
   color: var(--l3);
   transition: color 0.42s var(--hard);
 }
