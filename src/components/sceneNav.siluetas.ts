@@ -1,12 +1,29 @@
 /**
  * Siluetas del indice de escenas: cada escena reducida a su estructura, en
- * coordenadas del plano real de 1440x900. El CSS las escala al fotograma.
+ * coordenadas de un PLANO de 1440x900. El CSS las escala al fotograma.
+ *
+ * El plano representa lo que el VISITANTE VE de esa escena, nunca una
+ * ventana de scroll ni una caja de coordenadas de layout copiadas tal cual:
+ * ninguna pieza puede caer fuera de el. `obra` pago este defecto en la
+ * revision final del gate de firmas — sus coordenadas eran las de
+ * `getBoundingClientRect()` en un scroll concreto, no las de su propio
+ * marco, y dos piezas (la quinta fila y su miniatura) se salian por abajo
+ * mientras el 44% superior del fotograma quedaba vacio. Si otra silueta cae
+ * en el mismo error, se reencuadra igual: se rescala el contenido real para
+ * que llene el plano en proporcion, nunca se deja que desborde.
  *
  * Son una COPIA a mano de la maqueta de cada escena, no se leen del DOM: el
  * indice se pinta con la cortinilla cerrada y las escenas ni siquiera estan
  * montadas del todo. El precio es que pueden envejecer — si una escena cambia
  * de dispositivo y su silueta no, la hoja miente en silencio. Vigilado por
- * `scripts/measure-cortinilla.py`, que comprueba que hay cinco y ninguna vacia.
+ * `scripts/measure-cortinilla.py`: comprueba que hay cinco, ninguna vacia,
+ * que ninguna pieza cae fuera del plano de 1440x900 (ni por recorte parcial),
+ * y — via un gate de firmas estructurales por hash — que ninguna escena real
+ * ha cambiado de forma desde la ultima vez que alguien miro su silueta a
+ * proposito. Cuando cambias el dispositivo de una escena, tienes que revisar
+ * (y si sigue siendo fiel, volver a bendecir con
+ * `--update-firmas <escena...>`) su entrada en `scripts/scene-nav-firmas.json`
+ * — bendecir es por escena, nombrada, nunca todo-o-nada.
  */
 
 /** Una pieza de la silueta. `x`/`y`/`w`/`h` en pixeles del plano de 1440x900. */
@@ -43,7 +60,7 @@ export const SILUETAS: Readonly<Record<string, readonly Pieza[]>> = {
     { clase: "rl", x: 720, y: 239, w: 1, h: 437 },
     { clase: "box", x: 733, y: 252, w: 118, h: 118 },
     { clase: "bar", x: 118, y: 252, w: 52, h: 5, opac: 0.32 },
-    { clase: "disp", x: 118, y: 270, tam: 39, tono: "var(--color-paper)", texto: "Aoshi Blanco Sanz" },
+    { clase: "disp", x: 118, y: 270, tam: 44, tono: "var(--color-paper)", texto: "Aoshi Blanco Sanz" },
     { clase: "bar", x: 118, y: 319, w: 480, h: 6, opac: 0.4 },
     { clase: "bar", x: 943, y: 252, w: 52, h: 5, opac: 0.32 },
     { clase: "disp", x: 943, y: 270, tam: 32, tono: "var(--catch)", texto: "Disponible para proyectos" },
@@ -52,23 +69,32 @@ export const SILUETAS: Readonly<Record<string, readonly Pieza[]>> = {
     { clase: "bar", x: 118, y: 564, w: 300, h: 9, opac: 0.55 },
     { clase: "bar", x: 737, y: 564, w: 300, h: 9, opac: 0.55 },
   ],
+  /*
+   * Cinco filas apiladas a todo lo ancho -- el dispositivo real. Reencuadrado
+   * (revision final del gate de firmas): las `y` NO son coordenadas de
+   * scroll de la pagina real (esas metian dos piezas fuera del plano, ver
+   * cabecera del fichero); son cinco bandas iguales de 180px que reparten el
+   * plano entero de 900, una por fila, para que las cinco quepan completas y
+   * el fotograma no deje el tercio superior vacio.
+   */
   obra: [
     { clase: "beam", opac: 0.75 },
-    { clase: "rl", x: 0, y: 396, w: 1440, h: 1 },
-    { clase: "rl", x: 0, y: 506, w: 1440, h: 1 },
-    { clase: "rl", x: 0, y: 615, w: 1440, h: 1 },
-    { clase: "rl", x: 0, y: 725, w: 1440, h: 1 },
-    { clase: "rl", x: 0, y: 834, w: 1440, h: 1 },
-    { clase: "disp", x: 114, y: 402, tam: 90, tono: "var(--color-paper)", texto: "EchoPlan" },
-    { clase: "box", x: 1279, y: 402, w: 161, h: 101 },
-    { clase: "bar", x: 114, y: 522, w: 300, h: 90, opac: 0.5 },
-    { clase: "box", x: 1279, y: 512, w: 161, h: 101 },
-    { clase: "bar", x: 114, y: 631, w: 450, h: 90, opac: 0.5 },
-    { clase: "box", x: 1279, y: 621, w: 161, h: 101 },
-    { clase: "bar", x: 114, y: 741, w: 385, h: 90, opac: 0.5 },
-    { clase: "box", x: 1279, y: 731, w: 161, h: 101 },
-    { clase: "bar", x: 114, y: 850, w: 540, h: 90, opac: 0.5 },
-    { clase: "box", x: 1279, y: 840, w: 161, h: 101 },
+    { clase: "rl", x: 0, y: 0, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 180, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 360, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 540, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 720, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 899, w: 1440, h: 1 },
+    { clase: "disp", x: 114, y: 44, tam: 90, tono: "var(--color-paper)", texto: "EchoPlan" },
+    { clase: "box", x: 1279, y: 40, w: 161, h: 101 },
+    { clase: "bar", x: 114, y: 224, w: 300, h: 90, opac: 0.5 },
+    { clase: "box", x: 1279, y: 220, w: 161, h: 101 },
+    { clase: "bar", x: 114, y: 404, w: 450, h: 90, opac: 0.5 },
+    { clase: "box", x: 1279, y: 400, w: 161, h: 101 },
+    { clase: "bar", x: 114, y: 584, w: 385, h: 90, opac: 0.5 },
+    { clase: "box", x: 1279, y: 580, w: 161, h: 101 },
+    { clase: "bar", x: 114, y: 764, w: 540, h: 90, opac: 0.5 },
+    { clase: "box", x: 1279, y: 760, w: 161, h: 101 },
   ],
   creditos: [
     { clase: "beam", opac: 0.85 },
@@ -90,7 +116,7 @@ export const SILUETAS: Readonly<Record<string, readonly Pieza[]>> = {
     { clase: "bar", x: 1060, y: 333, w: 132, h: 12, opac: 0.7 },
     { clase: "rl", x: 101, y: 626, w: 1238, h: 2, tono: "var(--l1)", opac: 1 },
     { clase: "bar", x: 101, y: 650, w: 150, h: 5, opac: 0.35 },
-    { clase: "disp", x: 133, y: 674, tam: 38, tono: "var(--color-paper)", texto: "JavaScript" },
+    { clase: "disp", x: 133, y: 674, tam: 44, tono: "var(--color-paper)", texto: "JavaScript" },
     { clase: "bar", x: 354, y: 682, w: 95, h: 34, opac: 0.6 },
     { clase: "bar", x: 502, y: 682, w: 69, h: 34, opac: 0.6 },
     { clase: "bar", x: 624, y: 682, w: 24, h: 34, opac: 0.6 },
@@ -161,10 +187,19 @@ function emite(p: Pieza): boolean {
 
 function esFino(p: Pieza): boolean {
   if (p.clase === "beam") return false;
+  /*
+   * El texto se decide por su CUERPO, nunca por si emite. La exencion de
+   * `emite()` se escribio para trazos de acento de 1px (`rl`/`bar` en
+   * `--l1`/`--catch`), y una cadena de texto no es un trazo: "Disponible
+   * para proyectos" a `--catch` pleno pasaba esta guardia ANTES de llegar al
+   * chequeo de cuerpo, renderizaba a 3,8px y era exactamente el manchon que
+   * `CUERPO_MINIMO` existe para impedir. Por eso el texto se mide primero y
+   * sin excepcion.
+   */
+  if (p.texto !== undefined) return (p.tam ?? 0) < CUERPO_MINIMO;
   if (emite(p)) return false;
   // Una `box` solo aporta su borde de 1px: en movil nunca sobrevive.
   if (p.clase === "box") return true;
-  if (p.texto !== undefined) return (p.tam ?? 0) < CUERPO_MINIMO;
   const lados = [p.w, p.h].filter((v): v is number => v !== undefined);
   return lados.length > 0 && Math.min(...lados) < GROSOR_MINIMO;
 }
