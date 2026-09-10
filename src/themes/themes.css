@@ -1435,6 +1435,33 @@
   color: var(--l1);
   outline: none;
 }
+/*
+ * El foco de teclado NO comparte forma con el roce, y el motivo es una medida,
+ * no una preferencia: entre reposo (`--haze`, 177 140 134) y apuntado (`--l1`,
+ * 255 90 52) el contraste es de **1,03:1**. El tono cambia de marron a naranja
+ * pero la LUMINANCIA es practicamente la misma, asi que para quien no distingue
+ * bien el color la unica senal de foco era el subrayado de 1px del `::after`
+ * — la mitad del perimetro de 2px que pide WCAG 2.4.11.
+ *
+ * El anillo es el vocabulario de teclado que este tema ya usa en `.obra-abrir`
+ * y `.cim-nombre`, y por eso no se confunde con la brasa del cursor, que desde
+ * `2026-09-10-hyprland-cursor-brasa` es un tramo de la arista inferior.
+ *
+ * **El `outline-offset` NEGATIVO no es estetica: es obligatorio aqui.**
+ * `.hero-mail` lleva `.hypr-cut`, y esa clase deja un `clip-path` puesto
+ * incluso en reposo (`inset(0 0 0 0)`, abierto del todo). Un `clip-path`
+ * recorta TAMBIEN el `outline` del elemento, asi que un anillo con offset
+ * positivo no se pinta nunca: el estilo computado dice `solid 2px` y no hay un
+ * solo pixel encendido. Medido. Inscrito cabe, y con 22px de alto y 2px de
+ * relleno no toca los glifos.
+ *
+ * Anula a proposito el `outline: none` de la regla de arriba, que sigue
+ * valiendo para el roce con el raton.
+ */
+:root[data-theme="hyprland"] .hero-mail:focus-visible {
+  outline: 2px solid var(--l1);
+  outline-offset: -2px;
+}
 
 /* Colapso a columna unica: mismo umbral que `.contacto-bar-label` (Vice). */
 @media (max-width: 900px) {

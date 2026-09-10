@@ -1288,6 +1288,49 @@ def check_theme_identity(page, theme: str) -> None:
             f"nombres={cimientos['nombres'] if cimientos else None})",
         )
 
+        # El foco de teclado del enlace del hero (2026-09-10). Dos aserciones,
+        # y la segunda es la que de verdad hacia falta.
+        #
+        # 1. Que exista anillo. Antes no habia: `:focus-visible` solo cambiaba
+        #    el color de `--haze` a `--l1` y crecia un subrayado de 1px. Esos
+        #    dos colores tienen **1,03:1** de contraste — cambia el tono, no la
+        #    luminancia — asi que para quien no distingue bien el color la unica
+        #    senal era una linea de 1px, la mitad del perimetro que pide
+        #    WCAG 2.4.11.
+        #
+        # 2. Que el offset no sea positivo SI el elemento lleva `clip-path`.
+        #    Aqui esta el fallo que costo el rato: `.hero-mail` lleva
+        #    `.hypr-cut`, que deja un `clip-path` puesto incluso en reposo
+        #    (`inset(0 0 0 0)`, abierto del todo), y un `clip-path` recorta
+        #    TAMBIEN el outline. Con offset positivo el estilo computado dice
+        #    `solid 2px` y no se enciende ni un pixel. **El estilo computado no
+        #    es prueba de que algo se pinte**, y esta es la unica asercion del
+        #    arnes que lo tiene en cuenta.
+        foco_mail = page.evaluate("""(() => {
+          const el = document.querySelector('.hero-mail');
+          if (!el) return null;
+          el.focus();
+          const cs = getComputedStyle(el);
+          return {
+            estilo: cs.outlineStyle,
+            ancho: parseFloat(cs.outlineWidth) || 0,
+            offset: parseFloat(cs.outlineOffset) || 0,
+            recortado: cs.clipPath !== 'none',
+          };
+        })()""")
+        check(
+            foco_mail is not None and foco_mail["estilo"] != "none" and foco_mail["ancho"] >= 2,
+            f"hyprland: .hero-mail pinta anillo de foco de 2px o mas "
+            f"(estilo={foco_mail['estilo'] if foco_mail else None}, "
+            f"ancho={foco_mail['ancho'] if foco_mail else None})",
+        )
+        check(
+            foco_mail is not None and not (foco_mail["recortado"] and foco_mail["offset"] > 0),
+            f"hyprland: el anillo de .hero-mail no queda fuera de su clip-path "
+            f"(recortado={foco_mail['recortado'] if foco_mail else None}, "
+            f"offset={foco_mail['offset'] if foco_mail else None})",
+        )
+
         # Radio 0 es la decision estructural del tema: Ascua es luz con CANTO.
         # Caelestia lleva radio y sombra; si Hyprland empieza a redondear,
         # los dos temas convergen y se pierde la identidad.
