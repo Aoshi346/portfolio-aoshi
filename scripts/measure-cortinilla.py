@@ -729,13 +729,31 @@ FIRMAS_PATH = Path(__file__).parent / "scene-nav-firmas.json"
 # `index.html`). El dev server real sirve ese modulo como JS. Se exige
 # ademas el content-type, que es lo que de verdad distingue "existe la ruta"
 # de "cualquier ruta cae en el index".
+#
+# NUNCA falla abierto. Un `except: return False` trataria en silencio
+# cualquier fallo de red del sondeo (timeout, DNS, conexion rechazada) como
+# "no es dev server" -- exactamente el caso que este arnes existe para
+# rechazar, tratado como si nunca hubiera pasado. El criterio del proyecto
+# es que un instrumento que no puede medir lo diga, en vez de medir otra
+# cosa (`rules/verification.md`, "Deriva de la documentacion" / doctrina de
+# gates). Por eso hay TRES resultados, no dos: `True` (es dev server),
+# `False` (se sondeo y no lo es) y `None` ("no se pudo determinar" -- el
+# sondeo fallo por una razon de red, no porque la ruta no exista). Quien
+# llama debe tratar `None` como un fallo explicito y abortar, nunca como un
+# `False` silencioso.
 def _es_dev_server(base):
     try:
         with urllib.request.urlopen(f"{base}/@vite/client", timeout=5) as r:
             tipo = r.headers.get("Content-Type", "")
             return r.status == 200 and "javascript" in tipo
-    except (urllib.error.URLError, ValueError, OSError):
-        return False
+    except (urllib.error.URLError, ValueError, OSError) as e:
+        print(
+            f"AVISO: no se pudo sondear {base}/@vite/client para decidir si "
+            f"es un dev server de Vite ({e}). No se interpreta como "
+            f"'no es dev server' -- ver `_es_dev_server`.",
+            file=sys.stderr,
+        )
+        return None
 
 
 # Hitos de montaje real de los modulos que llegan por `import()` diferido en
@@ -1293,7 +1311,20 @@ def main():
     args = parser.parse_args()
     args.base = args.base.rstrip("/")  # evita `//?theme=...` si --base trae barra final
 
-    if _es_dev_server(args.base):
+    es_dev = _es_dev_server(args.base)
+    if es_dev is None:
+        print(
+            f"ERROR: no se pudo determinar si --base ({args.base}) es un "
+            f"dev server de Vite -- el sondeo a /@vite/client fallo por una "
+            f"razon de red (ver el AVISO anterior), no porque la ruta no "
+            f"exista. Un arnes que no puede decidir esto no puede medir ni "
+            f"bendecir nada contra ese origen: comprueba que --base esta "
+            f"vivo y sirve el build ('npm run build && npx vite preview "
+            f"--port 4173') antes de reintentar.",
+            file=sys.stderr,
+        )
+        return 2
+    if es_dev:
         print(
             f"ERROR: --base ({args.base}) es un dev server de Vite (responde "
             f"en /@vite/client). No se puede medir ni bendecir una firma "
