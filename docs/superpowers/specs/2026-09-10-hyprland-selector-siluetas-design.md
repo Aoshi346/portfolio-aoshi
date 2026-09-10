@@ -1,6 +1,6 @@
 # El selector de escenas — las siluetas dejan de envejecer en silencio
 
-Estado: en ejecucion
+Estado: implementado
 Fecha: 2026-09-10
 Alcance: **solo el tema Hyprland**, y dentro de el **solo el indice de escenas**.
 `src/components/sceneNav.siluetas.ts`, `scripts/measure-cortinilla.py` y el fichero nuevo
@@ -151,3 +151,35 @@ HMR, que este repo tiene escrito que "corrompe las medidas y miente en los dos s
   cerrado. Aoshi eligio repintar y anadir el gate; queda anotado como la alternativa no tomada.
 - **El gate no juzga si una silueta es buena**, solo si su escena cambio sin que nadie la mirara.
   Esa parte la siguen haciendo ojos humanos.
+
+
+## Registro de implementacion
+
+Seis commits sobre `main` (`39d0782`). `npm run build` y `npm run lint` limpios; el arnes entero
+verde salvo **2 fallos preexistentes** del disparador de Caelestia, comprobados identicos en `main`
+en un worktree aparte, con salida letra por letra.
+
+**Piezas por silueta, antes -> despues:** `quien-es` 20 -> 16, `obra` 42 -> 16, `creditos` 32 -> 24,
+`contacto` 23 -> 18. `hero` intacta.
+
+**Tres rondas de revision, y lo que cazo cada una.** La primera, sobre el gate: dos criticos, uno de
+ellos que `--base` traia por defecto el puerto del dev server contra el que su propia ayuda advertia
+— se podia BENDECIR una firma contra un DOM con HMR. La segunda, sobre la rama entera: tres
+criticos, y el peor no era del instrumento sino del dibujo — **la silueta de `obra` dibujaba cuatro
+filas y media**, con dos piezas que llegaban a y=940 sobre un plano de 900 y que el `overflow:
+hidden` recortaba en silencio; la asercion que debia verlo solo contaba piezas ENTERAMENTE fuera,
+asi que el unico recorte que produce un repintado le era invisible. La tercera, sobre la ola de
+arreglo: la guardia del dev server fallaba abierta y su caso positivo nunca se habia demostrado.
+
+**Lo que se corrigio del propio proceso, y conviene no repetir:**
+- Se dio `obra` por fiel porque sus cinco nombres coincidian con `content.ts`. **Coincidir en el
+  texto no es coincidir en el dispositivo.**
+- El repintado tomo las coordenadas de `obra` del **viewport en un scroll concreto**. La caja de esa
+  escena reporta ~109 px de alto mientras lo que se ve ocupa ~547: medir su `getBoundingClientRect()`
+  no describe el fotograma.
+- Un caso que no se ha visto no esta demostrado. La guardia del dev server se acepto una ronda con
+  solo la mitad facil probada (que un build servido NO se marca como dev server).
+
+**Trampa de entorno encontrada de paso:** `vite preview` devuelve **200 `text/html` para cualquier
+ruta** por su fallback de SPA, asi que sondear `/@vite/client` por codigo de estado da falso
+positivo. Se sondea por tipo de contenido.
