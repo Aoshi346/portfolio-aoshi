@@ -91,11 +91,22 @@ const LUZ_MEDIO = 0.07;
 /*
  * La pluma del recorte. El charco SIGUE recortado a la caja de la diana
  * —eso es lo unico que dice hasta donde llega la zona pulsable— pero el
- * filo se difumina 14px hacia dentro, que es lo que se leia como caja. Se
+ * filo se difumina hacia dentro, que es lo que se leia como caja. Se
  * difumina el filo, no se quita el limite: el charco sigue muriendo dentro
  * de la diana y nunca fuera.
+ *
+ * Recortada de 14 a 5px (Tarea 3, ronda de arreglo 1): a 14px el "con hueco"
+ * de `.obra-abrir` caia de 15,00:1 (linea base sin pluma) a 13,96:1 y la
+ * mejora que aporta el charco se reducia de -1,68/-2,02 a -0,57/-1,08 --
+ * medido con un A/B sobre el mismo build (`PLUMA=0`, brasa intacta, recorte
+ * a canto vivo, recupera 15,06:1 / -1,74 a -1,95: la pluma era la causa, no
+ * la brasa). A 5px el peor caso vuelve a -1,68, igual que la linea base, y
+ * la familia 10 del arnes (`gate_pluma`, "el charco muere hacia dentro, sin
+ * escalon en la arista") sigue en verde -- a 0 no lo esta. No tocar
+ * `HUECO_CENTRO`, `HUECO_MEDIO`, `LUZ_CENTRO`, `LUZ_MEDIO` ni `LUM_OSCURA`
+ * para recuperar contraste: se recorta la pluma, nunca la calibracion.
  */
-const PLUMA = 14;
+const PLUMA = 5;
 
 export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   const controller = new AbortController();
