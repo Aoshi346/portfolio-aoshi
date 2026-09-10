@@ -12,8 +12,10 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 from playwright.sync_api import sync_playwright
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 URL = "http://127.0.0.1:5173/?theme=hyprland"
 CHROME = "/usr/bin/google-chrome"
@@ -669,9 +671,78 @@ def comprobar_contraste(peor):
 # el fallo que de verdad ocurrio aqui (creditos, quien-es y contacto
 # derivaron sin que nada avisara), no la deriva en si — la deriva es
 # inevitable en un fichero que es una copia a mano; el silencio no lo era.
+#
+# Limite de granularidad (medido con un <p> de prueba, ver
+# .superpowers/informe-gate-siluetas.md): contenido nuevo que cae DENTRO de
+# una celda de la rejilla 12x8 que ya estaba entintada por otra pieza NO
+# mueve la firma — la celda ya contaba como "tinta" y sigue contandolo. El
+# gate no ve una escena que gana texto o una pieza que cambia de tamano sin
+# cruzar el limite de su celda. Es el mismo limite, dicho con la misma
+# franqueza que el parrafo de arriba.
 ############################################################################
 
 FIRMAS_PATH = Path(__file__).parent / "scene-nav-firmas.json"
+
+# Puertos conocidos de dev server (Vite). Bendecir una firma contra uno de
+# estos es exactamente lo que este gate existe para impedir: el HMR de Vite
+# corrompe el layout (rules/verification.md, "corrompe sus medidas y miente
+# en ambos sentidos"), asi que una firma bendecida ahi puede no representar
+# el build real. No es una lista cerrada de "todo lo que no es produccion"
+# --eso incluiria localhost legitimo del build servido-- es la lista de
+# puertos que Vite usa por convencion para `npm run dev`.
+PUERTOS_DEV_SERVER = {5173}
+
+
+def _es_dev_server(base):
+    try:
+        puerto = urlparse(base).port
+    except ValueError:
+        return False
+    return puerto in PUERTOS_DEV_SERVER
+
+
+def _esperar_dom_estable(pg, selectores, timeout=15000):
+    """Ancla la espera al ESTADO real del layout, nunca al reloj.
+
+    La leccion ya esta pagada en este mismo proyecto (spec
+    2026-09-04-caelestia-fundido): bajo `--use-gl=swiftshader` el
+    `requestAnimationFrame`/`setTimeout` de la pagina llega cada 200-400ms en
+    vez de cada ~16, asi que un `wait_for_timeout` fijo mide la carga de la
+    maquina, no si el layout de verdad asento. Aqui se compara una firma de
+    texto (posicion+tamano redondeados de cada escena) entre dos lecturas
+    consecutivas del sondeo de Playwright y solo se sigue cuando coinciden
+    dos veces seguidas, con `document.fonts` cargadas.
+
+    Si nunca se estabiliza, esto FALLA con un mensaje explicito en vez de
+    devolver el control y dejar que se mida un layout a medio asentar --
+    "los cortes se anclan al ESTADO, nunca al reloj; si el punto de corte no
+    llega, el gate FALLA en vez de medir otra cosa".
+    """
+    selectores_js = json.dumps(selectores)
+    pg.evaluate("() => { window.__firmaSigPrev = undefined; }")
+    js = f"""() => {{
+      if (document.fonts && document.fonts.status !== 'loaded') return false;
+      const sels = {selectores_js};
+      const sig = sels.map((s) => {{
+        const el = document.querySelector(s);
+        if (!el) return 'null';
+        const r = el.getBoundingClientRect();
+        return [Math.round(r.top), Math.round(r.left), Math.round(r.width), Math.round(r.height)].join(':');
+      }}).join('|');
+      if (window.__firmaSigPrev !== undefined && window.__firmaSigPrev === sig) return true;
+      window.__firmaSigPrev = sig;
+      return false;
+    }}"""
+    try:
+        pg.wait_for_function(js, timeout=timeout)
+    except PlaywrightTimeoutError as e:
+        raise RuntimeError(
+            f"las firmas no se pudieron medir: el layout de las escenas "
+            f"({selectores}) no se estabilizo en {timeout}ms. Puede ser "
+            f"fuentes sin cargar, una animacion que no respeta "
+            f"prefers-reduced-motion, o un build a medio montar -- no se "
+            f"sigue midiendo sobre un layout que no ha asentado."
+        ) from e
 
 # Selector real de cada escena. `obra` no es `[data-scene="obra"]` (eso
 # selecciona solo la PRIMERA de las cinco tarjetas de proyecto): es el
@@ -792,7 +863,9 @@ def abrir_firmas(pw, base):
     consola = []
     pg.on("console", lambda m: consola.append(m.text) if m.type == "error" else None)
     pg.goto(f"{base}/?theme=hyprland", wait_until="domcontentloaded", timeout=40000)
-    pg.wait_for_timeout(6000)  # encendido de Ascua + shader, layout asentado
+    # encendido de Ascua + shader: se espera a que el layout de las cinco
+    # escenas deje de moverse (estado), no un numero fijo de ms (reloj).
+    _esperar_dom_estable(pg, list(FIRMA_SELECTORES.values()))
     return b, ctx, pg, consola
 
 
@@ -809,7 +882,9 @@ def medir_firmas(base):
         salida = {}
         for id_, sel in FIRMA_SELECTORES.items():
             pg.evaluate("(sel) => document.querySelector(sel)?.scrollIntoView({block: 'start'})", sel)
-            pg.wait_for_timeout(500)
+            # El scroll asienta cuando ESA escena deja de moverse, no a los
+            # 500ms: mismo argumento que en `abrir_firmas`.
+            _esperar_dom_estable(pg, [sel])
             datos = pg.evaluate(FIRMA_JS, sel)
             if datos is None:
                 salida[id_] = {"hash": None, "celdas": [], "piezas": 0}
@@ -831,6 +906,21 @@ def _commit_actual():
         return "desconocido"
 
 
+def _arbol_sucio():
+    """True si hay cambios sin commitear (`git status --porcelain` no vacio).
+    Bendecir con el arbol sucio deja en el JSON un commit que no refleja lo
+    que de verdad se midio: el hash de `rev-parse HEAD` apunta al ultimo
+    commit, pero el DOM pudo salir de un `src/` con cambios locales encima."""
+    try:
+        r = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=Path(__file__).parent.parent,
+            capture_output=True, text=True, check=True,
+        )
+        return bool(r.stdout.strip())
+    except Exception:
+        return None  # no se pudo comprobar; no se afirma nada
+
+
 def cargar_firmas_bendecidas():
     if not FIRMAS_PATH.exists():
         return {}
@@ -841,8 +931,11 @@ def guardar_firmas_bendecidas(actuales):
     """Escribe `scene-nav-firmas.json`. Bendecir es un acto deliberado que se
     revisa en el diff (igual que `--update-baseline` en `verify.py`): este
     metodo nunca se llama solo desde el camino de comprobacion, solo desde
-    `--update-firmas`."""
+    `--update-firmas`. Si el arbol de trabajo tenia cambios sin commitear en
+    el momento de bendecir, queda anotado en el propio JSON (`arbolSucio`)
+    en vez de fingir que el commit registrado es lo unico que se midio."""
     commit = _commit_actual()
+    sucio = _arbol_sucio()
     ahora = datetime.now(timezone.utc).isoformat(timespec="seconds")
     bendecidas = {
         id_: {
@@ -850,6 +943,7 @@ def guardar_firmas_bendecidas(actuales):
             "grid": list(FIRMA_GRID),
             "commit": commit,
             "bendecidoEn": ahora,
+            "arbolSucio": sucio,
         }
         for id_, d in actuales.items()
     }
@@ -891,8 +985,13 @@ def comprobar_firmas(actuales, bendecidas):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--base", default="http://127.0.0.1:5173",
-        help="Origen del build a medir (el build servido, nunca el dev server, para las firmas)",
+        "--base", required=True,
+        help="Origen del build SERVIDO a medir para las firmas (p.ej. "
+             "http://127.0.0.1:4173) -- NUNCA el dev server de Vite: su HMR "
+             "corrompe el layout y miente en los dos sentidos "
+             "(rules/verification.md). Sin default a proposito: un default "
+             "que apuntara al dev server permitia bendecir una firma contra "
+             "un DOM que nunca deberia contar como referencia. Obligatorio.",
     )
     parser.add_argument(
         "--update-firmas", action="store_true",
@@ -900,16 +999,42 @@ def main():
              "scene-nav-firmas.json. No corre el resto del arnes.",
     )
     args = parser.parse_args()
+    args.base = args.base.rstrip("/")  # evita `//?theme=...` si --base trae barra final
+
+    if _es_dev_server(args.base):
+        print(
+            f"ERROR: --base ({args.base}) es un puerto de dev server de Vite. "
+            f"No se puede bendecir ni medir una firma contra el, porque el HMR "
+            f"corrompe el layout (rules/verification.md). Sirve el build "
+            f"('npm run build && npx vite preview --port 4173') y apunta ahi.",
+            file=sys.stderr,
+        )
+        return 2
 
     if args.update_firmas:
         actuales, consola = medir_firmas(args.base)
+        sucio = _arbol_sucio()
+        if sucio:
+            print(
+                "aviso: el arbol de trabajo tiene cambios sin commitear -- la "
+                "firma que se va a bendecir queda registrada contra el commit "
+                "actual, pero puede NO reflejar lo que de verdad se midio. "
+                "Revisa `git status` antes de dar por buena esta bendicion.",
+                file=sys.stderr,
+            )
+        if consola:
+            print(
+                "ERROR: hubo errores de consola durante la medida -- no se "
+                "bendice sobre un build que puede estar a medio montar. "
+                "Arregla los errores y vuelve a intentarlo:",
+                file=sys.stderr,
+            )
+            for m in consola:
+                print(" -", m, file=sys.stderr)
+            return 1
         bendecidas = guardar_firmas_bendecidas(actuales)
         print(json.dumps(bendecidas, indent=2, ensure_ascii=False))
         print(f"\nfirmas bendecidas en {FIRMAS_PATH}")
-        if consola:
-            print("\naviso: hubo errores de consola durante la medida:")
-            for m in consola:
-                print(" -", m)
         return 0
 
     fallos = []
