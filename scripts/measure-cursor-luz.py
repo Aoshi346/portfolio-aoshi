@@ -33,6 +33,19 @@ Cada asercion nace de un fallo real ya pagado en este repo:
      charco por familias y nunca miro la senal en si.
   9. El tramo encendido se mueve con la mano: su centro se desplaza al pasar
      el raton del 25% al 75% del ancho de la diana, en el mismo sentido.
+  10. El charco muere hacia dentro (emplumado), sin escalon a canto vivo en
+      la arista. La version del brief de este mismo gate (perfil crudo de
+      una sola captura sobre la arista IZQUIERDA de ".obra-abrir") salio en
+      VERDE contra el codigo sin la pluma -- un instrumento que no podia
+      cazar el fallo que decia cazar, por dos motivos de la pagina real: esa
+      arista no tiene exterior que capturar (`inset: 0` sobre la fila
+      entera, coincide con el borde del viewport) y la arista superior lleva
+      un `border-t` ajeno de la escena siguiente que dominaba el perfil. Se
+      reescribio para medir el DELTA fila a fila entre encendido y apagado,
+      que cancela lo que ya estaba pintado antes del cursor. Y su piso de
+      ruido (`RUIDO_SUELO`) estaba calibrado contra UNA sola corrida en rojo
+      leida a ojo; se recalibro contra 10 repeticiones de la misma medida en
+      apagado-apagado (detalle junto a la constante, mas abajo).
 
 Selectores de la asercion 2, verificados contra la pagina real servida (no
 adivinados): el brief traia ".obra-titular, [data-cartel] button, button" a

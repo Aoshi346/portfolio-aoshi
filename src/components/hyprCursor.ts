@@ -6,7 +6,11 @@ export interface HyprCursorHandle {
  * Cursor propio de Hyprland: no dibuja un objeto, ilumina.
  *
  * El charco de luz existe SOLO dentro de lo que se puede pulsar, recortado a
- * canto vivo por el borde del elemento. Sobre texto corrido no se enciende
+ * la caja del elemento con el filo emplumado hacia dentro (spec
+ * 2026-09-10: ya no a canto vivo -- ese corte se leia como una caja de
+ * formulario sobre el fondo brillante). La arista de la caja se marca con
+ * la brasa, un tramo de la arista inferior centrado en la mano, no con un
+ * filete alrededor de todo el borde. Sobre texto corrido no se enciende
  * nada. La lectura es anterior al lenguaje: lo que se ilumina responde.
  *
  * Reparto de senales, identico al ya cerrado en Vice porque el problema es el
@@ -83,7 +87,9 @@ const HUECO_MEDIO = 0.5;
  * Rampa que ilumina (fondo ya oscuro). Mucho mas baja a proposito: sobre un
  * panel casi negro el contraste de partida es ~9,7:1 y aclarar SI lo baja,
  * asi que aqui el limite lo pone AA y no el diseno. `--l3` (255 160 60) es
- * el ambar del tema, el mismo que ya usa el canto.
+ * el ambar del tema -- un tono distinto del `--l1` (255 90 52) que pinta la
+ * brasa. El hueco que ilumina y la brasa son dos senales, no una, y no
+ * comparten color.
  */
 const LUZ_CENTRO = 0.14;
 const LUZ_MEDIO = 0.07;
@@ -95,16 +101,20 @@ const LUZ_MEDIO = 0.07;
  * difumina el filo, no se quita el limite: el charco sigue muriendo dentro
  * de la diana y nunca fuera.
  *
- * Recortada de 14 a 5px (Tarea 3, ronda de arreglo 1): a 14px el "con hueco"
- * de `.obra-abrir` caia de 15,00:1 (linea base sin pluma) a 13,96:1 y la
- * mejora que aporta el charco se reducia de -1,68/-2,02 a -0,57/-1,08 --
- * medido con un A/B sobre el mismo build (`PLUMA=0`, brasa intacta, recorte
- * a canto vivo, recupera 15,06:1 / -1,74 a -1,95: la pluma era la causa, no
- * la brasa). A 5px el peor caso vuelve a -1,68, igual que la linea base, y
- * la familia 10 del arnes (`gate_pluma`, "el charco muere hacia dentro, sin
- * escalon en la arista") sigue en verde -- a 0 no lo esta. No tocar
- * `HUECO_CENTRO`, `HUECO_MEDIO`, `LUZ_CENTRO`, `LUZ_MEDIO` ni `LUM_OSCURA`
- * para recuperar contraste: se recorta la pluma, nunca la calibracion.
+ * El valor final (14) se decidio con la matriz completa del gate de
+ * contraste (familia de `.obra-abrir`), no con un umbral leido de una sola
+ * pasada -- ver el spec, seccion `## Registro de implementacion`, riesgo C.
+ * A PLUMA=5 el peor caso queda en 15,06:1 (margen amplisimo) pero el
+ * recorte casi no se difumina y vuelve a leerse como una caja de cantos
+ * rectos sobre el fondo brillante -- exactamente lo que este spec vino a
+ * quitar. A PLUMA=14 el peor caso baja a 13,96:1: sigue cerca de 3 veces el
+ * suelo de accesibilidad AA (4,5:1) y cerca de 4,3 veces el minimo que
+ * exige el propio gate (0,15 de mejora), y el filo ya deja de leerse como
+ * caja. Orden de prioridad si algun dia hay que volver a tocar esto:
+ * primero el suelo de accesibilidad, despues que el corte no se lea como
+ * caja, y solo despues el ratio absoluto. No tocar `HUECO_CENTRO`,
+ * `HUECO_MEDIO`, `LUZ_CENTRO`, `LUZ_MEDIO` ni `LUM_OSCURA` para recuperar
+ * contraste: se recorta la pluma, nunca la calibracion.
  */
 const PLUMA = 14;
 
@@ -115,7 +125,7 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
   // Dos lienzos, no uno: el de abajo (`hueco`, z-index -4, debajo del
   // contenido) oscurece el fondo detras de las letras sin tocarlas. El de
   // arriba (`canvas`, z-index 70, el de siempre) se queda solo con el punto
-  // de la mano y el filete del canto. Invertir el signo del efecto (oscurecer
+  // de la mano y la brasa. Invertir el signo del efecto (oscurecer
   // en vez de aclarar) es lo que resuelve el conflicto con AA de raiz: ver
   // cabecera del modulo.
   const hueco = document.createElement("canvas");
@@ -188,7 +198,8 @@ export function mountHyprCursor(host: HTMLElement): HyprCursorHandle {
    * TAMBIEN debajo de cualquier fondo opaco propio de la diana o de un
    * ancestro suyo (una fila de creditos con rejilla al 78%, una fila de
    * indice con `--shot-fondo` solido): ahi el hueco queda tapado y el
-   * dispositivo degrada a un filete de 1px. La causa decide el mecanismo, no
+   * dispositivo degrada a la brasa y el punto de la mano, sin el charco que
+   * oscurece o ilumina. La causa decide el mecanismo, no
    * una lista de selectores -- una lista se desactualiza en cuanto cambia el
    * marcado de una seccion.
    *

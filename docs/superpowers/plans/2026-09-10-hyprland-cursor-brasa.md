@@ -80,7 +80,7 @@ Copiadas del spec y de `CLAUDE.md`. Valen para TODAS las tareas:
   `_pixeles_encendidos(pg, caja, selector, punto=None)`, `gate_brasa(pg, fallos)` y
   `gate_brasa_sigue(pg, fallos)`. La tarea 2 reutiliza `_pixeles_encendidos`.
 
-- [ ] **Paso 1: leer el terreno**
+- [x] **Paso 1: leer el terreno**
 
 Lee `src/components/hyprCursor.ts` entero (511 lineas) antes de tocar nada. Fijate en la cabecera
 del modulo: prohibe dibujar ni un caracter ni un numero fuera de la diana, y explica por que hay dos
@@ -88,7 +88,7 @@ lienzos. Lee tambien las lineas 245-380 de `scripts/measure-cursor-luz.py`: ahi 
 `abrir()`, `apuntar()`, `esperar_pot_asentada()`, `_lin()` y `_lum()`, que vas a reutilizar en vez
 de reescribir.
 
-- [ ] **Paso 2: escribir las dos familias nuevas del arnes**
+- [x] **Paso 2: escribir las dos familias nuevas del arnes**
 
 Anadelas a `scripts/measure-cursor-luz.py`. La diana es `.obra-abrir` (1440x108 a 1440x900): es la
 unica lo bastante ancha para que "encierra" y "no encierra" se distingan, y el arnes ya la usa en
@@ -212,7 +212,7 @@ prefijo `FALLO:`. Sigue ese patron y no introduzcas otro.
 `PULSABLE_SCROLL` ya vale `".obra-abrir"` en el arnes y su docstring explica por que `apuntar()`
 necesita punto explicito con esa diana: es `position: absolute; inset: 0` sobre la fila entera.
 
-- [ ] **Paso 3: verlas dar ROJO contra el codigo actual**
+- [x] **Paso 3: verlas dar ROJO contra el codigo actual**
 
 Sin tocar todavia `hyprCursor.ts`:
 
@@ -229,7 +229,7 @@ sigue el fallo esperado de siempre, el de la diana ocluida.
 
 **Pega la salida literal de esos fallos en tu informe.** Un gate que no has visto en rojo no vale.
 
-- [ ] **Paso 4: implementar la brasa**
+- [x] **Paso 4: implementar la brasa**
 
 Anade las constantes junto a las de la mano (`PUNTO_REPOSO` / `PUNTO_PULSADO`):
 
@@ -279,7 +279,7 @@ Y sustituye el bloque del canto (hoy lineas 426-431, el comentario incluido) por
       ctx.fillRect(brasaX, rect.bottom - BRASA_GROSOR, anchoBrasa, BRASA_GROSOR);
 ```
 
-- [ ] **Paso 5: verlas en VERDE**
+- [x] **Paso 5: verlas en VERDE**
 
 ```bash
 npm run build && npm run lint
@@ -289,7 +289,7 @@ python3 scripts/measure-cursor-luz.py --base http://127.0.0.1:4214
 Esperado: las familias 8 y 9 pasan. El recuento total de fallos vuelve a ser **exactamente 1** (el
 de la diana ocluida). Cualquier otro numero es un fallo nuevo.
 
-- [ ] **Paso 6: mirar una captura de verdad**
+- [x] **Paso 6: mirar una captura de verdad**
 
 Con el build servido y un oyente de consola puesto antes de navegar, captura la brasa sobre las tres
 dianas a 1440x900: `.hero-mail`, `[data-cimientos] .cim-nombre` y `.obra-abrir`. Deja las capturas
@@ -297,7 +297,7 @@ en `/tmp/brasa-t1/` y **miralas tu**. Comprueba: no hay linea en las otras tres 
 `.obra-abrir` la luz esta cerca de la mano y no cruza la pantalla; sobre `.cim-nombre` la brasa no
 invade la caja del nombre vecino.
 
-- [ ] **Paso 7: commit**
+- [x] **Paso 7: commit**
 
 ```bash
 git add src/components/hyprCursor.ts scripts/measure-cursor-luz.py
@@ -317,7 +317,7 @@ git commit -m "feat(cursor): la brasa sustituye al canto de la caja entera"
 - Consume: `huecoCtx`, `rect`, `pot`, `iluminar`, `radio`, todos ya existentes.
 - Produce: la constante `PLUMA`, el umbral `PLUMA_MARGEN` y la funcion `gate_pluma(pg, fallos)`.
 
-- [ ] **Paso 1: escribir la familia nueva**
+- [x] **Paso 1: escribir la familia nueva**
 
 ```python
 # --- Familia 10: el charco no tiene canto duro ------------------------------
@@ -373,13 +373,13 @@ def gate_pluma(pg, fallos: list) -> None:
 
 Engancha `gate_pluma(pg, fallos)` en `main()` junto a las otras, con el mismo patron de lista.
 
-- [ ] **Paso 2: verla dar ROJO**
+- [x] **Paso 2: verla dar ROJO**
 
 Corre el arnes sin tocar todavia el charco. Esperado: la familia 10 falla, porque hoy hay corte a
 canto vivo en la arista. **Pega la salida literal en tu informe.** Si sale verde, el gate no sirve:
 para y dilo — no lo ajustes hasta que pase.
 
-- [ ] **Paso 3: implementar la pluma**
+- [x] **Paso 3: implementar la pluma**
 
 Constante, junto a `LUZ_MEDIO`:
 
@@ -436,7 +436,7 @@ comentario y nada mas:
         // entra con ella y se mide entonces, no antes.
 ```
 
-- [ ] **Paso 4: verde, build y lint**
+- [x] **Paso 4: verde, build y lint**
 
 ```bash
 npm run build && npm run lint
@@ -445,13 +445,13 @@ python3 scripts/measure-cursor-luz.py --base http://127.0.0.1:4214
 
 Esperado: familia 10 en verde, total de fallos **exactamente 1**.
 
-- [ ] **Paso 5: captura y mirada**
+- [x] **Paso 5: captura y mirada**
 
 Captura `.obra-abrir` y `[data-cimientos] .cim-nombre` con el charco encendido, en `/tmp/pluma-t2/`,
 y miralas: el charco tiene que morir hacia dentro sin canto visible, y el texto de la diana tiene
 que leerse igual de bien que con el charco apagado.
 
-- [ ] **Paso 6: commit**
+- [x] **Paso 6: commit**
 
 ```bash
 git add src/components/hyprCursor.ts scripts/measure-cursor-luz.py
@@ -470,19 +470,19 @@ git commit -m "feat(cursor): el recorte del charco se empluma 14px hacia dentro"
 - Consume: todo lo de las tareas 1 y 2.
 - Produce: los numeros de antes/despues que van al commit del fallo y al registro del spec.
 
-- [ ] **Paso 1: riesgo A — la brasa bajo una diana muy baja**
+- [x] **Paso 1: riesgo A — la brasa bajo una diana muy baja**
 
 `.hero-mail` mide 211x22. La brasa cae a 2px por debajo de una linea de texto de 22px de alto.
 Captura y **mira**: comprueba que no se lee como subrayado del texto de la linea siguiente. Si lo
 hace, PARA y dilo en el informe con la captura: es una decision de diseno, no la resuelvas tu.
 
-- [ ] **Paso 2: riesgo B — dianas contiguas**
+- [x] **Paso 2: riesgo B — dianas contiguas**
 
 Los 23 nombres de los cimientos estan pegados. Roza uno del medio de una columna y captura: la brasa
 no puede invadir la caja del vecino. El acotado a `rect.left`/`rect.right` deberia cubrirlo por
 construccion; confirmalo con la captura, no por lectura del codigo.
 
-- [ ] **Paso 3: riesgo C — la pluma y el contraste**
+- [x] **Paso 3: riesgo C — la pluma y el contraste**
 
 Emplumar reduce el area donde el charco oscurece, y el charco que oscurece es el que SUBE el
 contraste. Corre el arnes **entero**, con la familia de contraste incluida, y compara sus numeros
@@ -497,7 +497,7 @@ Esperado: los pisos por familia siguen cumpliendose. Si el contraste baja, **la 
 antes que la calibracion**: baja `PLUMA` de 14 hasta que vuelva a cumplir y deja escrito el numero
 final. No toques `HUECO_CENTRO`, `HUECO_MEDIO`, `LUZ_CENTRO`, `LUZ_MEDIO` ni `LUM_OSCURA`.
 
-- [ ] **Paso 4: que nada mas se ha movido**
+- [x] **Paso 4: que nada mas se ha movido**
 
 ```bash
 npm run build && npm run lint
@@ -510,7 +510,7 @@ Esperado: `verify.py` sale 0 ("12 fallos conocidos, 0 nuevos"), los otros dos en
 Caelestia no se han tocado: confirmalo abriendo `?theme=vice` y `?theme=caelestia` con oyente de
 consola y capturando.
 
-- [ ] **Paso 5: commit**
+- [x] **Paso 5: commit**
 
 ```bash
 git add -A src/components/hyprCursor.ts scripts/measure-cursor-luz.py
@@ -529,14 +529,14 @@ Si ningun fichero cambio en esta tarea, no hay commit: dilo en el informe y pasa
 - Modificar: `docs/superpowers/plans/2026-09-10-hyprland-cursor-brasa.md`
 - Modificar: `/home/aoshi/proyectos/portfolio-aoshi/.claude/rules/verification.md`
 
-- [ ] **Paso 1: el docstring del arnes**
+- [x] **Paso 1: el docstring del arnes**
 
 En la cabecera de `scripts/measure-cursor-luz.py`, junto al aviso del fallo esperado que ya existe,
 anade las tres familias nuevas a la lista numerada de "cada asercion nace de un fallo real ya pagado
 en este repo", diciendo cual: que el cursor rodeo cada pulsable con un rectangulo naranja durante
 semanas con este mismo arnes en verde, porque vigilaba el charco y nunca miro la senal.
 
-- [ ] **Paso 2: el registro de implementacion del spec**
+- [x] **Paso 2: el registro de implementacion del spec**
 
 Anade al spec una seccion `## Registro de implementacion` con: los numeros de antes y despues, el
 valor final de `PLUMA` (14 o el que haya quedado), lo que dijeron las capturas de los tres riesgos,
@@ -548,7 +548,7 @@ contradicen.
 Anade tambien la linea `Plan: \`docs/superpowers/plans/2026-09-10-hyprland-cursor-brasa.md\`` en la
 cabecera del spec, debajo de `Estado:`.
 
-- [ ] **Paso 3: la tabla de arneses**
+- [x] **Paso 3: la tabla de arneses**
 
 `/home/aoshi/proyectos/portfolio-aoshi/.claude/rules/verification.md` tiene una tabla con un renglon
 por arnes. **Ojo: `.claude/` esta en `.gitignore`, asi que ese fichero NO existe en este worktree**
@@ -556,7 +556,7 @@ por arnes. **Ojo: `.claude/` esta en `.gitignore`, asi que ese fichero NO existe
 Actualiza el renglon de `measure-cursor-luz.py` para que mencione las tres familias nuevas y siga
 diciendo que el arnes sale con 1 fallo esperado.
 
-- [ ] **Paso 4: commit**
+- [x] **Paso 4: commit**
 
 ```bash
 git add scripts/measure-cursor-luz.py docs/superpowers/specs/2026-09-10-hyprland-cursor-brasa-design.md docs/superpowers/plans/2026-09-10-hyprland-cursor-brasa.md
