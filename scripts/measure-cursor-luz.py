@@ -803,11 +803,29 @@ def gate_brasa_sigue(pg, fallos: list) -> None:
 # filas repartiendo la MISMA amplitud total medida (paso maximo esperado =
 # amplitud / RAMPA_MINIMA_PX). Es mas exigente que la pluma real (14px): deja
 # margen sin exigir que la rampa entera quepa en la franja de 20px que se
-# captura. RUIDO_SUELO es la banda de ruido del delta medida en la franja
-# exterior de la corrida en rojo (+-0,002), redondeada al alza.
+# captura.
+#
+# RUIDO_SUELO -- calibrado contra REPETICIONES, no contra una sola corrida
+# (ronda de arreglo 1: el 0,003 original salia de UNA lectura de la corrida
+# en rojo, "+-0,002" a ojo). Medido con `/tmp/calibrar-ruido-suelo.py` --
+# misma franja, mismo punto, mismo calculo de escalon que este gate, pero
+# comparando DOS capturas "apagado" consecutivas (raton lejos en las dos):
+# eso aisla justo el ruido que preocupa, cuanto se mueve el shader por su
+# cuenta entre dos capturas, sin que ningun efecto del cursor lo contamine.
+# 10 repeticiones contra este mismo build (2026-09-10):
+#   [0.00298, 0.00253, 0.00341, 0.00261, 0.00257, 0.00153, 0.00229, 0.00280,
+#    0.00244, 0.00266]
+#   min 0.00153 -- max 0.00341 -- mediana 0.00259
+# El piso se fija con margen sobre el MAXIMO observado (0,00341), no sobre
+# la mediana: 0,005 deja un 47% de margen sobre el peor caso visto en las 10
+# repeticiones. Con este piso el gate sigue pudiendo dar rojo con margen de
+# sobra: contra la corrida en rojo de esta tarea (amplitud 0,0292, escalon
+# real 0,0272) el tope sube a (0,0292/7)*1,5+0,005 = 0,01126, y 0,0272 sigue
+# siendo 2,4 veces ese tope -- verificado por calculo directo con los
+# numeros medidos, sin volver a deshacer la pluma para remedir.
 PLUMA_MARGEN = 1.5
 RAMPA_MINIMA_PX = 7
-RUIDO_SUELO = 0.003
+RUIDO_SUELO = 0.005
 
 
 def gate_pluma(pg, fallos: list) -> None:
