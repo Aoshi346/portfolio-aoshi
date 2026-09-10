@@ -1,6 +1,6 @@
 # La brasa — el cursor de Hyprland deja de encerrar lo pulsable en una caja
 
-Estado: en ejecucion
+Estado: implementado
 Plan: `docs/superpowers/plans/2026-09-10-hyprland-cursor-brasa.md`
 Fecha: 2026-09-10
 Alcance: **solo el tema Hyprland**, y dentro de el **solo el dispositivo del cursor**.

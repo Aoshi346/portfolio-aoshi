@@ -567,7 +567,10 @@ git commit -m "docs(cursor): registro de implementacion de la brasa"
 
 ## Paso 5: la revision de Aoshi en el sitio real
 
-- [ ] Aoshi ve la brasa en el sitio servido y da su visto bueno.
+- [x] Aoshi ve la brasa en el sitio servido y da su visto bueno.
+
+Revisado el 2026-09-10 sobre el build de la rama servido por tailnet
+(`http://100.77.228.13:4216/?theme=hyprland`). Veredicto de Aoshi: "Esta excelente".
 
 Esta casilla la marca el orquestador, no un implementador. Hasta entonces el spec no puede decir
 `implementado`.
