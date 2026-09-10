@@ -134,10 +134,23 @@
     and the cimientos (7,42); she verifies per-pixel that all four edges are single smooth peaks
     with no step, and that the signal went from **+0,003 to +100/255** of luminance delta on
     `.hero-mail` — from imperceptible to unmistakable.
-  - Open, and recorded in the spec: **`.hero-mail:focus-visible` under Hyprland is
-    `color: var(--l1); outline: none`** — tabbing to the hero's mail link shows no focus indicator
-    at all (WCAG 2.4.7). It is **identical on `main`**, predates this branch, and `themes.css` was
-    out of scope here. Also: the keyboard focus ring on `.obra-abrir`/`.cim-nombre` is still the
+  - **`.hero-mail`'s focus ring — closed 2026-09-10, and the diagnosis it arrived with was wrong.**
+    The finding said "no focus indicator at all". Measured, there was one: `:focus-visible` moved
+    the colour from `--haze` to `--l1` and grew a 1px `::after` underline. The real defect is
+    sharper — **those two colours are 1,03:1 apart**: the hue goes brown to orange while the
+    luminance barely moves, so for anyone with reduced colour discrimination the only cue was a 1px
+    line, half the 2px perimeter WCAG 2.4.11 asks for. It now carries the theme's keyboard ring,
+    `outline: 2px solid var(--l1)`.
+    **The offset must be negative, and that is not taste.** `.hero-mail` carries `.hypr-cut`, which
+    leaves a `clip-path` in place even at rest (`inset(0 0 0 0)`, fully open) — and **a `clip-path`
+    clips the outline too**, so a positive offset paints nothing while `getComputedStyle` cheerfully
+    reports `solid 2px`. That is why the original author used `outline: none` and an `::after`
+    underline. Two assertions in `verify.py`'s hyprland block cover it, both seen red: one that a
+    ring of 2px or more exists, and one that the offset is never positive on a clipped element —
+    **the only assertion in the harness that treats the computed style as insufficient evidence
+    that something paints**. Note `verify.py` walks Vice by default: this block needs
+    `--theme hyprland`.
+  - Also open: the keyboard focus ring on `.obra-abrir`/`.cim-nombre` is still the
     2px `--l1` full box Aoshi just vetoed for the mouse (not an error — a strong outline is correct
     for accessibility — but the two channels now speak different vocabularies, and whether to close
     that gap is a product decision); and the pool goes out entirely over an obra row's thumbnail,
