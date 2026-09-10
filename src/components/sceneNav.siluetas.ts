@@ -1,12 +1,29 @@
 /**
  * Siluetas del indice de escenas: cada escena reducida a su estructura, en
- * coordenadas del plano real de 1440x900. El CSS las escala al fotograma.
+ * coordenadas de un PLANO de 1440x900. El CSS las escala al fotograma.
+ *
+ * El plano representa lo que el VISITANTE VE de esa escena, nunca una
+ * ventana de scroll ni una caja de coordenadas de layout copiadas tal cual:
+ * ninguna pieza puede caer fuera de el. `obra` pago este defecto en la
+ * revision final del gate de firmas — sus coordenadas eran las de
+ * `getBoundingClientRect()` en un scroll concreto, no las de su propio
+ * marco, y dos piezas (la quinta fila y su miniatura) se salian por abajo
+ * mientras el 44% superior del fotograma quedaba vacio. Si otra silueta cae
+ * en el mismo error, se reencuadra igual: se rescala el contenido real para
+ * que llene el plano en proporcion, nunca se deja que desborde.
  *
  * Son una COPIA a mano de la maqueta de cada escena, no se leen del DOM: el
  * indice se pinta con la cortinilla cerrada y las escenas ni siquiera estan
  * montadas del todo. El precio es que pueden envejecer — si una escena cambia
  * de dispositivo y su silueta no, la hoja miente en silencio. Vigilado por
- * `scripts/measure-cortinilla.py`, que comprueba que hay cinco y ninguna vacia.
+ * `scripts/measure-cortinilla.py`: comprueba que hay cinco, ninguna vacia,
+ * que ninguna pieza cae fuera del plano de 1440x900 (ni por recorte parcial),
+ * y — via un gate de firmas estructurales por hash — que ninguna escena real
+ * ha cambiado de forma desde la ultima vez que alguien miro su silueta a
+ * proposito. Cuando cambias el dispositivo de una escena, tienes que revisar
+ * (y si sigue siendo fiel, volver a bendecir con
+ * `--update-firmas <escena...>`) su entrada en `scripts/scene-nav-firmas.json`
+ * — bendecir es por escena, nombrada, nunca todo-o-nada.
  */
 
 /** Una pieza de la silueta. `x`/`y`/`w`/`h` en pixeles del plano de 1440x900. */
@@ -36,128 +53,94 @@ export const SILUETAS: Readonly<Record<string, readonly Pieza[]>> = {
   ],
   "quien-es": [
     { clase: "beam", opac: 0.8 },
-    { clase: "bar", x: 100, y: 132, w: 100, h: 5, tono: "var(--l1)" },
-    { clase: "box", x: 100, y: 167, w: 1238, h: 280 },
-    { clase: "dot", x: 120, y: 187, w: 48, h: 48, tono: "var(--shot-hueco)" },
-    { clase: "disp", x: 120, y: 246, tam: 62, tono: "var(--catch)", texto: "Aoshi Blanco Sanz" },
-    { clase: "dot", x: 120, y: 321, w: 8, h: 8, tono: "var(--l1)" },
-    { clase: "bar", x: 140, y: 321, w: 210, h: 6, tono: "var(--l1)", opac: 0.7 },
-    { clase: "bar", x: 120, y: 352, w: 52, h: 5, opac: 0.32 },
-    { clase: "bar", x: 196, y: 352, w: 214, h: 5 },
-    { clase: "bar", x: 120, y: 378, w: 52, h: 5, opac: 0.32 },
-    { clase: "bar", x: 196, y: 378, w: 168, h: 5 },
-    { clase: "bar", x: 120, y: 404, w: 52, h: 5, opac: 0.32 },
-    { clase: "bar", x: 196, y: 404, w: 132, h: 5 },
-    { clase: "bar", x: 100, y: 500, w: 640, h: 9, opac: 0.42 },
-    { clase: "rl", x: 100, y: 586, w: 1238, h: 1 },
-    { clase: "bar", x: 125, y: 660, w: 270, h: 11, opac: 0.6 },
-    { clase: "bar", x: 670, y: 664, w: 230, h: 7, opac: 0.45 },
-    { clase: "rl", x: 125, y: 742, w: 1190, h: 1 },
-    { clase: "bar", x: 125, y: 790, w: 310, h: 11, opac: 0.6 },
-    { clase: "bar", x: 670, y: 794, w: 270, h: 7, opac: 0.45 },
+    { clase: "bar", x: 101, y: 205, w: 150, h: 5, tono: "var(--l1)" },
+    { clase: "box", x: 101, y: 239, w: 1238, h: 437 },
+    { clase: "rl", x: 101, y: 383, w: 1238, h: 1 },
+    { clase: "rl", x: 101, y: 529, w: 1238, h: 1 },
+    { clase: "rl", x: 720, y: 239, w: 1, h: 437 },
+    { clase: "box", x: 733, y: 252, w: 118, h: 118 },
+    { clase: "bar", x: 118, y: 252, w: 52, h: 5, opac: 0.32 },
+    { clase: "disp", x: 118, y: 270, tam: 44, tono: "var(--color-paper)", texto: "Aoshi Blanco Sanz" },
+    { clase: "bar", x: 118, y: 319, w: 480, h: 6, opac: 0.4 },
+    { clase: "bar", x: 943, y: 252, w: 52, h: 5, opac: 0.32 },
+    { clase: "disp", x: 943, y: 270, tam: 32, tono: "var(--catch)", texto: "Disponible para proyectos" },
+    { clase: "bar", x: 118, y: 419, w: 360, h: 9, opac: 0.55 },
+    { clase: "bar", x: 737, y: 419, w: 180, h: 9, opac: 0.55 },
+    { clase: "bar", x: 118, y: 564, w: 300, h: 9, opac: 0.55 },
+    { clase: "bar", x: 737, y: 564, w: 300, h: 9, opac: 0.55 },
   ],
+  /*
+   * Cinco filas apiladas a todo lo ancho -- el dispositivo real. Reencuadrado
+   * (revision final del gate de firmas): las `y` NO son coordenadas de
+   * scroll de la pagina real (esas metian dos piezas fuera del plano, ver
+   * cabecera del fichero); son cinco bandas iguales de 180px que reparten el
+   * plano entero de 900, una por fila, para que las cinco quepan completas y
+   * el fotograma no deje el tercio superior vacio.
+   */
   obra: [
     { clase: "beam", opac: 0.75 },
-    { clase: "rl", x: 287, y: 0, w: 1, h: 900 },
-    { clase: "rl", x: 574, y: 0, w: 1, h: 900 },
-    { clase: "rl", x: 861, y: 0, w: 1, h: 900 },
-    { clase: "rl", x: 1148, y: 0, w: 1, h: 900 },
-    { clase: "disp", x: 196, y: 140, tam: 96, tono: "var(--shot-marca)", texto: "01" },
-    { clase: "disp", x: 483, y: 160, tam: 96, tono: "var(--shot-marca)", texto: "02" },
-    { clase: "disp", x: 770, y: 150, tam: 96, tono: "var(--shot-marca-viva)", texto: "03" },
-    { clase: "disp", x: 1057, y: 130, tam: 96, tono: "var(--shot-marca)", texto: "04" },
-    { clase: "disp", x: 1344, y: 150, tam: 96, tono: "var(--shot-marca)", texto: "05" },
-    { clase: "bar", x: 22, y: 70, w: 150, h: 6, tono: "var(--l1)", opac: 0.8 },
-    { clase: "disp", x: 22, y: 92, tam: 30, texto: "EchoPlan" },
-    { clase: "bar", x: 22, y: 146, w: 200, h: 8, opac: 0.4 },
-    { clase: "bar", x: 22, y: 170, w: 150, h: 8, opac: 0.4 },
-    { clase: "rl", x: 22, y: 225, w: 240, h: 1 },
-    { clase: "bar", x: 22, y: 250, w: 110, h: 5, opac: 0.3 },
-    { clase: "bar", x: 22, y: 275, w: 180, h: 5, opac: 0.3 },
-    { clase: "bar", x: 310, y: 196, w: 140, h: 6, tono: "var(--l1)", opac: 0.8 },
-    { clase: "disp", x: 310, y: 218, tam: 30, texto: "TesisFar" },
-    { clase: "bar", x: 310, y: 272, w: 210, h: 8, opac: 0.4 },
-    { clase: "bar", x: 310, y: 296, w: 160, h: 8, opac: 0.4 },
-    { clase: "rl", x: 310, y: 350, w: 240, h: 1 },
-    { clase: "bar", x: 310, y: 375, w: 130, h: 5, opac: 0.3 },
-    { clase: "bar", x: 597, y: 36, w: 150, h: 6, tono: "var(--l1)", opac: 0.8 },
-    { clase: "disp", x: 597, y: 58, tam: 30, texto: "HyprFinance" },
-    { clase: "bar", x: 597, y: 112, w: 200, h: 8, opac: 0.4 },
-    { clase: "bar", x: 597, y: 136, w: 140, h: 8, opac: 0.4 },
-    { clase: "rl", x: 597, y: 190, w: 240, h: 1 },
-    { clase: "bar", x: 597, y: 215, w: 150, h: 5, opac: 0.3 },
-    { clase: "bar", x: 597, y: 240, w: 190, h: 5, opac: 0.3 },
-    { clase: "bar", x: 884, y: 112, w: 130, h: 6, tono: "var(--l1)", opac: 0.8 },
-    { clase: "disp", x: 884, y: 134, tam: 30, texto: "WatchDog" },
-    { clase: "bar", x: 884, y: 188, w: 215, h: 8, opac: 0.4 },
-    { clase: "bar", x: 884, y: 212, w: 180, h: 8, opac: 0.4 },
-    { clase: "rl", x: 884, y: 266, w: 240, h: 1 },
-    { clase: "bar", x: 884, y: 291, w: 160, h: 5, opac: 0.3 },
-    { clase: "bar", x: 1171, y: 150, w: 190, h: 6, tono: "var(--l1)", opac: 0.8 },
-    { clase: "disp", x: 1171, y: 186, tam: 30, texto: "Editor de texto" },
-    { clase: "bar", x: 1171, y: 240, w: 200, h: 8, opac: 0.4 },
-    { clase: "bar", x: 1171, y: 264, w: 150, h: 8, opac: 0.4 },
-    { clase: "rl", x: 1171, y: 318, w: 240, h: 1 },
-    { clase: "bar", x: 1171, y: 343, w: 170, h: 5, opac: 0.3 },
+    { clase: "rl", x: 0, y: 0, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 180, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 360, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 540, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 720, w: 1440, h: 1 },
+    { clase: "rl", x: 0, y: 899, w: 1440, h: 1 },
+    { clase: "disp", x: 114, y: 44, tam: 90, tono: "var(--color-paper)", texto: "EchoPlan" },
+    { clase: "box", x: 1279, y: 40, w: 161, h: 101 },
+    { clase: "bar", x: 114, y: 224, w: 300, h: 90, opac: 0.5 },
+    { clase: "box", x: 1279, y: 220, w: 161, h: 101 },
+    { clase: "bar", x: 114, y: 404, w: 450, h: 90, opac: 0.5 },
+    { clase: "box", x: 1279, y: 400, w: 161, h: 101 },
+    { clase: "bar", x: 114, y: 584, w: 385, h: 90, opac: 0.5 },
+    { clase: "box", x: 1279, y: 580, w: 161, h: 101 },
+    { clase: "bar", x: 114, y: 764, w: 540, h: 90, opac: 0.5 },
+    { clase: "box", x: 1279, y: 760, w: 161, h: 101 },
   ],
   creditos: [
     { clase: "beam", opac: 0.85 },
-    { clase: "bar", x: 100, y: 132, w: 200, h: 5, tono: "var(--l1)" },
-    { clase: "box", x: 100, y: 165, w: 1000, h: 332 },
-    { clase: "bar", x: 119, y: 190, w: 78, h: 5, opac: 0.32 },
-    { clase: "bar", x: 119, y: 216, w: 74, h: 12, opac: 0.85 },
-    { clase: "bar", x: 213, y: 216, w: 82, h: 12 },
-    { clase: "bar", x: 315, y: 216, w: 118, h: 12 },
-    { clase: "bar", x: 453, y: 216, w: 136, h: 12 },
-    { clase: "bar", x: 609, y: 216, w: 54, h: 12 },
-    { clase: "bar", x: 683, y: 216, w: 70, h: 12 },
-    { clase: "bar", x: 119, y: 270, w: 140, h: 5, opac: 0.32 },
-    { clase: "bar", x: 119, y: 296, w: 86, h: 12 },
-    { clase: "bar", x: 225, y: 296, w: 84, h: 12 },
-    { clase: "bar", x: 329, y: 296, w: 88, h: 12 },
-    { clase: "bar", x: 437, y: 296, w: 86, h: 12 },
-    { clase: "bar", x: 119, y: 350, w: 126, h: 5, opac: 0.32 },
-    { clase: "bar", x: 119, y: 376, w: 114, h: 12 },
-    { clase: "bar", x: 253, y: 376, w: 74, h: 12 },
-    { clase: "bar", x: 347, y: 376, w: 60, h: 12 },
-    { clase: "bar", x: 427, y: 376, w: 30, h: 12 },
-    { clase: "bar", x: 119, y: 430, w: 106, h: 5, opac: 0.32 },
-    { clase: "bar", x: 119, y: 456, w: 48, h: 12 },
-    { clase: "bar", x: 187, y: 456, w: 82, h: 12 },
-    { clase: "bar", x: 289, y: 456, w: 54, h: 12 },
-    { clase: "bar", x: 363, y: 456, w: 134, h: 12 },
-    { clase: "box", x: 100, y: 549, w: 1000, h: 286 },
-    { clase: "dot", x: 120, y: 572, w: 44, h: 44, tono: "var(--l1)" },
-    { clase: "disp", x: 120, y: 624, tam: 64, tono: "var(--catch)", texto: "React" },
-    { clase: "bar", x: 120, y: 712, w: 340, h: 7, opac: 0.4 },
-    { clase: "rl", x: 120, y: 752, w: 960, h: 1 },
-    { clase: "box", x: 120, y: 790, w: 96, h: 28 },
-    { clase: "box", x: 236, y: 790, w: 118, h: 28 },
+    { clase: "bar", x: 101, y: 152, w: 220, h: 5, tono: "var(--l1)" },
+    { clase: "bar", x: 101, y: 210, w: 90, h: 5, opac: 0.35 },
+    { clase: "bar", x: 133, y: 249, w: 73, h: 12, opac: 0.85 },
+    { clase: "bar", x: 133, y: 291, w: 139, h: 12, opac: 0.7 },
+    { clase: "bar", x: 133, y: 333, w: 161, h: 12, opac: 0.7 },
+    { clase: "bar", x: 133, y: 375, w: 71, h: 12, opac: 0.6 },
+    { clase: "box", x: 651, y: 210, w: 344, h: 242 },
+    { clase: "bar", x: 684, y: 210, w: 150, h: 5, opac: 0.35 },
+    { clase: "bar", x: 716, y: 249, w: 92, h: 12, opac: 0.85 },
+    { clase: "bar", x: 716, y: 291, w: 94, h: 12, opac: 0.7 },
+    { clase: "bar", x: 716, y: 333, w: 90, h: 12, opac: 0.7 },
+    { clase: "box", x: 995, y: 210, w: 344, h: 242 },
+    { clase: "bar", x: 1028, y: 210, w: 140, h: 5, opac: 0.35 },
+    { clase: "bar", x: 1060, y: 249, w: 35, h: 12, opac: 0.85 },
+    { clase: "bar", x: 1060, y: 291, w: 160, h: 12, opac: 0.7 },
+    { clase: "bar", x: 1060, y: 333, w: 132, h: 12, opac: 0.7 },
+    { clase: "rl", x: 101, y: 626, w: 1238, h: 2, tono: "var(--l1)", opac: 1 },
+    { clase: "bar", x: 101, y: 650, w: 150, h: 5, opac: 0.35 },
+    { clase: "disp", x: 133, y: 674, tam: 44, tono: "var(--color-paper)", texto: "JavaScript" },
+    { clase: "bar", x: 354, y: 682, w: 95, h: 34, opac: 0.6 },
+    { clase: "bar", x: 502, y: 682, w: 69, h: 34, opac: 0.6 },
+    { clase: "bar", x: 624, y: 682, w: 24, h: 34, opac: 0.6 },
+    { clase: "bar", x: 700, y: 682, w: 57, h: 34, opac: 0.6 },
   ],
   contacto: [
     { clase: "beam", opac: 1 },
-    { clase: "bar", x: 124, y: 196, w: 90, h: 5, tono: "var(--l1)" },
-    { clase: "disp", x: 124, y: 228, tam: 96, tono: "var(--catch)", texto: "Hablemos" },
-    { clase: "bar", x: 124, y: 352, w: 240, h: 8, opac: 0.42 },
-    { clase: "bar", x: 124, y: 422, w: 90, h: 5, opac: 0.3 },
-    { clase: "bar", x: 238, y: 422, w: 230, h: 5, opac: 0.45 },
-    { clase: "rl", x: 100, y: 468, w: 1240, h: 1 },
-    { clase: "bar", x: 200, y: 512, w: 96, h: 5, opac: 0.3 },
-    { clase: "rl", x: 876, y: 514, w: 30, h: 2, tono: "var(--l1)" },
-    { clase: "bar", x: 930, y: 504, w: 410, h: 16, opac: 0.85 },
-    { clase: "rl", x: 100, y: 560, w: 1240, h: 1 },
-    { clase: "bar", x: 200, y: 604, w: 110, h: 5, opac: 0.3 },
-    { clase: "rl", x: 956, y: 606, w: 30, h: 2, tono: "var(--l1)" },
-    { clase: "bar", x: 1010, y: 596, w: 330, h: 16, opac: 0.7 },
-    { clase: "rl", x: 100, y: 652, w: 1240, h: 1 },
-    { clase: "bar", x: 200, y: 696, w: 104, h: 5, opac: 0.3 },
-    { clase: "rl", x: 966, y: 698, w: 30, h: 2, tono: "var(--l1)" },
-    { clase: "bar", x: 1020, y: 688, w: 320, h: 16, opac: 0.7 },
-    { clase: "rl", x: 100, y: 745, w: 1240, h: 1 },
-    { clase: "bar", x: 200, y: 788, w: 88, h: 5, opac: 0.3 },
-    { clase: "rl", x: 1066, y: 790, w: 30, h: 2, tono: "var(--l1)" },
-    { clase: "bar", x: 1120, y: 780, w: 220, h: 16, opac: 0.7 },
-    { clase: "rl", x: 100, y: 838, w: 1240, h: 1 },
+    { clase: "bar", x: 125, y: 199, w: 90, h: 5, tono: "var(--l1)" },
+    { clase: "disp", x: 125, y: 228, tam: 96, tono: "var(--catch)", texto: "Hablemos" },
+    { clase: "bar", x: 125, y: 352, w: 240, h: 8, opac: 0.42 },
+    { clase: "rl", x: 0, y: 733, w: 1440, h: 1, tono: "var(--l1)", opac: 0.5 },
+    { clase: "bar", x: 930, y: 737, w: 250, h: 9, opac: 0.5, tono: "var(--catch)" },
+    { clase: "bar", x: 101, y: 787, w: 65, h: 5, opac: 0.32 },
+    { clase: "bar", x: 101, y: 821, w: 315, h: 16, opac: 0.7 },
+    { clase: "rl", x: 101, y: 873, w: 315, h: 1, tono: "var(--l1)", opac: 0.42 },
+    { clase: "bar", x: 529, y: 787, w: 75, h: 5, opac: 0.32 },
+    { clase: "bar", x: 529, y: 821, w: 236, h: 16, opac: 0.7 },
+    { clase: "rl", x: 529, y: 873, w: 236, h: 1, tono: "var(--l1)", opac: 0.42 },
+    { clase: "bar", x: 880, y: 787, w: 84, h: 5, opac: 0.32 },
+    { clase: "bar", x: 880, y: 821, w: 222, h: 16, opac: 0.7 },
+    { clase: "rl", x: 880, y: 873, w: 222, h: 1, tono: "var(--l1)", opac: 0.42 },
+    { clase: "bar", x: 1216, y: 787, w: 60, h: 5, opac: 0.32 },
+    { clase: "bar", x: 1216, y: 821, w: 123, h: 16, opac: 0.7 },
+    { clase: "rl", x: 1216, y: 873, w: 123, h: 1, tono: "var(--l1)", opac: 0.42 },
   ],
 };
 
@@ -204,10 +187,19 @@ function emite(p: Pieza): boolean {
 
 function esFino(p: Pieza): boolean {
   if (p.clase === "beam") return false;
+  /*
+   * El texto se decide por su CUERPO, nunca por si emite. La exencion de
+   * `emite()` se escribio para trazos de acento de 1px (`rl`/`bar` en
+   * `--l1`/`--catch`), y una cadena de texto no es un trazo: "Disponible
+   * para proyectos" a `--catch` pleno pasaba esta guardia ANTES de llegar al
+   * chequeo de cuerpo, renderizaba a 3,8px y era exactamente el manchon que
+   * `CUERPO_MINIMO` existe para impedir. Por eso el texto se mide primero y
+   * sin excepcion.
+   */
+  if (p.texto !== undefined) return (p.tam ?? 0) < CUERPO_MINIMO;
   if (emite(p)) return false;
   // Una `box` solo aporta su borde de 1px: en movil nunca sobrevive.
   if (p.clase === "box") return true;
-  if (p.texto !== undefined) return (p.tam ?? 0) < CUERPO_MINIMO;
   const lados = [p.w, p.h].filter((v): v is number => v !== undefined);
   return lados.length > 0 && Math.min(...lados) < GROSOR_MINIMO;
 }

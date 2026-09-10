@@ -192,8 +192,9 @@
     replacement (the cimientos have no opaque background), so the harness says what is missing and
     since when instead of substituting a softer target. **Giving that family a new occluded target
     is an open commission.**
-  - Open, and recorded in the spec: the cursor's orange edge around the 23 new buttons (that is the
-    separate cursor commission), the scene selector's stale silhouettes, retiring the dead nodes
+  - Open, and recorded in the spec: ~~the cursor's orange edge around the 23 new buttons~~ (closed
+    2026-09-10, see the brasa block), ~~the scene selector's stale silhouettes~~ (closed 2026-09-10,
+    see the selector block below), retiring the dead nodes
     `credits.ts` still builds (`.credits-rail`, `.credits-glow`, `.credits-spark` and
     `STRIP_REPAINT_EVENT`, which now has no listener), that `8fr 5fr 5fr` is hand-written and
     mirrors counts that live in `content.ts` with no gate comparing them, and that
@@ -205,6 +206,72 @@
     shader in the lower third of each column (measured pixel by pixel; it is the token's luminance
     sitting inside the shader's range, the same brightness ceiling the theme already carries), and
     GSAP's icon is a wordmark that does not scale like the rest of the set at 20px.
+
+- **Hyprland's scene selector is MERGED** (`2026-09-10-hyprland-selector-siluetas`, spec
+  `implementado`). The index paints five **silhouettes** — each scene reduced to its structure,
+  drawn in a **1440x900 plane** the CSS scales into the card. They are **hand copies on purpose**:
+  the index paints with the curtain closed, before the scenes are fully mounted. The module's own
+  header had declared the price from day one — *"they can age: if a scene changes device and its
+  silhouette does not, the sheet lies in silence"* — and it came due: **four of the five** no longer
+  matched. `creditos` still drew the catastro retired the day before (a grid of bars and a dot
+  reading "React"), `obra` drew a horizontal rail of columns when the scene is five stacked rows,
+  `quien-es` and `contacto` had drifted the same way. Only `hero` was faithful.
+  - **The harness could not see any of it, by construction.** `measure-cortinilla.py` measured HOW
+    the silhouettes paint — five of them, none empty, the plane scales, no piece under 1px on mobile
+    — and never compared them to the scene.
+  - **The instrument that was discarded matters as much as the one that shipped.** The first design
+    asked "does the silhouette resemble its scene?" (grid-occupancy Jaccard). It does not separate:
+    across grids from 2x2 to 20x12, with Jaccard, density correlation, cosine, and text-only and
+    border-only subsets, the order came out inverted — `creditos`, entirely obsolete, scored **above**
+    `hero`, the only faithful one. *"Does this still represent the current device"* is a semantic
+    judgement a rectangle overlap cannot see. The implementer **stopped instead of moving the
+    threshold**, which is the doctrine working.
+  - **The shipped gate changes the question** to the one that actually failed: **has a scene changed
+    without anyone revisiting its silhouette?** The drift was not the problem; the silence was. Real
+    ink per scene is extracted from the DOM (own-text nodes and visible borders, rects relative to
+    the scene's own origin, `reduced_motion="reduce"`), quantized and hashed against blessed
+    signatures in `scripts/scene-nav-firmas.json`, with `--update-firmas <scene>` to bless — the same
+    idiom `verify.py` uses with `--update-baseline`. **It does not check that a silhouette is
+    correct**, only that nobody changes a scene without passing in front of it, and it says so in its
+    own docstring.
+  - **Bless one scene at a time.** Blessing all five buries the red of a scene nobody looked at.
+  - **The transposition blind spot was closed, not accepted.** Hashing the union of lit cells gives
+    the SAME hash for a row/column transposition covering the same cells — exactly the drift `obra`
+    suffered. It hashes the **multiset of per-piece cell boxes** `(c0,r0,c1,r1)` now: four integers
+    that were already computed and thrown away. It also closes the other declared limit (new content
+    landing in an already-inked cell). **A limitation you close by moving four integers is a
+    decision, not a limitation.**
+  - **The repaint's own trap, and the one the reviews caught.** Silhouette pieces must fall inside
+    the plane: the frame is `overflow: hidden`, so a piece that overflows is clipped in silence. It
+    happened — `obra` took its coordinates from the **viewport at one scroll position** instead of
+    the scene's frame, and two pieces reached y=940 on a 900 plane, so **the five-row scene was drawn
+    with four and a half rows**. The assertion that should have caught it counted only pieces
+    *entirely* outside the frame, and partial clipping is the only kind a repaint produces. It
+    detects partial clipping now, plus a static check that every piece fits in 1440x900.
+    Measuring that scene is genuinely tricky: `[data-scene="obra"]` reports a `getBoundingClientRect()`
+    ~109px tall while its five absolutely-positioned rows span ~547. **The section's box does not
+    describe what is on screen.**
+  - Three more assertions the branch had to add: partial clipping (above), that every `disp` literal
+    still exists in the real content (changing a text almost never moves cell occupancy, so the same
+    silent drift came back through the other door), and that the three scene lists agree —
+    `SILUETAS`, the signature selectors, and `content.ts`.
+  - `emite()` no longer exempts text pieces from the minimum-body rule: it was written for 1px accent
+    strokes, and it was letting "Disponible para proyectos" survive on mobile at **3.8px** — the very
+    blotch `CUERPO_MINIMO` exists to prevent — while hiding the name that identifies the card.
+  - **Environment trap found on the way:** `vite preview` returns **200 `text/html` for any path**
+    (SPA fallback), so probing `/@vite/client` by status code gives a false positive. Probe by
+    content-type. And the harness now measures everything against `--base`: requiring the flag only
+    for the signatures while six other families still pointed at a hardcoded dev-server URL broke the
+    documented command and left the families that measure silhouette geometry — the ones that should
+    have caught `obra` — reading a page with HMR.
+  - Piece counts, before -> after: `quien-es` 20 -> 16, `obra` 42 -> 16, `creditos` 32 -> 24,
+    `contacto` 23 -> 18. Fewer pieces and a closer likeness, which is the sign it summarized instead
+    of tracing.
+  - Open: the silhouettes are still hand copies. Deriving them from the DOM would remove the whole
+    class of bug but collides with why they are hand-made, and would redesign a closed device —
+    Aoshi chose repaint plus gate, and the alternative is recorded as not taken. The harness also
+    carries **2 pre-existing failures on Caelestia's trigger**, verified identical on `main` in a
+    separate worktree.
 
 - **Caelestia's cursor is BUILT and gated, pending merge** (`2026-09-04-caelestia-cursor`, branch
   `design/caelestia-cursor` in the `portfolio-aoshi-cursor` worktree): **"la gota"** — a drop of the
