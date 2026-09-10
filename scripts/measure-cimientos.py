@@ -161,15 +161,28 @@ def gate_7_8_9_12_geometria(pg, nombre: str, w: int, fallos: list) -> None:
     """7: nada desborda la caja de [data-cimientos], medido con rects, nunca
     con scrollWidth/scrollHeight (mienten con un transform dentro de un
     overflow: clip, pagado en B6). 8: las columnas nacen a la misma cota y el
-    suelo esta a 48px del pie de la mas alta (solo en escritorio). 9: tallas
-    en la escala. 12: diana tactil >= 44px en movil, solo sobre visibles."""
+    suelo esta a 48px del pie de la mas alta (solo desde 1024px). 9: tallas
+    en la escala. 12: diana tactil >= 44px en movil, solo sobre visibles.
+
+    El umbral del gate 8 subio de 821 a 1024 en la revision final de la rama
+    (arreglo 2, hallazgo P1 de `vera-art-director`): entre 821 y 950px la
+    proporcion 8/5/5 se derrumbaba a `[240, 240, 240]` (el piso
+    `minmax(240px, Nfr)` se comia la razon) y "Claude Code" se partia en dos
+    lineas -- Vera midio que solo se recupera la proporcion correcta a partir
+    de ~1024px. El arreglo extendio la maquetacion apilada de
+    `@media (max-width: 820px)` a `@media (max-width: 1023px)`, asi que por
+    debajo de 1024px las tres columnas van una debajo de otra: no nacen a la
+    misma cota por CONSTRUCCION, y medir el aire de 48px ahi seria medir el
+    salto vertical entre filas, no el hueco entre columnas y suelo -- otra
+    cosa, no lo que este gate dice cazar. La exigencia no se relaja, solo se
+    mueve al ancho donde las tres columnas son de verdad tres columnas."""
     g = pg.evaluate(GEOMETRIA_JS)
     if g is None:
         fallos.append(f"[{nombre}] gates 7-12: no existe [data-cimientos]")
         return
     for x in g["fuera"]:
         fallos.append(f"[{nombre}] gate 7: '{x['t']}' desborda la caja de los cimientos")
-    if w >= 821:
+    if w >= 1024:
         if len(g["cols"]) != 3:
             fallos.append(f"[{nombre}] gate 8: {len(g['cols'])} columnas, esperadas 3")
         else:
