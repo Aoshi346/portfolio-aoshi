@@ -5,8 +5,14 @@ Criterios 3 y 4 del spec 2026-08-06-hyprland-cortinilla-hoja-design.md.
 Se lanza contra el dev server o contra el build servido. NO usa capturas para
 medir animacion: eso llega en la Tarea 4 y muestrea desde dentro de la pagina.
 """
+import argparse
+import hashlib
 import json
+import subprocess
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
 from playwright.sync_api import sync_playwright
 
 URL = "http://127.0.0.1:5173/?theme=hyprland"
@@ -645,7 +651,267 @@ def comprobar_contraste(peor):
     return fallos
 
 
+############################################################################
+# Firmas estructurales del indice de escenas.
+#
+# NO comprueba que la silueta sea correcta. No sabe si `src/components/
+# sceneNav.siluetas.ts` dibuja lo que hay que dibujar — esa es una pregunta
+# semantica, y un arnes geometrico no tiene acceso a ella (medido: ver el
+# informe `.superpowers/informe-gate-siluetas.md`, donde un indice de
+# similitud silueta-vs-escena se probo contra las cinco escenas en mas de
+# diez configuraciones distintas y el orden que dio salio invertido respecto
+# a lo que un humano juzga fiel).
+#
+# Lo que SI comprueba: que ninguna escena real ha cambiado de estructura
+# desde la ULTIMA VEZ que alguien miro su silueta a proposito y la bendijo.
+# La pregunta no es "¿se parece la silueta a la escena?", es "¿ha cambiado
+# la escena sin que nadie pasara por delante de su silueta?". El silencio es
+# el fallo que de verdad ocurrio aqui (creditos, quien-es y contacto
+# derivaron sin que nada avisara), no la deriva en si — la deriva es
+# inevitable en un fichero que es una copia a mano; el silencio no lo era.
+############################################################################
+
+FIRMAS_PATH = Path(__file__).parent / "scene-nav-firmas.json"
+
+# Selector real de cada escena. `obra` no es `[data-scene="obra"]` (eso
+# selecciona solo la PRIMERA de las cinco tarjetas de proyecto): es el
+# envoltorio `#obra` que las agrupa a las cinco, el mismo nodo al que apunta
+# el ancla de navegacion (ver `src/main.ts`, `obraRail.id = "obra"`).
+FIRMA_SELECTORES = {
+    "hero": '[data-scene="hero"]',
+    "quien-es": '[data-scene="about"]',
+    "obra": "#obra",
+    "creditos": '[data-scene="credits"]',
+    "contacto": '[data-scene="contacto"]',
+}
+
+# Rejilla de cuantizacion, en celdas sobre el marco PROPIO de cada escena
+# (1440 de ancho x su alto real, no 900 fijo: `obra` mide ~550px de alto
+# real a 1440 de ancho, y forzar 900 la recortaria). 12x8 se eligio por
+# rango, no al tanteo: mas fino (16x10, 20x12) es mas sensible a un cambio
+# real pero tambien a redondeos de subpixel del renderizador; mas grueso
+# (6x4, 8x5) sigue siendo estable pero empieza a perder cambios de una sola
+# pieza pequeña. Las tres resoluciones probadas (8x5, 12x8, 16x10) salieron
+# BIT A BIT identicas en tres corridas seguidas contra el mismo build (ver
+# el informe), asi que la eleccion es de sensibilidad, no de estabilidad: se
+# toma la del medio.
+FIRMA_GRID = (12, 8)
+
+# Igual que `REAL_JS`/`LAYOUT_JS` de las siluetas: solo cuenta como "tinta"
+# un nodo con texto propio (longitud >= 2 para no contar cada `<i>` suelto
+# de la animacion de caracteres de los titulos de Obra — un titulo de 8
+# letras deja 16 `<i>` de una sola letra cada uno, puro ruido de montaje) o
+# un elemento con borde visible, leido LADO A LADO (`border-top-width`, etc.)
+# y no como "tiene borde en algun sitio": una `<section>` con solo
+# `border-top` no es una caja completa, y marcarla como tal infla la firma
+# con tres lados que no existen.
+FIRMA_JS = """(sel) => {
+  const wrap = document.querySelector(sel);
+  if (!wrap) return null;
+  const origin = wrap.getBoundingClientRect();
+  const out = [];
+  const walker = document.createTreeWalker(wrap, NodeFilter.SHOW_ELEMENT);
+  let node = walker.currentNode;
+  const consider = (el) => {
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    const ownText = [...el.childNodes].filter((n) => n.nodeType === 3)
+      .map((n) => n.textContent.trim()).join('').trim();
+    const hasOwnText = ownText.length >= 2;
+    const sides = {
+      top: parseFloat(cs.borderTopWidth) > 0,
+      bottom: parseFloat(cs.borderBottomWidth) > 0,
+      left: parseFloat(cs.borderLeftWidth) > 0,
+      right: parseFloat(cs.borderRightWidth) > 0,
+    };
+    const anyBorder = sides.top || sides.bottom || sides.left || sides.right;
+    if (!hasOwnText && !anyBorder) return;
+    out.push({
+      x: r.left - origin.left, y: r.top - origin.top, w: r.width, h: r.height,
+      filled: hasOwnText, sides,
+    });
+  };
+  while (node) { consider(node); node = walker.nextNode(); }
+  return {w: origin.width, h: origin.height, pieces: out};
+}"""
+
+
+def _celdas_pieza(p, w, h, cols, rows):
+    pw = max(p["w"], 1)
+    ph = max(p["h"], 1)
+    x0 = max(p["x"], 0)
+    y0 = max(p["y"], 0)
+    x1 = min(p["x"] + pw, w)
+    y1 = min(p["y"] + ph, h)
+    if x1 <= x0 or y1 <= y0 or not w or not h:
+        return
+    c0 = max(0, min(cols - 1, int(x0 / w * cols)))
+    c1 = max(0, min(cols - 1, int((x1 - 0.001) / w * cols)))
+    r0 = max(0, min(rows - 1, int(y0 / h * rows)))
+    r1 = max(0, min(rows - 1, int((y1 - 0.001) / h * rows)))
+    if p.get("filled", True):
+        for cx in range(c0, c1 + 1):
+            for cy in range(r0, r1 + 1):
+                yield (cx, cy)
+        return
+    # Solo borde: solo se marcan los lados que de verdad estan pintados, no
+    # el perimetro entero de la caja (ver comentario de `FIRMA_JS`).
+    sides = p.get("sides") or {"top": True, "bottom": True, "left": True, "right": True}
+    if sides.get("top"):
+        for cx in range(c0, c1 + 1):
+            yield (cx, r0)
+    if sides.get("bottom"):
+        for cx in range(c0, c1 + 1):
+            yield (cx, r1)
+    if sides.get("left"):
+        for cy in range(r0, r1 + 1):
+            yield (c0, cy)
+    if sides.get("right"):
+        for cy in range(r0, r1 + 1):
+            yield (c1, cy)
+
+
+def calcular_firma(datos, cols, rows):
+    """De `{w, h, pieces}` a `(hash, celdas_ordenadas)`. Determinista: mismo
+    layout, mismo hash — es justo lo que exige la prueba de estabilidad."""
+    celdas = set()
+    for p in datos["pieces"]:
+        celdas.update(_celdas_pieza(p, datos["w"], datos["h"], cols, rows))
+    ordenadas = sorted(f"{x}:{y}" for x, y in celdas)
+    firma = hashlib.sha256(",".join(ordenadas).encode()).hexdigest()
+    return firma, ordenadas
+
+
+def abrir_firmas(pw, base):
+    b = pw.chromium.launch(headless=True, executable_path=CHROME,
+                           args=["--no-sandbox", "--use-gl=swiftshader"])
+    ctx = b.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+    pg = ctx.new_page()
+    consola = []
+    pg.on("console", lambda m: consola.append(m.text) if m.type == "error" else None)
+    pg.goto(f"{base}/?theme=hyprland", wait_until="domcontentloaded", timeout=40000)
+    pg.wait_for_timeout(6000)  # encendido de Ascua + shader, layout asentado
+    return b, ctx, pg, consola
+
+
+def medir_firmas(base):
+    """Firma actual de las cinco escenas contra el build en `base`. Se mide
+    con `reduced_motion="reduce"` a proposito: esto es maquetacion, no la
+    entrada — con movimiento normal la escena de Obra se lee a medio barrer
+    y la firma saldria distinta cada vez que cambiara el instante del
+    muestreo, que es justo el fallo de instrumento que la prueba de
+    estabilidad esta aqui para cazar."""
+    with sync_playwright() as pw:
+        b, ctx, pg, consola = abrir_firmas(pw, base)
+        cols, rows = FIRMA_GRID
+        salida = {}
+        for id_, sel in FIRMA_SELECTORES.items():
+            pg.evaluate("(sel) => document.querySelector(sel)?.scrollIntoView({block: 'start'})", sel)
+            pg.wait_for_timeout(500)
+            datos = pg.evaluate(FIRMA_JS, sel)
+            if datos is None:
+                salida[id_] = {"hash": None, "celdas": [], "piezas": 0}
+                continue
+            firma, celdas = calcular_firma(datos, cols, rows)
+            salida[id_] = {"hash": firma, "celdas": celdas, "piezas": len(datos["pieces"])}
+        ctx.close()
+        b.close()
+    return salida, consola
+
+
+def _commit_actual():
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=Path(__file__).parent.parent,
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+    except Exception:
+        return "desconocido"
+
+
+def cargar_firmas_bendecidas():
+    if not FIRMAS_PATH.exists():
+        return {}
+    return json.loads(FIRMAS_PATH.read_text(encoding="utf-8"))
+
+
+def guardar_firmas_bendecidas(actuales):
+    """Escribe `scene-nav-firmas.json`. Bendecir es un acto deliberado que se
+    revisa en el diff (igual que `--update-baseline` en `verify.py`): este
+    metodo nunca se llama solo desde el camino de comprobacion, solo desde
+    `--update-firmas`."""
+    commit = _commit_actual()
+    ahora = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    bendecidas = {
+        id_: {
+            "hash": d["hash"],
+            "grid": list(FIRMA_GRID),
+            "commit": commit,
+            "bendecidoEn": ahora,
+        }
+        for id_, d in actuales.items()
+    }
+    FIRMAS_PATH.write_text(json.dumps(bendecidas, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return bendecidas
+
+
+def comprobar_firmas(actuales, bendecidas):
+    fallos = []
+    for id_ in FIRMA_SELECTORES:
+        act = actuales.get(id_, {})
+        ben = bendecidas.get(id_)
+        if act.get("hash") is None:
+            fallos.append(f"firma {id_}: no se encontro la escena en el DOM ({FIRMA_SELECTORES[id_]})")
+            continue
+        if ben is None:
+            fallos.append(
+                f"firma {id_}: no hay firma bendecida en {FIRMAS_PATH.name}. "
+                f"Revisa su silueta en sceneNav.siluetas.ts y bendice con --update-firmas."
+            )
+            continue
+        if list(ben.get("grid", FIRMA_GRID)) != list(FIRMA_GRID):
+            fallos.append(
+                f"firma {id_}: bendecida con una rejilla distinta ({ben.get('grid')} != "
+                f"{list(FIRMA_GRID)}). Vuelve a bendecir con --update-firmas."
+            )
+            continue
+        if act["hash"] != ben["hash"]:
+            fallos.append(
+                f"firma {id_}: la escena cambio de estructura desde que se bendijo "
+                f"(commit {ben.get('commit', '?')[:8]}, {ben.get('bendecidoEn', '?')}). "
+                f"Revisa `src/components/sceneNav.siluetas.ts` para \"{id_}\": si la silueta "
+                f"sigue representando la escena, vuelve a bendecir con --update-firmas; si no, "
+                f"arregla la silueta primero y bendice despues."
+            )
+    return fallos
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--base", default="http://127.0.0.1:5173",
+        help="Origen del build a medir (el build servido, nunca el dev server, para las firmas)",
+    )
+    parser.add_argument(
+        "--update-firmas", action="store_true",
+        help="Recalcula las cinco firmas estructurales contra --base y sobreescribe "
+             "scene-nav-firmas.json. No corre el resto del arnes.",
+    )
+    args = parser.parse_args()
+
+    if args.update_firmas:
+        actuales, consola = medir_firmas(args.base)
+        bendecidas = guardar_firmas_bendecidas(actuales)
+        print(json.dumps(bendecidas, indent=2, ensure_ascii=False))
+        print(f"\nfirmas bendecidas en {FIRMAS_PATH}")
+        if consola:
+            print("\naviso: hubo errores de consola durante la medida:")
+            for m in consola:
+                print(" -", m)
+        return 0
+
     fallos = []
     for ancho, alto in ((1440, 900), (390, 844)):
         datos = medir_layout(ancho, alto)
@@ -681,6 +947,18 @@ def main():
     print("\n== contraste del rotulo visible del disparador (peor momento del scroll)")
     print(json.dumps(contraste, indent=2, ensure_ascii=False))
     fallos += comprobar_contraste(contraste)
+
+    actuales, consola_firmas = medir_firmas(args.base)
+    print("\n== firmas estructurales de las cinco escenas")
+    print(json.dumps(
+        {id_: {"hash": d["hash"], "piezas": d["piezas"]} for id_, d in actuales.items()},
+        indent=2, ensure_ascii=False,
+    ))
+    if consola_firmas:
+        print("consola (errores durante la medida de firmas):", consola_firmas)
+        fallos += [f"firmas: error de consola: {m}" for m in consola_firmas]
+    bendecidas = cargar_firmas_bendecidas()
+    fallos += comprobar_firmas(actuales, bendecidas)
 
     if fallos:
         print("\nFALLOS:")

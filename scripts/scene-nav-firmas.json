@@ -1,0 +1,47 @@
+{
+  "hero": {
+    "hash": "e15db5847c669c852476311097e031ca4dc7e07a46e2e603a209601dd99dd63f",
+    "grid": [
+      12,
+      8
+    ],
+    "commit": "39d07823de21c41ab066c123bced2e810998be4f",
+    "bendecidoEn": "2026-09-10T21:40:58+00:00"
+  },
+  "quien-es": {
+    "hash": "516aab12bd7c0b724b80f6ef195dc8ba0beaedc66e98ac17ade3663e3710ded0",
+    "grid": [
+      12,
+      8
+    ],
+    "commit": "39d07823de21c41ab066c123bced2e810998be4f",
+    "bendecidoEn": "2026-09-10T21:40:58+00:00"
+  },
+  "obra": {
+    "hash": "2421c26a8f8123bc140cd304894790e5fc53187f2b17420c6494f0fa7894381e",
+    "grid": [
+      12,
+      8
+    ],
+    "commit": "39d07823de21c41ab066c123bced2e810998be4f",
+    "bendecidoEn": "2026-09-10T21:40:58+00:00"
+  },
+  "creditos": {
+    "hash": "0c22725d73d799aa05ebe30dd35433774cfc7b73eeb3701da881a1ceaaba0cf9",
+    "grid": [
+      12,
+      8
+    ],
+    "commit": "39d07823de21c41ab066c123bced2e810998be4f",
+    "bendecidoEn": "2026-09-10T21:40:58+00:00"
+  },
+  "contacto": {
+    "hash": "bbcec0b254e23117ddfc49c1115507c053a2fe51ecf9cb49aa2236c92bb72003",
+    "grid": [
+      12,
+      8
+    ],
+    "commit": "39d07823de21c41ab066c123bced2e810998be4f",
+    "bendecidoEn": "2026-09-10T21:40:58+00:00"
+  }
+}
