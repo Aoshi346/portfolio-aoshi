@@ -16,13 +16,11 @@ Desarrollador full stack · Caracas, Venezuela
 
 ## Sobre el proyecto
 
-Este es mi portfolio. Lo hice porque quería un sitio donde el diseño fuera el producto y no
-la envoltura, y de paso un banco de pruebas honesto: WebGL, coreografía de scroll y
-accesibilidad sobre algo que tengo que defender yo.
+Este es mi portfolio, y también donde practico lo que me interesa: WebGL, coreografía de
+scroll y accesibilidad.
 
-Podría haber hecho una página con un tema y un modo oscuro. Hice **tres pieles completas
-sobre un mismo DOM**, y la que te toca **se sortea al entrar**. No hay selector: es la
-decisión, no una funcionalidad pendiente.
+Son **tres pieles completas sobre un mismo DOM**, y la que ves **se sortea al entrar**. No hay
+selector para cambiarlas: la idea es que el sitio se vea distinto cada vez que alguien vuelve.
 
 ## Las tres pieles
 
@@ -39,7 +37,7 @@ decisión, no una funcionalidad pendiente.
 </tr>
 <tr>
 <td>Cartel de cine ochentero: coreografía de scroll, letterbox y un fondo de serigrafía a dos tintas.</td>
-<td>Interfaz de gestor de ventanas. Radio cero y sin sombras: la jerarquía la hace la luz.</td>
+<td>Interfaz de gestor de ventanas: radio cero, sin sombras, y la luz como recurso principal.</td>
 <td>Un escritorio cuyo <b>color lo gobierna la hora a la que entras</b>. La captura es de las 23:33.</td>
 </tr>
 </table>
@@ -47,16 +45,14 @@ decisión, no una funcionalidad pendiente.
 ## Qué tiene
 
 - **Tres temas sobre un mismo marcado.** El HTML no sabe de qué tema es: lo decide el CSS a
-  través de `data-theme`. Cambiar una sección obliga a juzgarla en las tres.
-- **Fondos generativos en WebGL.** Shaders de fragmento escritos a mano, uno por tema, no una
-  escena 3D.
+  través de `data-theme`.
+- **Fondos generativos en WebGL**: shaders de fragmento escritos a mano, uno por tema.
 - **Un cursor propio por tema**, que se apaga sobre texto corrido y deja el del sistema.
 - **Coreografía de scroll** con GSAP y ScrollTrigger, y desplazamiento suave con Lenis.
-- **Accesible de verdad**: contraste medido contra el fondo real —que se mueve—, foco de
-  teclado visible en todo lo pulsable, y cada animación con su alternativa para
+- **Accesibilidad**: el contraste se mide contra el fondo real —que se mueve—, el foco de
+  teclado es visible en todo lo pulsable, y cada animación tiene su alternativa para
   `prefers-reduced-motion`.
-- **Todo el contenido en un solo sitio**, `src/data/content.ts`. Las secciones no llevan ni
-  una frase incrustada.
+- **Todo el contenido en un solo sitio**, `src/data/content.ts`.
 
 ```mermaid
 flowchart LR
@@ -80,9 +76,7 @@ flowchart LR
 ## Construido con
 
 **Vite 8** · **TypeScript** en modo `strict` · **Tailwind 4** · **GSAP 3** con ScrollTrigger ·
-**Lenis** · **WebGL** crudo
-
-Sin framework, sin backend y **sin Three.js**.
+**Lenis** · **WebGL**
 
 ## Cómo verlo
 
