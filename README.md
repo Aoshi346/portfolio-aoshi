@@ -8,10 +8,6 @@ Desarrollador full stack · Caracas, Venezuela
 
 </div>
 
-<div align="center">
-  <img src="docs/media/portada-hyprland.webp" width="80%" alt="Tema Hyprland: brasa naranja sobre negro, el nombre a tamaño de cartel sobre un fondo generativo">
-</div>
-
 ---
 
 ## Sobre el proyecto
