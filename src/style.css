@@ -93,30 +93,6 @@ body {
   color: var(--color-accent-legible);
 }
 
-/* Piezas que solo pinta Caelestia (fase B1). Mismo patron que .hero-divider:
-   viven en el DOM comun y los otros dos temas las apagan. */
-.cae-head {
-  display: none;
-}
-
-.cae-widget {
-  display: none;
-}
-
-/* B6 (spec 2026-09-07-caelestia-movil): el bloque de prosa/cifras que
-   sustituye a la tarjeta por debajo de 900px. Mismo patron -- el DOM es
-   comun, Vice/Hyprland nunca lo encienden. */
-.cae-movil {
-  display: none;
-}
-
-/* Piezas de la entrada de escena (tarea 6): terminal falsa + trazo del
-   nombre. Mismo patron — el DOM es comun, solo Caelestia las enciende. */
-.cae-term,
-.cae-trazo-stage {
-  display: none;
-}
-
 /*
  * Estilo base de la carta de ajuste: el que ven Hyprland y Caelestia. Aqui las
  * barras no son barras, son una lista de vias apilada. La piel de Vice

@@ -67,21 +67,21 @@ def abrir(pg, base: str, hora: str | None = None) -> None:
 
 
 def optica(pg, base: str) -> None:
-    print("\n[optica] el titular declara sus ejes y el shell conserva los suyos")
+    print("\n[optica] el nombre declara sus ejes y el shell conserva los suyos")
     abrir(pg, base, "13:00")
     ejes = pg.evaluate(
         "() => {"
         " const cs = getComputedStyle(document.documentElement);"
-        " const tit = document.querySelector('#hero .cae-tit .cae-ln');"
+        " const tit = document.querySelector('#hero .cae-nombre');"
         " return {"
         "  token: cs.getPropertyValue('--cae-display-axes-cartel').trim(),"
         "  marcaToken: cs.getPropertyValue('--cae-display-axes').trim(),"
-        "  titular: tit ? getComputedStyle(tit).fontVariationSettings : ''"
+        "  nombre: tit ? getComputedStyle(tit).fontVariationSettings : ''"
         " }; }"
     )
     assert_que("144" in ejes["token"], f"el token --cae-display-axes-cartel existe y trae opsz 144 ({ejes['token']!r})")
     assert_que('"opsz" 9' in ejes["marcaToken"], f"el token --cae-display-axes del shell sigue en opsz 9 ({ejes['marcaToken']!r})")
-    assert_que('"opsz" 144' in ejes["titular"], f"el titular usa opsz 144 ({ejes['titular']!r})")
+    assert_que('"opsz" 144' in ejes["nombre"], f"el nombre usa opsz 144 ({ejes['nombre']!r})")
 
 
 LEE_LIENZO = """() => new Promise(resolve => {
@@ -175,212 +175,6 @@ def fondo(pg, base: str) -> None:
     assert_que(peor >= 4.5, f"peor contraste del dia {peor:.2f}:1 a las {cuando} (piso AA 4.5:1)")
 
 
-def titular(pg, base: str) -> None:
-    print("\n[titular] tres lineas a la misma medida, y el bloque cabe")
-    abrir(pg, base, "13:00")
-    m = pg.evaluate(
-        "() => {"
-        " const lns = Array.from(document.querySelectorAll('#hero .cae-tit .cae-ln'));"
-        " if (lns.length === 0) return null;"
-        " const anchos = lns.map((l) => {"
-        "   const r = document.createRange(); r.selectNodeContents(l);"
-        "   return r.getBoundingClientRect().width; });"
-        " const tam = lns.map((l) => parseFloat(getComputedStyle(l).fontSize));"
-        " const head = document.querySelector('#hero .cae-head');"
-        " const desk = document.querySelector('#hero');"
-        " const dr = desk.getBoundingClientRect();"
-        " const libre = dr.top + dr.height - 84 - head.getBoundingClientRect().bottom;"
-        " const texto = lns.map((l) => l.textContent ?? '').join(' ');"
-        " return { n: lns.length, anchos, tam, libre, texto }; }"
-    )
-    assert_que(m is not None and m["n"] == 3, "el titular tiene tres lineas")
-    if not m:
-        return
-
-    # Revision final (Importante 3): el corte manual en `CORTE` (hero.ts) no
-    # sale de partir `identity.headline` por espacios -- nada ataba las dos
-    # cadenas, asi que podian divergir en silencio si el headline cambiaba en
-    # content.ts. El literal de abajo DEBE coincidir con `identity.headline`
-    # de `src/data/content.ts`; si ese headline cambia, este assert tiene que
-    # cambiar en el mismo commit (o el titular quedaria desactualizado).
-    HEADLINE_CONTENT_TS = "Construyo sistemas que aguantan producción, no demos."
-    assert_que(
-        m["texto"] == HEADLINE_CONTENT_TS,
-        f"las tres lineas juntas reproducen identity.headline literal ({m['texto']!r})",
-    )
-
-    # Medido con Range, NO con la caja del span: los .ln son de bloque y su
-    # getBoundingClientRect devuelve el ancho del CONTENEDOR. Con esa medida las
-    # tres lineas salian del mismo tamano y el bloque solo PARECIA justificado.
-    ancho = max(m["anchos"]) - min(m["anchos"])
-    assert_que(ancho <= 4.0, f"las tres lineas miden lo mismo: {ancho:.1f} px de diferencia (tope 4)")
-
-    # Si los tres tamanos de fuente coinciden, la medida esta mal hecha aunque
-    # los anchos cuadren: es exactamente el sintoma del fallo de arriba.
-    distintos = len({round(t) for t in m["tam"]}) == 3
-    assert_que(distintos, f"los tres tamanos de fuente son distintos entre si ({m['tam']})")
-
-    assert_que(m["libre"] >= -1, f"aire bajo el pie {m['libre']:.0f} px (no pisa el dock)")
-
-
-def firma_y_cifras(pg, base: str) -> None:
-    print("\n[firma] literal de content.ts y cifras al canto derecho")
-    abrir(pg, base, "13:00")
-    m = pg.evaluate(
-        "() => {"
-        " const q = (s) => document.querySelector(s);"
-        " const col = q('#hero .cae-statcol');"
-        " const head = q('#hero .cae-head');"
-        " return {"
-        "  firma: q('#hero .cae-firma')?.textContent ?? '',"
-        "  meta: q('#hero .cae-meta')?.textContent ?? '',"
-        "  nowrap: q('#hero .cae-firma') ? getComputedStyle(q('#hero .cae-firma')).whiteSpace : '',"
-        "  cifras: Array.from(document.querySelectorAll('#hero .cae-statcol > div'))"
-        "    .map((d) => d.textContent.trim()),"
-        "  colDer: col ? col.getBoundingClientRect().right : 0,"
-        "  headDer: head ? head.getBoundingClientRect().right : 0"
-        " }; }"
-    )
-    assert_que(m["firma"] == "Aoshi Blanco Sanz", f"la firma es identity.name literal ({m['firma']!r})")
-    assert_que(
-        m["meta"] == "Caracas. Full stack. Desde 2021.",
-        f"la meta es identity.subheadline literal, con sus puntos ({m['meta']!r})",
-    )
-    # Si la firma parte en dos lineas, el aterrizaje de la tarea 6 no cuadra.
-    assert_que(m["nowrap"] == "nowrap", f"la firma no parte de linea ({m['nowrap']!r})")
-    assert_que(len(m["cifras"]) == 4, f"hay cuatro cifras ({len(m['cifras'])})")
-    assert_que(
-        abs(m["colDer"] - m["headDer"]) <= 2,
-        f"la columna de cifras pega al canto derecho ({m['colDer']:.0f} vs {m['headDer']:.0f})",
-    )
-
-
-def literal_now() -> str:
-    """`identity.now` tal como esta escrito en content.ts. El arnes no puede
-    importar TypeScript, asi que lo lee como texto; si no lo encuentra FALLA en
-    vez de devolver un valor por defecto (un gate que adivina no vigila)."""
-    fuente = (Path(__file__).resolve().parent.parent / "src" / "data" / "content.ts").read_text(encoding="utf-8")
-    m = re.search(r'^\s*now:\s*"([^"]+)",', fuente, re.M)
-    assert m, "no se encuentra `now: \"...\"` en content.ts"
-    return m.group(1)
-
-
-def widget(pg, base: str) -> None:
-    print("\n[widget] todo lo que pinta existe en content.ts")
-    abrir(pg, base, "13:00")
-    texto = pg.evaluate(
-        "() => document.querySelector('#hero .cae-widget')?.textContent ?? ''"
-    )
-    esperado = [
-        "Disponible para proyectos",   # identity.availability
-        literal_now(),                 # identity.now, leido de content.ts (Task 1 del plan Ahora mismo)
-        "Caracas, Venezuela",          # identity.location
-        "2021",                        # identity.since
-        "Ingeniería de Sistemas",      # education[0].degree
-        "Telefónica Venezuela",        # experience[0].organization
-        "Ago 2025 — May 2026",         # experience[0].period
-        # El semestre no es un campo propio: se extrae del parentesis de
-        # education[0].period ("2021 — presente (10.º semestre)"), nunca un
-        # literal inventado a mano. Ver hero.ts.
-        "10.º semestre",
-    ]
-    for e in esperado:
-        assert_que(e in texto, f"el widget dice {e!r}, literal de content.ts")
-    # El fallo real que hubo: un dato derivado que no existe en ninguna parte.
-    assert_que("Repositorios públicos" not in texto, "el widget no inventa datos derivados")
-
-
-def tarjeta_orden(pg, base: str) -> None:
-    print("\n[tarjeta] orden quien / que hace / estado, dos columnas fechadas")
-    abrir(pg, base, "13:00")
-    d = pg.evaluate(
-        """() => {
-          const w = document.querySelector('#hero .cae-widget'); if (!w) return null;
-          const clases = [...w.children].map(c => c.className.split(' ')[0]);
-          const cols = [...w.querySelectorAll('.cae-wdos > .cae-wcol')];
-          const colsOk = cols.length === 2 && cols.every(c => c.children.length === 2
-             && c.children[0].matches('small.cae-wfecha') && c.children[1].matches('b.cae-wnombre'));
-          const luz = w.querySelector('.cae-wpie .cae-pilla > i.cae-wluz');
-          const fig = w.querySelector('.cae-wcab .cae-wfig');
-          return { clases, colsOk, luz: !!luz, fig: !!fig,
-                   gridCols: getComputedStyle(w.querySelector('.cae-wdos') || w).gridTemplateColumns };
-        }"""
-    )
-    assert_que(d is not None, "existe #hero .cae-widget")
-    if d is None:
-        return
-    assert_que(d["clases"] == ["cae-wcab", "cae-wnow", "cae-wsub", "cae-wdos", "cae-wpie"],
-               f"los hijos directos van en orden cabecera/primero/ubicacion/columnas/pie ({d['clases']})")
-    assert_que(d["colsOk"], "dos columnas, cada una con la fecha (small) antes del nombre (b)")
-    assert_que(d["luz"], "la pastilla del pie lleva la luz (i.cae-wluz)")
-    assert_que(d["fig"], "la cabecera lleva el hueco de la figura (.cae-wfig)")
-    assert_que(len(d["gridCols"].split()) == 2, f"las columnas son dos pistas de grid ({d['gridCols']!r})")
-
-
-def tarjeta_superficie(pg, base: str) -> None:
-    print("\n[tarjeta] sin caja, un primero en una linea, la luz respira")
-    abrir(pg, base, "13:00")
-    d = pg.evaluate(
-        """() => {
-          const w = document.querySelector('#hero .cae-widget'), bar = document.querySelector('.cae-bar'), hero = document.querySelector('#hero');
-          const cs = getComputedStyle(w), now = w.querySelector('.cae-wnow');
-          const r = document.createRange(); r.selectNodeContents(now);
-          const tamanos = [...w.querySelectorAll('*')].filter(e => e.textContent.trim() && e.children.length === 0)
-             .map(e => parseFloat(getComputedStyle(e).fontSize));
-          const luz = w.querySelector('.cae-wluz');
-          return {
-            borde: cs.borderTopWidth, fondo: cs.backgroundColor, fondoBar: bar ? getComputedStyle(bar).backgroundColor : null,
-            fondoHero: getComputedStyle(hero).backgroundColor,
-            nowPx: parseFloat(getComputedStyle(now).fontSize), maxPx: Math.max(...tamanos),
-            nowAncho: r.getBoundingClientRect().width, caja: w.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
-            nowLineas: r.getClientRects().length,
-            axes: getComputedStyle(now).fontVariationSettings,
-            anillo: luz ? getComputedStyle(luz, '::after').animationName : 'sin-luz',
-          };
-        }"""
-    )
-    assert_que(d["borde"] == "0px", f"la tarjeta no lleva borde ({d['borde']})")
-    assert_que(d["fondo"] == d["fondoBar"] and d["fondo"] != d["fondoHero"], f"la tarjeta es surface-container-high como la barra ({d['fondo']})")
-    assert_que(d["nowPx"] == d["maxPx"] and d["nowPx"] >= 26, f"el primero es el texto mas grande de la tarjeta ({d['nowPx']} px)")
-    assert_que(d["nowAncho"] <= d["caja"] and d["nowLineas"] == 1, f"el primero cabe en una linea ({d['nowAncho']:.0f} de {d['caja']:.0f} px, {d['nowLineas']} lineas)")
-    assert_que('"opsz" 60' in d["axes"], f"el primero va a tamano optico 60 ({d['axes']})")
-    assert_que(d["anillo"] not in ("none", "sin-luz"), f"la luz respira con movimiento ({d['anillo']})")
-
-    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
-    pr = ctx.new_page()
-    abrir(pr, base, "13:00")
-    quieta = pr.evaluate("() => { const l = document.querySelector('#hero .cae-wluz'); return l ? getComputedStyle(l, '::after').animationName : 'sin-luz'; }")
-    assert_que(quieta == "none", f"con movimiento reducido la luz no respira ({quieta})")
-    ctx.close()
-
-
-def tarjeta_figura(pg, base: str) -> None:
-    print("\n[tarjeta] la figura vive: 240 vertices, cambia sola, quieta con movimiento reducido")
-    abrir(pg, base, "13:00")
-    LEE = "() => { const f = document.querySelector('#hero .cae-wfig'); return f ? getComputedStyle(f).clipPath : 'sin-figura'; }"
-    a = pg.evaluate(LEE)
-    pares = a.count("%,") + 1 if a.startswith("polygon(") else 0
-    assert_que(pares == 240, f"la figura es un polygon() de 240 pares ({pares})")
-    # Anclado a ESTADO: se espera a que cambie, con tope; si no cambia, falla.
-    cambio = False
-    t0 = time.monotonic()
-    while time.monotonic() - t0 < 6:
-        if pg.evaluate(LEE) != a:
-            cambio = True
-            break
-        pg.wait_for_timeout(120)
-    assert_que(cambio, "la figura cambia de forma sola (morfa con el tiempo)")
-
-    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
-    pr = ctx.new_page()
-    abrir(pr, base, "13:00")
-    q0 = pr.evaluate(LEE)
-    pr.wait_for_timeout(1500)
-    q1 = pr.evaluate(LEE)
-    assert_que(q0.startswith("polygon(") and q0 == q1, "con movimiento reducido la figura esta y no cambia")
-    ctx.close()
-
-
 def _oklab_to_srgb255(l: float, a_: float, b_: float) -> tuple[float, float, float]:
     """OKLab -> sRGB (0..255). Mismas matrices que `scripts/verify.py` y
     `scripts/measure-caelestia-obra.py` (Bjorn Ottosson)."""
@@ -453,114 +247,135 @@ def _ratio(fg: tuple[float, float, float], bg: tuple[float, float, float]) -> fl
     return contraste(_luminancia(fg), _luminancia(bg))
 
 
-def tarjeta_contraste(pg, base: str) -> None:
-    print("\n[tarjeta] contraste AA de sus pares en las 24 horas, con la capa de estado puesta")
-    PARES = [
-        ("primero", "#hero .cae-wnow"),
-        ("ubicacion", "#hero .cae-wsub"),
-        ("fecha", "#hero .cae-wfecha"),
-        ("nombre", "#hero .cae-wnombre"),
-        ("pastilla", "#hero .cae-pilla"),
-    ]
-    peor = (99.0, "", "")
-    for h in range(0, 24, 3):
-        abrir(pg, base, f"{h:02d}:30")
-        pg.hover("#hero .cae-widget")  # hover REAL: un MouseEvent sintetico no dispara :hover
-        pg.wait_for_timeout(400)  # la capa de estado tiene transition 0.25s
-        for nombre, sel in PARES:
-            d = pg.evaluate(
-                """(sel) => {
-                  const e = document.querySelector(sel); if (!e) return null;
-                  const cs = getComputedStyle(e);
-                  const w = document.querySelector('#hero .cae-widget');
-                  const capa = getComputedStyle(w, '::after');
-                  return { fg: cs.color, bg: sel.includes('pilla') ? cs.backgroundColor : getComputedStyle(w).backgroundColor,
-                           capa: capa.backgroundColor, capaOp: parseFloat(capa.opacity) };
-                }""",
-                sel,
+def literal_intro() -> str:
+    """`identity.intro` tal como esta escrito en content.ts. El arnes no puede
+    importar TypeScript, asi que lo lee como texto; si no lo encuentra FALLA en
+    vez de devolver un valor por defecto (un gate que adivina no vigila)."""
+    fuente = (Path(__file__).resolve().parent.parent / "src" / "data" / "content.ts").read_text(encoding="utf-8")
+    m = re.search(r'^\s*intro:\s*"([^"]+)",', fuente, re.M)
+    assert m, "no se encuentra `intro: \"...\"` en content.ts"
+    return m.group(1)
+
+
+MIDE_CAJAS = """() => {
+  const r = (e) => { const b = e.getBoundingClientRect();
+    return { l: b.left, r: b.right, t: b.top, b: b.bottom, cx: (b.left + b.right) / 2, cy: (b.top + b.bottom) / 2 }; };
+  const hero = document.querySelector('#hero');
+  const dib = hero && hero.querySelector('.cae-nombre-dib');
+  const rol = hero && hero.querySelector('.cae-rol');
+  const svgs = hero ? Array.from(hero.querySelectorAll('.cae-nombre-svg')).filter(s => s.getClientRects().length > 0) : [];
+  return {
+    hero: hero ? r(hero) : null,
+    dib: dib ? r(dib) : null,
+    rol: rol ? r(rol) : null,
+    svgs: svgs.map(r),
+  };
+}"""
+
+
+def nombre(pg, base: str) -> None:
+    print("\n[nombre] el nombre y el rol de la escena: DOM accesible, centrado, dentro de la ventana, contraste")
+    intro = literal_intro()
+    pg.emulate_media(reduced_motion="reduce")
+    try:
+        for hora in ("13:00", "23:00"):
+            abrir(pg, base, hora)
+            pg.set_viewport_size(VENTANA)
+            pg.wait_for_timeout(600)
+
+            h1s = pg.locator("#hero h1").count()
+            assert_que(h1s == 1, f"[{hora}] #hero tiene exactamente un h1 ({h1s})")
+            titulos = pg.locator("#hero").get_by_role("heading", level=1)
+            accesible = titulos.first.inner_text() if titulos.count() == 1 else ""
+            assert_que(accesible.strip() == "Aoshi Blanco Sanz", f"[{hora}] nombre accesible del h1 ({accesible!r})")
+            # Los SVG de una y de dos lineas conviven en el DOM: cuenta los del
+            # juego que se ve (los 15 glifos del nombre, una sola vez).
+            n_paths = pg.evaluate(
+                "() => Array.from(document.querySelectorAll('#hero .cae-nombre-svg'))"
+                ".filter((s) => s.getClientRects().length > 0)"
+                ".reduce((n, s) => n + s.querySelectorAll('path').length, 0)"
             )
-            assert_que(d is not None, f"existe {sel}")
+            oculto = pg.evaluate(
+                "() => { const d = document.querySelector('#hero .cae-nombre-dib');"
+                " return d ? d.getAttribute('aria-hidden') : null; }"
+            )
+            assert_que(oculto == "true", f"[{hora}] .cae-nombre-dib va aria-hidden ({oculto!r})")
+            assert_que(n_paths == 15, f"[{hora}] el dibujo visible tiene 15 path en total ({n_paths})")
+            rol = pg.evaluate(
+                "() => { const e = document.querySelector('#hero p.cae-rol'); return e ? e.textContent : null; }"
+            )
+            assert_que(rol == intro, f"[{hora}] el rol es el literal de content.ts ({rol!r})")
+
+            c = pg.evaluate(MIDE_CAJAS)
+            if c["hero"] and c["dib"] and c["rol"]:
+                assert_que(
+                    abs(c["dib"]["cx"] - c["hero"]["cx"]) <= 2,
+                    f"[{hora}] el dibujo esta centrado en horizontal ({c['dib']['cx']:.1f} vs {c['hero']['cx']:.1f})",
+                )
+                assert_que(
+                    abs(c["rol"]["cx"] - c["hero"]["cx"]) <= 2,
+                    f"[{hora}] el rol esta centrado en horizontal ({c['rol']['cx']:.1f} vs {c['hero']['cx']:.1f})",
+                )
+                bloque_cy = (c["dib"]["t"] + c["rol"]["b"]) / 2
+                assert_que(
+                    abs(bloque_cy - c["hero"]["cy"]) <= 4,
+                    f"[{hora}] el bloque nombre+rol esta centrado en vertical ({bloque_cy:.1f} vs {c['hero']['cy']:.1f})",
+                )
+            else:
+                assert_que(False, f"[{hora}] existen #hero, .cae-nombre-dib y .cae-rol para medir el centrado")
+
+        abrir(pg, base, "13:00")
+        for ancho, alto, esperados in ((390, 844, 2), (641, 900, 1), (768, 900, 1), (901, 900, 1), (1101, 900, 1), (1440, 900, 1)):
+            pg.set_viewport_size({"width": ancho, "height": alto})
+            pg.wait_for_timeout(500)
+            c = pg.evaluate(MIDE_CAJAS)
+            assert_que(len(c["svgs"]) == esperados, f"[{ancho}] hay {esperados} SVG visibles ({len(c['svgs'])})")
+            if c["hero"]:
+                dentro = all(
+                    s["l"] >= c["hero"]["l"] - 0.5 and s["r"] <= c["hero"]["r"] + 0.5
+                    and s["t"] >= c["hero"]["t"] - 0.5 and s["b"] <= c["hero"]["b"] + 0.5
+                    for s in c["svgs"]
+                )
+                assert_que(bool(c["svgs"]) and dentro, f"[{ancho}] cada SVG queda dentro de #hero ({c['svgs']})")
+
+        # Spec: dos lineas hasta 640 px; a 641 ya es una (el brief decia 2, el spec manda).
+        # Contraste del rol sobre el fondo real: la captura bajo su caja.
+        for hora in ("13:00", "23:00"):
+            abrir(pg, base, hora)
+            pg.set_viewport_size(VENTANA)
+            pg.wait_for_timeout(600)
+            d = pg.evaluate(
+                "() => { const e = document.querySelector('#hero p.cae-rol'); if (!e) return null;"
+                " const b = e.getBoundingClientRect();"
+                " return { fg: getComputedStyle(e).color, x: b.left, y: b.top, w: b.width, h: b.height }; }"
+            )
+            assert_que(d is not None, f"[{hora}] existe el rol para medir su contraste")
             if d is None:
                 continue
             fg = _parse_rgb(d["fg"])
-            bg = _parse_rgb(d["bg"])
-            capa = _parse_rgb(d["capa"])
-            if not fg or not bg:
-                assert_que(False, f"no se pudo parsear el color de {nombre} ({d['fg']} / {d['bg']})")
+            if not fg:
+                assert_que(False, f"[{hora}] no se pudo parsear el color del rol ({d['fg']})")
                 continue
-            bg3 = bg[:3]
-            if capa and d["capaOp"] > 0 and "pilla" not in sel:
-                a = d["capaOp"]
-                bg3 = tuple(bg[i] * (1 - a) + capa[i] * a for i in range(3))
-            r = _ratio(fg[:3], bg3)
-            if r < peor[0]:
-                peor = (r, nombre, f"{h:02d}:30")
-    assert_que(peor[0] >= 4.5, f"peor par de la tarjeta {peor[1]} a las {peor[2]}: {peor[0]:.2f}:1 (piso AA 4.5)")
-
-
-def tarjeta_portatil(pg, base: str) -> None:
-    """Repaso de interfaces 2026-09-06 (hallazgo A de Vera): a 1366x768 la
-    tarjeta 'Ahora mismo' pisaba la columna de cifras -- `.cae-widget` acababa
-    en bottom=366 y `.cae-statcol` empezaba en top=344, 22px de solape con la
-    cifra "2021". Contexto/pagina PROPIOS con ese viewport (el resto del
-    arnes usa VENTANA=1412x748): a 1440x900 este gate no corre, y no debe
-    correr -- ese tamano no cambia."""
-    print("\n[tarjeta] a 1366x768 la tarjeta no pisa la columna de cifras")
-    ctx = pg.context.browser.new_context(viewport={"width": 1366, "height": 768})
-    pr = ctx.new_page()
-    abrir(pr, base, "13:00")
-    d = pr.evaluate(
-        """() => {
-          const w = document.querySelector('#hero .cae-widget');
-          const s = document.querySelector('#hero .cae-statcol');
-          const wr = w.getBoundingClientRect(), sr = s.getBoundingClientRect();
-          return { widgetBottom: wr.bottom, statTop: sr.top };
-        }"""
-    )
-    hueco = d["statTop"] - d["widgetBottom"]
-    assert_que(
-        hueco >= 8,
-        f"a 1366x768 hay >=8px entre el pie de la tarjeta y la columna de cifras "
-        f"(widget.bottom={d['widgetBottom']:.0f}, statcol.top={d['statTop']:.0f}, hueco={hueco:.0f}px)",
-    )
-    ctx.close()
-
-
-def tarjeta_figura_visible(pg, base: str) -> None:
-    """Repaso de interfaces 2026-09-06 (hallazgo B de Vera): `.cae-wfig`
-    pintaba `--cae-primary-container` sobre la propia tarjeta
-    (`surface-container-high`), 1,10:1 de dia y 1,21:1 de noche -- la figura
-    viva, pensada como acento, era invisible. El piso pedido es de acento
-    decorativo (2,0:1), no de texto (4,5:1 AA). La claridad de los tokens no
-    se mueve con la hora (solo el matiz), asi que basta muestrear tres horas
-    por esquema."""
-    print("\n[tarjeta] la figura viva se distingue del fondo de la tarjeta (>=2,0:1)")
-    LEE = """() => {
-      const f = document.querySelector('#hero .cae-wfig');
-      const w = document.querySelector('#hero .cae-widget');
-      if (!f || !w) return null;
-      return { fig: getComputedStyle(f).backgroundColor, tarjeta: getComputedStyle(w).backgroundColor };
-    }"""
-    for esquema, horas in (("dia", ("09:30", "13:30", "18:30")), ("noche", ("21:30", "01:30", "05:30"))):
-        peor = (99.0, "")
-        for h in horas:
-            abrir(pg, base, h)
-            d = pg.evaluate(LEE)
-            assert_que(d is not None, f"existe .cae-wfig a las {h}")
-            if d is None:
-                continue
-            fig = _parse_rgb(d["fig"])
-            tarjeta = _parse_rgb(d["tarjeta"])
-            if not fig or not tarjeta:
-                assert_que(False, f"no se pudo parsear el color de la figura ({d['fig']} / {d['tarjeta']})")
-                continue
-            r = _ratio(fig[:3], tarjeta[:3])
-            if r < peor[0]:
-                peor = (r, h)
-        assert_que(
-            peor[0] >= 2.0,
-            f"esquema {esquema}: peor ratio figura/tarjeta a las {peor[1]}: {peor[0]:.2f}:1 (piso 2,0)",
-        )
+            # Se oculta el texto para muestrear solo el fondo bajo la caja.
+            pg.add_style_tag(content="#hero p.cae-rol { color: transparent !important; }")
+            png = pg.screenshot(clip={"x": d["x"], "y": d["y"], "width": max(d["w"], 1), "height": max(d["h"], 1)})
+            muestra = pg.evaluate(
+                """async (b64) => {
+                  const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+                  const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
+                  const k = cv.getContext('2d'); k.drawImage(img, 0, 0);
+                  const px = k.getImageData(0, 0, cv.width, cv.height).data;
+                  let r = 0, g = 0, b = 0, n = 0;
+                  for (let i = 0; i < px.length; i += 4) { r += px[i]; g += px[i+1]; b += px[i+2]; n++; }
+                  return [r / n, g / n, b / n];
+                }""",
+                __import__("base64").b64encode(png).decode(),
+            )
+            ratio = _ratio(fg[:3], tuple(muestra))
+            assert_que(ratio >= 4.5, f"[{hora}] el rol cumple AA sobre el fondo real: {ratio:.2f}:1 (piso 4.5)")
+    finally:
+        pg.emulate_media(reduced_motion="no-preference")
+        pg.set_viewport_size(VENTANA)
 
 
 def entrada(pg, base: str) -> None:
@@ -859,29 +674,27 @@ def escritorio_desnudo(pg, base: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:4173")
+    ap.add_argument("--solo", default="", help="familias separadas por coma (p. ej. optica,nombre)")
     args = ap.parse_args()
 
     with sync_playwright() as p:
-        nav = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+        nav = p.chromium.launch(headless=True, executable_path="/usr/bin/google-chrome", args=["--no-sandbox", "--use-gl=swiftshader"])
         pg = nav.new_page(viewport=VENTANA)
         errores: list[str] = []
         pg.on("pageerror", lambda e: errores.append(str(e)))
         pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
 
-        optica(pg, args.base)
-        escritorio_desnudo(pg, args.base)
-        fondo(pg, args.base)
-        titular(pg, args.base)
-        firma_y_cifras(pg, args.base)
-        widget(pg, args.base)
-        tarjeta_orden(pg, args.base)
-        tarjeta_superficie(pg, args.base)
-        tarjeta_figura(pg, args.base)
-        tarjeta_contraste(pg, args.base)
-        tarjeta_portatil(pg, args.base)
-        tarjeta_figura_visible(pg, args.base)
-        entrada(pg, args.base)
-        roce(pg, args.base)
+        familias = {
+            "optica": optica,
+            "escritorio_desnudo": escritorio_desnudo,
+            "fondo": fondo,
+            "nombre": nombre,
+            "entrada": entrada,
+            "roce": roce,
+        }
+        elegidas = [x for x in args.solo.split(",") if x] or list(familias)
+        for clave in elegidas:
+            familias[clave](pg, args.base)
 
         print("\n[consola] la pagina no tira errores")
         assert_que(not errores, f"cero errores de consola ({errores[:2]})")

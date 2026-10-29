@@ -1,4 +1,5 @@
 import type { Choreography } from "./choreography";
+import { ajustarSvgsNombre } from "../sections/hero";
 import { montarFicha } from "./caelestia.ficha";
 import { montarFundido } from "./caelestia.fundido";
 import { montarEntrada, montarFiguraViva, montarRoce, montarTitulo } from "./caelestia.titulo";
@@ -185,6 +186,12 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   // fichero. El oyente de resize de `montarTitulo` sigue exactamente el mismo
   // patron.
   montarTitulo(root);
+
+  // El nombre se dibuja con SVG que hay que medir (getBBox) ya montado en el
+  // documento: createHero lo intenta en un rAF, pero si la seccion aun no
+  // estaba montada, se ajusta aqui. Idempotente.
+  const heroEscena = root.querySelector<HTMLElement>("#hero");
+  if (heroEscena) ajustarSvgsNombre(heroEscena);
 
   // El roce (tarea 7): el fondo se aparta y el elemento se levanta al pasar
   // el raton por encima del widget, las cifras, las pastillas de la barra o

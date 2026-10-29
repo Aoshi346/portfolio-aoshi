@@ -9,8 +9,6 @@ export interface Identity {
   role: string;
   /** El rol de la escena Título. */
   intro: string;
-  headline: string;
-  subheadline: string;
   location: string;
   email: string;
   phone: string;
@@ -37,8 +35,6 @@ export const identity: Identity = {
   name: "Aoshi Blanco Sanz",
   role: "Desarrollador Full Stack",
   intro: "Desarrollador full stack en Caracas.",
-  headline: "Construyo sistemas que aguantan producción, no demos.",
-  subheadline: "Caracas. Full stack. Desde 2021.",
   location: "Caracas, Venezuela",
   email: "a.blanco1501@gmail.com",
   phone: "+58 424 228 1033",
