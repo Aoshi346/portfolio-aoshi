@@ -2853,6 +2853,41 @@
   color: var(--cae-on-surface);
 }
 
+/* Las cuatro principales (`stackDestacado.principal`): figura en el acento
+   SUAVE y nombre en tinta plena. La elegida conserva el acento fuerte, asi
+   que «principal» y «elegida» no se confunden. El icono sigue en
+   `--cae-on-surface`; su contraste contra este relleno lo mide el gate de
+   horas de measure-caelestia-creditos.py, de dia y de noche. */
+:root[data-theme="caelestia"]
+  .cae-cred-pieza.is-principal:not([aria-pressed="true"])
+  .cae-cred-fig {
+  background: var(--cae-primary-container);
+}
+/* De noche el acento suave (L 0,395) queda por DEBAJO del gris del resto
+   (`--cae-outline`, L 0,42): medido 1,1:1 entre los dos rellenos, solo los
+   separaba el croma. La principal va entre el resto y la elegida (L 0,815):
+   mezcla al 65 % hacia el acento fuerte (L ~0,67), con el icono oscuro de su
+   pareja. Medido por hora en el gate de principales. */
+:root[data-theme="caelestia"][data-cae-esquema="noche"]
+  .cae-cred-pieza.is-principal:not([aria-pressed="true"])
+  .cae-cred-fig {
+  background: color-mix(
+    in oklch,
+    var(--cae-primary) 65%,
+    var(--cae-primary-container)
+  );
+}
+:root[data-theme="caelestia"][data-cae-esquema="noche"]
+  .cae-cred-pieza.is-principal:not([aria-pressed="true"])
+  .cae-cred-fig
+  svg {
+  fill: var(--cae-on-primary);
+}
+:root[data-theme="caelestia"] .cae-cred-pieza.is-principal .cae-cred-nom {
+  color: var(--cae-on-surface);
+  font-weight: 600;
+}
+
 :root[data-theme="caelestia"] .cae-cred-fig {
   transition:
     clip-path 0.22s ease,
@@ -5413,7 +5448,7 @@
     white-space: normal;
     text-wrap: balance;
     line-height: 1.25;
-  }  /* Con un nombre en dos lineas, la fila se alineaba por abajo y esa figura
+  } /* Con un nombre en dos lineas, la fila se alineaba por abajo y esa figura
      subia sobre sus vecinas. Las figuras van a la misma altura; el texto
      sobrante cuelga. */
   :root[data-theme="caelestia"] .cae-cred-tira {

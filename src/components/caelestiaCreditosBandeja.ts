@@ -1,4 +1,4 @@
-import { caseStudies, sceneIndex, skillGroups } from "../data/content";
+import { caseStudies, sceneIndex, skillGroups, stackDestacado } from "../data/content";
 import { el, elFromMarkup } from "../utils/dom";
 import {
   FIGURA_CIRCULO,
@@ -83,6 +83,12 @@ function construirPieza(p: Pieza): HTMLButtonElement {
   ]) as HTMLButtonElement;
   boton.type = "button";
   boton.dataset.pieza = p.name;
+  // Las cuatro que mas pesan (las mismas que la fila Stack de Quien soy) van
+  // en el tono de acento suave: sin esto las 25 pesaban igual y Python se
+  // leia como n8n. Sin cambiar tamano ni sitio (ley de B4).
+  if ((stackDestacado.principal as readonly string[]).includes(p.name)) {
+    boton.classList.add("is-principal");
+  }
   boton.setAttribute("aria-pressed", "false");
   return boton;
 }

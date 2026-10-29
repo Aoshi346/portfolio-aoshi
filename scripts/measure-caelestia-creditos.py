@@ -312,6 +312,56 @@ def abre_creditos(pagina) -> None:
     pagina.wait_for_timeout(2500)
 
 
+def gate_principales(pagina) -> None:
+    """Las cuatro de `stackDestacado.principal` se distinguen del resto en
+    reposo, y la elegida sigue distinguiendose de ellas. Visto rojo contra main
+    (alli no hay principales)."""
+    print("[10] las cuatro principales se distinguen")
+    pagina.click('.cae-cred-pieza[data-pieza="Git"]')
+    pagina.wait_for_timeout(500)
+    m = pagina.evaluate(
+        """() => {
+          const fondo = n => getComputedStyle(document.querySelector(
+            `.cae-cred-pieza[data-pieza="${n}"] .cae-cred-fig`)).backgroundColor;
+          return {
+            marcadas: [...document.querySelectorAll('.cae-cred-pieza.is-principal')].map(e => e.dataset.pieza),
+            principal: fondo('Python'), resto: fondo('n8n'), elegida: fondo('Git'),
+          };
+        }"""
+    )
+    check(sorted(m["marcadas"]) == ["Django", "Python", "React", "TypeScript"], f"marcadas: {m['marcadas']}")
+    check(m["principal"] != m["resto"], f"principal y resto con relleno distinto ({m['principal']} / {m['resto']})")
+    check(m["principal"] != m["elegida"], f"principal y elegida con relleno distinto ({m['elegida']})")
+
+    # Distinto no basta: de noche el primer intento daba 1,1:1 contra el resto
+    # (dos grises que solo cambiaban de croma). Se mide la luminancia por hora.
+    peor_resto, peor_eleg = (99.0, -1), (99.0, -1)
+    for hora in range(0, 24, 2):
+        pagina.evaluate("(m)=>window.__CAE_SET_MINUTOS__ && window.__CAE_SET_MINUTOS__(m)", hora * 60)
+        pagina.wait_for_timeout(500)
+        r = pagina.evaluate(
+            """() => {
+              const px = c => { const k=document.createElement('canvas'); k.width=k.height=1;
+                const x=k.getContext('2d'); x.fillStyle=c; x.fillRect(0,0,1,1);
+                return [...x.getImageData(0,0,1,1).data].slice(0,3); };
+              const lum = r => { const f=r.map(v=>{v/=255;
+                return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4);});
+                return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2]; };
+              const rat = (a,b) => { const la=lum(px(a)), lb=lum(px(b));
+                return (Math.max(la,lb)+0.05)/(Math.min(la,lb)+0.05); };
+              const f = n => getComputedStyle(document.querySelector(
+                `.cae-cred-pieza[data-pieza="${n}"] .cae-cred-fig`)).backgroundColor;
+              return [rat(f('Python'), f('n8n')), rat(f('Python'), f('Git'))];
+            }"""
+        )
+        if r[0] < peor_resto[0]:
+            peor_resto = (r[0], hora)
+        if r[1] < peor_eleg[0]:
+            peor_eleg = (r[1], hora)
+    check(peor_resto[0] >= 1.5, f"principal contra resto >= 1,5:1 (peor {peor_resto[0]:.2f} a las {peor_resto[1]:02d}:00)")
+    check(peor_eleg[0] >= 1.3, f"principal contra elegida >= 1,3:1 (peor {peor_eleg[0]:.2f} a las {peor_eleg[1]:02d}:00)")
+
+
 def gate_entrada_dispara(pagina, base: str) -> None:
     """La entrada no puede haber ocurrido YA cuando el visitante sigue en
     Titulo — tiene que disparar al llegar de verdad a Creditos, no al montar.
@@ -489,6 +539,7 @@ def main() -> int:
         gate_cruce(pagina)
         gate_seleccion(pagina)
         gate_pausa_roce(pagina)
+        gate_principales(pagina)
         gate_enlace_obra(pagina, args.base, 1440)
         gate_entrada(pagina, args.base)
         gate_entrada_dispara(pagina, args.base)

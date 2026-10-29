@@ -142,8 +142,8 @@ export const skillGroups: SkillGroup[] = [
     label: "Interfaz",
     items: [
       { name: "React", slug: "react", detail: "Interfaces con estado complejo." },
-      { name: "Next.js", slug: "nextdotjs", detail: "Para apps con rutas y render en servidor." },
       { name: "TypeScript", slug: "typescript", detail: "Tipado en todo lo que escribo." },
+      { name: "Next.js", slug: "nextdotjs", detail: "Para apps con rutas y render en servidor." },
       { name: "Tailwind CSS", slug: "tailwindcss", detail: "Maquetación rápida y consistente." },
       { name: "Vite", slug: "vite", detail: "Mi bundler por defecto." },
       { name: "GSAP", slug: "gsap", detail: "Las animaciones y las transiciones." },
@@ -201,6 +201,19 @@ export const focusAreas: FocusArea[] = [
     detail: "Estado complejo sin romperse en producción",
   },
 ];
+
+/**
+ * La fila Stack de la ficha de Quien soy: las cuatro piezas que mas pesan y
+ * una linea con las que siguen. Los nombres tienen que existir en
+ * `skillGroups`; la ficha descarta en silencio cualquiera que no este.
+ *
+ * `principal` es tambien lo que la bandeja de Stack pinta en el tono de
+ * acento: las dos escenas dicen lo mismo con una sola lista.
+ */
+export const stackDestacado = {
+  principal: ["Python", "Django", "React", "TypeScript"],
+  resto: "También Next.js, Node.js, MySQL y n8n",
+} as const;
 
 export interface GalleryShot {
   /** Ruta bajo /public. Capturas reales del proyecto. */
