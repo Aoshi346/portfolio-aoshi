@@ -14,9 +14,10 @@
 > se quedan como registro histórico; lo que dicen de ficheros ya no existe en `main`. Lo que
 > afectaba a Caelestia (escala tipográfica, contraste, `shaderBackground.ts`) sigue vigente.
 >
-> Queda abierto de la retirada: las secciones (`about.ts`, `hero.ts`, `credits.ts`,
-> `projectScene.ts`) siguen construyendo DOM que solo pintaban Vice o Hyprland y que Caelestia
-> oculta con `display: none` (16 ramas medidas en los tres anchos). Podarlo es el paso siguiente.
+> Segunda pasada, el mismo dia (rama `design/podar-secciones`): fuera las 16 ramas de DOM de las
+> secciones que solo pintaban Vice o Hyprland y que Caelestia ocultaba (`credits.ts`, `gallery.ts`
+> y `projectScene.ts`, enteros), y su CSS. Caelestia identica en 60 capturas. `verify.py` mide
+> ahora la bandeja de Creditos y la Editorial de Obra, no el DOM oculto.
 
 
 - **Vice: TERMINADO.** Cerrado con el plan `2026-08-04-vice-fondo-tinta` (fondo `viceInk.ts`,

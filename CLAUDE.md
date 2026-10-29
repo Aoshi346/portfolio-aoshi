@@ -33,8 +33,6 @@ what must not be re-done.
 - **Caelestia: design closed, not DONE.** Phases A, B1-B6, cursor and interface review merged.
   Open: B3 needs the nine real project captures, B4 has two product P1s, and
   `measure-caelestia-obra.py` fails three contrast assertions (its own instrument, not the CSS).
-- **Open from the retirement:** the sections still build DOM that only Vice or Hyprland painted and
-  Caelestia hides with `display: none` (16 branches). Pruning it is the next step.
 - **Type scale: closed and gated** (`2026-09-07-escala-tipografica`).
 
 ## Architecture Notes
