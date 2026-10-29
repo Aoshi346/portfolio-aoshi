@@ -304,8 +304,8 @@ export const caseStudies: CaseStudy[] = [
     stack: ["TypeScript", "React", "RxDB", "GSAP", "Zustand"],
     tooling: ["Git", "GitHub", "Claude Code", "Gemini CLI"],
     gallery: [
-      { src: "/media/obra/hyprfinance-resumen.webp", caption: "Resumen financiero" },
-      { src: "/media/obra/hyprfinance-movimientos.webp", caption: "Registro de movimientos" },
+      { src: "/media/obra/hyprfinance-analitica.webp", caption: "Analítica del mes" },
+      { src: "/media/obra/hyprfinance-panel.webp", caption: "Panel general" },
     ],
     privateProject: true,
   },

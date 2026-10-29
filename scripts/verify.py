@@ -40,8 +40,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # la captura definitiva, esta comprobacion deja de marcarla sola, sin tocar
 # el arnes otra vez.
 GALLERY_PLACEHOLDER_HASHES = {
-    "public/media/obra/hyprfinance-resumen.webp": "c15b76977f515c9e348b225dcbf80f8e67923b719113c21a3658ac4b062112c4",
-    "public/media/obra/hyprfinance-movimientos.webp": "289a2c793195c3ff4cfda2a3fa7cde2b1be142e658a8de5d6b6002cb7dfa5396",
     "public/media/obra/editor-interfaz.webp": "c2470fca671c103c70c692bbe589bb4b9aebf0fd008475d20f6c008f76d9e0a7",
     "public/media/obra/teg-entregas.webp": "4cb8c297efbaf7566f694ba40c5a35147606e67ab153b38d337f4c7f7c123595",
     "public/media/obra/teg-jurados.webp": "fa5cc1c41d9af46427199a47e2618757d272d21053af1df9f2ecdb220ce14137",
