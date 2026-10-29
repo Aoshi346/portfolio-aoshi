@@ -22,8 +22,8 @@ import { montarEntrada, montarFiguraViva, montarRoce, montarTitulo } from "./cae
  * eventos burbujean hacia arriba, nunca hacia abajo, asi que un oyente en el
  * propio carril no lo veria jamas.
  *
- * Lenis NO interviene aqui: `reveal.ts` solo lo monta para `motion.style ===
- * "cinematic"`, que es Vice. Ver la correccion del 2026-08-20 en el spec.
+ * Lenis NO interviene aqui: el sitio ya no monta scroll suave (era de Vice,
+ * retirado el 2026-10-29). Ver la correccion del 2026-08-20 en el spec.
  *
  * ScrollTrigger tampoco: en Caelestia no hay ni un solo pin ni trigger, asi
  * que no se destructura del contexto (el contrato es comun a los tres temas,

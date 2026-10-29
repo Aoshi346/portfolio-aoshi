@@ -844,62 +844,6 @@ def main() -> int:
         ctx.close()
 
         # ================================================================
-        # [12] Vice y Hyprland no se alteran
-        # ================================================================
-        print("\n[12] Vice y Hyprland no se alteran: contacto.ts es compartido")
-        for tema in ("vice", "hyprland"):
-            ctx = navegador.new_context(viewport={"width": 1440, "height": 900})
-            errores: list[str] = []
-            pg = ctx.new_page()
-            pg.on("pageerror", lambda e: errores.append(str(e)))
-            pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
-            pg.goto(f"{base}/?theme={tema}", wait_until="domcontentloaded", timeout=30000)
-            pg.wait_for_timeout(2500)
-            comprobar(pg.locator('[data-scene="contacto"]').count() == 1,
-                      f"la escena de contacto sigue existiendo en {tema}")
-            fuga = pg.evaluate("""() => {
-                const sc = document.querySelector('[data-scene="contacto"]');
-                const lead = sc && sc.querySelector('.contacto-lead');
-                const estadoLabel = sc && sc.querySelector('.contacto-estado-label');
-                return {
-                    troquel: !!sc.querySelector('.cae-fundido-troquel'),
-                    campo: !!sc.querySelector('.cae-fundido-campo'),
-                    corn: !!sc.querySelector('.cae-fundido-corn'),
-                    bicho: !!sc.querySelector('.cae-fundido-bicho'),
-                    leadEjes: lead ? getComputedStyle(lead).fontVariationSettings : null,
-                    leadFontSize: lead ? parseFloat(getComputedStyle(lead).fontSize) : null,
-                    // `.hero-kick`/`.contacto-estado-label`/`.contacto-estado-sep`
-                    // se apagan en Caelestia (`display: none`) porque ahi el
-                    // rotulo de seccion lo lleva la esquina y el estado baja al
-                    // pie -- pero en Vice y Hyprland esa etiqueta SI se ve
-                    // (tienen su propia regla de color para ella, sin tocar
-                    // `display`). Si la regla de Caelestia perdiera su guarda de
-                    // tema, este es el selector COMPARTIDO por el que se cuela:
-                    // ni el troquel ni el `fontVariationSettings` lo detectan
-                    // (el custom property de los ejes no resuelve fuera de su
-                    // scope, y el resto de selectores compartidos ya tienen su
-                    // propio override de mayor o igual especificidad en cada
-                    // tema) -- pero `display: none` no tiene competencia en
-                    // ninguno de los dos temas y SI se cuela. Visto en rojo al
-                    // construir este gate (Task 8): las dos etiquetas
-                    // desaparecian con solo quitar `[data-theme="caelestia"]`
-                    // de esa regla.
-                    estadoLabelDisplay: estadoLabel ? getComputedStyle(estadoLabel).display : null,
-                };
-            }""")
-            print(f"       {tema}: {fuga}")
-            comprobar(not (fuga["troquel"] or fuga["campo"] or fuga["corn"] or fuga["bicho"]),
-                      f"ningun elemento de Caelestia (troquel/campo/corn/bicho) se monta en {tema}")
-            comprobar(fuga["estadoLabelDisplay"] != "none",
-                      f"el rotulo «Estado» de {tema} sigue visible, no apagado por la regla de "
-                      f"Caelestia ({fuga['estadoLabelDisplay']})")
-            if fuga["leadEjes"] is not None:
-                comprobar('"opsz" 144' not in fuga["leadEjes"],
-                          f"la voz de cierre de Caelestia no se cuela en {tema} ({fuga['leadEjes']})")
-            errores_totales += errores
-            ctx.close()
-
-        # ================================================================
         # [13] El fundido interrumpido aterriza del todo
         # ================================================================
         print("\n[13] El fundido interrumpido aterriza del todo (ida y vuelta a media pasada)")

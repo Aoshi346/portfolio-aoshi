@@ -48,21 +48,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Region de anuncio para lectores de pantalla: fuera de la vista, dentro del
-   flujo de accesibilidad. Se crea aqui porque es donde se usa por primera vez
-   (`data-obra-anuncio`, cartel de obra en Hyprland). */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
 ::selection {
   background-color: var(--color-accent);
   color: var(--color-ink);
@@ -115,46 +100,6 @@ body {
 [data-hero-name] {
   transform-origin: 50% 50%;
   will-change: transform, opacity;
-}
-
-/*
- * Estado previo a la secuencia de entrada (solo Vice). Se oculta el hero para
- * que no se vea el salto entre el pintado y el arranque de la animacion.
- * reveal.ts retira esta clase de forma SINCRONA en cuanto GSAP carga (antes de
- * esperar fuentes ni coreografia): esa es la via normal, en decenas de ms. El
- * timeout de main.ts es solo el seguro para el caso raro de que GSAP falle.
- */
-:root.js-intro[data-theme="vice"] [data-hero-name],
-:root.js-intro[data-theme="vice"] [data-hero-fade] {
-  opacity: 0;
-}
-
-/*
- * Cinturon de seguridad ademas de la condicion en main.ts (que ya evita
- * anadir `.js-intro` con reduced-motion): si por lo que sea la clase llegase
- * a quedar puesta con reduced-motion activo (main.ts roto, orden de carga
- * distinto), el contenido nunca debe depender de una animacion que no va a
- * ejecutarse para revelarse — eso ya dejo el nombre invisible 3 segundos en
- * cada carga una vez (ver .ai/memory.md). El letterbox tambien se apaga aqui
- * ademas de en `.cinema-chrome` (regla de mas arriba): doble cierre del
- * mismo hueco, no un solape sin sentido.
- *
- * `!important`: la regla de arriba (`:root.js-intro[data-theme="vice"]
- * [data-hero-name]`) tiene mayor especificidad (incluye el atributo
- * `[data-theme="vice"]`) y ganaria sobre esta por cascada normal, dejando el
- * cinturon de seguridad sin efecto real — verificado rompiendo a proposito
- * la condicion de main.ts y confirmando opacity:0 en t=500ms sin el
- * `!important` (ver informe de la tarea).
- */
-@media (prefers-reduced-motion: reduce) {
-  :root.js-intro [data-hero-name],
-  :root.js-intro [data-hero-fade] {
-    opacity: 1 !important;
-  }
-
-  .letterbox {
-    display: none;
-  }
 }
 
 .hero-kick {
@@ -393,70 +338,6 @@ body {
 }
 
 /*
- * Cromo de cine (`components/cinemaChrome.ts`): letterbox, barra de
- * orientacion y atenuador de fondo. Un solo DOM para los tres temas, pero es
- * decoracion propia de Vice — Hyprland/Caelestia lo montan igual (mismo
- * componente) y este bloque lo mantiene oculto ahi; el bloque Vice de
- * `themes.css` lo vuelve a mostrar. Sin este gate, Hyprland/Caelestia
- * quedarian con una barra estatica ("01 · Titulo" que nunca cambia, ninguna
- * coreografia la cablea fuera de Vice) sin ningun sentido narrativo.
- */
-.cinema-chrome {
-  display: none;
-  pointer-events: none;
-}
-
-/*
- * Con `prefers-reduced-motion` el cromo no debe aparecer: la coreografia que
- * cablea letterbox/atenuador/rail (`cinemaChrome` en `vice.choreography.ts`)
- * ya no corre en ese caso (`initScrollReveal` corta antes de cargar GSAP), asi
- * que el letterbox ya queda a 0 y el atenuador a 0 por su estado de reposo —
- * pero la barra de orientacion es texto estatico sin animacion propia y
- * seguiria visible sin este gate. `!important` porque necesita ganar sobre la
- * regla de `themes.css` que reactiva `.cinema-chrome` solo para Vice
- * (mayor especificidad por el selector de atributo `[data-theme="vice"]`).
- */
-@media (prefers-reduced-motion: reduce) {
-  .cinema-chrome {
-    display: none !important;
-  }
-}
-
-/*
- * Atenuador del fondo: capa fija bajo el contenido (por encima del backdrop,
- * z-index -20) que sube su opacidad fuera de hero/contacto (ver `cinemaChrome`
- * en `vice.choreography.ts`). El color sale de `--color-ink`, nunca un hex
- * fijado a mano: la misma regla que ya rompio el contraste de `.hero-corner`
- * una vez.
- */
-.backdrop-dim {
-  position: fixed;
-  inset: 0;
-  z-index: -5;
-  pointer-events: none;
-  background: var(--color-ink);
-  opacity: 0;
-}
-
-.letterbox {
-  position: fixed;
-  left: 0;
-  right: 0;
-  height: 0;
-  z-index: 40;
-  background: var(--color-ink);
-  transition: height 450ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.letterbox-top {
-  top: 0;
-}
-
-.letterbox-bottom {
-  bottom: 0;
-}
-
-/*
  * La rueda de fondo (video/gradiente) es dinamica en el tiempo: un frame
  * puntual puede caer en un tramo muy saturado (Task 3, fixture SMPTE) y
  * romper el contraste del texto de la barra, sin que la CSS "declarada" tenga
@@ -509,36 +390,8 @@ body {
   }
 }
 
-.rail-now {
-  color: var(--color-accent);
-}
-
-/*
- * La firma de tema (`components/themeSignature.ts`) es `position: fixed` en
- * la esquina inferior derecha: en movil, el rodillo de creditos ("Con que
- * construyo") no usa scroll-snap, asi que quien suelta el gesto de scroll a
- * mitad de camino puede quedarse con una fila de credito exactamente detras
- * de la firma (medido en 390x844: filas de `.credit` cruzando su banda
- * vertical durante la transicion de entrada de la escena). Sin superficie
- * propia, texto de credito y texto de la firma se mezclaban en el mismo
- * plano. Mismo remedio que `.rail`: un scrim propio detras
- * de la firma para que, pase lo que pase debajo, siga siendo legible sin
- * tapar el contenido real (el pill es pequeno y sigue dejando ver el resto
- * de la fila).
- */
-.theme-signature {
-  padding: 0.3rem 0.6rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
-  backdrop-filter: blur(6px);
-}
-
 .font-mono {
   font-family: var(--font-mono);
-}
-
-.text-balance {
-  text-wrap: balance;
 }
 
 /*
@@ -554,57 +407,13 @@ body {
   background-image: var(--bg-fallback);
 }
 
-.bg-theme canvas,
-.backdrop-media {
+.bg-theme canvas {
   position: absolute;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-/* El video entra fundido sobre el poster cuando tiene fotogramas. */
-.backdrop-video {
-  opacity: 0;
-  transition: opacity 900ms ease-out;
-}
-
-.backdrop-video.is-ready {
-  opacity: 1;
-}
-
-/*
- * Capa de tratamiento del backdrop. El scrim (::after) es obligatorio:
- * garantiza contraste del texto pase lo que pase en el fondo generativo.
- *
- * historical: hasta la Tarea 4 (fondo de tinta) tambien habia un ::before —
- * lavado magenta-ambar en soft-light al 48%, puesto cuando el backdrop era
- * un fixture SMPTE sin color propio y necesitaba que algo le diera la paleta
- * del tema. viceInk.ts (Tarea 2) ya pinta esa paleta en el propio shader (dos
- * tintas tramadas), asi que el lavado quedo redundante: A/B con Playwright
- * midio una diferencia media de <0.01/255 entre tenerlo y no tenerlo, y
- * scripts/verify.py dio las mismas 276 comprobaciones OK con y sin el.
- * Retirado en vez de dejarlo comentado: no aporta nada que el shader no
- * de ya, y un blend-mode inerte seguia siendo una capa de pintado mas.
- */
-:root[data-theme="vice"] .bg-theme::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgb(10 2 20 / 0.5) 0%,
-    rgb(10 2 20 / 0.12) 45%,
-    rgb(10 2 20 / 0.72) 100%
-  );
-}
-
-.tech-icon svg {
-  width: 100%;
-  height: 100%;
-  fill: currentColor;
 }
 
 .bg-noise {
@@ -1109,30 +918,6 @@ body {
   .display-xl {
     font-size: clamp(2.2rem, 7vw, 5rem);
   }
-
-  /*
-   * El selector `.hero` de arriba (0,1,0) PIERDE contra
-   * `:root[data-theme="vice"] [data-scene]` (0,3,0) de themes.css, que fija
-   * un padding vertical mucho mayor. O sea: este bloque, escrito justo para
-   * que el pie vuelva al primer viewport, no surtia efecto en Vice — el
-   * unico tema donde `[data-scene]` existe. Se repite igualando la
-   * especificidad, y se extiende a contacto, que sufre lo mismo.
-   */
-  :root[data-theme="vice"] .hero {
-    padding-top: 3.5rem;
-    padding-bottom: 3.5rem;
-  }
-
-  /*
-   * Contacto NO recupera aire abajo: su pie es una barra `sticky` pegada al
-   * borde de la pantalla (ver themes.css). Devolverle padding inferior aqui
-   * la despegaba 56px del borde justo en las ventanas bajas, que es donde el
-   * problema se veia peor.
-   */
-  :root[data-theme="vice"] .contacto {
-    padding-top: 3.5rem;
-    padding-bottom: 0;
-  }
 }
 
 .credit {
@@ -1410,15 +1195,6 @@ body {
 }
 
 /*
- * Los cimientos de Hyprland. Nacen apagados para los tres temas y solo
- * `:root[data-theme="hyprland"]` los enciende. Mismo motivo que las parcelas
- * de arriba: el patron aditivo se ha roto cuatro veces por saltarse esto.
- */
-[data-cimientos] {
-  display: none;
-}
-
-/*
  * `currentColor` y no `var(--color-accent)` como en `.credits-svg`: la marca
  * del friso alterna entre apagada y encendida, asi que el color lo decide el
  * contenedor via `.is-active` y el SVG solo lo hereda.
@@ -1451,80 +1227,6 @@ body {
 }
 
 /*
- * ------------------------------------------------ Leader de apertura (Vice)
- *
- * `components/introLeader.ts`. El estado visible lo pone `.js-leader` en
- * `<html>`, que anade `main.ts` ANTES del primer pintado: sin eso habria un
- * fotograma del hero antes de que arrancara el leader. GSAP escribe encima
- * con estilos inline, que ganan siempre a estas reglas de clase.
- *
- * Clase propia y timeout propio, separados de `.js-intro` (que solo oculta el
- * nombre): el leader tapa la pantalla ENTERA, asi que un fallo suyo no puede
- * degradar a "pagina en negro para siempre". Ver el timeout en `main.ts`.
- */
-.intro-leader {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  /*
-   * El fondo NO va aqui: lo pinta `.leader-iris`, una capa a pantalla
-   * completa a la que se le abre un agujero con mascara. Ver el bloque de
-   * `.leader-iris` para el porque de esa tecnica y no otra.
-   */
-  background: transparent;
-  pointer-events: none;
-  /*
-   * Temblor de puerta: en un proyector real el fotograma nunca queda
-   * perfectamente registrado. Amplitud por debajo de 1px — se percibe como
-   * textura, no como un elemento que se mueve.
-   */
-  animation: leader-weave 1.1s steps(2, end) infinite;
-}
-
-:root.js-leader .intro-leader {
-  display: flex;
-}
-
-@keyframes leader-weave {
-  0% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(0.6px, -0.7px);
-  }
-  100% {
-    transform: translate(-0.4px, 0.5px);
-  }
-}
-
-/* Grano de pelicula. Va en un pseudo-elemento para no crear un nodo mas. */
-.intro-leader::after {
-  content: "";
-  position: absolute;
-  inset: -50%;
-  opacity: 0.16;
-  pointer-events: none;
-  background-image: radial-gradient(rgb(255 255 255 / 0.55) 0.5px, transparent 0.6px);
-  background-size: 3px 3px;
-  animation: leader-grain 0.5s steps(3, end) infinite;
-}
-
-@keyframes leader-grain {
-  0% {
-    transform: translate(0, 0);
-  }
-  33% {
-    transform: translate(-4px, 3px);
-  }
-  66% {
-    transform: translate(3px, -2px);
-  }
-}
-
-/*
  * El radio del diafragma. Registrado con `@property` para que el navegador lo
  * trate como longitud y sepa interpolarlo: una custom property sin registrar
  * es un token de texto y saltaria de 0% a 150% en un fotograma.
@@ -1533,161 +1235,6 @@ body {
   syntax: "<length-percentage>";
   inherits: false;
   initial-value: 0%;
-}
-
-/*
- * El diafragma. Capa negra a pantalla completa a la que se le abre un agujero
- * animando el radio de la mascara desde el centro exacto donde estaba el
- * numero.
- *
- * NO se hace escalando un circulo pequeno con `box-shadow: 0 0 0 130vmax`,
- * que es lo que habia antes: `transform: scale()` escala tambien la sombra,
- * asi que al final del recorrido el navegador tenia que rasterizar cientos de
- * miles de pixeles de lado. En maquina real eso se atasca o descarta la capa
- * — de ahi que la timeline midiera bien y el iris se viera mal igualmente.
- *
- * Tampoco con `mask-size` animado, el otro intento fallido: medido, se
- * quedaba en `auto`. Animar la custom property esquiva el problema porque
- * GSAP solo escribe un numero y es el navegador quien recompone el gradiente.
- */
-.leader-iris {
-  position: absolute;
-  inset: 0;
-  background: #07050c;
-  /*
-   * Los stops van en porcentaje del radio del gradiente (esquina mas lejana),
-   * asi que el mismo valor sirve para cualquier viewport: al 100% el agujero
-   * ya toca las esquinas. El segundo stop va medio punto por delante del
-   * primero para dar un borde suave de un pixel escaso en vez de un escalon
-   * dentado.
-   */
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent var(--iris),
-    #000 calc(var(--iris) + 0.5%)
-  );
-  mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent var(--iris),
-    #000 calc(var(--iris) + 0.5%)
-  );
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
-
-/* Reticula de registro: las dos lineas que cruzan el encuadre. */
-.leader-cross {
-  position: absolute;
-  inset: 0;
-}
-
-.leader-cross::before,
-.leader-cross::after {
-  content: "";
-  position: absolute;
-  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
-}
-
-.leader-cross::before {
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  transform: translateX(-50%);
-}
-
-.leader-cross::after {
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  transform: translateY(-50%);
-}
-
-.leader-ring {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(120px, 17vw, 170px);
-  aspect-ratio: 1;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 50%, transparent);
-  border-radius: 50%;
-}
-
-/* Anillo interior: el segundo circulo de registro de una cabecera real. */
-.leader-ring::before {
-  content: "";
-  position: absolute;
-  inset: 16px;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent);
-  border-radius: 50%;
-}
-
-/*
- * Brazo barredor. Un sector de cono, no una linea: asi barre area y se lee
- * el giro incluso a 0.3s por vuelta, que es lo que dura cada numero.
- */
-.leader-sweep {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    color-mix(in srgb, var(--color-accent) 30%, transparent) 0deg,
-    transparent 62deg,
-    transparent 360deg
-  );
-}
-
-.leader-num {
-  position: absolute;
-  font-family: var(--font-display);
-  font-weight: var(--display-weight, 900);
-  font-size: clamp(3rem, 6vw, 4.4rem);
-  line-height: 1;
-  color: var(--color-accent);
-  text-shadow: 0 0 26px color-mix(in srgb, var(--color-accent) 50%, transparent);
-}
-
-/* Punto de cambio de bobina: la marca de la esquina superior derecha. */
-.leader-cue {
-  position: absolute;
-  top: clamp(1rem, 3vw, 2rem);
-  right: clamp(1.2rem, 3.5vw, 2.4rem);
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--color-paper) 90%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--color-paper) 60%, transparent);
-  opacity: 0;
-}
-
-.leader-foot {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 0.55rem 0.9rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
-  font-weight: 700;
-  font-size: 0.55rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-accent) 55%, transparent);
-}
-
-/*
- * Cinturon de seguridad. Si `.js-leader` llegara a quedar puesta con
- * reduced-motion activo (main.ts roto, orden de carga distinto), el leader no
- * puede depender de una animacion que no va a ejecutarse para retirarse: se
- * oculta por CSS pase lo que pase. Mismo patron que el bloque de `.js-intro`.
- */
-@media (prefers-reduced-motion: reduce) {
-  .intro-leader,
-  :root.js-leader .intro-leader {
-    display: none !important;
-  }
 }
 
 /*

@@ -8,6 +8,16 @@
 > La versión en español (abajo) es la vigente: es la que llevaba `.claude/CLAUDE.md` y está más al
 > día. La inglesa del `CLAUDE.md` raíz va íntegra en el anexo, sin tocar.
 
+> **2026-10-29: Vice e Hyprland, RETIRADOS.** Por decisión de Aoshi, el sitio deja de sortear tema
+> y queda solo Caelestia (rama `design/solo-caelestia`). Su código, sus arneses y sus capturas
+> siguen enteros en el tag **`tres-temas`** (`e78f11f`). Los bloques de Vice e Hyprland de abajo
+> se quedan como registro histórico; lo que dicen de ficheros ya no existe en `main`. Lo que
+> afectaba a Caelestia (escala tipográfica, contraste, `shaderBackground.ts`) sigue vigente.
+>
+> Queda abierto de la retirada: las secciones (`about.ts`, `hero.ts`, `credits.ts`,
+> `projectScene.ts`) siguen construyendo DOM que solo pintaban Vice o Hyprland y que Caelestia
+> oculta con `display: none` (16 ramas medidas en los tres anchos). Podarlo es el paso siguiente.
+
 
 - **Vice: TERMINADO.** Cerrado con el plan `2026-08-04-vice-fondo-tinta` (fondo `viceInk.ts`,
   serigrafía de tinta a dos colores; disparador de navegación de escenas sin caja, con marca de
