@@ -1,10 +1,6 @@
 {
   "_comentario": "Fallos conocidos y aceptados de scripts/verify.py. El arnes sale 0 mientras la ejecucion coincida con esta lista, y 1 en cuanto aparezca uno nuevo O se arregle uno de estos sin quitarlo de aqui. Regenerar con: python3 scripts/verify.py --update-baseline",
   "fallos": [
-    "public/media/obra/ciberseg-panel.webp no es el relleno honesto de la galeria",
-    "public/media/obra/ciberseg-vulnerabilidades.webp no es el relleno honesto de la galeria",
-    "public/media/obra/echoplan-aprobaciones.webp no es el relleno honesto de la galeria",
-    "public/media/obra/echoplan-tablero.webp no es el relleno honesto de la galeria",
     "public/media/obra/editor-interfaz.webp no es el relleno honesto de la galeria",
     "public/media/obra/hyprfinance-movimientos.webp no es el relleno honesto de la galeria",
     "public/media/obra/hyprfinance-resumen.webp no es el relleno honesto de la galeria",
