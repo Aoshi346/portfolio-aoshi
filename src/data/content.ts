@@ -187,12 +187,16 @@ export interface FocusArea {
 /** Pares titulo/detalle de "En que me enfoco", especificos de Aoshi. */
 export const focusAreas: FocusArea[] = [
   {
-    title: "Datos a gran escala",
-    detail: "Que la consulta siga siendo rápida con volumen real",
+    title: "Plataformas web",
+    detail: "Desarrollo e implementación de punta a punta",
   },
   {
-    title: "Interfaces que aguantan",
-    detail: "Estado complejo sin romperse en producción",
+    title: "Sistemas ERP y empresariales",
+    detail: "Sistemas de gestión para la operación de una empresa",
+  },
+  {
+    title: "Integraciones de IA",
+    detail: "Atención al cliente y automatización de procesos",
   },
 ];
 

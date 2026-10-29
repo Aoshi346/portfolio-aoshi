@@ -49,22 +49,20 @@ function createFicha(): HTMLElement {
   host.href = `mailto:${identity.email}`;
   host.setAttribute("data-ficha-host", "");
 
-  const punto = el("i", "ficha-punto", []);
-  const estado = el("span", "ficha-estado", [punto, identity.availability]);
-
-  const identidad = el("div", "ficha-id", [host, estado]);
+  const identidad = el("div", "ficha-id", [host]);
   identidad.setAttribute("data-ficha-grupo", "");
 
   const regla = el("div", "ficha-regla", []);
   regla.setAttribute("data-ficha-regla", "");
 
-  const titulos = focusAreas.map((area) => area.title).join("  ·  ");
-  const primerEnfoque = focusAreas[0];
-  const segundoEnfoque = focusAreas[1];
-  const filaEnfoque = fichaFila("Enfoque", titulos, primerEnfoque?.detail ?? "");
-  if (segundoEnfoque) {
-    filaEnfoque.querySelector(".ficha-v")?.append(el("small", "ficha-s", [segundoEnfoque.detail]));
-  }
+  // Cada area con su detalle justo debajo: con los titulos juntos en una linea
+  // y los detalles despues, no se leia que detalle era de que area.
+  const filaEnfoque = fichaFila("Enfoque", "");
+  filaEnfoque.querySelector(".ficha-v")?.replaceChildren(
+    ...focusAreas.map((area) =>
+      el("span", "ficha-area", [area.title, el("small", "ficha-s", [area.detail])]),
+    ),
+  );
 
   const trabajo = experience[0];
   const carrera = education[0];

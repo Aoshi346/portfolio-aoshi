@@ -46,7 +46,7 @@ def main() -> int:
     args = ap.parse_args()
 
     with sync_playwright() as p:
-        navegador = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+        navegador = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"], executable_path="/usr/bin/google-chrome")
         pagina = navegador.new_page(viewport={"width": 1440, "height": 900})
         errores: list[str] = []
         pagina.on("pageerror", lambda e: errores.append(str(e)))
@@ -227,21 +227,18 @@ def main() -> int:
         reducido = pg_reduce.evaluate("""() => {
             const cmd = document.querySelector('[data-ficha-cmd]');
             const regla = document.querySelector('[data-ficha-regla]');
-            const punto = document.querySelector('.ficha-punto');
             const nombre = document.querySelector('[data-ficha-nombre]');
             return {
                 comando: cmd.textContent,
                 regla: Math.round(regla.getBoundingClientRect().width),
-                latido: getComputedStyle(punto).animationName,
                 recorte: getComputedStyle(nombre).clipPath,
             };
         }""")
         print(f"       comando {reducido['comando']!r} \u00b7 filete {reducido['regla']} px "
-              f"\u00b7 latido {reducido['latido']} \u00b7 recorte {reducido['recorte']}")
+              f"\u00b7 recorte {reducido['recorte']}")
         comprobar(reducido["comando"] == "neofetch",
                   f"el comando ya esta escrito ({reducido['comando']!r})")
         comprobar(reducido["regla"] > 0, f"el filete ya esta a su ancho ({reducido['regla']})")
-        comprobar(reducido["latido"] == "none", f"el punto no late ({reducido['latido']})")
         contexto_reduce.close()
 
         print("\n[4] El retrato morfa, no corta")
@@ -275,7 +272,7 @@ def main() -> int:
         textos = pagina.evaluate("""() => {
             const ficha = document.querySelector('[data-ficha="neofetch"]');
             const nodos = ficha.querySelectorAll(
-                '[data-ficha-nombre], [data-ficha-host], .ficha-estado, .ficha-v, .ficha-s');
+                '[data-ficha-nombre], [data-ficha-host], .ficha-v:not(:has(.ficha-area)), .ficha-area, .ficha-s');
             return Array.from(nodos)
                 .map((n) => (n.firstChild && n.firstChild.nodeType === 3
                     ? n.firstChild.textContent : n.textContent).trim())
@@ -442,7 +439,6 @@ def main() -> int:
         PARES = [
             ("[data-ficha-nombre]", "el nombre"),
             ("[data-ficha-host]", "el correo"),
-            (".ficha-estado", "la disponibilidad"),
             (".ficha-k", "las claves"),
             (".ficha-v", "los valores"),
             (".ficha-s", "los detalles"),
