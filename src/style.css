@@ -118,18 +118,6 @@ body {
 }
 
 /*
- * Estado previo a la secuencia de entrada (solo Vice). Se oculta el hero para
- * que no se vea el salto entre el pintado y el arranque de la animacion.
- * reveal.ts retira esta clase de forma SINCRONA en cuanto GSAP carga (antes de
- * esperar fuentes ni coreografia): esa es la via normal, en decenas de ms. El
- * timeout de main.ts es solo el seguro para el caso raro de que GSAP falle.
- */
-:root.js-intro[data-theme="vice"] [data-hero-name],
-:root.js-intro[data-theme="vice"] [data-hero-fade] {
-  opacity: 0;
-}
-
-/*
  * Cinturon de seguridad ademas de la condicion en main.ts (que ya evita
  * anadir `.js-intro` con reduced-motion): si por lo que sea la clase llegase
  * a quedar puesta con reduced-motion activo (main.ts roto, orden de carga
@@ -572,33 +560,6 @@ body {
 
 .backdrop-video.is-ready {
   opacity: 1;
-}
-
-/*
- * Capa de tratamiento del backdrop. El scrim (::after) es obligatorio:
- * garantiza contraste del texto pase lo que pase en el fondo generativo.
- *
- * historical: hasta la Tarea 4 (fondo de tinta) tambien habia un ::before —
- * lavado magenta-ambar en soft-light al 48%, puesto cuando el backdrop era
- * un fixture SMPTE sin color propio y necesitaba que algo le diera la paleta
- * del tema. viceInk.ts (Tarea 2) ya pinta esa paleta en el propio shader (dos
- * tintas tramadas), asi que el lavado quedo redundante: A/B con Playwright
- * midio una diferencia media de <0.01/255 entre tenerlo y no tenerlo, y
- * scripts/verify.py dio las mismas 276 comprobaciones OK con y sin el.
- * Retirado en vez de dejarlo comentado: no aporta nada que el shader no
- * de ya, y un blend-mode inerte seguia siendo una capa de pintado mas.
- */
-:root[data-theme="vice"] .bg-theme::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgb(10 2 20 / 0.5) 0%,
-    rgb(10 2 20 / 0.12) 45%,
-    rgb(10 2 20 / 0.72) 100%
-  );
 }
 
 .tech-icon svg {
@@ -1108,30 +1069,6 @@ body {
 
   .display-xl {
     font-size: clamp(2.2rem, 7vw, 5rem);
-  }
-
-  /*
-   * El selector `.hero` de arriba (0,1,0) PIERDE contra
-   * `:root[data-theme="vice"] [data-scene]` (0,3,0) de themes.css, que fija
-   * un padding vertical mucho mayor. O sea: este bloque, escrito justo para
-   * que el pie vuelva al primer viewport, no surtia efecto en Vice — el
-   * unico tema donde `[data-scene]` existe. Se repite igualando la
-   * especificidad, y se extiende a contacto, que sufre lo mismo.
-   */
-  :root[data-theme="vice"] .hero {
-    padding-top: 3.5rem;
-    padding-bottom: 3.5rem;
-  }
-
-  /*
-   * Contacto NO recupera aire abajo: su pie es una barra `sticky` pegada al
-   * borde de la pantalla (ver themes.css). Devolverle padding inferior aqui
-   * la despegaba 56px del borde justo en las ventanas bajas, que es donde el
-   * problema se veia peor.
-   */
-  :root[data-theme="vice"] .contacto {
-    padding-top: 3.5rem;
-    padding-bottom: 0;
   }
 }
 
