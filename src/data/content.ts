@@ -285,8 +285,8 @@ export const caseStudies: CaseStudy[] = [
     stack: ["TypeScript", "Next.js"],
     tooling: ["Git", "GitHub", "Claude Code", "Gemini CLI"],
     gallery: [
-      { src: "/media/obra/teg-entregas.webp", caption: "Entregas de avances" },
-      { src: "/media/obra/teg-jurados.webp", caption: "Asignación de jurados" },
+      { src: "/media/obra/teg-planificacion.webp", caption: "Planificación de defensas con su tribunal" },
+      { src: "/media/obra/teg-entregas.webp", caption: "Entregas de avances del estudiante" },
     ],
     link: { label: "Ver repositorio", href: "https://github.com/Aoshi346/teg-web-app" },
   },
