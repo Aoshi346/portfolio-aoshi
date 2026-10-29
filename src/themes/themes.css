@@ -2315,18 +2315,6 @@
   background: var(--cae-outline);
 }
 
-/* La unica frase humana del contenido, y lo unico en la fuente de texto: entre
-   el nombre en Fraunces y los campos en monoespaciada, marca que esto lo dice
-   una persona y no el sistema. */
-:root[data-theme="caelestia"] .ficha-frase {
-  margin: 0 0 1.45rem;
-  max-width: 44rem;
-  font-family: "Hanken Grotesk", system-ui, sans-serif;
-  font-size: var(--t-2);
-  line-height: 1.5;
-  color: var(--cae-on-surface);
-}
-
 :root[data-theme="caelestia"] .ficha-filas {
   display: grid;
   gap: 0.62rem;

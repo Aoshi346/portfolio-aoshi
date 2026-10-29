@@ -275,7 +275,7 @@ def main() -> int:
         textos = pagina.evaluate("""() => {
             const ficha = document.querySelector('[data-ficha="neofetch"]');
             const nodos = ficha.querySelectorAll(
-                '[data-ficha-nombre], [data-ficha-host], .ficha-estado, [data-ficha-frase], .ficha-v, .ficha-s');
+                '[data-ficha-nombre], [data-ficha-host], .ficha-estado, .ficha-v, .ficha-s');
             return Array.from(nodos)
                 .map((n) => (n.firstChild && n.firstChild.nodeType === 3
                     ? n.firstChild.textContent : n.textContent).trim())
@@ -443,7 +443,6 @@ def main() -> int:
             ("[data-ficha-nombre]", "el nombre"),
             ("[data-ficha-host]", "el correo"),
             (".ficha-estado", "la disponibilidad"),
-            ("[data-ficha-frase]", "la frase"),
             (".ficha-k", "las claves"),
             (".ficha-v", "los valores"),
             (".ficha-s", "los detalles"),

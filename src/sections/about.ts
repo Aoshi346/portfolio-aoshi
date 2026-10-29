@@ -1,14 +1,5 @@
-import { aboutCopy, education, experience, focusAreas, identity, stats } from "../data/content";
+import { education, experience, focusAreas, identity } from "../data/content";
 import { el } from "../utils/dom";
-
-/**
- * Valor de una cifra por su rotulo, no por su indice. `stats` es un literal de
- * este mismo repo y atarlo a `stats[0]` deja una rotura silenciosa la proxima
- * vez que alguien reordene el array.
- */
-function statValue(label: string): string {
-  return stats.find((stat) => stat.label === label)?.value ?? "";
-}
 
 /** Una fila clave/valor de la salida, con su detalle opcional debajo. */
 function fichaFila(clave: string, valor: string, detalle?: string): HTMLElement {
@@ -28,7 +19,7 @@ function fichaFila(clave: string, valor: string, detalle?: string): HTMLElement 
  */
 function createFicha(): HTMLElement {
   const foto = el("img", "ficha-foto");
-  foto.src = identity.githubAvatar;
+  foto.src = identity.photo;
   foto.alt = identity.name;
   foto.width = 288;
   foto.height = 288;
@@ -67,17 +58,6 @@ function createFicha(): HTMLElement {
   const regla = el("div", "ficha-regla", []);
   regla.setAttribute("data-ficha-regla", "");
 
-  const frase = el("p", "ficha-frase", [aboutCopy[0] ?? ""]);
-  frase.setAttribute("data-ficha-frase", "");
-  const grupoFrase = el("div", "", [frase]);
-  grupoFrase.setAttribute("data-ficha-grupo", "");
-
-  /*
-   * `Desde` se lee por su ROTULO, no por su indice: `stats` es un literal de
-   * este mismo repo y atarlo a `stats[0]` deja una rotura silenciosa la
-   * proxima vez que alguien lo reordene. Misma precaucion que `statValue()`.
-   */
-  const desde = statValue("Desde");
   const titulos = focusAreas.map((area) => area.title).join("  ·  ");
   const primerEnfoque = focusAreas[0];
   const segundoEnfoque = focusAreas[1];
@@ -91,7 +71,7 @@ function createFicha(): HTMLElement {
   const filas = el("dl", "ficha-filas", [
     fichaFila("Rol", identity.role),
     fichaFila("Base", identity.location),
-    fichaFila("Ahora", identity.now, desde ? `Desde ${desde}` : undefined),
+    fichaFila("Ahora", identity.now),
     filaEnfoque,
     fichaFila(
       "Último puesto",
@@ -143,7 +123,6 @@ function createFicha(): HTMLElement {
     grupoNombre,
     identidad,
     regla,
-    grupoFrase,
     filas,
     grupoTira,
   ]);
