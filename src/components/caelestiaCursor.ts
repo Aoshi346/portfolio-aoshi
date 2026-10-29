@@ -18,7 +18,6 @@ export interface CaelestiaCursorHandle {
  * senales no:
  *
  *   `pointer`  -> lo sustituye esta gota.
- *   `grab` / `grabbing` (`.gallery-track`) -> NATIVOS.
  *   I-beam en texto -> NATIVO.
  *   Enlaces `target="_blank"` -> NATIVOS. Abren pestana nueva.
  *
@@ -48,7 +47,7 @@ export interface CaelestiaCursorHandle {
 // Pulsables que la gota viste. El enlace externo queda fuera aposta.
 const PRESSABLE = 'button, a[href]:not([target="_blank"])';
 // Zonas donde manda el navegador y la gota se apaga.
-const NATIVE_ZONE = '.gallery-track, a[target="_blank"], p, li, dd, dt, figcaption, blockquote';
+const NATIVE_ZONE = 'a[target="_blank"], p, li, dd, dt, figcaption, blockquote';
 /*
  * De entre los pulsables, los que YA responden al roce: ahi la gota se
  * derrama al entrar, sin esperar clic.
@@ -60,10 +59,8 @@ const NATIVE_ZONE = '.gallery-track, a[target="_blank"], p, li, dd, dt, figcapti
  * llevara `aria-pressed` porque es lo correcto para ella, y la gota la
  * vestira sola.
  *
- * OJO: el selector casa 46 nodos, no 23 -- las filas `.credit` del
- * `credits.ts` generico tambien lo llevan, ocultas por
- * `.credits-grid { display: none }`. No es un problema (un nodo oculto no
- * recibe `pointerover`), pero NADIE puede contar nodos para decidir nada.
+ * El selector casa las 23 piezas de Creditos y nada mas: ya no hay otro
+ * arbol de creditos en el DOM.
  */
 const HOVER_SELECT = "button[aria-pressed]";
 

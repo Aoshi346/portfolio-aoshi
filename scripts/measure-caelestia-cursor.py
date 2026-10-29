@@ -25,7 +25,7 @@ FALLOS: list[str] = []
 # Los mismos tres selectores que el modulo. Si divergen, el arnes deja de
 # medir el modulo y pasa a medir una copia suya.
 PRESSABLE = 'button, a[href]:not([target="_blank"])'
-NATIVE_ZONE = '.gallery-track, a[target="_blank"], p, li, dd, dt, figcaption, blockquote'
+NATIVE_ZONE = 'a[target="_blank"], p, li, dd, dt, figcaption, blockquote'
 HOVER_SELECT = "button[aria-pressed]"
 
 # Indice de cada escena en la barra de workspaces.
@@ -175,10 +175,6 @@ def gate_senales(p_pagina, base: str) -> None:
     leyenda de cada tarjeta y sobre el nombre de cada pieza -- justo encima
     de las dianas.
 
-    NO se afirma nada sobre `.gallery-track`: existe en el DOM pero es
-    invisible en Caelestia (lo oculta B3), asi que una asercion suya seria
-    tautologica. Su linea en el CSS es preventiva y esta declarada como tal
-    en el spec.
     """
     print("[2] reparto de senales")
     pagina = p_pagina
