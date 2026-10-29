@@ -87,51 +87,38 @@ GALLERY_SETTLE_POLL_MS = 200
 
 
 def check_gallery_placeholder(page) -> None:
-    """Las imagenes de la galeria (`/media/obra/*.webp`) todavia no existen:
-    llegan con las capturas reales en la Task 11. Mientras tanto cada
-    `<img>` de `gallery.ts` falla su carga y `.gallery-fallback` ("Imagen
-    pendiente") queda visible en su lugar — un fallback honesto para el
-    usuario, pero texto placeholder visible en una seccion publicada, que la
-    norma del proyecto prohibe. Mismo patron que `check_fixture_assets`: este
-    gate falla mientras el placeholder siga presente, para que sustituirlo
-    por los assets reales sea obligatorio en la Task 11, no un checklist
-    opcional. Silenciable con `--allow-gallery-placeholder` mientras dure el
-    desarrollo (activo por defecto, igual que `--allow-fixture-assets`).
+    """Las capturas de la Editorial de Obra (`caelestiaObraEditorial.ts`,
+    `/media/obra/*.webp`) tienen que cargar: una imagen rota en una seccion
+    publicada es un placeholder visible, y la norma del proyecto lo prohibe.
 
-    Las imagenes llevan `loading="lazy"` (no empiezan a cargar hasta que el
-    scroll las acerca al viewport) y el intento de red — aunque sea un 404
-    local — tarda un instante en resolver. Por eso se espera activamente
-    (poll de `img.complete`, que el navegador marca `true` tanto en `load`
-    como en `error`) antes de leer `[data-broken]`, el marcador que
-    `gallery.ts` fija en el listener de `error` de cada imagen."""
+    Las miniaturas llevan `loading="lazy"` y viven en un workspace que esta
+    `inert` hasta que se abre, asi que primero se abre Obra desde la barra y
+    despues se espera a que cada `<img>` resuelva (`complete` es `true` tanto
+    en `load` como en `error`). Rota = resuelta con `naturalWidth` 0.
+
+    Hasta el 2026-10-29 esto media `gallery.ts`, la galeria de las escenas de
+    obra de los tres temas; Caelestia la ocultaba y se retiro."""
+    page.click('[data-cae-ws="obra"]')
+    page.wait_for_timeout(1500)
     elapsed = 0
     while elapsed < GALLERY_SETTLE_TIMEOUT_MS:
         pending = page.evaluate(
-            "() => Array.from(document.querySelectorAll('[data-gallery-track] .gallery-img'))"
-            ".filter((img) => !img.complete).length"
+            "() => Array.from(document.querySelectorAll('#obra img')).filter((img) => !img.complete).length"
         )
         if pending == 0:
             break
         page.wait_for_timeout(GALLERY_SETTLE_POLL_MS)
         elapsed += GALLERY_SETTLE_POLL_MS
     else:
-        print(f"  NOTA galeria: alguna imagen no resolvio su carga en {GALLERY_SETTLE_TIMEOUT_MS}ms")
-    # Margen extra: `data-broken` lo fija un listener de `error` que puede
-    # correr un tick despues de que `img.complete` ya sea `true`.
-    page.wait_for_timeout(200)
+        print(f"  NOTA obra: alguna imagen no resolvio su carga en {GALLERY_SETTLE_TIMEOUT_MS}ms")
 
-    total = page.evaluate(
-        "() => document.querySelectorAll('[data-gallery-track] .gallery-img').length"
-    )
+    total = page.evaluate("() => document.querySelectorAll('#obra img').length")
     broken = page.evaluate(
-        "() => document.querySelectorAll('[data-gallery-track] [data-broken]').length"
+        "() => Array.from(document.querySelectorAll('#obra img'))"
+        ".filter((img) => img.complete && img.naturalWidth === 0).length"
     )
-    check(total > 0, "la galeria tiene imagenes que verificar")
-    check(
-        broken == 0,
-        f"galeria: ninguna imagen cae al fallback de placeholder "
-        f'("Imagen pendiente" visible en {broken}/{total})',
-    )
+    check(total > 0, "la Editorial de Obra tiene imagenes que verificar")
+    check(broken == 0, f"obra: ninguna imagen rota ({broken}/{total})")
 
 
 # --------------------------------------------------------------------------
@@ -1064,40 +1051,6 @@ def check_heading_hierarchy(page) -> None:
           f"toda escena [data-scene] tiene un encabezado real dentro ({scenes_without_heading})")
 
 
-def check_theme_identity(page, theme: str) -> None:
-    """Identidad estructural de Caelestia que el gate de contraste no ve: los
-    creditos se re-skinean en pildoras (`flex-direction: row`, `.credit-role`
-    oculto). Se mide el valor EFECTIVO via `getComputedStyle`, no la regla
-    declarada, para demostrar que gana la cascada y no solo que la regla
-    existe.
-
-    Hasta el 2026-10-29 esta funcion protegia tambien la identidad de Vice e
-    Hyprland y la tarjeta `.hero-surface` de la Caelestia antigua; el
-    escritorio la oculta por diseno y los otros dos temas se retiraron (tag
-    `tres-temas`)."""
-    if theme == "caelestia":
-        credits_layout = page.evaluate("""(() => {
-          const list = document.querySelector('.credits-list');
-          const role = document.querySelector('.credit-role');
-          if (!list) return null;
-          const s = getComputedStyle(list);
-          return {
-            flexDirection: s.flexDirection,
-            roleDisplay: role ? getComputedStyle(role).display : null,
-          };
-        })()""")
-        check(
-            credits_layout is not None and credits_layout["flexDirection"] == "row",
-            f"{theme}: .credits-list se re-skinea en pildoras horizontales "
-            f"(flexDirection={credits_layout['flexDirection'] if credits_layout else None})",
-        )
-        check(
-            credits_layout is not None and credits_layout["roleDisplay"] == "none",
-            f"{theme}: el rol se oculta en formato pildora "
-            f"(roleDisplay={credits_layout['roleDisplay'] if credits_layout else None})",
-        )
-
-
 def run(
     theme: str,
     url: str,
@@ -1160,72 +1113,39 @@ def run(
             # `check_contrast_offscreen_scenes`.
             check_contrast_offscreen_scenes(page, theme)
 
-            # Placeholder de galeria (defecto 3-bis): la escena "obra" es
-            # theme-agnostic (`createProjectScene` la monta igual en los tres
-            # temas), asi que corre en los tres, igual que el resto de gates
-            # base. El barrido de arriba ya hizo scroll por cada escena, asi
-            # que las imagenes `loading="lazy"` de la galeria ya tuvieron
-            # ocasion de intentar cargar.
+            # Placeholder de galeria (defecto 3-bis): las capturas de la
+            # Editorial de Obra cargan y no son los rellenos honestos.
             if not allow_gallery_placeholder:
                 check_gallery_placeholder(page)
                 check_gallery_placeholder_hashes()
 
-            # Task 9: creditos interactivos ("Con que construyo"). Corre en
-            # LOS TRES temas, no solo Vice: `createCredits` monta el mismo
-            # DOM en los tres (un solo componente, presentacion por CSS via
-            # `[data-theme]`), asi que la interaccion real (el panel cambia
-            # al pasar el raton o el foco por una fila) tiene que sobrevivir
-            # al re-skinning de Hyprland/Caelestia en pildoras, no solo verse
-            # bien en Vice como creditos de cine.
+            # Creditos: la bandeja de Caelestia (`caelestiaCreditosBandeja.ts`),
+            # 23 piezas pulsables que marcan con `aria-pressed` la elegida.
+            page.click('[data-cae-ws="creditos"]')
+            page.wait_for_timeout(1500)
             credits = page.evaluate("""(() => {
-              const rows = document.querySelectorAll('[data-credit]');
-              if (!rows.length) return null;
-              const panel = document.querySelector('[data-credit-panel]');
-              const before = panel ? panel.textContent.trim() : "";
-              rows[rows.length - 1].dispatchEvent(new MouseEvent('mouseenter', {bubbles:true}));
-              const after = panel ? panel.textContent.trim() : "";
+              const piezas = document.querySelectorAll('[data-scene="credits"] button.cae-cred-pieza');
+              if (!piezas.length) return null;
+              const ultima = piezas[piezas.length - 1];
+              ultima.click();
               return {
-                rows: rows.length,
-                hasPanel: !!panel,
-                hasIcon: !!(panel && panel.querySelector('svg')),
-                changed: before !== after,
-                focusable: rows[0].tabIndex >= 0,
+                piezas: piezas.length,
+                marcada: ultima.getAttribute('aria-pressed') === 'true',
+                focusable: piezas[0].tabIndex >= 0,
               };
             })()""")
-            check(credits is not None and credits["rows"] >= 6, "hay filas de creditos")
-            check(credits is not None and credits["hasPanel"], "hay panel de detalle")
-            check(credits is not None and credits["hasIcon"], "el panel muestra icono")
-            check(credits is not None and credits["changed"], "el panel cambia al interactuar")
-            check(credits is not None and credits["focusable"], "los creditos son enfocables")
+            check(credits is not None and credits["piezas"] >= 20, "la bandeja de creditos tiene sus piezas")
+            check(credits is not None and credits["marcada"], "pulsar una pieza la marca con aria-pressed")
+            check(credits is not None and credits["focusable"], "las piezas de creditos son enfocables")
 
-            # Hallazgo I-5: cobertura estructural de identidad para los dos
-            # temas aprobados (Hyprland/Caelestia), no solo contraste — ver
-            # comentario de `check_theme_identity`.
-            check_theme_identity(page, theme)
-
-            # Comprobaciones de contenido que en la version de tres temas solo
-            # corrian bajo Vice (galerias, metadatos, enlaces de contacto) y que
-            # no dependen de la piel: aplican a la unica que queda.
-            # Task 8 (conservado de la version de tres temas): galerias y metadatos.
-            # La comprobacion de desborde horizontal en movil se retiro: la obra de
-            # Caelestia no usa carril desplazable sino su propio cajon.
-            track_count = page.evaluate(
-                "() => document.querySelectorAll('[data-gallery-track]').length"
-            )
-            check(track_count >= 2, "hay galerias de proyecto en la escena de obra")
-
-            # Los metadatos de la cartela (Rol/Periodo/Stack/Estado) son
-            # independientes de que exista o no el carril de galeria — un
-            # proyecto sin piezas (`project.gallery.length === 0`) sigue
-            # teniendo su `[data-meta]`. Antes esta comprobacion vivia
-            # dentro del mismo `gal` que la galeria, asi que si el carril
-            # faltaba (`gal === null`) esta aserción fallaba tambien,
-            # aunque los metadatos estuvieran perfectamente presentes:
-            # dos cosas distintas acopladas a una sola condicion.
-            metas = page.evaluate(
-                '() => document.querySelectorAll(\'[data-scene="obra"] [data-meta]\').length'
-            )
-            check(metas >= 1, "las obras tienen fila de metadatos")
+            # Obra: la Editorial (`caelestiaObraEditorial.ts`), una tarjeta por
+            # caso de estudio de `content.ts` y un cajon con su ficha.
+            obra = page.evaluate("""(() => ({
+              tarjetas: document.querySelectorAll('#obra .cae-obra-card').length,
+              cajon: !!document.querySelector('#obra .cae-obra-drawer-title'),
+            }))()""")
+            check(obra["tarjetas"] >= 2, f"la Editorial de Obra tiene tarjetas ({obra['tarjetas']})")
+            check(obra["cajon"], "la Editorial de Obra tiene cajon con la ficha del proyecto")
 
             check(page.evaluate("() => !!document.querySelector('[data-scene=\"contacto\"]')"), "existe la seccion de contacto")
 
@@ -1247,15 +1167,15 @@ def run(
                 f"(rel={contact_links['externalRel'] if contact_links else None})",
             )
 
-            # Degradacion con prefers-reduced-motion (`--reduced`): galeria y
+            # Degradacion con prefers-reduced-motion (`--reduced`): obra y
             # creditos son contenido, no decoracion; apagarlos dejaria al
             # visitante sin informacion.
             if reduced:
                 degraded = page.evaluate("""(() => ({
-                  galleryUsable: !!document.querySelector('[data-gallery-track]'),
-                  creditsUsable: document.querySelectorAll('[data-credit]').length > 0,
+                  obraUsable: document.querySelectorAll('#obra .cae-obra-card').length > 0,
+                  creditsUsable: document.querySelectorAll('button.cae-cred-pieza').length > 0,
                 }))()""")
-                check(degraded["galleryUsable"], "la galeria sigue disponible")
+                check(degraded["obraUsable"], "la obra sigue disponible")
                 check(degraded["creditsUsable"], "los creditos siguen disponibles")
         finally:
             if page:
