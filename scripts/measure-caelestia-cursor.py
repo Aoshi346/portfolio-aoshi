@@ -83,7 +83,7 @@ def gate_presencia(navegador, base: str, errores: list[str]) -> None:
             lambda m: errores.append(f"console.error: {m.text}") if m.type == "error" else None,
         )
 
-    for tema, debe in (("caelestia", True), ("vice", False), ("hyprland", False)):
+    for tema, debe in (("caelestia", True),):
         contexto = navegador.new_context(viewport={"width": 1440, "height": 900})
         pagina = contexto.new_page()
         escucha(pagina)

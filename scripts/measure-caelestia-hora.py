@@ -305,16 +305,6 @@ def main():
                 )
         ctx.close()
 
-        # ---- 6. los otros dos temas NO montan el shell
-        for otro in ("vice", "hyprland"):
-            ctx = nav.new_context(viewport={"width": 1440, "height": 900})
-            page = ctx.new_page()
-            page.goto(args.base + "/?theme=" + otro, wait_until="domcontentloaded", timeout=30000)
-            page.wait_for_timeout(2000)
-            if page.query_selector("[data-cae-bar]"):
-                fallos.append("el shell de Caelestia se ha montado en %s" % otro)
-            ctx.close()
-
         # ---- 7. el dock: cuatro accesos con etiqueta accesible y rel seguro
         ctx = nav.new_context(viewport={"width": 1440, "height": 900})
         page = ctx.new_page()
@@ -475,9 +465,9 @@ def main():
         if not estado["transform"] or estado["transform"] == "none":
             fallos.append("el carril no se ha movido: transform %r" % estado["transform"])
 
-        # Los anclas siguen resolviendo en los tres temas (sceneNav depende de ellos).
+        # Los anclas siguen resolviendo.
         ctx.close()
-        for tema in ("vice", "hyprland", "caelestia"):
+        for tema in ("caelestia",):
             ctx = nav.new_context(viewport={"width": 1440, "height": 900})
             page = ctx.new_page()
             page.goto(args.base + "/?theme=" + tema, wait_until="domcontentloaded", timeout=30000)

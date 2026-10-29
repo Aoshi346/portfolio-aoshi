@@ -1,6 +1,6 @@
 """Arnes de verificacion visual. Cada tarea del plan anade aserciones aqui.
 
-Uso: python3 scripts/verify.py [--theme vice] [--url http://127.0.0.1:5173]
+Uso: python3 scripts/verify.py [--theme caelestia] [--url http://127.0.0.1:5173]
              [--allow-fixture-assets] [--allow-gallery-placeholder]
 Requiere el servidor de desarrollo levantado (npm run dev).
 
@@ -16,6 +16,7 @@ flag.
 import argparse
 import hashlib
 import json
+import math
 import re
 import sys
 from io import BytesIO
@@ -29,18 +30,7 @@ ARGS = ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"]
 DESKTOP = {"width": 1440, "height": 900}
 MOBILE = {"width": 390, "height": 844}
 
-# Hashes exactos de los fixtures sinteticos generados con ffmpeg en la Task 3
-# (poster de color solido + barras de test SMPTE). Un hash exacto es la unica
-# forma fiable de identificarlos: el tamano o el nombre de archivo sobreviven
-# a un reemplazo; el contenido (sha256) no. En cuanto la Task 11 suba los
-# assets reales, el hash deja de coincidir y esta asercion pasa a estar en
-# verde sola, sin tocar el arnes otra vez.
 REPO_ROOT = Path(__file__).resolve().parent.parent
-FIXTURE_HASHES = {
-    "public/media/vice-poster.webp": "32ec2c6747aee5394913209ae7698a8c6a7ccdc9bbce9c03745a7b93be1c0be5",
-    "public/media/vice-hero.webm": "09f7c04887ec97edf76ca664227797bd92ec3f6c797765daffdf7645165bee1c",
-    "public/media/vice-hero.mp4": "fbe241445d4b68a78f20a5d5847b310cfd72e9ed526edad5c960ce9a64934e8a",
-}
 
 # Hashes exactos de los rellenos honestos generados con ffmpeg para la
 # galeria de "Obra" (fondo solido + "CAPTURA PENDIENTE" + pie de foto — nunca
@@ -90,16 +80,6 @@ def sha256_of(path: Path) -> str:
         for chunk in iter(lambda: handle.read(65536), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def check_fixture_assets() -> None:
-    """Defecto 3: falla mientras public/media/ siga sirviendo los fixtures
-    sinteticos de la Task 3 (poster solido + barras SMPTE). Gate obligatorio
-    para la Task 11 — no un checklist opcional."""
-    for rel_path, fixture_hash in FIXTURE_HASHES.items():
-        full_path = REPO_ROOT / rel_path
-        is_fixture = full_path.exists() and sha256_of(full_path) == fixture_hash
-        check(not is_fixture, f"{rel_path} no es el fixture sintetico de la Task 3")
 
 
 GALLERY_SETTLE_TIMEOUT_MS = 4000
@@ -654,6 +634,16 @@ def _parse_css_color(css: str) -> tuple[float, float, float, float]:
         a = float(alpha_s.strip()) if alpha_s.strip() else 1.0
         return r, g, b, a
 
+    if css.startswith("oklch("):
+        comps, _, alpha_s = inner.partition("/")
+        l_s, c_s, h_s = comps.split()
+        l = float(l_s[:-1]) / 100 if l_s.endswith("%") else float(l_s)
+        c = float(c_s)
+        h = math.radians(float(h_s.removesuffix("deg")))
+        r, g, b = _oklab_to_srgb255(l, c * math.cos(h), c * math.sin(h))
+        a = float(alpha_s.strip()) if alpha_s.strip() else 1.0
+        return r, g, b, a
+
     if css.startswith("color("):
         body = inner.replace("srgb", "").strip()
         comps, _, alpha_s = body.partition("/")
@@ -1074,172 +1064,17 @@ def check_heading_hierarchy(page) -> None:
           f"toda escena [data-scene] tiene un encabezado real dentro ({scenes_without_heading})")
 
 
-def check_gallery_progress_bar(browser, url: str, theme: str) -> None:
-    """Hallazgo I-4 de la revision final: la barra de progreso de la galeria
-    (`gallery.ts`) mentia en el primer pintado en movil — se pintaba llena al
-    100% aunque hubiera carril oculto por arrastrar. Causa real: `updateBar()`
-    se llamaba de forma sincrona en la construccion del componente, con
-    `track` todavia desconectado del documento (`createGallery` solo devuelve
-    el nodo; quien la llama lo apendiza despues). `scrollWidth`/`clientWidth`
-    valian 0 en ese instante, la division daba `NaN`, `Math.max(14, NaN)` es
-    tambien `NaN`, y `style.width = "NaN%"` es un valor invalido que el
-    navegador descarta — el inline queda vacio y el `<i>` hereda el 100% de
-    `.gallery-bar` (`display: block`, sin ancho propio). Solo lo corregia el
-    listener de `scroll` del propio carril, que no dispara hasta que alguien
-    ya arrastro: para entonces el visitante ya vio la barra mintiendo.
-
-    Contexto nuevo con viewport movil (mismo motivo que `galleries_mobile` mas
-    abajo: el ancho minimo de cada pieza garantiza desborde real con 2+ piezas)
-    para medir el estado justo tras el primer pintado SIN arrastrar ni
-    scrollear el carril — asi se prueba lo que ve el visitante antes de tocar
-    nada, no un estado ya corregido por una interaccion previa del arnes."""
-    context = browser.new_context(viewport=MOBILE)
-    try:
-        page = context.new_page()
-        page.goto(f"{url}/?theme={theme}", wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(1200)
-        data = page.evaluate("""() => {
-          const out = [];
-          for (const gallery of document.querySelectorAll('[data-gallery]')) {
-            const track = gallery.querySelector('[data-gallery-track]');
-            const bar = gallery.querySelector('[data-gallery-bar]');
-            const indicator = bar ? bar.firstElementChild : null;
-            if (!track || !bar || !indicator) continue;
-            if (track.children.length < 2) continue; // sin desborde posible
-            const scrollable = track.scrollWidth > track.clientWidth + 10;
-            if (!scrollable) continue;
-            const barWidth = bar.getBoundingClientRect().width;
-            const indicatorWidth = indicator.getBoundingClientRect().width;
-            out.push({
-              styleWidth: indicator.style.width,
-              ratio: barWidth > 0 ? (indicatorWidth / barWidth) * 100 : null,
-            });
-          }
-          return out;
-        }""")
-        check(
-            len(data) >= 1,
-            "hay al menos una galeria desplazable en movil para medir la barra en el primer pintado",
-        )
-        for i, g in enumerate(data):
-            check(
-                g["styleWidth"] != "" and "NaN" not in g["styleWidth"],
-                f"galeria #{i} ({theme}): la barra tiene un ancho valido en el primer pintado "
-                f"(style.width={g['styleWidth']!r})",
-            )
-            ratio = g["ratio"]
-            check(
-                ratio is not None and ratio < 95,
-                f"galeria #{i} ({theme}): la barra no se pinta llena en el primer pintado pese a "
-                f"haber carril oculto por arrastrar (ratio medido={ratio})",
-            )
-    finally:
-        context.close()
-
-
 def check_theme_identity(page, theme: str) -> None:
-    """Hallazgo I-5 de la revision final: el gate solo protegia Vice de
-    verdad (41 aserciones no-contraste) frente a Hyprland/Caelestia (8 cada
-    uno, solo lo generico: creditos, galeria...). El modo de fallo real que ya
-    ha pasado tres veces en este proyecto es "una tarea que reescribe una
-    seccion COMPARTIDA (`style.css`/`themes.css`) rompe la identidad de otro
-    tema" — y el gate de contraste no lo caza: el caso canonico (borrar
-    `.hero-surface` en Caelestia) deja el texto igual de legible, lo roto es
-    la ESTRUCTURA (tarjeta Material You -> texto suelto sobre el degradado),
-    no el contraste.
+    """Identidad estructural de Caelestia que el gate de contraste no ve: los
+    creditos se re-skinean en pildoras (`flex-direction: row`, `.credit-role`
+    oculto). Se mide el valor EFECTIVO via `getComputedStyle`, no la regla
+    declarada, para demostrar que gana la cascada y no solo que la regla
+    existe.
 
-    Se mide el pixel EFECTIVO via `getComputedStyle`, no la regla CSS
-    declarada: `getComputedStyle` ya devuelve el valor resuelto tras cascada
-    (a diferencia de leer el `cssText` de una regla, que solo demuestra que
-    la regla EXISTE en la hoja, no que gane la especificidad real ni que siga
-    aplicando sobre el elemento correcto).
-
-    Tres marcadores de identidad, elegidos porque cada uno protege un bloque
-    compartido distinto de `themes.css`/`style.css`:
-      1. Caelestia: `.hero-surface`/`.scene-surface` deben tener fondo
-         tonal solido, blur y sombra reales — la tarjeta Material You que
-         distingue a Caelestia de "texto suelto sobre un degradado". Sin
-         esto Caelestia deja de leerse como Material You.
-      2. Hyprland/Caelestia comparten el re-skin de creditos en pildoras
-         (`flex-direction: row`, `.credit-role` oculto) — la alternativa al
-         rodillo vertical de cine de Vice. Si se borra ese bloque, ambos
-         temas caen silenciosamente al layout de Vice sin que ningun otro
-         gate lo note (el gate de creditos existente solo comprueba
-         interaccion/cuenta, no layout).
-      3. Hyprland NO debe heredar la tarjeta de Caelestia — la marca no es
-         "sin fondo" (Vice tambien anadio su propio scrim de ink para el
-         hallazgo I-1, asi que un fondo no nulo ya no basta para distinguir),
-         sino el borde + sombra que son exclusivos del recibo Material You de
-         Caelestia (`border: 1px solid ...` + `box-shadow` real; el scrim de
-         Vice no lleva ninguno de los dos). Protege contra el error inverso
-         al (1): ampliar el selector de Caelestia para que tambien alcance a
-         Hyprland (o a Vice).
-
-    El marcador 2 se parte por tema con el rediseno "Ascua" (2026-08-05):
-    Hyprland dejo de re-skinear los creditos en pildoras (compartido con
-    Caelestia) y paso a su propio reparto — rol una vez como rotulo de grupo,
-    nombres fluyendo como prosa con filete. Caelestia sigue en pildoras
-    exactamente igual que antes; separar el marcador es lo que permite que
-    el cambio de Hyprland no fuerce relajar (o mentir) el de Caelestia.
-
-    Hyprland: los cimientos (2026-09-09). El generico se oculta entero y el
-    dispositivo propio `[data-cimientos]` lo sustituye."""
-    hero_surface = page.evaluate("""(() => {
-      const el = document.querySelector('.hero-surface');
-      if (!el) return null;
-      const s = getComputedStyle(el);
-      return {
-        background: s.backgroundColor,
-        backdropFilter: s.backdropFilter,
-        boxShadow: s.boxShadow,
-        borderWidth: s.borderTopWidth,
-      };
-    })()""")
-    scene_surface = page.evaluate("""(() => {
-      const el = document.querySelector('.about-stats');
-      if (!el) return null;
-      const s = getComputedStyle(el);
-      return { background: s.backgroundColor, backdropFilter: s.backdropFilter };
-    })()""")
-
-    def _is_transparent(css_color: str) -> bool:
-        return css_color in ("rgba(0, 0, 0, 0)", "transparent", "") or css_color is None
-
-    if theme == "caelestia":
-        check(
-            hero_surface is not None and not _is_transparent(hero_surface["background"]),
-            f"Caelestia: .hero-surface tiene fondo tonal solido (no transparente) "
-            f"(background={hero_surface['background'] if hero_surface else None})",
-        )
-        check(
-            hero_surface is not None and "blur" in hero_surface["backdropFilter"],
-            f"Caelestia: .hero-surface aplica backdrop-filter con blur real "
-            f"(backdropFilter={hero_surface['backdropFilter'] if hero_surface else None})",
-        )
-        check(
-            hero_surface is not None and hero_surface["boxShadow"] != "none",
-            f"Caelestia: .hero-surface proyecta sombra real "
-            f"(boxShadow={hero_surface['boxShadow'] if hero_surface else None})",
-        )
-        check(
-            scene_surface is not None and not _is_transparent(scene_surface["background"]),
-            f"Caelestia: .scene-surface (.about-stats) tiene fondo tonal solido "
-            f"(background={scene_surface['background'] if scene_surface else None})",
-        )
-    else:
-        no_caelestia_card = (
-            hero_surface is not None
-            and hero_surface["boxShadow"] == "none"
-            and hero_surface["borderWidth"] == "0px"
-        )
-        check(
-            no_caelestia_card,
-            f"{theme}: .hero-surface no hereda la tarjeta Material You de Caelestia "
-            "(sin borde, sin sombra propia) "
-            f"(boxShadow={hero_surface['boxShadow'] if hero_surface else None}, "
-            f"borderWidth={hero_surface['borderWidth'] if hero_surface else None})",
-        )
-
+    Hasta el 2026-10-29 esta funcion protegia tambien la identidad de Vice e
+    Hyprland y la tarjeta `.hero-surface` de la Caelestia antigua; el
+    escritorio la oculta por diseno y los otros dos temas se retiraron (tag
+    `tres-temas`)."""
     if theme == "caelestia":
         credits_layout = page.evaluate("""(() => {
           const list = document.querySelector('.credits-list');
@@ -1261,118 +1096,6 @@ def check_theme_identity(page, theme: str) -> None:
             f"{theme}: el rol se oculta en formato pildora "
             f"(roleDisplay={credits_layout['roleDisplay'] if credits_layout else None})",
         )
-
-    if theme == "hyprland":
-        # Los cimientos (2026-09-09): el generico `.credits-grid` no se pinta
-        # bajo Hyprland y el dispositivo propio `[data-cimientos]` si. Si
-        # alguien reintroduce el catastro (rejilla sobre `.credits-list`) o
-        # el generico vuelve a asomar por debajo de los cimientos, esto salta.
-        cimientos = page.evaluate("""(() => {
-          const grid = document.querySelector('.credits-grid');
-          const cim = document.querySelector('[data-cimientos]');
-          const ve = n => { if (!n) return false; const s = getComputedStyle(n);
-            const r = n.getBoundingClientRect();
-            return s.display !== 'none' && r.width > 0 && r.height > 0; };
-          return { gridVisible: ve(grid), cimVisible: ve(cim),
-                   nombres: document.querySelectorAll('[data-cimientos] .cim-nombre').length };
-        })()""")
-        check(
-            cimientos is not None and not cimientos["gridVisible"],
-            f"hyprland: el generico .credits-grid no se pinta bajo los cimientos "
-            f"(gridVisible={cimientos['gridVisible'] if cimientos else None})",
-        )
-        check(
-            cimientos is not None and cimientos["cimVisible"] and cimientos["nombres"] == 23,
-            f"hyprland: [data-cimientos] se pinta con sus 23 nombres "
-            f"(cimVisible={cimientos['cimVisible'] if cimientos else None}, "
-            f"nombres={cimientos['nombres'] if cimientos else None})",
-        )
-
-        # El foco de teclado del enlace del hero (2026-09-10). Dos aserciones,
-        # y la segunda es la que de verdad hacia falta.
-        #
-        # 1. Que exista anillo. Antes no habia: `:focus-visible` solo cambiaba
-        #    el color de `--haze` a `--l1` y crecia un subrayado de 1px. Esos
-        #    dos colores tienen **1,03:1** de contraste — cambia el tono, no la
-        #    luminancia — asi que para quien no distingue bien el color la unica
-        #    senal era una linea de 1px, la mitad del perimetro que pide
-        #    WCAG 2.4.11.
-        #
-        # 2. Que el offset no sea positivo SI el elemento lleva `clip-path`.
-        #    Aqui esta el fallo que costo el rato: `.hero-mail` lleva
-        #    `.hypr-cut`, que deja un `clip-path` puesto incluso en reposo
-        #    (`inset(0 0 0 0)`, abierto del todo), y un `clip-path` recorta
-        #    TAMBIEN el outline. Con offset positivo el estilo computado dice
-        #    `solid 2px` y no se enciende ni un pixel. **El estilo computado no
-        #    es prueba de que algo se pinte**, y esta es la unica asercion del
-        #    arnes que lo tiene en cuenta.
-        foco_mail = page.evaluate("""(() => {
-          const el = document.querySelector('.hero-mail');
-          if (!el) return null;
-          el.focus();
-          const cs = getComputedStyle(el);
-          return {
-            estilo: cs.outlineStyle,
-            ancho: parseFloat(cs.outlineWidth) || 0,
-            offset: parseFloat(cs.outlineOffset) || 0,
-            recortado: cs.clipPath !== 'none',
-          };
-        })()""")
-        check(
-            foco_mail is not None and foco_mail["estilo"] != "none" and foco_mail["ancho"] >= 2,
-            f"hyprland: .hero-mail pinta anillo de foco de 2px o mas "
-            f"(estilo={foco_mail['estilo'] if foco_mail else None}, "
-            f"ancho={foco_mail['ancho'] if foco_mail else None})",
-        )
-        check(
-            foco_mail is not None and not (foco_mail["recortado"] and foco_mail["offset"] > 0),
-            f"hyprland: el anillo de .hero-mail no queda fuera de su clip-path "
-            f"(recortado={foco_mail['recortado'] if foco_mail else None}, "
-            f"offset={foco_mail['offset'] if foco_mail else None})",
-        )
-
-        # Radio 0 es la decision estructural del tema: Ascua es luz con CANTO.
-        # Caelestia lleva radio y sombra; si Hyprland empieza a redondear,
-        # los dos temas convergen y se pierde la identidad.
-        canto = page.evaluate("""(() => {
-          const s = document.querySelector('.scene-surface') || document.querySelector('.hero-surface');
-          if (!s) return null;
-          const cs = getComputedStyle(s);
-          return { radius: cs.borderTopLeftRadius, shadow: cs.boxShadow };
-        })()""")
-        check(
-            canto is not None and canto["radius"] == "0px",
-            f"hyprland: las superficies no redondean (radius={canto['radius'] if canto else None})",
-        )
-
-
-def check_reduced_motion_chrome(browser, url: str, theme: str) -> None:
-    """El cromo de cine (letterbox + barra de orientacion) es decoracion pura
-    de Vice: con `prefers-reduced-motion` no debe aparecer. Sin este check,
-    quitar el `@media (prefers-reduced-motion: reduce) { .cinema-chrome {
-    display: none !important; } }` de `style.css` pasaria desapercibido: la
-    coreografia que anima letterbox/atenuador ya no corre bajo motion reducido
-    (`initScrollReveal` corta antes de cargar GSAP), asi que el letterbox
-    seguiria en su estado de reposo (0 altura) igualmente — pero la barra de
-    orientacion es texto ESTATICO sin animacion propia, y sin el gate CSS
-    quedaria visible para siempre. Solo tiene sentido para Vice: en los otros
-    dos temas el cromo ya esta oculto sin depender de `prefers-reduced-motion`.
-    """
-    context = browser.new_context(viewport=DESKTOP, reduced_motion="reduce")
-    try:
-        page = context.new_page()
-        page.goto(f"{url}/?theme={theme}", wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(1500)
-        visible = page.evaluate(
-            "() => { const c = document.querySelector('.cinema-chrome');"
-            " return c ? getComputedStyle(c).display !== 'none' : null; }"
-        )
-        check(
-            visible is False,
-            f"el cromo de cine no aparece con prefers-reduced-motion ({theme}, display visible={visible})",
-        )
-    finally:
-        context.close()
 
 
 def run(
@@ -1447,12 +1170,6 @@ def run(
                 check_gallery_placeholder(page)
                 check_gallery_placeholder_hashes()
 
-            # Hallazgo I-4: la barra de progreso de la galeria en el primer
-            # pintado movil, sin interaccion previa. Contexto/pagina propios
-            # (ver comentario de la funcion) — no reutiliza `page` porque
-            # necesita medir ANTES de que ningun otro gate scrollee nada.
-            check_gallery_progress_bar(browser, url, theme)
-
             # Task 9: creditos interactivos ("Con que construyo"). Corre en
             # LOS TRES temas, no solo Vice: `createCredits` monta el mismo
             # DOM en los tres (un solo componente, presentacion por CSS via
@@ -1486,349 +1203,58 @@ def run(
             # comentario de `check_theme_identity`.
             check_theme_identity(page, theme)
 
-            if theme == "vice":
-                # El backdrop de Vice ya no es video+poster: es la serigrafia
-                # generativa de `src/backgrounds/viceInk.ts` (antes fue la
-                # bruma de `viceHaze.ts`, retirada), un canvas WebGL como el
-                # de los otros dos temas. El cambio fue deliberado — el video
-                # servia el fixture SMPTE, cuyas franjas de color primario
-                # obligaban a tapar hero y contacto con un scrim casi opaco
-                # para poder medir contraste. Con el fondo generativo (brillo
-                # acotado en el propio shader) el scrim desaparecio; lo que
-                # este gate vigila ahora es que el canvas exista y pinte.
-                backdrop = page.evaluate("""(() => {
-                  const host = document.querySelector('.bg-theme');
-                  if (!host) return null;
-                  const canvas = host.querySelector('canvas');
-                  return {
-                    canvas: !!canvas,
-                    painted: canvas ? canvas.width > 0 && canvas.height > 0 : false,
-                    legacyMedia: !!host.querySelector('img, video'),
-                  };
-                })()""")
-                check(backdrop is not None and backdrop["canvas"], "hay canvas de fondo en el backdrop")
-                check(backdrop is not None and backdrop["painted"], "el canvas del backdrop tiene tamano")
-                # Con reduced-motion el shader pinta UN fotograma estatico y no
-                # arranca el RAF (`mountShaderBackground`), asi que el canvas
-                # sigue presente en los dos modos: no hay ramificacion aqui.
-                check(
-                    backdrop is not None and not backdrop["legacyMedia"],
-                    "el backdrop no reintroduce el video/poster de fixture",
-                )
+            # Comprobaciones de contenido que en la version de tres temas solo
+            # corrian bajo Vice (galerias, metadatos, enlaces de contacto) y que
+            # no dependen de la piel: aplican a la unica que queda.
+            # Task 8 (conservado de la version de tres temas): galerias y metadatos.
+            # La comprobacion de desborde horizontal en movil se retiro: la obra de
+            # Caelestia no usa carril desplazable sino su propio cajon.
+            track_count = page.evaluate(
+                "() => document.querySelectorAll('[data-gallery-track]').length"
+            )
+            check(track_count >= 2, "hay galerias de proyecto en la escena de obra")
 
-                fonts = page.evaluate("""(() => {
-                  const root = getComputedStyle(document.documentElement);
-                  const registry = Array.from(document.fonts);
-                  const isLoaded = (name) => registry.some(
-                    (f) => f.family.replace(/["']/g, '').includes(name) && f.status === 'loaded'
-                  );
-                  return {
-                    display: root.getPropertyValue('--font-display').trim(),
-                    body: root.getPropertyValue('--font-body').trim(),
-                    accent: root.getPropertyValue('--color-accent').trim(),
-                    passionOneLoaded: isLoaded('Passion One'),
-                    manropeLoaded: isLoaded('Manrope'),
-                  };
-                })()""")
-                check("Passion One" in fonts["display"], "display es Passion One")
-                check("Manrope" in fonts["body"], "cuerpo es Manrope")
-                check(fonts["accent"].lower() == "#ffd166", "acento es ambar")
-                check("mono" not in fonts["body"].lower(), "Vice no usa monoespaciada (token --font-body)")
-                check(fonts["passionOneLoaded"], "Passion One presente y cargada en document.fonts")
-                check(fonts["manropeLoaded"], "Manrope presente y cargada en document.fonts")
+            # Los metadatos de la cartela (Rol/Periodo/Stack/Estado) son
+            # independientes de que exista o no el carril de galeria — un
+            # proyecto sin piezas (`project.gallery.length === 0`) sigue
+            # teniendo su `[data-meta]`. Antes esta comprobacion vivia
+            # dentro del mismo `gal` que la galeria, asi que si el carril
+            # faltaba (`gal === null`) esta aserción fallaba tambien,
+            # aunque los metadatos estuvieran perfectamente presentes:
+            # dos cosas distintas acopladas a una sola condicion.
+            metas = page.evaluate(
+                '() => document.querySelectorAll(\'[data-scene="obra"] [data-meta]\').length'
+            )
+            check(metas >= 1, "las obras tienen fila de metadatos")
 
-                # Defecto 2: el token de --font-body nunca fue monoespaciado, asi
-                # que la asercion de arriba pasa siempre y no habria cazado el
-                # bug real (clase `font-mono` a pelo + fallback del sistema).
-                # Esta mide la fuente EFECTIVAMENTE renderizada: getComputedStyle
-                # devuelve el valor DECLARADO (la cadena de fallback completa),
-                # no cual de esos nombres gano la resolucion real del navegador.
-                # Por eso se renderiza en un <canvas> y se compara el ancho de
-                # una "i" contra una "W": en una fuente monoespaciada (la que
-                # cae el navegador si la webfont no cargo) todos los caracteres
-                # miden lo mismo; en una proporcional (Manrope) no.
-                mono_offenders = page.evaluate("""(() => {
-                  function isMonospace(font) {
-                    if (!font) return false;
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    ctx.font = font;
-                    const narrow = ctx.measureText('iiiiiiiiiiiiiiiiiiii').width;
-                    const wide = ctx.measureText('WWWWWWWWWWWWWWWWWWWW').width;
-                    return wide > 0 && Math.abs(narrow - wide) < 0.1;
-                  }
-                  const offenders = [];
-                  for (const el of document.querySelectorAll('body *')) {
-                    if (el.children.length > 0) continue; // solo elementos hoja
-                    const text = (el.textContent || '').trim();
-                    if (!text) continue;
-                    if (el.offsetParent === null) continue; // no visible
-                    const style = getComputedStyle(el);
-                    if (isMonospace(style.font)) {
-                      offenders.push(`${el.tagName.toLowerCase()}:\"${text.slice(0, 30)}\"`);
-                    }
-                  }
-                  return offenders;
-                })()""")
-                check(len(mono_offenders) == 0,
-                      f"ningun texto visible resuelve a fuente monoespaciada real ({mono_offenders[:3]})")
+            check(page.evaluate("() => !!document.querySelector('[data-scene=\"contacto\"]')"), "existe la seccion de contacto")
 
-                # Defecto 1: [data-hero-name] debe verse a scroll 0. La condicion
-                # de carrera entre la CSS de `.js-intro` y el tween con scrub de
-                # wireHeroZoom lo deja en opacity:0 para siempre si el orden de
-                # cableado no es deterministico.
-                hero_name_opacity = page.evaluate("""(() => {
-                  const el = document.querySelector('[data-hero-name]');
-                  return el ? parseFloat(getComputedStyle(el).opacity) : null;
-                })()""")
-                check(hero_name_opacity is not None and hero_name_opacity > 0.9,
-                      f"[data-hero-name] visible a scroll 0 (opacity={hero_name_opacity})")
+            contact_links = page.evaluate("""(() => {
+              const scene = document.querySelector('[data-scene="contacto"]');
+              if (!scene) return null;
+              const mail = scene.querySelector('a[href^="mailto:"]');
+              const external = Array.from(scene.querySelectorAll('a[target="_blank"]'))[0] ?? null;
+              return {
+                mail: !!mail,
+                externalRel: external ? external.getAttribute('rel') : null,
+              };
+            })()""")
+            check(contact_links is not None and contact_links["mail"],
+                  "el email de contacto es un enlace mailto accionable")
+            check(
+                contact_links is not None and contact_links["externalRel"] == "noopener noreferrer",
+                "el enlace externo de contacto lleva rel=noopener noreferrer "
+                f"(rel={contact_links['externalRel'] if contact_links else None})",
+            )
 
-                # Task 6: el gesto de titulo (Task 6) parte el nombre en spans por
-                # caracter para el zoom con scrub, y el hero deja email visible en
-                # el primer viewport (suelo de conversion, sin depender de scroll).
-                hero = page.evaluate("""(() => {
-                  const s = document.querySelector('[data-scene="hero"]');
-                  if (!s) return null;
-                  const name = s.querySelector('[data-hero-name]');
-                  const mail = document.querySelector('a[href^="mailto:"]');
-                  const r = mail ? mail.getBoundingClientRect() : null;
-                  return {
-                    name: !!name,
-                    chars: name ? name.querySelectorAll('span span').length : 0,
-                    mailVisible: !!(r && r.top >= 0 && r.top < window.innerHeight),
-                  };
-                })()""")
-                check(hero is not None and hero["name"], "el hero tiene nombre marcado")
-                # `splitChars` (vice.choreography.ts) solo corre dentro de la
-                # coreografia de GSAP, que `initScrollReveal` (reveal.ts) NO
-                # carga con reduced-motion (`if (prefersReducedMotion) return;`
-                # antes del import de gsap). Sin coreografia el nombre se queda
-                # como texto plano, legible igual (ver "el nombre es legible
-                # con reduced-motion" mas abajo) — partirlo en spans es un
-                # requisito del gesto de zoom, no de la legibilidad.
-                if not reduced:
-                    check(hero is not None and hero["chars"] > 5, "el nombre se parte en caracteres")
-                check(hero is not None and hero["mailVisible"],
-                      "el email es visible en el primer viewport")
-
-                # Task 7: "Quien es" deja de tener el lado derecho vacio — ficha
-                # de reparto (avatar + datos), cuatro cifras y trayectoria. Sin
-                # chips de tecnologia: duplicarian los creditos de obra.
-                about = page.evaluate("""(() => {
-                  const s = document.querySelector('[data-scene="about"]');
-                  if (!s) return null;
-                  return {
-                    card: !!s.querySelector('[data-card]'),
-                    avatar: !!s.querySelector('[data-card] img'),
-                    stats: s.querySelectorAll('[data-stats] > *').length,
-                    track: !!s.querySelector('[data-track]'),
-                    chips: s.querySelectorAll('[data-tech-chip]').length,
-                  };
-                })()""")
-                check(about is not None and about["card"], "hay ficha de reparto")
-                check(about is not None and about["avatar"], "la ficha lleva avatar")
-                check(about is not None and about["stats"] == 4, "hay cuatro cifras")
-                check(about is not None and about["track"], "hay trayectoria")
-                check(about is not None and about["chips"] == 0,
-                      "sin chips de tecnologia (duplicarian los creditos)")
-
-                # Task 8: "Obra" gana galeria horizontal arrastrable (collage)
-                # y fila de metadatos.
-                #
-                # Lo que importa aqui es el COMPONENTE, no el contenido: que
-                # una galeria con pocas piezas quepa entera a 1440px sin
-                # desbordar es correcto (nada que arrastrar), no un fallo. La
-                # version anterior de este check media `scrollWidth >
-                # clientWidth` de la PRIMERA galeria del DOM a 1440px, que es
-                # justo lo que rompio cuando el primer proyecto de
-                # content.ts paso de 3 a 2 imagenes: 2 piezas de 300px caben
-                # en el ancho de columna a esa resolucion, asi que dejaron de
-                # desbordar aunque el carril siga funcionando perfectamente.
-                #
-                # Fix: se mide en un viewport movil (390px), donde el ancho
-                # minimo de cada pieza (`min(300px, 74vw)` en style.css)
-                # garantiza que 2 o mas piezas desbordan el carril sea cual
-                # sea el recuento exacto — no hace falta adivinar cuantas
-                # imagenes tiene cada proyecto. Y se evaluan TODAS las
-                # galerias del DOM (`querySelectorAll`), no solo la primera:
-                # una galeria de una sola pieza (el editor de texto) puede
-                # caber sin desbordar y eso tambien es correcto, asi que se
-                # excluye de la comprobacion de desborde en vez de forzarla a
-                # pasar con un margen inventado.
-                page.evaluate("window.scrollTo(0, 0)")
-                page.set_viewport_size(MOBILE)
-                page.wait_for_timeout(300)
-                galleries_mobile = page.evaluate("""(() => {
-                  const tracks = Array.from(document.querySelectorAll('[data-gallery-track]'));
-                  return tracks
-                    .filter((t) => t.children.length >= 2)
-                    .map((t) => ({
-                      items: t.children.length,
-                      scrollable: t.scrollWidth > t.clientWidth + 10,
-                    }));
-                })()""")
-                page.set_viewport_size(DESKTOP)
-                page.evaluate("window.scrollTo(0, 0)")
-                page.wait_for_timeout(300)
-
-                check(len(galleries_mobile) >= 1,
-                      "hay al menos una galeria con 2+ piezas que comprobar")
-                non_scrollable = [g for g in galleries_mobile if not g["scrollable"]]
-                check(
-                    len(galleries_mobile) >= 1 and not non_scrollable,
-                    "todas las galerias con 2+ piezas son desplazables en horizontal "
-                    f"en movil ({non_scrollable})",
-                )
-
-                track_count = page.evaluate(
-                    "() => document.querySelectorAll('[data-gallery-track]').length"
-                )
-                check(track_count >= 2, "hay galerias de proyecto en la escena de obra")
-
-                # Los metadatos de la cartela (Rol/Periodo/Stack/Estado) son
-                # independientes de que exista o no el carril de galeria — un
-                # proyecto sin piezas (`project.gallery.length === 0`) sigue
-                # teniendo su `[data-meta]`. Antes esta comprobacion vivia
-                # dentro del mismo `gal` que la galeria, asi que si el carril
-                # faltaba (`gal === null`) esta aserción fallaba tambien,
-                # aunque los metadatos estuvieran perfectamente presentes:
-                # dos cosas distintas acopladas a una sola condicion.
-                metas = page.evaluate(
-                    '() => document.querySelectorAll(\'[data-scene="obra"] [data-meta]\').length'
-                )
-                check(metas >= 1, "las obras tienen fila de metadatos")
-
-                # Task 10: contacto (cierre del portfolio), letterbox y barra de
-                # orientacion. `cinemaChrome.ts` monta el mismo DOM en los tres
-                # temas; el arnes solo lo instrumenta aqui porque el gate de
-                # visibilidad (CSS) y la coreografia que lo anima son de Vice.
-                chrome = page.evaluate("""(() => ({
-                  contacto: !!document.querySelector('[data-scene="contacto"]'),
-                  letterbox: document.querySelectorAll('[data-letterbox]').length,
-                  rail: !!document.querySelector('[data-rail]'),
-                }))()""")
-                check(chrome["contacto"], "existe la seccion de contacto")
-                check(chrome["letterbox"] == 2, "hay dos barras de letterbox")
-                check(chrome["rail"], "existe la barra de orientacion")
-
-                contact_links = page.evaluate("""(() => {
-                  const scene = document.querySelector('[data-scene="contacto"]');
-                  if (!scene) return null;
-                  const mail = scene.querySelector('a[href^="mailto:"]');
-                  const external = Array.from(scene.querySelectorAll('a[target="_blank"]'))[0] ?? null;
-                  return {
-                    mail: !!mail,
-                    externalRel: external ? external.getAttribute('rel') : null,
-                  };
-                })()""")
-                check(contact_links is not None and contact_links["mail"],
-                      "el email de contacto es un enlace mailto accionable")
-                check(
-                    contact_links is not None and contact_links["externalRel"] == "noopener noreferrer",
-                    "el enlace externo de contacto lleva rel=noopener noreferrer "
-                    f"(rel={contact_links['externalRel'] if contact_links else None})",
-                )
-
-                # Solo hero y contacto van a plena luz; las intermedias se atenuan.
-                # Causa real vigilada: la coreografia `cinemaChrome` de
-                # `vice.choreography.ts` sube `[data-dim]` a 0.62 fuera de esas dos
-                # escenas — no un valor de opacidad puesto a mano en el DOM.
-                letterbox_hero = page.evaluate(
-                    "parseFloat(getComputedStyle(document.querySelector('[data-letterbox]')).height)"
-                )
-                check(letterbox_hero < 2, f"el letterbox no aparece en el hero ({letterbox_hero}px)")
-
-                # `_scroll_to_and_settle` y no `scrollTo` crudo + espera fija: es
-                # justo la desincronizacion que documenta el docstring del
-                # helper. Aqui se llega despues de una tanda de barridos con
-                # rueda simulada, asi que el target interno de Lenis esta
-                # caliente; un `scrollTo` mueve el scroll nativo y NO ese
-                # target, y 1200ms fijos no bastan para el viaje. Se vio al
-                # crecer "about" a escena de dos pantallas (rediseno de
-                # afirmacion y prueba): el documento paso de ~12000 a 12370px,
-                # el salto al 45% crecio con el, y las dos aserciones de cromo
-                # empezaron a medir con Lenis todavia a mitad de camino
-                # (atenuador en 0.0968 de un reposo de 0.62). El cromo estaba
-                # bien —verificado a 0.35, 0.45, 0.55, 0.65 y 0.75 del
-                # documento, siempre 0.62 y 58.5px—; lo que fallaba era la
-                # medicion. Latente desde antes: solo hacia falta un documento
-                # algo mas largo para cruzar el limite.
-                _scroll_to_and_settle(page, page.evaluate("document.body.scrollHeight") * 0.45)
-                dimmed = page.evaluate(
-                    "parseFloat(getComputedStyle(document.querySelector('[data-dim]')).opacity)"
-                )
-                # El atenuador y el letterbox durante la obra los cablea la
-                # coreografia `cinemaChrome` via ScrollTrigger, que no corre
-                # con reduced-motion (misma causa que "el nombre se parte en
-                # caracteres" arriba): [data-dim] y [data-letterbox] se quedan
-                # en su reposo (0) todo el scroll — degradacion correcta, no
-                # un defecto. Silenciado con `if not reduced`, no un exento
-                # generico: `check_reduced_motion_chrome` mas abajo SI exige
-                # que el cromo no aparezca con reduced-motion.
-                if not reduced:
-                    check(dimmed > 0.3, f"el fondo se atenua en secciones interiores ({dimmed})")
-
-                # El letterbox solo entra durante la obra: en esta misma posicion de
-                # scroll (~45%, dentro de una escena "obra" con 4 casos de estudio)
-                # debe estar desplegado.
-                letterbox_obra = page.evaluate(
-                    "parseFloat(getComputedStyle(document.querySelector('[data-letterbox]')).height)"
-                )
-                if not reduced:
-                    check(letterbox_obra > 20, f"el letterbox se despliega durante la obra ({letterbox_obra}px)")
-
-                _scroll_to_and_settle(page, page.evaluate("document.body.scrollHeight"))
-                dimmed_end = page.evaluate(
-                    "parseFloat(getComputedStyle(document.querySelector('[data-dim]')).opacity)"
-                )
-                check(dimmed_end < 0.1, f"el fondo vuelve a plena luz en contacto ({dimmed_end})")
-                _scroll_to_and_settle(page, 0)
-
-                check_reduced_motion_chrome(browser, url, theme)
-
-            # `check_fixture_assets` mira hashes de ficheros en disco: no depende
-            # del tema y por eso NO va dentro del `if theme == "vice"`, donde
-            # estaba. Ahi rompia la linea base, que es una lista plana comun a
-            # los tres temas: en hyprland y caelestia esos tres fallos no se
-            # median, el arnes los leia como "ARREGLADOS respecto a la linea
-            # base" y salia con codigo 1 en cada ejecucion. Un gate que nunca se
-            # pone verde no se lee — el mismo modo de fallo que la propia linea
-            # base venia a evitar.
-            #
-            # Y el arreglo que parecia obvio era el peligroso: `--update-baseline`
-            # desde una ejecucion de hyprland habria reescrito el fichero con los
-            # 9 fallos de esa pasada, borrando las 3 entradas que en vice SI
-            # fallan de verdad.
-            if not allow_fixture_assets:
-                check_fixture_assets()
-
-            # Task 12: degradacion con prefers-reduced-motion. Corre solo
-            # cuando `--reduced` esta activo (la pagina se abrio con
-            # `reduced_motion="reduce"`, arriba). Video/letterbox son
-            # decoracion cinematografica pura: deben apagarse. Galeria y
-            # creditos son contenido — apagarlos dejaria al visitante sin
-            # informacion, asi que se comprueba que siguen operativos, no que
-            # desaparecen.
+            # Degradacion con prefers-reduced-motion (`--reduced`): galeria y
+            # creditos son contenido, no decoracion; apagarlos dejaria al
+            # visitante sin informacion.
             if reduced:
-                degraded = page.evaluate("""(() => {
-                  const host = document.querySelector('.bg-theme');
-                  const bars = [...document.querySelectorAll('[data-letterbox]')];
-                  return {
-                    noVideo: !host || !host.querySelector('video'),
-                    barsClosed: bars.every(b => b.getBoundingClientRect().height < 1),
-                    galleryUsable: !!document.querySelector('[data-gallery-track]'),
-                    creditsUsable: document.querySelectorAll('[data-credit]').length > 0,
-                    textVisible: (() => {
-                      const n = document.querySelector('[data-hero-name]');
-                      return !!n && getComputedStyle(n).opacity === "1";
-                    })(),
-                  };
-                })()""")
-                check(degraded["noVideo"], "sin video con reduced-motion")
-                check(degraded["barsClosed"], "sin letterbox con reduced-motion")
-                check(degraded["textVisible"], "el nombre es legible con reduced-motion")
-                # Son contenido, no decoracion: apagarlos dejaria sin informacion.
+                degraded = page.evaluate("""(() => ({
+                  galleryUsable: !!document.querySelector('[data-gallery-track]'),
+                  creditsUsable: document.querySelectorAll('[data-credit]').length > 0,
+                }))()""")
                 check(degraded["galleryUsable"], "la galeria sigue disponible")
                 check(degraded["creditsUsable"], "los creditos siguen disponibles")
         finally:
@@ -1839,15 +1265,14 @@ def run(
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--theme", default="vice")
+    ap.add_argument("--theme", default="caelestia", choices=["caelestia"],
+                    help="Unico tema que queda (se conserva el flag por compatibilidad).")
     ap.add_argument("--url", default="http://127.0.0.1:5173")
     ap.add_argument(
         "--allow-fixture-assets",
         action="store_true",
-        help="Silencia el gate de assets provisionales (defecto 3) mientras dure el desarrollo. "
-        "NO esta activo por defecto: hay que pasarlo. Silencia la CATEGORIA entera, asi que "
-        "para el uso diario es mejor la linea base, que distingue un fallo nuevo de los "
-        "conocidos. El gate final debe correr sin este flag.",
+        help="Sin efecto: el gate de fixtures de video de Vice se retiro con el tema. "
+        "Se acepta para no romper las invocaciones existentes.",
     )
     ap.add_argument(
         "--allow-gallery-placeholder",
@@ -1860,9 +1285,8 @@ def main() -> int:
     ap.add_argument(
         "--reduced",
         action="store_true",
-        help="Abre la pagina con prefers-reduced-motion:reduce y comprueba la degradacion "
-        "accesible (Task 12): sin video, sin letterbox, nombre legible, galeria y creditos "
-        "operativos.",
+        help="Abre la pagina con prefers-reduced-motion:reduce y comprueba que galeria y "
+        "creditos siguen operativos.",
     )
     ap.add_argument(
         "--update-baseline",

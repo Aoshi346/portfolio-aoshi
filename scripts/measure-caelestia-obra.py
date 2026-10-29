@@ -1060,30 +1060,6 @@ def check_relevo(page, browser, base: str) -> None:
     contexto.close()
 
 
-def check_vice_hyprland_intactos(browser, base: str) -> None:
-    """4h. El unico invariante que establece la CSS de la Task 1: el carril
-    clasico (`[data-obra-track]`) sigue visible en Vice/Hyprland y solo se
-    oculta bajo Caelestia."""
-    for theme, deberia_verse in (("vice", True), ("hyprland", True), ("caelestia", False)):
-        page = browser.new_page(viewport={"width": 1440, "height": 900})
-        page.goto(f"{base}/?theme={theme}", wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(1500)
-        visible = page.evaluate(
-            """
-            () => {
-              const el = document.querySelector('[data-obra-track]');
-              if (!el) return false;
-              return getComputedStyle(el).display !== 'none';
-            }
-            """
-        )
-        if deberia_verse:
-            assert_true(visible, f"Vice/Hyprland intactos: [data-obra-track] deberia verse bajo ?theme={theme}")
-        else:
-            assert_true(not visible, f"Vice/Hyprland intactos: [data-obra-track] deberia estar oculto bajo ?theme={theme}")
-        page.close()
-
-
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="http://localhost:4173")
@@ -1124,7 +1100,6 @@ def main() -> int:
         page_portatil.close()
 
         check_movimiento_reducido(browser, args.base)
-        check_vice_hyprland_intactos(browser, args.base)
 
         browser.close()
 
