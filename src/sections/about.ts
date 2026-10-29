@@ -1,4 +1,4 @@
-import { education, experience, focusAreas, identity } from "../data/content";
+import { education, experience, focusAreas, identity, skillGroups, stackDestacado } from "../data/content";
 import { el } from "../utils/dom";
 
 /** Una fila clave/valor de la salida, con su detalle opcional debajo. */
@@ -49,7 +49,10 @@ function createFicha(): HTMLElement {
   host.href = `mailto:${identity.email}`;
   host.setAttribute("data-ficha-host", "");
 
-  const identidad = el("div", "ficha-id", [host]);
+  // Rol y ciudad viven en la cabecera, junto al correo: las filas quedan
+  // para la sustancia (enfoque, stack, experiencia, formacion).
+  const rol = el("span", "ficha-rol", [`${identity.role} · ${identity.location}`]);
+  const identidad = el("div", "ficha-id", [host, rol]);
   identidad.setAttribute("data-ficha-grupo", "");
 
   const regla = el("div", "ficha-regla", []);
@@ -64,20 +67,21 @@ function createFicha(): HTMLElement {
     ),
   );
 
+  const conocidas = new Set(skillGroups.flatMap((grupo) => grupo.items.map((item) => item.name)));
+  const principales = stackDestacado.principal.filter((nombre) => conocidas.has(nombre));
+
   const trabajo = experience[0];
   const carrera = education[0];
   const filas = el("dl", "ficha-filas", [
-    fichaFila("Rol", identity.role),
-    fichaFila("Base", identity.location),
-    fichaFila("Ahora", identity.now),
     filaEnfoque,
+    fichaFila("Stack", principales.join(" · "), stackDestacado.resto),
     fichaFila(
-      "Último puesto",
+      "Experiencia",
       `${trabajo?.role ?? ""} · ${trabajo?.organization ?? ""}`,
       trabajo?.period ?? "",
     ),
     fichaFila(
-      "Estudia",
+      "Formación",
       carrera?.degree ?? "",
       `${carrera?.institution ?? ""} · ${carrera?.period ?? ""}`,
     ),

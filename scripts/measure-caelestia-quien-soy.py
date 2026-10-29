@@ -272,7 +272,7 @@ def main() -> int:
         textos = pagina.evaluate("""() => {
             const ficha = document.querySelector('[data-ficha="neofetch"]');
             const nodos = ficha.querySelectorAll(
-                '[data-ficha-nombre], [data-ficha-host], .ficha-v:not(:has(.ficha-area)), .ficha-area, .ficha-s');
+                '[data-ficha-nombre], [data-ficha-host], .ficha-rol, .ficha-v:not(:has(.ficha-area)), .ficha-area, .ficha-s');
             return Array.from(nodos)
                 .map((n) => (n.firstChild && n.firstChild.nodeType === 3
                     ? n.firstChild.textContent : n.textContent).trim())
@@ -439,6 +439,7 @@ def main() -> int:
         PARES = [
             ("[data-ficha-nombre]", "el nombre"),
             ("[data-ficha-host]", "el correo"),
+            (".ficha-rol", "el rol"),
             (".ficha-k", "las claves"),
             (".ficha-v", "los valores"),
             (".ficha-s", "los detalles"),

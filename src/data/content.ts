@@ -34,7 +34,7 @@ export interface Identity {
 
 export const identity: Identity = {
   name: "Aoshi Blanco Sanz",
-  role: "Desarrollador Full Stack",
+  role: "Desarrollador full stack",
   headline: "Construyo sistemas que aguantan producción, no demos.",
   subheadline: "Caracas. Full stack. Desde 2021.",
   location: "Caracas, Venezuela",
@@ -199,6 +199,16 @@ export const focusAreas: FocusArea[] = [
     detail: "Atención al cliente y automatización de procesos",
   },
 ];
+
+/**
+ * La fila Stack de la ficha de Quien soy: las cuatro piezas que mas pesan y
+ * una linea con las que siguen. Los nombres tienen que existir en
+ * `skillGroups`; la ficha descarta en silencio cualquiera que no este.
+ */
+export const stackDestacado = {
+  principal: ["Python", "Django", "React", "TypeScript"],
+  resto: "También Next.js, Node.js, MySQL y n8n",
+} as const;
 
 export interface GalleryShot {
   /** Ruta bajo /public. Capturas reales del proyecto. */

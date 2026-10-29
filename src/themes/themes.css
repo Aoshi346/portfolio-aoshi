@@ -2241,6 +2241,17 @@
   flex-wrap: wrap;
 }
 
+/* Rol y ciudad junto al correo, separados por un filete: la segunda parada de
+   lectura de la cabecera. Sin pastilla, en el dialecto del sistema. */
+:root[data-theme="caelestia"] .ficha-rol {
+  padding-left: 0.9rem;
+  margin-left: 0.15rem;
+  border-left: 1px solid var(--cae-outline);
+  font-size: var(--t-1);
+  letter-spacing: 0.06em;
+  color: var(--cae-on-surface-variant);
+}
+
 /* La cabecera del comando es el correo, y es pulsable: la via de contacto
    principal y la unica parada de tabulador legitima de la escena. */
 :root[data-theme="caelestia"] .ficha-host {
@@ -5101,6 +5112,12 @@
   :root[data-theme="caelestia"] .ficha-id {
     flex-wrap: wrap;
     row-gap: 0.5rem;
+  }
+  /* En una columna el rol baja bajo el correo: el filete ya no separa nada. */
+  :root[data-theme="caelestia"] .ficha-rol {
+    padding-left: 0;
+    margin-left: 0;
+    border-left: 0;
   }
   :root[data-theme="caelestia"] .ficha-filas {
     grid-template-columns: 1fr;
