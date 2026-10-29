@@ -16,6 +16,7 @@ spec. Ninguna se da por buena sin haberla visto dar rojo contra el fallo que
 dice cazar.
 """
 import argparse
+import base64
 import re
 import sys
 import time
@@ -273,6 +274,28 @@ MIDE_CAJAS = """() => {
 }"""
 
 
+MIDE_DIBUJO = """() => {
+  const fs = parseFloat(getComputedStyle(document.querySelector('#hero .cae-nombre')).fontSize);
+  const svgs = Array.from(document.querySelectorAll('#hero .cae-nombre-svg'))
+    .filter((s) => s.getClientRects().length > 0)
+    .map((s) => { const b = s.getBoundingClientRect(); return { w: b.width, h: b.height }; });
+  return { fs, svgs };
+}"""
+
+
+def dibujo_visible(pg, etiqueta: str) -> None:
+    """El nombre que se ve tiene caja real: cada SVG mostrado mide > 0 x > 0 y
+    el mas ancho llega al 60 % de lo esperado para su escalon (7,903 em en una
+    linea; 5,2 em la linea larga, «Blanco Sanz», en dos). Caza el SVG medido
+    con getBBox mientras estaba oculto (0 x 0 y el nombre desaparece)."""
+    d = pg.evaluate(MIDE_DIBUJO)
+    svgs = d["svgs"]
+    assert_que(bool(svgs) and all(x["w"] > 0 and x["h"] > 0 for x in svgs), f"[{etiqueta}] cada SVG mostrado tiene caja > 0 ({svgs})")
+    esperado_em = 5.2 if len(svgs) == 2 else 7.903
+    ancho = max((x["w"] for x in svgs), default=0)
+    assert_que(ancho >= 0.6 * esperado_em * d["fs"], f"[{etiqueta}] el nombre visible llega al 60 % de su ancho ({ancho:.0f} px de {esperado_em * d['fs']:.0f})")
+
+
 def nombre(pg, base: str) -> None:
     print("\n[nombre] el nombre y el rol de la escena: DOM accesible, centrado, dentro de la ventana, contraste")
     intro = literal_intro()
@@ -339,6 +362,15 @@ def nombre(pg, base: str) -> None:
                 assert_que(bool(c["svgs"]) and dentro, f"[{ancho}] cada SVG queda dentro de #hero ({c['svgs']})")
 
         # Spec: dos lineas hasta 640 px; a 641 ya es una (el brief decia 2, el spec manda).
+        # El dibujo sobrevive al cambio de ancho (medido una sola vez, en em).
+        for inicio, final in (((390, 844), (1440, 900)), ((1440, 900), (390, 844))):
+            pg.set_viewport_size({"width": inicio[0], "height": inicio[1]})
+            abrir(pg, base, "13:00")
+            dibujo_visible(pg, f"carga a {inicio[0]}")
+            pg.set_viewport_size({"width": final[0], "height": final[1]})
+            pg.wait_for_timeout(500)
+            dibujo_visible(pg, f"{inicio[0]} -> {final[0]}")
+
         # Contraste del rol sobre el fondo real: la captura bajo su caja.
         for hora in ("13:00", "23:00"):
             abrir(pg, base, hora)
@@ -369,7 +401,7 @@ def nombre(pg, base: str) -> None:
                   for (let i = 0; i < px.length; i += 4) { r += px[i]; g += px[i+1]; b += px[i+2]; n++; }
                   return [r / n, g / n, b / n];
                 }""",
-                __import__("base64").b64encode(png).decode(),
+                base64.b64encode(png).decode(),
             )
             ratio = _ratio(fg[:3], tuple(muestra))
             assert_que(ratio >= 4.5, f"[{hora}] el rol cumple AA sobre el fondo real: {ratio:.2f}:1 (piso 4.5)")

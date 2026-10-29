@@ -78,22 +78,36 @@ export function createHero(): HTMLElement {
  */
 export function ajustarSvgsNombre(hero: HTMLElement): void {
   const svgs = Array.from(hero.querySelectorAll<SVGSVGElement>(".cae-nombre-svg"));
-  const cajas = svgs.map((svg) =>
-    Array.from(svg.querySelectorAll<SVGPathElement>("path")).map((p) => p.getBBox()),
-  );
-  const todas = cajas.flat();
-  if (todas.length === 0) return;
-  const y0 = Math.min(...todas.map((b) => b.y));
-  const y1 = Math.max(...todas.map((b) => b.y + b.height));
-  if (!(y1 > y0)) return;
+  if (svgs.length === 0) return;
 
-  svgs.forEach((svg, i) => {
-    const propias = cajas[i];
-    if (propias.length === 0) return;
-    const x0 = Math.min(...propias.map((b) => b.x));
-    const x1 = Math.max(...propias.map((b) => b.x + b.width));
-    svg.setAttribute("viewBox", `${x0} ${y0} ${x1 - x0} ${y1 - y0}`);
-    svg.style.width = `${(x1 - x0) / 100}em`;
-    svg.style.height = `${(y1 - y0) / 100}em`;
-  });
+  // `getBBox` devuelve 0x0 sobre un SVG bajo `display: none`, y la geometria
+  // de los glifos no depende del ancho de la ventana: se miden los tres UNA
+  // vez, con todos maquetados pero sin pintar (`cae-midiendo`, themes.css), y
+  // la clase se retira en la misma llamada. Como los tamanos van en em, no
+  // hace falta volver a medir al cruzar los 640 px.
+  hero.classList.add("cae-midiendo");
+  try {
+    const cajas = svgs.map((svg) =>
+      Array.from(svg.querySelectorAll<SVGPathElement>("path"))
+        .map((p) => p.getBBox())
+        .filter((b) => b.width > 0 && b.height > 0),
+    );
+    const todas = cajas.flat();
+    if (todas.length === 0) return;
+    const y0 = Math.min(...todas.map((b) => b.y));
+    const y1 = Math.max(...todas.map((b) => b.y + b.height));
+    if (!(y1 > y0)) return;
+
+    svgs.forEach((svg, i) => {
+      const propias = cajas[i];
+      if (propias.length === 0) return;
+      const x0 = Math.min(...propias.map((b) => b.x));
+      const x1 = Math.max(...propias.map((b) => b.x + b.width));
+      svg.setAttribute("viewBox", `${x0} ${y0} ${x1 - x0} ${y1 - y0}`);
+      svg.style.width = `${(x1 - x0) / 100}em`;
+      svg.style.height = `${(y1 - y0) / 100}em`;
+    });
+  } finally {
+    hero.classList.remove("cae-midiendo");
+  }
 }

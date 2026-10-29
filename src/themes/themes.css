@@ -696,6 +696,14 @@
   row-gap: 0.06em;
 }
 
+/* Solo durante la medida de `ajustarSvgsNombre` (sincrona, misma llamada):
+   maqueta los tres SVG para que getBBox no devuelva 0x0, sin pintar nada. */
+:root[data-theme="caelestia"] .cae-midiendo .cae-linea,
+:root[data-theme="caelestia"] .cae-midiendo .cae-linea-una {
+  display: block;
+  visibility: hidden;
+}
+
 /* Un SVG por linea: el de una linea en escritorio y tableta, los dos de dos
    lineas por debajo de 641px. Se ensenan unos u otros por ancho. */
 :root[data-theme="caelestia"] .cae-nombre-svg {
