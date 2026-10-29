@@ -56,7 +56,7 @@ export interface Stat {
 /** Lectura instantanea antes de leer una sola frase. */
 export const stats: Stat[] = [
   { value: "2021", label: "Desde" },
-  // Sin el ordinal volado: a tamano de cartel (3.4rem en Vice) el "º" de
+  // Sin el ordinal volado: a tamano de cartel el "º" de
   // Passion One se separa tanto de la cifra que se lee como otro caracter.
   { value: "10", label: "Semestre" },
   { value: "5", label: "Proyectos" },
@@ -134,8 +134,8 @@ export type SkillGroup = {
  * bloque de dos nombres.
  *
  * Cada `slug` tiene que estar registrado en `src/utils/icons.ts`:
- * `getIconMarkup()` lanza excepcion con un slug desconocido, y lo hace en los
- * tres temas, no solo en Vice.
+ * `getIconMarkup()` lanza excepcion con un slug desconocido, y lo hace al
+ * montar la bandeja de Creditos.
  */
 export const skillGroups: SkillGroup[] = [
   {
@@ -207,7 +207,6 @@ export interface GalleryShot {
 }
 
 export interface CaseStudy {
-  slug: string;
   title: string;
   tag: string;
   /** Linea de cartel: una frase, grande y ligera. */
@@ -222,7 +221,7 @@ export interface CaseStudy {
    * Lo transversal: control de versiones y asistentes con los que se
    * construyo el proyecto, no con lo que el producto funciona. Va aparte de
    * `stack` porque `stack` se pinta literal en la ficha de obra
-   * (`sections/obra/projectScene.ts`) y meter aqui cuatro nombres repetidos
+   * (`caelestiaObraEditorial.ts`) y meter aqui cuatro nombres repetidos
    * identicos en los cinco proyectos alargaba esa linea sin distinguir nada:
    * Git no separa un proyecto de otro.
    *
@@ -237,7 +236,6 @@ export interface CaseStudy {
 
 export const caseStudies: CaseStudy[] = [
   {
-    slug: "echoplan",
     title: "EchoPlan",
     tag: "Gestión de campañas",
     lead: "Todas las campañas, un solo tablero.",
@@ -257,7 +255,6 @@ export const caseStudies: CaseStudy[] = [
     privateProject: true,
   },
   {
-    slug: "teg-web-app",
     title: "TesisFar",
     tag: "Gestión académica",
     lead: "El ciclo completo del TEG, en un mismo lugar.",
@@ -276,7 +273,6 @@ export const caseStudies: CaseStudy[] = [
     link: { label: "Ver repositorio", href: "https://github.com/Aoshi346/teg-web-app" },
   },
   {
-    slug: "hyprfinance",
     title: "HyprFinance",
     tag: "Finanzas personales",
     lead: "Tus cuentas, solo en tu equipo.",
@@ -296,7 +292,6 @@ export const caseStudies: CaseStudy[] = [
     privateProject: true,
   },
   {
-    slug: "ciberseg",
     title: "WatchDog",
     tag: "Ciberseguridad",
     lead: "Las herramientas de seguridad, en una sola aplicación.",
@@ -316,7 +311,6 @@ export const caseStudies: CaseStudy[] = [
     link: { label: "Ver repositorio", href: "https://github.com/Aoshi346/Proyecto-CiberSeg" },
   },
   {
-    slug: "text-editor",
     title: "Editor de texto",
     tag: "Programación de sistemas",
     lead: "Un editor de texto escrito desde cero, en C.",
