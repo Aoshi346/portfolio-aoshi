@@ -2,7 +2,7 @@
 
 # Portfolio — Aoshi Blanco Sanz
 
-**Una sola página. Tres pieles completas. La que ves se sortea en cada visita.**
+**Un escritorio en el navegador cuyo color decide la hora a la que entras.**
 
 Desarrollador full stack · Caracas, Venezuela
 
@@ -12,54 +12,37 @@ Desarrollador full stack · Caracas, Venezuela
 
 ## Sobre el proyecto
 
-Este es mi portfolio, y también donde practico lo que me interesa: WebGL, coreografía de
-scroll y accesibilidad.
+Este es mi portfolio, y también donde practico lo que me interesa: WebGL, animación y
+accesibilidad.
 
-Son **tres pieles completas sobre un mismo DOM**, y la que ves **se sortea al entrar**. No hay
-selector para cambiarlas: la idea es que el sitio se vea distinto cada vez que alguien vuelve.
+La página es un escritorio inspirado en Material You: una barra superior con reloj, un dock y
+cinco espacios de trabajo, uno por escena. El color no está fijo, lo calcula la hora del
+visitante. De día es claro y de noche oscuro, y el matiz va girando a lo largo del día.
 
-## Las tres pieles
+<img src="docs/media/portada-caelestia.webp" alt="Escritorio Material You con barra superior, reloj y tarjeta de estado, en su esquema de noche">
 
-<table>
-<tr>
-<td width="33%" align="center"><b>Vice</b></td>
-<td width="33%" align="center"><b>Hyprland</b></td>
-<td width="33%" align="center"><b>Caelestia</b></td>
-</tr>
-<tr>
-<td><img src="docs/media/portada-vice.webp" alt="Tema Vice: cartel de cine ochentero, tipografía enorme sobre un degradado magenta oscuro con trama de semitono"></td>
-<td><img src="docs/media/portada-hyprland.webp" alt="Tema Hyprland: brasa naranja sobre negro, tipografía de cartel y filetes finos"></td>
-<td><img src="docs/media/portada-caelestia.webp" alt="Tema Caelestia: escritorio Material You con barra superior, reloj y tarjeta de estado"></td>
-</tr>
-<tr>
-<td>Cartel de cine ochentero: coreografía de scroll, letterbox y un fondo de serigrafía a dos tintas.</td>
-<td>Interfaz de gestor de ventanas: radio cero, sin sombras, y la luz como recurso principal.</td>
-<td>Un escritorio cuyo <b>color lo gobierna la hora a la que entras</b>. La captura es de las 23:33.</td>
-</tr>
-</table>
+<sub>La captura es de las 23:33.</sub>
 
 ## Qué tiene
 
-- **Tres temas sobre un mismo marcado.** El HTML no sabe de qué tema es: lo decide el CSS a
-  través de `data-theme`.
-- **Fondos generativos en WebGL**: shaders de fragmento escritos a mano, uno por tema.
-- **Un cursor propio por tema**, que se apaga sobre texto corrido y deja el del sistema.
-- **Coreografía de scroll** con GSAP y ScrollTrigger, y desplazamiento suave con Lenis.
-- **Accesibilidad**: el contraste se mide contra el fondo real —que se mueve—, el foco de
-  teclado es visible en todo lo pulsable, y cada animación tiene su alternativa para
-  `prefers-reduced-motion`.
+- **Color gobernado por el reloj.** Un motor de color calcula el matiz y el esquema claro u
+  oscuro a partir de la hora local, y de ahí salen los tokens de toda la interfaz.
+- **Fondo generativo en WebGL**: un shader de fragmento escrito a mano, sin motor 3D.
+- **Cinco espacios de trabajo** en lugar de una página larga: se cambia de escena desde la barra,
+  como en un gestor de ventanas.
+- **Un cursor propio** que se apaga sobre texto corrido y deja el del sistema.
+- **Animación con GSAP**, cargada en diferido para que no pese en el primer pintado.
+- **Accesibilidad**: el contraste se mide contra el fondo real, el foco de teclado es visible en
+  todo lo pulsable y cada animación tiene su alternativa para `prefers-reduced-motion`. Con
+  movimiento reducido, el cambio de escena es instantáneo.
 - **Todo el contenido en un solo sitio**, `src/data/content.ts`.
 
 ```mermaid
 flowchart LR
-    A["index.html<br/><i>sortea el tema antes<br/>del primer pintado</i>"] --> B["data-theme<br/>en &lt;html&gt;"]
-    B --> C["Un solo DOM<br/><i>src/sections/</i>"]
-    C --> V["Vice"]
-    C --> H["Hyprland"]
-    C --> K["Caelestia"]
-    V -.-> S["themes.css<br/><i>la piel entera<br/>vive aquí</i>"]
-    H -.-> S
-    K -.-> S
+    R["Hora del visitante"] --> C["Motor de color<br/><i>caelestia.color.ts</i>"]
+    C --> T["Tokens CSS<br/><i>matiz y esquema</i>"]
+    T --> I["Interfaz<br/><i>barra, dock, escenas</i>"]
+    T --> F["Fondo WebGL"]
 ```
 
 ## Las cinco escenas
@@ -71,8 +54,9 @@ flowchart LR
 
 ## Construido con
 
-**Vite 8** · **TypeScript** en modo `strict` · **Tailwind 4** · **GSAP 3** con ScrollTrigger ·
-**Lenis** · **WebGL**
+**Vite 8** · **TypeScript** en modo `strict` · **Tailwind 4** · **GSAP 3** · **WebGL**
+
+Sin framework y sin backend: TypeScript modular sobre el DOM.
 
 ## Cómo verlo
 
@@ -87,20 +71,16 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
-El tema se sortea al entrar, así que para ver uno concreto hay que fijarlo:
-
-```
-http://localhost:5173/?theme=vice
-http://localhost:5173/?theme=hyprland
-http://localhost:5173/?theme=caelestia
-```
-
 | comando | qué hace |
 |---|---|
 | `npm run dev` | servidor de desarrollo |
 | `npm run build` | `tsc && vite build` |
 | `npm run preview` | sirve el build de producción |
 | `npm run lint` | ESLint |
+
+<sub>Hasta octubre de 2026 el sitio tenía tres temas (Vice, Hyprland y Caelestia) que se
+sorteaban en cada visita. Siguen enteros en el tag
+[`tres-temas`](https://github.com/Aoshi346/portfolio-aoshi/tree/tres-temas).</sub>
 
 ## Contacto
 
