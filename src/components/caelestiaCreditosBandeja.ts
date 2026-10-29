@@ -117,7 +117,7 @@ export async function mountCaelestiaCreditosBandeja(
   ]);
   const cabecera = el("div", "cae-cred-cab", [
     marca,
-    el("div", "", [nombre, detalle, territorio]),
+    el("div", "cae-cred-txt", [nombre, detalle, territorio]),
     cruce,
   ]);
 

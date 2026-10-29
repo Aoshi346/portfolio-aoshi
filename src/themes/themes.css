@@ -5370,7 +5370,19 @@
   :root[data-theme="caelestia"] .cae-cred-cab {
     flex-wrap: wrap;
     align-content: flex-start;
-    min-height: 15.6875rem;
+    /* 2026-10-29: 251 -> 192 px. El peor caso bajo de 236 a 176 px de
+       contenido (+14 de relleno inferior) al dejar el texto junto a la marca
+       (`.cae-cred-txt`); medido en las 25 piezas a 360, 390 y 430. */
+    min-height: 12rem;
+  }
+  /* El texto se parte AL LADO de la marca, no debajo: con su ancho natural
+     (la frase en una linea) no cabia junto a los 48 px de la marca y el
+     bloque entero saltaba de renglon, dejando la marca sola arriba. Eso
+     sumaba ~60 px al peor caso y obligaba a reservarlos en todas las piezas:
+     era el hueco vacio bajo «Aparece en». */
+  :root[data-theme="caelestia"] .cae-cred-txt {
+    flex: 1 1 0;
+    min-width: 0;
   }
   :root[data-theme="caelestia"] .cae-cred-cruce {
     flex: 1 0 100%;
@@ -5390,11 +5402,32 @@
     height: 3.5rem;
     margin: 0 auto;
   }
+  /* El nombre se parte por su espacio («Tailwind / CSS»), nunca a mitad de
+     palabra ni con puntos suspensivos. Antes iba `nowrap` con elipsis, pero
+     el figcaption medía lo que su texto y no lo que su columna, asi que no
+     recortaba: «Tailwind CSS» (91 px en una columna de 77 a 390) se montaba
+     sobre «TypeScript» y se leia «TypeScriptTailwind CSS». */
   :root[data-theme="caelestia"] .cae-cred-nom {
     font-size: var(--t-0);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    width: 100%;
+    white-space: normal;
+    text-wrap: balance;
+    line-height: 1.25;
+  }  /* Con un nombre en dos lineas, la fila se alineaba por abajo y esa figura
+     subia sobre sus vecinas. Las figuras van a la misma altura; el texto
+     sobrante cuelga. */
+  :root[data-theme="caelestia"] .cae-cred-tira {
+    align-items: start;
+  }
+}
+
+/* Por debajo de 388 px una palabra sola ya no cabe en la columna de cuatro
+   (TypeScript, SQLAlchemy, PostgreSQL y JavaScript miden 76 px y la columna
+   69 a 360), y `--t-0` es el suelo de la escala: no se encoge la letra, se
+   quita una columna. */
+@media (max-width: 24.25rem) {
+  :root[data-theme="caelestia"] .cae-cred-tira {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
