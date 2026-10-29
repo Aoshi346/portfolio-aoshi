@@ -23,7 +23,6 @@ import nextdotjs from "simple-icons/icons/nextdotjs.svg?raw";
 import nodedotjs from "simple-icons/icons/nodedotjs.svg?raw";
 import gsap from "simple-icons/icons/gsap.svg?raw";
 import rxdb from "simple-icons/icons/rxdb.svg?raw";
-import electron from "simple-icons/icons/electron.svg?raw";
 import gtk from "simple-icons/icons/gtk.svg?raw";
 import git from "simple-icons/icons/git.svg?raw";
 import github from "simple-icons/icons/github.svg?raw";
@@ -52,7 +51,6 @@ const icons: Record<string, string> = {
   nodedotjs,
   gsap,
   rxdb,
-  electron,
   gtk,
   git,
   github,

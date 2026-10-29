@@ -124,7 +124,7 @@ export type SkillGroup = {
  * bloques y tres de ellos tenian 2, 3 y 2 nombres: en un cartel eso se lee
  * como sobras. Se descarto la consolidacion obvia — fundir "Escritorio",
  * "Herramientas" e "IA" en un bloque de 7 — porque el rotulo resultante
- * mentiria: Electron y GTK4 no son herramientas con las que trabajas, son
+ * mentiria: GTK4 no es una herramienta con la que trabajas, es
  * aquello con lo que construyes la interfaz, al mismo nivel que React. De ahi
  * "Interfaz", que cubre web y escritorio, y un "Herramientas" honesto donde
  * las cinco entradas si son cosas con las que se trabaja.
@@ -147,7 +147,6 @@ export const skillGroups: SkillGroup[] = [
       { name: "Tailwind CSS", slug: "tailwindcss", detail: "Maquetación rápida y consistente." },
       { name: "Vite", slug: "vite", detail: "Mi bundler por defecto." },
       { name: "GSAP", slug: "gsap", detail: "Las animaciones y las transiciones." },
-      { name: "Electron", slug: "electron", detail: "Aplicaciones de escritorio con tecnología web." },
       { name: "GTK4", slug: "gtk", detail: "Interfaces nativas en C." },
     ],
   },
@@ -156,7 +155,10 @@ export const skillGroups: SkillGroup[] = [
     items: [
       { name: "Python", slug: "python", detail: "Automatización, datos y APIs." },
       { name: "Django", slug: "django", detail: "Backend robusto: ORM, admin y auth." },
+      { name: "FastAPI", slug: "fastapi", detail: "APIs en Python, validadas por sus tipos." },
+      { name: "SQLAlchemy", slug: "sqlalchemy", detail: "El acceso a datos cuando no hay Django." },
       { name: "Node.js", slug: "nodedotjs", detail: "JavaScript fuera del navegador." },
+      { name: "PostgreSQL", slug: "postgresql", detail: "Relacional, con transacciones de verdad." },
       { name: "MySQL", slug: "mysql", detail: "Donde persisto los datos." },
       { name: "RxDB", slug: "rxdb", detail: "Datos locales en el navegador." },
     ],
@@ -246,7 +248,7 @@ export const caseStudies: CaseStudy[] = [
       "Para saber si un anuncio en redes va a funcionar, lo normal es invertir el presupuesto y medir después. Si sale mal, el dinero ya se gastó.",
     solution:
       "Un instrumento de medición para mi Trabajo Especial de Grado: genera una audiencia de agentes con modelos de lenguaje, la expone al anuncio en Instagram, Facebook, TikTok y YouTube, y mide cómo cambia su opinión ronda a ronda, en público y en conversaciones a solas, antes de invertir nada.",
-    stack: ["Python", "FastAPI", "SQLAlchemy", "React", "TypeScript"],
+    stack: ["Python", "FastAPI", "SQLAlchemy", "React", "TypeScript", "Vite", "Tailwind CSS"],
     tooling: ["Git", "GitHub", "Claude Code"],
     gallery: [
       { src: "/media/obra/parallax-instagram.webp", caption: "El anuncio y los agentes comentándolo en Instagram" },
@@ -264,7 +266,7 @@ export const caseStudies: CaseStudy[] = [
       "Una tienda de cuidado facial en Caracas necesita que el catálogo cargue rápido y aparezca en los buscadores, sin renunciar a un carrito y un checkout que respondan al momento.",
     solution:
       "Django genera las páginas en el servidor, que es lo que hace rápido el catálogo y lo deja indexable, y React con TypeScript entra solo en las piezas interactivas: el carrito, el checkout, la galería de producto y los formularios. Pago contra entrega en dólares, como se compra en Caracas.",
-    stack: ["Python", "Django", "PostgreSQL", "React", "TypeScript"],
+    stack: ["Python", "Django", "PostgreSQL", "React", "TypeScript", "Vite", "Tailwind CSS", "GSAP"],
     tooling: ["Git", "GitHub", "Claude Code"],
     gallery: [
       { src: "/media/obra/vela-carrito.webp", caption: "Carrito" },

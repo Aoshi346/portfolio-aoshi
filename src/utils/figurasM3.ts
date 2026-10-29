@@ -1,5 +1,5 @@
 /**
- * Las 23 figuras de Material 3 Expressive de la bandeja de Creditos (B4).
+ * Las 25 figuras de Material 3 Expressive de la bandeja de Creditos (B4).
  *
  * Todas son la misma curva armonica polar:
  *
@@ -7,13 +7,13 @@
  *
  * `n` son los lobulos —lo que distingue una figura de otra— y el signo de `a`
  * decide si son concavos (galleta) o convexos (trebol). UNA sola familia para
- * las 23: con familias de canto recto mezcladas no existe un area comun
+ * todas: con familias de canto recto mezcladas no existe un area comun
  * alcanzable (un hexagono no baja de 3.00 y un cuadrado no baja de 3.147), y el
  * despeje las aplanaba a circulos.
  *
  * Las amplitudes de `AMPLITUDES` salen despejadas por biseccion en
  * `docs/superpowers/specs/2026-09-03-caelestia-creditos-figuras.py`, que ademas
- * lleva los seis gates (23 figuras, 23 unicas, 240 vertices, dispersion de area
+ * lleva los seis gates (una figura por pieza, todas unicas, 240 vertices, dispersion de area
  * < 0,5 %, relieve >= 6 %, anisotropia < 1,25). Aqui solo se reconstruye.
  *
  * Se reconstruye en vez de embeber porque el generador emite 167 KB de
@@ -49,7 +49,6 @@ const AMPLITUDES: Readonly<Record<string, DefFigura>> = {
   tailwindcss: { tipo: "galleta", n: 8, a: 0.110285 },
   vite: { tipo: "galleta", n: 9, a: 0.059717 },
   gsap: { tipo: "galleta", n: 10, a: 0.061956 },
-  electron: { tipo: "galleta", n: 11, a: 0.05384 },
   gtk: { tipo: "galleta", n: 12, a: 0.072186 },
   // Backend y datos
   python: { tipo: "trebol", n: 3, a: 0.183186 },
@@ -57,6 +56,9 @@ const AMPLITUDES: Readonly<Record<string, DefFigura>> = {
   nodedotjs: { tipo: "trebol", n: 5, a: 0.112974 },
   mysql: { tipo: "trebol", n: 6, a: 0.118822 },
   rxdb: { tipo: "trebol", n: 7, a: 0.089681 },
+  fastapi: { tipo: "trebol", n: 13, a: 0.06847 },
+  sqlalchemy: { tipo: "trebol", n: 14, a: 0.070853 },
+  postgresql: { tipo: "trebol", n: 15, a: 0.06613 },
   // Lenguajes base
   javascript: { tipo: "trebol", n: 8, a: 0.056809 },
   html5: { tipo: "trebol", n: 9, a: 0.078557 },

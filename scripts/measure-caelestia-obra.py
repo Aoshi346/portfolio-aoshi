@@ -50,7 +50,7 @@ PROYECTOS = [
         ),
         "private": True,
         "link_href": None,
-        "stack": ["Python", "FastAPI", "SQLAlchemy", "React", "TypeScript"],
+        "stack": ["Python", "FastAPI", "SQLAlchemy", "React", "TypeScript", "Vite", "Tailwind CSS"],
     },
     {
         "title": "Vela",
@@ -72,7 +72,7 @@ PROYECTOS = [
         ),
         "private": True,
         "link_href": None,
-        "stack": ["Python", "Django", "PostgreSQL", "React", "TypeScript"],
+        "stack": ["Python", "Django", "PostgreSQL", "React", "TypeScript", "Vite", "Tailwind CSS", "GSAP"],
     },
     {
         "title": "TesisFar",
