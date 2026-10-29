@@ -410,257 +410,112 @@ def nombre(pg, base: str) -> None:
         pg.set_viewport_size(VENTANA)
 
 
-def entrada(pg, base: str) -> None:
-    print("\n[entrada] el trazo existe y el movimiento reducido lo salta")
-    abrir(pg, base, "13:00")
-    n = pg.evaluate("() => document.querySelectorAll('#hero .cae-trazo path').length")
-    assert_que(n == 15, f"el trazo tiene los 15 glifos de la firma ({n})")
+def sin_recorte(clip: str | None) -> bool:
+    """`none` o un inset() con todos los lados a cero (GSAP lo deja en 0%)."""
+    if clip == "none":
+        return True
+    m = re.fullmatch(r"inset\(([^)]*)\)", clip or "")
+    return bool(m) and all(float(x.rstrip("px%")) == 0 for x in m.group(1).split())
 
-    # Con movimiento reducido: sin terminal, sin trazo y todo montado.
-    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
-    pr = ctx.new_page()
-    abrir(pr, base, "13:00")
-    est = pr.evaluate(
-        "() => {"
-        " const t = document.querySelector('#hero .cae-term');"
-        " const f = document.querySelector('#hero .cae-firma');"
-        " return { term: t ? getComputedStyle(t).display : 'none',"
-        "          firma: f ? parseFloat(getComputedStyle(f).opacity) : 0 }; }"
+
+LEE_TRAZO = """() => {
+  const vis = (p) => { const s = p.ownerSVGElement; return !!s && s.getClientRects().length > 0; };
+  const todos = Array.from(document.querySelectorAll('#hero .cae-nombre-dib path'));
+  const f = (p) => ({ fill: parseFloat(getComputedStyle(p).fillOpacity), stroke: parseFloat(getComputedStyle(p).strokeOpacity), off: parseFloat(getComputedStyle(p).strokeDashoffset) });
+  const rol = document.querySelector('#hero .cae-rol');
+  return {
+    clase: document.documentElement.classList.contains('js-cae-entrada'),
+    total: todos.length,
+    visibles: todos.filter(vis).map(f),
+    ocultos: todos.filter((p) => !vis(p)).map(f),
+    rol: rol ? getComputedStyle(rol).clipPath : null,
+    dur: window.__CAE_ENTRADA__ ? window.__CAE_ENTRADA__.duracion : null,
+  };
+}"""
+
+
+def entrada(pg, base: str) -> None:
+    print("\n[entrada] el nombre se dibuja a trazo y el rol se corta despues")
+    # Movimiento normal. Pagina propia, sin reloj anclado: lo que se mide es
+    # la entrada desde que la coreografia monta (window.__CAE_ENTRADA__).
+    ctx = pg.context.browser.new_context(viewport=VENTANA)
+    pn = ctx.new_page()
+    pn.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+    try:
+        pn.wait_for_function("() => !!window.__CAE_ENTRADA__", timeout=20000)
+    except Exception:
+        assert_que(False, "la entrada expone window.__CAE_ENTRADA__ al montar")
+        ctx.close()
+        return
+    ini = pn.evaluate(LEE_TRAZO)
+    assert_que(ini["total"] == 30, f"hay 30 path en el DOM (15 + 5 + 10) ({ini['total']})")
+    assert_que(len(ini["visibles"]) == 15, f"a 1412 px se ven 15 glifos ({len(ini['visibles'])})")
+    assert_que(
+        all(x["fill"] < 0.1 for x in ini["visibles"]),
+        f"al montar, antes de 300 ms, ningun glifo visible esta relleno ({[x['fill'] for x in ini['visibles']][:3]}...)",
     )
-    assert_que(est["term"] == "none", f"con movimiento reducido no hay terminal ({est['term']!r})")
-    assert_que(est["firma"] >= 0.99, f"con movimiento reducido la firma esta puesta ({est['firma']})")
+    assert_que(not ini["clase"], "js-cae-entrada ya se retiro al escribir los estados iniciales")
+    assert_que(not sin_recorte(ini["rol"]), f"el rol arranca recortado ({ini['rol']!r})")
+    # Los tiempos DECLARADOS (deterministas): 2,5 s +- 0,05.
+    assert_que(
+        ini["dur"] is not None and abs(ini["dur"] - 2.5) <= 0.05,
+        f"la timeline declara 2,5 s +- 0,05 ({ini['dur']})",
+    )
+    # Escalonado: a ~0,5 s el primer glifo ya traza y el ultimo (que arranca a
+    # los 0,77 s, 14 x 55 ms) aun no ha empezado.
+    pn.wait_for_timeout(350)
+    mid = pn.evaluate(LEE_TRAZO)["visibles"]
+    assert_que(
+        mid[0]["off"] < 0.95 and mid[-1]["off"] > 0.99,
+        f"a ~0,5 s el primer glifo ya traza y el ultimo no ha empezado (off {mid[0]['off']:.2f} / {mid[-1]['off']:.2f})",
+    )
+    # Final: duracion declarada + 1,5 s de margen explicito.
+    pn.wait_for_timeout(3100)
+    fin = pn.evaluate(LEE_TRAZO)
+    assert_que(not fin["clase"], "no queda js-cae-entrada en <html>")
+    assert_que(
+        len(fin["visibles"]) == 15 and all(x["fill"] > 0.99 and x["stroke"] < 0.01 for x in fin["visibles"]),
+        "los 15 glifos visibles quedan rellenos y sin contorno",
+    )
+    assert_que(
+        len(fin["ocultos"]) == 15 and all(x["fill"] > 0.99 and x["stroke"] < 0.01 for x in fin["ocultos"]),
+        "los 15 glifos del otro juego tambien terminan en el estado final",
+    )
+    assert_que(sin_recorte(fin["rol"]), f"el rol queda sin recorte ({fin['rol']!r})")
     ctx.close()
 
-    # Camino CON movimiento, que es el que ve casi todo el mundo. Lo que este
-    # bloque caza es la FUGA PREVIA A LA ENTRADA: alguna pieza del hero
-    # pintada en su estado FINAL antes de que la coreografia haya arrancado
-    # (arranque = primer `typed` no vacio, paso 2 de la timeline). NO es
-    # fallo que, ya arrancada la entrada, el trazo termine de dibujarse
-    # (dashoffset a 0, paso 4) o la firma haga su fundido cruzado (opacidad
-    # 0.8, pasos 8-9) antes del aterrizaje: eso es la propia coreografia
-    # avanzando, no una fuga. No se usa `abrir()` aqui -- espera 4 s fijos
-    # tras `domcontentloaded`, y hace falta muestrear desde el `commit`,
-    # antes de que nada llegue a pintarse.
-    pn = pg.context.browser.new_page(viewport=VENTANA)
-    pn.goto(f"{base}/?theme=caelestia", wait_until="commit", timeout=30000)
-
-    LEE_ENTRADA = """() => {
-      const q = (s) => document.querySelector(s);
-      const firma = q('#hero .cae-firma');
-      const path = q('#hero .cae-trazo path');
-      const cifra = q('#hero .cae-statcol > div');
-      const term = q('#hero .cae-term');
-      const typed = q('#hero .cae-term-typed');
-      const cs = (el) => el ? getComputedStyle(el) : null;
-      const csFirma = cs(firma), csPath = cs(path), csCifra = cs(cifra), csTerm = cs(term);
-      return {
-        firmaExiste: !!firma,
-        firmaVis: csFirma ? csFirma.visibility : null,
-        firmaOp: csFirma ? parseFloat(csFirma.opacity) : null,
-        trazoVis: csPath ? csPath.visibility : null,
-        trazoOffset: csPath ? csPath.strokeDashoffset : null,
-        trazoDasharray: csPath ? csPath.strokeDasharray : null,
-        trazoStrokeOp: csPath ? parseFloat(csPath.strokeOpacity) : null,
-        cifraVis: csCifra ? csCifra.visibility : null,
-        cifraOp: csCifra ? parseFloat(csCifra.opacity) : null,
-        termVis: csTerm ? csTerm.visibility : null,
-        termOp: csTerm ? parseFloat(csTerm.opacity) : null,
-        typed: typed ? typed.textContent : null,
-        tarjetaClip: (() => { const w = q('#hero .cae-widget'); return w ? (w.style.clipPath || '') : ''; })(),
-        tarjetaOp: (() => { const w = q('#hero .cae-widget'); return w ? parseFloat(getComputedStyle(w).opacity) : null; })(),
-      };
-    }"""
-
-    def _muestra() -> dict | None:
-        try:
-            return pn.evaluate(LEE_ENTRADA)
-        except Exception:
-            return None
-
-    t0 = time.monotonic()
-    muestras: list[dict] = []
-    aterrizo: dict | None = None
-    while time.monotonic() - t0 < 25:
-        m = _muestra()
-        if m is not None:
-            m["t"] = time.monotonic() - t0
-            muestras.append(m)
-            if (
-                m["typed"] == "whoami"
-                and m["firmaOp"] is not None
-                and m["firmaOp"] >= 0.99
-                and m["firmaVis"] == "visible"
-                and m["termOp"] is not None
-                and m["termOp"] == 0
-            ):
-                aterrizo = m
-                break
-        pn.wait_for_timeout(30)
-
-    if aterrizo is None:
-        assert_que(False, "la entrada no aterrizo en 25s de reloj de pared")
-    else:
-        # Lo que este bloque caza es la FUGA PREVIA A LA ENTRADA: piezas
-        # pintadas en su estado final antes de que la coreografia haya
-        # arrancado siquiera. El ARRANQUE se define como la primera muestra
-        # con `typed` no vacio -- el tecleo de "whoami" es el paso 2 de la
-        # timeline, antes de que exista nada que pintar.
-        # NO es fallo que, YA arrancada la entrada y antes de aterrizar, el
-        # propio paso 4 termine de dibujar el trazo (dashoffset a 0) o el
-        # paso 8-9 haga el fundido cruzado de la firma (opacidad 0.8): eso es
-        # la coreografia haciendo su trabajo, no una fuga. Por eso la firma y
-        # el trazo solo se vigilan ANTES del arranque; las cifras, que entran
-        # en el paso 10 tras el aterrizaje de la firma, se vigilan en toda la
-        # ventana previa al aterrizaje.
-        previas_aterrizaje = [m for m in muestras if m["firmaExiste"] and m["t"] < aterrizo["t"]]
-        arranque = next((m for m in previas_aterrizaje if m["typed"]), None)
-
-        if arranque is None:
-            assert_que(False, "la entrada no arranco (nunca se tecleo nada)")
-            preentrada: list[dict] = []
-        else:
-            preentrada = [m for m in previas_aterrizaje if m["t"] < arranque["t"]]
-
-        def _etq(malas: list[dict], nombre: str) -> str:
-            if not malas:
-                return f"{nombre} (0 muestras malas)"
-            return f"{nombre} ({len(malas)} muestras malas, primera t={malas[0]['t']:.2f}s)"
-
-        malas_firma = [
-            m for m in preentrada if not (m["firmaVis"] == "hidden" or m["firmaOp"] == 0)
-        ]
-        assert_que(
-            len(malas_firma) == 0,
-            _etq(malas_firma, "la firma nunca se pinta antes de que arranque la entrada"),
+    # Movimiento reducido: a los 300 ms el estado ya es el final.
+    ctx = pg.context.browser.new_context(viewport=VENTANA, reduced_motion="reduce")
+    pr = ctx.new_page()
+    pr.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)
+    try:
+        pr.wait_for_function(
+            "() => document.querySelectorAll('#hero .cae-nombre-dib path').length === 30", timeout=20000
         )
-
-        malas_trazo = [
-            m
-            for m in preentrada
-            if not (
-                m["trazoVis"] == "hidden"
-                or m["trazoOffset"] != "0px"
-                or m["trazoStrokeOp"] == 0
-            )
-        ]
-        assert_que(
-            len(malas_trazo) == 0,
-            _etq(malas_trazo, "el trazo nunca muestra el contorno completo antes de que arranque la entrada"),
-        )
-
-        # ORDEN: la terminal tiene que haberse ido del todo (paso 4 de la
-        # timeline) antes de que el trazo empiece a dibujarse (paso 5).
-        # `preentrada` ya no sirve aqui -- ese tramo es ANTES de que se
-        # teclee nada, y esto es DESPUES. Se mira toda la ventana entre el
-        # arranque (typed no vacio) y el aterrizaje: si en cualquier muestra
-        # de ese tramo el trazo esta dibujandose o ya dibujado (dashoffset
-        # distinto de dasharray, con visibility visible) mientras la
-        # terminal sigue visible (termOp > 0 y visibility visible), es la
-        # fuga que este gate viene a cazar. `strokeDashoffset` computado
-        # sale en px como string ("123.4px"); se compara en numero con
-        # tolerancia de 1px.
-        def _px(valor: str | None) -> float | None:
-            if valor is None or not valor.endswith("px"):
-                return None
-            try:
-                return float(valor[:-2])
-            except ValueError:
-                return None
-
-        def _trazo_dibujando(m: dict) -> bool:
-            if m["trazoVis"] != "visible":
-                return False
-            off = _px(m["trazoOffset"])
-            dash = _px(m["trazoDasharray"])
-            if off is None or dash is None:
-                return False
-            return abs(off - dash) > 1
-
-        def _term_visible(m: dict) -> bool:
-            return (
-                m["termVis"] == "visible"
-                and m["termOp"] is not None
-                and m["termOp"] > 0
-            )
-
-        if arranque is None:
-            malas_orden: list[dict] = []
-        else:
-            posteriores_arranque = [m for m in previas_aterrizaje if m["t"] >= arranque["t"]]
-            malas_orden = [
-                m for m in posteriores_arranque if _trazo_dibujando(m) and _term_visible(m)
-            ]
-        assert_que(
-            len(malas_orden) == 0,
-            _etq(malas_orden, "el nombre no se traza hasta que la terminal se ha ido"),
-        )
-
-        # Las cifras entran DESPUES del aterrizaje de la firma en la timeline
-        # (paso 10, tras el barrido de tinta): antes de aterrizar tienen que
-        # estar siempre a 0. Esta se mantiene sobre TODAS las muestras
-        # previas al aterrizaje, no solo las previas al arranque.
-        malas_cifras = [
-            m for m in previas_aterrizaje if not (m["cifraVis"] == "hidden" or m["cifraOp"] == 0)
-        ]
-        assert_que(
-            len(malas_cifras) == 0,
-            _etq(malas_cifras, "las cifras nunca se pintan antes de tiempo"),
-        )
-
-        # En una maquina rapida el primer chunk (con el arranque ya dentro)
-        # puede llegar en menos de 100ms, asi que exigir 3 muestras de 30ms
-        # antes del arranque es demasiado estricto -- se deja en 2, sin bajar
-        # de ahi: por debajo de 2 la asercion deja de comprobar nada real.
-        assert_que(
-            len(preentrada) >= 2,
-            f"hubo al menos 2 muestras antes de que arrancara la entrada ({len(preentrada)})",
-        )
-
-        # El widget es la pieza nueva de la timeline: se cubre por separado,
-        # anclado a estado, nunca a un cronometro fijo. Se lee tambien el
-        # clip-path inline de la tarjeta en cada vuelta (Task 5: la entrada
-        # brota de la luz con un circle() en vez de un fundido de opacidad) y
-        # se guarda en `muestras` para que la asercion de "brota" las vea.
-        t1 = time.monotonic()
-        widget_ok = False
-        while time.monotonic() - t1 < 25:
-            w = pn.evaluate(
-                "() => { const w = document.querySelector('#hero .cae-widget');"
-                " if (!w) return null;"
-                " const cs = getComputedStyle(w);"
-                " const hijo = w.lastElementChild;"
-                " return { clip: w.style.clipPath || '', op: hijo ? parseFloat(getComputedStyle(hijo).opacity) : null,"
-                "          vis: cs.visibility }; }"
-            )
-            if w:
-                muestras.append({"t": time.monotonic() - t0, "firmaExiste": True, "typed": "whoami", "tarjetaClip": w["clip"], **w})
-            if w and w["clip"] == "" and w["op"] is not None and w["op"] >= 0.99 and w["vis"] == "visible":
-                widget_ok = True
-                break
-            pn.wait_for_timeout(30)
-        assert_que(widget_ok, "el widget .cae-widget queda puesto al final de la entrada")
-
-        # La tarjeta brota de la luz: hubo un circle() de radio pequeno en
-        # algun momento de la entrada, y al aterrizar no queda clip-path
-        # inline (una mascara viva sobre la tarjeta rompe el hover y la capa
-        # de estado).
-        brota = [m for m in muestras if m.get("tarjetaClip", "").startswith("circle(")]
-        radios: list[float] = []
-        for m in brota:
-            mm = re.search(r"circle\(([\d.]+)px", m["tarjetaClip"])
-            if mm:
-                radios.append(float(mm.group(1)))
-        assert_que(bool(radios) and min(radios) < 20, f"la tarjeta brota de la luz: hubo un circle() de radio < 20 px ({min(radios) if radios else 'ninguno'})")
-        assert_que(not muestras[-1].get("tarjetaClip"), f"al aterrizar la tarjeta no conserva clip-path inline ({muestras[-1].get('tarjetaClip')!r})")
-
-    pn.close()
+    except Exception:
+        pass
+    pr.wait_for_timeout(300)
+    est = pr.evaluate(LEE_TRAZO)
+    assert_que(
+        est["total"] == 30 and all(x["fill"] > 0.99 for x in est["visibles"]),
+        "con movimiento reducido el nombre esta relleno a los 300 ms",
+    )
+    pr.wait_for_timeout(3500)
+    est = pr.evaluate(LEE_TRAZO)
+    assert_que(
+        all(x["fill"] > 0.99 and x["stroke"] < 0.01 for x in est["visibles"] + est["ocultos"])
+        and not est["clase"]
+        and sin_recorte(est["rol"]),
+        f"con movimiento reducido el estado final es estable ({est['rol']!r})",
+    )
+    ctx.close()
 
 
 def roce(pg, base: str) -> None:
     print("\n[roce] el fondo se aparta al pasar el raton")
     abrir(pg, base, "13:00")
     antes = pg.evaluate("() => getComputedStyle(document.querySelector('canvas')).transform")
-    pg.hover("#hero .cae-widget")
+    pg.hover(".cae-dock-item")
     pg.wait_for_timeout(900)
     durante = pg.evaluate("() => getComputedStyle(document.querySelector('canvas')).transform")
     assert_que(antes != durante, f"el lienzo se desplaza con el raton encima ({antes!r} -> {durante!r})")
