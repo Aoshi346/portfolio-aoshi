@@ -433,7 +433,7 @@ function buildFoot(project: CaseStudy): HTMLElement {
     foot.append(
       el("span", "cae-obra-foot-private", [
         el("i", "", []),
-        "Proyecto privado de empresa",
+        "Repositorio privado",
       ]),
     );
   }

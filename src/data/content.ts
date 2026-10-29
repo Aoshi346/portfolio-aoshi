@@ -236,21 +236,39 @@ export interface CaseStudy {
 
 export const caseStudies: CaseStudy[] = [
   {
-    title: "EchoPlan",
-    tag: "Gestión de campañas",
-    lead: "Todas las campañas, un solo tablero.",
-    role: "Desarrollo full stack",
-    period: "Ago 2025 — May 2026",
-    status: "Sistema interno · Telefónica Venezuela",
+    title: "Parallax",
+    tag: "Tesis de grado",
+    lead: "Probar una campaña con una audiencia simulada antes de pagarla.",
+    role: "Diseño, desarrollo e investigación",
+    period: "Abr 2026 — hoy",
+    status: "Trabajo Especial de Grado · en curso",
     problem:
-      "Las campañas pasaban por varias áreas antes de salir, cada una con sus aprobaciones, y el seguimiento vivía repartido entre correos y hojas de cálculo. Nadie podía responder de un vistazo en qué punto estaba cada una.",
+      "Para saber si un anuncio en redes va a funcionar, lo normal es invertir el presupuesto y medir después. Si sale mal, el dinero ya se gastó.",
     solution:
-      "Un sistema interno que reúne el recorrido completo de la campaña en un mismo sitio: quién la creó, qué aprobaciones lleva, si ya se configuró y cuándo salió. Con permisos por rol y tableros que muestran cómo va todo sin tener que preguntar.",
-    stack: ["Python", "Django", "TypeScript", "React", "Vite"],
-    tooling: ["Git", "GitHub", "Claude Code", "Gemini CLI"],
+      "Un instrumento de medición para mi Trabajo Especial de Grado: genera una audiencia de agentes con modelos de lenguaje, la expone al anuncio en Instagram, Facebook, TikTok y YouTube, y mide cómo cambia su opinión ronda a ronda, en público y en conversaciones a solas, antes de invertir nada.",
+    stack: ["Python", "FastAPI", "SQLAlchemy", "React", "TypeScript"],
+    tooling: ["Git", "GitHub", "Claude Code"],
     gallery: [
-      { src: "/media/obra/echoplan-tablero.webp", caption: "Tablero de campañas" },
-      { src: "/media/obra/echoplan-aprobaciones.webp", caption: "Estado de aprobaciones" },
+      { src: "/media/obra/parallax-instagram.webp", caption: "El anuncio y los agentes comentándolo en Instagram" },
+      { src: "/media/obra/parallax-brief.webp", caption: "Nueva corrida: el brief de la campaña" },
+    ],
+    privateProject: true,
+  },
+  {
+    title: "Vela",
+    tag: "E-commerce",
+    lead: "Una boutique de skincare servida desde el servidor, con React donde hace falta.",
+    role: "Diseño y desarrollo",
+    status: "Repositorio privado",
+    problem:
+      "Una tienda de cuidado facial en Caracas necesita que el catálogo cargue rápido y aparezca en los buscadores, sin renunciar a un carrito y un checkout que respondan al momento.",
+    solution:
+      "Django genera las páginas en el servidor, que es lo que hace rápido el catálogo y lo deja indexable, y React con TypeScript entra solo en las piezas interactivas: el carrito, el checkout, la galería de producto y los formularios. Pago contra entrega en dólares, como se compra en Caracas.",
+    stack: ["Python", "Django", "PostgreSQL", "React", "TypeScript"],
+    tooling: ["Git", "GitHub", "Claude Code"],
+    gallery: [
+      { src: "/media/obra/vela-carrito.webp", caption: "Carrito" },
+      { src: "/media/obra/vela-checkout.webp", caption: "Checkout" },
     ],
     privateProject: true,
   },
@@ -290,25 +308,6 @@ export const caseStudies: CaseStudy[] = [
       { src: "/media/obra/hyprfinance-movimientos.webp", caption: "Registro de movimientos" },
     ],
     privateProject: true,
-  },
-  {
-    title: "WatchDog",
-    tag: "Ciberseguridad",
-    lead: "Las herramientas de seguridad, en una sola aplicación.",
-    role: "Desarrollo principal",
-    period: "Sep — Oct 2025",
-    status: "Repositorio público",
-    problem:
-      "Revisar la seguridad de un equipo obliga a saltar entre herramientas sueltas, cada una con su propia forma de usarse, y casi todas pensadas para quien ya sabe de seguridad.",
-    solution:
-      "Una aplicación de escritorio que reúne en un mismo sitio el análisis de vulnerabilidades, la gestión de contraseñas, el monitor de red y las herramientas de análisis forense, con una interfaz que no exige ser experto para entenderla.",
-    stack: ["JavaScript", "Electron", "Python"],
-    tooling: ["Git", "GitHub", "Claude Code", "Gemini CLI"],
-    gallery: [
-      { src: "/media/obra/ciberseg-panel.webp", caption: "Panel de la suite" },
-      { src: "/media/obra/ciberseg-vulnerabilidades.webp", caption: "Análisis de vulnerabilidades" },
-    ],
-    link: { label: "Ver repositorio", href: "https://github.com/Aoshi346/Proyecto-CiberSeg" },
   },
   {
     title: "Editor de texto",

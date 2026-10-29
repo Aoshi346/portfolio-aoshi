@@ -26,30 +26,53 @@ def assert_true(cond: bool, mensaje: str) -> None:
 # Los cinco proyectos reales de `src/data/content.ts` (`caseStudies`), copiados
 # literalmente — no parafraseados — para las aserciones anti-mock (4c, 4d).
 # Cada entrada lleva lo que la Editorial pinta de verdad: title/tag/role/status,
-# period (None si el campo no existe: solo TesisFar), y como se resuelve el pie
+# period (None si el campo no existe: TesisFar y Vela), y como se resuelve el pie
 # (un enlace real, o "privado").
 # ---------------------------------------------------------------------------
 PROYECTOS = [
     {
-        "title": "EchoPlan",
-        "tag": "Gestión de campañas",
-        "role": "Desarrollo full stack",
-        "status": "Sistema interno · Telefónica Venezuela",
-        "period": "Ago 2025 — May 2026",
+        "title": "Parallax",
+        "tag": "Tesis de grado",
+        "role": "Diseño, desarrollo e investigación",
+        "status": "Trabajo Especial de Grado · en curso",
+        "period": "Abr 2026 — hoy",
         "problem": (
-            "Las campañas pasaban por varias áreas antes de salir, cada una con sus "
-            "aprobaciones, y el seguimiento vivía repartido entre correos y hojas de "
-            "cálculo. Nadie podía responder de un vistazo en qué punto estaba cada una."
+            "Para saber si un anuncio en redes va a funcionar, lo normal es "
+            "invertir el presupuesto y medir después. Si sale mal, el dinero ya se "
+            "gastó."
         ),
         "solution": (
-            "Un sistema interno que reúne el recorrido completo de la campaña en un "
-            "mismo sitio: quién la creó, qué aprobaciones lleva, si ya se configuró y "
-            "cuándo salió. Con permisos por rol y tableros que muestran cómo va todo "
-            "sin tener que preguntar."
+            "Un instrumento de medición para mi Trabajo Especial de Grado: genera "
+            "una audiencia de agentes con modelos de lenguaje, la expone al anuncio "
+            "en Instagram, Facebook, TikTok y YouTube, y mide cómo cambia su "
+            "opinión ronda a ronda, en público y en conversaciones a solas, antes "
+            "de invertir nada."
         ),
         "private": True,
         "link_href": None,
-        "stack": ["Python", "Django", "TypeScript", "React", "Vite"],
+        "stack": ["Python", "FastAPI", "SQLAlchemy", "React", "TypeScript"],
+    },
+    {
+        "title": "Vela",
+        "tag": "E-commerce",
+        "role": "Diseño y desarrollo",
+        "status": "Repositorio privado",
+        "period": None,
+        "problem": (
+            "Una tienda de cuidado facial en Caracas necesita que el catálogo "
+            "cargue rápido y aparezca en los buscadores, sin renunciar a un carrito "
+            "y un checkout que respondan al momento."
+        ),
+        "solution": (
+            "Django genera las páginas en el servidor, que es lo que hace rápido el "
+            "catálogo y lo deja indexable, y React con TypeScript entra solo en las "
+            "piezas interactivas: el carrito, el checkout, la galería de producto y "
+            "los formularios. Pago contra entrega en dólares, como se compra en "
+            "Caracas."
+        ),
+        "private": True,
+        "link_href": None,
+        "stack": ["Python", "Django", "PostgreSQL", "React", "TypeScript"],
     },
     {
         "title": "TesisFar",
@@ -63,9 +86,9 @@ PROYECTOS = [
             "fragmentado por correo y hojas de cálculo."
         ),
         "solution": (
-            "Construí una plataforma que gestiona el ciclo completo del TEG: entregas "
-            "de avances, coordinación estudiantes–tutores y evaluación por jurados, "
-            "todo en un mismo lugar."
+            "Construí una plataforma que gestiona el ciclo completo del TEG: "
+            "entregas de avances, coordinación estudiantes–tutores y evaluación por "
+            "jurados, todo en un mismo lugar."
         ),
         "private": False,
         "link_href": "https://github.com/Aoshi346/teg-web-app",
@@ -84,36 +107,15 @@ PROYECTOS = [
             "financiero a un servidor de otro."
         ),
         "solution": (
-            "Una aplicación donde tus datos se quedan en tu propio equipo, cifrados, "
-            "y la nube solo sirve para sincronizar entre tus dispositivos. Guarda cada "
-            "movimiento con el cambio del día en que ocurrió, así el total nunca "
-            "miente, y reparte solo las compras a cuotas para que sepas qué te queda "
-            "por pagar."
+            "Una aplicación donde tus datos se quedan en tu propio equipo, "
+            "cifrados, y la nube solo sirve para sincronizar entre tus "
+            "dispositivos. Guarda cada movimiento con el cambio del día en que "
+            "ocurrió, así el total nunca miente, y reparte solo las compras a "
+            "cuotas para que sepas qué te queda por pagar."
         ),
         "private": True,
         "link_href": None,
         "stack": ["TypeScript", "React", "RxDB", "GSAP", "Zustand"],
-    },
-    {
-        "title": "WatchDog",
-        "tag": "Ciberseguridad",
-        "role": "Desarrollo principal",
-        "status": "Repositorio público",
-        "period": "Sep — Oct 2025",
-        "problem": (
-            "Revisar la seguridad de un equipo obliga a saltar entre herramientas "
-            "sueltas, cada una con su propia forma de usarse, y casi todas pensadas "
-            "para quien ya sabe de seguridad."
-        ),
-        "solution": (
-            "Una aplicación de escritorio que reúne en un mismo sitio el análisis de "
-            "vulnerabilidades, la gestión de contraseñas, el monitor de red y las "
-            "herramientas de análisis forense, con una interfaz que no exige ser "
-            "experto para entenderla."
-        ),
-        "private": False,
-        "link_href": "https://github.com/Aoshi346/Proyecto-CiberSeg",
-        "stack": ["JavaScript", "Electron", "Python"],
     },
     {
         "title": "Editor de texto",
@@ -128,8 +130,8 @@ PROYECTOS = [
         ),
         "solution": (
             "Un editor completo en C con interfaz en GTK4, donde el bloque de texto "
-            "crece según se escribe, el corrector señala las palabras y el contenido "
-            "puede cifrarse antes de guardarlo."
+            "crece según se escribe, el corrector señala las palabras y el "
+            "contenido puede cifrarse antes de guardarlo."
         ),
         "private": False,
         "link_href": "https://github.com/Aoshi346/Text-Editor-Application",
@@ -311,9 +313,9 @@ def check_anti_mock(page) -> None:
 
 
 def check_extremos(page) -> None:
-    """4d. Aguanta los dos extremos de contenido: EchoPlan y TesisFar, cada
+    """4d. Aguanta los dos extremos de contenido: Parallax y TesisFar, cada
     uno con parrafos de problema/solucion no vacios y dentro del carril."""
-    for i, titulo in ((0, "EchoPlan"), (1, "TesisFar")):
+    for i, titulo in ((0, "Parallax"), (2, "TesisFar")):
         page.evaluate(f"document.querySelectorAll('.cae-obra-card')[{i}].click()")
         page.wait_for_timeout(400)
         datos = page.evaluate(
@@ -470,10 +472,10 @@ def check_contraste(page) -> None:
     (los tres selectores viven dentro de paneles con `background` opaco de
     Material 3, no directamente sobre el shader)."""
     # '.cae-obra-foot a' solo existe cuando el proyecto abierto tiene enlace
-    # real (EchoPlan, la tarjeta 0 que queda abierta por defecto, es privado
-    # y no lo tiene) — se abre TesisFar (tarjeta 1) para que los tres
+    # real (Parallax, la tarjeta 0 que queda abierta por defecto, es privado
+    # y no lo tiene) — se abre TesisFar (tarjeta 2) para que los tres
     # selectores existan a la vez.
-    page.evaluate("document.querySelectorAll('.cae-obra-card')[1].click()")
+    page.evaluate("document.querySelectorAll('.cae-obra-card')[2].click()")
     page.wait_for_timeout(400)
 
     selectores = [".cae-obra-drawer-title h3", ".cae-obra-drawer-kick", ".cae-obra-foot a"]
@@ -553,13 +555,13 @@ def check_movimiento_reducido(browser, base: str) -> None:
 
 
 def check_foco_visible(page) -> None:
-    """4g. Foco visible — TesisFar tiene enlace real (EchoPlan es privado).
+    """4g. Foco visible — TesisFar tiene enlace real (Parallax y Vela son privados).
     Se tabula desde la tarjeta hasta el enlace del cajon y se comprueba que
     el foco cae ahi con un anillo visible."""
-    href_esperado = PROYECTOS[1]["link_href"]
-    page.evaluate("document.querySelectorAll('.cae-obra-card')[1].click()")
+    href_esperado = PROYECTOS[2]["link_href"]
+    page.evaluate("document.querySelectorAll('.cae-obra-card')[2].click()")
     page.wait_for_timeout(400)
-    page.evaluate("document.querySelectorAll('.cae-obra-card')[1].focus()")
+    page.evaluate("document.querySelectorAll('.cae-obra-card')[2].focus()")
 
     encontrado = False
     for _ in range(15):
@@ -912,8 +914,8 @@ def check_relevo(page, browser, base: str) -> None:
 
     # Las marcas del stack no comparten fondo con la hoja del cajon. No hay
     # token --cae-surface-container-highest (no se crea): en vez de subir
-    # la marca, se hunde a --cae-elev-1 (el tono de la ventana). EchoPlan
-    # (tarjeta 0) tiene iconos de stack (Python, Django, TS, React, ...).
+    # la marca, se hunde a --cae-elev-1 (el tono de la ventana). Parallax
+    # (tarjeta 0) tiene iconos de stack (Python, FastAPI, SQLAlchemy, ...).
     page.evaluate('document.querySelector(\'[data-obra-card="0"]\').click()')
     page.wait_for_timeout(600)
     marcas = page.evaluate(
@@ -930,7 +932,7 @@ def check_relevo(page, browser, base: str) -> None:
     )
     assert_true(
         marcas["marcaBg"] is not None,
-        "Relieve: no se encontro .obra-marca en el cajon (EchoPlan deberia tener iconos de stack)",
+        "Relieve: no se encontro .obra-marca en el cajon (Parallax deberia tener iconos de stack)",
     )
     if marcas["marcaBg"] is not None:
         assert_true(
@@ -1067,7 +1069,7 @@ def main() -> int:
     viewport = {"width": 1440, "height": 900}
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"], executable_path="/usr/bin/google-chrome")
 
         page = browser.new_page(viewport=viewport)
         page.goto(f"{args.base}/?theme=caelestia", wait_until="domcontentloaded", timeout=30000)

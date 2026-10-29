@@ -40,12 +40,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # la captura definitiva, esta comprobacion deja de marcarla sola, sin tocar
 # el arnes otra vez.
 GALLERY_PLACEHOLDER_HASHES = {
-    "public/media/obra/echoplan-tablero.webp": "768b4bd5cc8edf81a170ec9d2a9d01cd1ce535c84230b09b5b8c7c83bd9a3229",
-    "public/media/obra/echoplan-aprobaciones.webp": "aca10c4dd5954df32187c60ff9df667dcb8283648a0dd50700c20109f33f8087",
     "public/media/obra/hyprfinance-resumen.webp": "c15b76977f515c9e348b225dcbf80f8e67923b719113c21a3658ac4b062112c4",
     "public/media/obra/hyprfinance-movimientos.webp": "289a2c793195c3ff4cfda2a3fa7cde2b1be142e658a8de5d6b6002cb7dfa5396",
-    "public/media/obra/ciberseg-panel.webp": "2323ea1199979d4a7a866d056b54f4bbe3f4e9ab179f67e727a142c406871355",
-    "public/media/obra/ciberseg-vulnerabilidades.webp": "bf04d000599c121160668c20f05c3d54b92d6fcb999aa2c6eb808642d51b6333",
     "public/media/obra/editor-interfaz.webp": "c2470fca671c103c70c692bbe589bb4b9aebf0fd008475d20f6c008f76d9e0a7",
     "public/media/obra/teg-entregas.webp": "4cb8c297efbaf7566f694ba40c5a35147606e67ab153b38d337f4c7f7c123595",
     "public/media/obra/teg-jurados.webp": "fa5cc1c41d9af46427199a47e2618757d272d21053af1df9f2ecdb220ce14137",
