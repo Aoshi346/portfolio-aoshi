@@ -180,28 +180,6 @@
   transition: none !important;
 }
 
-/* Contenedores tonales con elevacion real, cada uno en su altura. */
-:root[data-theme="caelestia"] .scene-surface {
-  background: var(--cae-elev-1);
-  border: 1px solid var(--cae-outline);
-  border-radius: var(--radius-card);
-  padding: clamp(1.75rem, 4vw, 3.25rem);
-  box-shadow: none;
-  transition: background 0.7s cubic-bezier(0.2, 0, 0, 1);
-}
-
-/*
- * Fase B3 — Obra deja de ser cinco escenas apiladas y pasa a ser la
- * Editorial: una fila fija de tarjetas + un cajon. El DOM generico que
- * `projectScene.ts` construye para los tres temas (titulo a pantalla
- * completa, columnas Problema/Solucion, `.obra-meta`) no sirve aqui — se
- * oculta entero y `caelestiaObraEditorial.ts` construye su propio arbol
- * leyendo `caseStudies` directamente, no el DOM oculto.
- */
-:root[data-theme="caelestia"] [data-obra-track] {
-  display: none;
-}
-
 :root[data-theme="caelestia"] .obra-rail {
   overflow: visible;
   /* height: auto quitado: .obra-rail ES el panel (main[data-cae-track] > *),
@@ -672,9 +650,7 @@
  * y `.hero-corner` si son exclusivos de hero.ts (grep confirmado), asi que
  * siguen sin ambito.
  */
-:root[data-theme="caelestia"] [data-scene="hero"] .hero-kick,
-:root[data-theme="caelestia"] .hero-surface,
-:root[data-theme="caelestia"] .hero-corner {
+:root[data-theme="caelestia"] [data-scene="hero"] .hero-kick {
   display: none;
 }
 
@@ -1154,16 +1130,6 @@
   padding: 3.25rem 3.5rem;
   font-family: "Martian Mono", ui-monospace, monospace;
   color: var(--cae-on-surface);
-}
-
-/* La escena vieja se retira entera bajo Caelestia: la ficha dice todo esto y
-   mejor. No se borran del DOM — Vice e Hyprland las siguen usando. */
-:root[data-theme="caelestia"] .about-card,
-:root[data-theme="caelestia"] .about-stats,
-:root[data-theme="caelestia"] .about-track,
-:root[data-theme="caelestia"] .about-pairs,
-:root[data-theme="caelestia"] .about-body > [data-line] {
-  display: none;
 }
 
 /* El `<h2>Quién soy</h2>` NO entra en la regla de arriba, y no es un descuido.
@@ -2538,18 +2504,6 @@
   }
 }
 
-/*
- * Fase B4 — Creditos deja de ser el reparto de parcelas y pasa a ser la
- * bandeja del gestor de paquetes. El DOM generico de `credits.ts` (parcelas,
- * frisos, panel, rodillo) no sirve aqui: se oculta entero y
- * `caelestiaCreditosBandeja.ts` construye su propio arbol leyendo
- * `skillGroups` directamente, igual que hizo B3 con la Editorial. Ese fichero
- * lo comparten los tres temas y NO se bifurca.
- */
-:root[data-theme="caelestia"] .credits-grid {
-  display: none;
-}
-
 /* La seccion trae `px-6 py-24`, `min-h-screen` y `flex` del marcado
    compartido (`src/sections/skills.ts`). Sin neutralizarlo, el aire que se
    mide no es el de la bandeja: es el de la maquetacion que esta fase viene a
@@ -3008,9 +2962,7 @@
 
 /* El antetitulo y el estado se apagan: en la contraportada el rotulo de
    seccion lo lleva la esquina, y el estado baja al pie. */
-:root[data-theme="caelestia"] [data-scene="contacto"] .hero-kick,
-:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado-label,
-:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-estado-sep {
+:root[data-theme="caelestia"] [data-scene="contacto"] .hero-kick {
   display: none;
 }
 
@@ -3937,11 +3889,6 @@
   [data-canal="acto"]
   .contacto-bar-label {
   display: block;
-}
-
-/* La marca de la barra es de la carta de ajuste de Vice; aqui no pinta nada. */
-:root[data-theme="caelestia"] [data-scene="contacto"] .contacto-bar-mark {
-  display: none;
 }
 
 /*
@@ -5573,59 +5520,6 @@
   }
 }
 
-/* ------------------------------------------------------- Creditos (compartido) */
-
-/*
- * `createCredits` (src/components/credits.ts) monta el mismo DOM en los tres
- * temas: rodillo de creditos a la izquierda, panel de detalle a la derecha.
- * Ese diseno (creditos finales de pelicula) es la metafora de Vice — Hyprland
- * y Caelestia comparten el marcado pero NO deben leerse como creditos de
- * cine. Aqui se re-skinea la misma lista como pildoras en rejilla: el
- * principio "un DOM, presentacion por tema" se cumple en CSS, sin ramificar
- * `credits.ts`.
- */
-:root[data-theme="caelestia"] .credits-grid {
-  grid-template-columns: 1fr;
-}
-
-:root[data-theme="caelestia"] .credits-list {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-:root[data-theme="caelestia"] .credit {
-  width: auto;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-card);
-}
-
-/* El rol sobra en formato pildora: manda el nombre (sigue disponible en el
- * panel de detalle al seleccionar la pildora). */
-:root[data-theme="caelestia"] .credit-role {
-  display: none;
-}
-
-:root[data-theme="caelestia"] .credit-name {
-  font-family: var(--font-body);
-  font-size: var(--t-1);
-  text-transform: none;
-  color: var(--color-paper);
-}
-
-/* Pildora activa: mismo gancho que `.chip` de Caelestia (fondo tonal sobre
- * el accent), consistente con el resto del design system. */
-:root[data-theme="caelestia"] .credit:hover,
-:root[data-theme="caelestia"] .credit:focus-visible,
-:root[data-theme="caelestia"] .credit.is-active {
-  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
-  border-color: var(--color-accent);
-}
-
 @keyframes vcursor-burn {
   0% {
     opacity: 0;
@@ -5706,20 +5600,6 @@
     cursor: text;
   }
 }
-
-/* `.gallery-track` NO necesita regla aqui, y a proposito: `style.css:911`
-   le declara `cursor: grab` (y `.is-dragging` en `style.css:937`,
-   `grabbing`) en una regla PROPIA sobre el propio elemento, y esa
-   herencia del `cursor: none` de la raiz nunca la alcanza -- exactamente
-   el mismo mecanismo por el que `a[target="_blank"]` tampoco necesita
-   rescate mas arriba. Una regla "de rescate" aqui solo podria pisar lo
-   que el elemento ya declara bien: una version anterior de este bloque
-   tenia `.gallery-track { cursor: auto }` con especificidad (0,4,0),
-   mayor que la (0,1,0)/(0,2,0) de sus propias reglas en `style.css`, y le
-   devolvia la flecha del sistema en vez de `grab`/`grabbing`. Hoy
-   `.gallery-track` es invisible en Caelestia -- vive en el
-   `projectScene.ts` que B3 oculta -- asi que nada de esto lo mide ningun
-   gate, y no puede, sin volverse tautologico. */
 
 .cae-cursor {
   position: fixed;
