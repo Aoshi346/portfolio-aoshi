@@ -71,10 +71,9 @@ def abre(pagina, base: str) -> None:
     camino."""
     pagina.goto(f"{base}/?theme=caelestia", wait_until="domcontentloaded", timeout=45000)
     pagina.wait_for_timeout(6000)
-    pagina.eval_on_selector_all(
-        ".cae-ws",
-        "bs=>{const b=bs.find(x=>/Cr..?ditos/.test(x.textContent)); if(b) b.click();}",
-    )
+    # Por el id, no por el rotulo: la pastilla paso de «Creditos» a «Stack» y la
+    # busqueda por texto dejaba el arnes en Titulo sin decir nada.
+    pagina.eval_on_selector('[data-cae-ws="creditos"]', "b=>b.click()")
     pagina.wait_for_timeout(2500)
 
 
@@ -110,7 +109,7 @@ def gate_rotulos(pagina) -> None:
 
 
 def gate_piezas(pagina) -> None:
-    """Las 23 tecnologias tienen que estar DENTRO de la caja de la escena, sin
+    """Las 25 tecnologias tienen que estar DENTRO de la caja de la escena, sin
     desplazar. En el estado de partida cuatro de los cinco proyectos de Obra
     quedaban fuera de la ventana por el mismo motivo; aqui se comprueba antes de
     que pase.
@@ -122,7 +121,7 @@ def gate_piezas(pagina) -> None:
     ese ultimo incluye los transforms, y la Task 5 escala la pieza elegida a
     1,07 al rozarla — con `getBoundingClientRect()` el gate veria dos lados
     distintos y fallaria sin que nada estuviera roto."""
-    print("[2] las 23 piezas estan dentro de la caja de la escena")
+    print("[2] las 25 piezas estan dentro de la caja de la escena")
     m = pagina.evaluate(
         """() => {
              const e = document.querySelector('[data-scene="credits"]');
@@ -137,7 +136,7 @@ def gate_piezas(pagina) -> None:
              return {n: t.length, fuera: fuera.length, lados};
            }"""
     )
-    check(m["n"] == 23, f"23 piezas pintadas ({m['n']})")
+    check(m["n"] == 25, f"25 piezas pintadas ({m['n']})")
     check(m["fuera"] == 0, f"ninguna fuera de la caja ({m['fuera']})")
     # El tamano no codifica nada: las dos varas posibles mienten (vara global
     # infla Herramientas porque `tooling` esta en los cinco proyectos; vara por
@@ -146,13 +145,13 @@ def gate_piezas(pagina) -> None:
 
 
 def gate_cruce(pagina) -> None:
-    """El cruce «Aparece en» tiene que caber en los 96 px de cabecera en LAS 23
+    """El cruce «Aparece en» tiene que caber en los 96 px de cabecera en LAS 25
     piezas, y el estado vacio tiene que leerse.
 
     Visto rojo con: TypeScript (tres obras) apilaba tres renglones, 111 px en
     una cabecera de 96 — se salia 15 contra el filete de la primera banda. Y
     «Sin obra publicada» iba en `--cae-outline`: 1,80:1 de noche, 2,34:1 a las
-    09:00, en 7 de las 23 piezas.
+    09:00, en 7 de las 25 piezas.
 
     El contraste se mide PINTANDO el color en un lienzo 1x1 y leyendo el pixel.
     Leer `oklch(...)` con una regex como si fueran bytes RGB da 1.00:1 en todo
@@ -180,7 +179,9 @@ def gate_cruce(pagina) -> None:
           const cru = document.querySelector('.cae-cred-cruce');
           const res = {sale: 0, peor: 99, cual: ''};
           for (const b of document.querySelectorAll('.cae-cred-pieza')) {
-            b.dispatchEvent(new MouseEvent('mouseenter', {bubbles:true}));
+            // click, no mouseenter: el roce espera PAUSA_ROCE antes de elegir y
+            // un mouseenter sintetico mediria la pieza anterior.
+            b.click();
             const rc = cru.getBoundingClientRect(), rb = cab.getBoundingClientRect();
             res.sale = Math.max(res.sale, Math.round(rc.bottom - rb.bottom));
             const li = cru.querySelector('li');
@@ -195,7 +196,7 @@ def gate_cruce(pagina) -> None:
     check(peor["sale"] <= 0, f"el cruce no se sale de la cabecera ({peor['sale']} px)")
     check(
         peor["peor"] >= 4.5,
-        f"el cruce se lee en las 23 (peor {peor['peor']:.2f}:1 en «{peor['cual']}»)",
+        f"el cruce se lee en las 25 (peor {peor['peor']:.2f}:1 en «{peor['cual']}»)",
     )
 
 
@@ -221,6 +222,94 @@ def gate_seleccion(pagina) -> None:
     pagina.wait_for_timeout(700)
     tras_foco = pagina.eval_on_selector(".cae-cred-nombre", "e=>e.textContent")
     check(tras_foco == "Python", f"el foco releva la ficha ({tras_foco})")
+
+
+def gate_pausa_roce(pagina) -> None:
+    """Cruzar una pieza de camino NO la elige; quedarse sobre ella si.
+
+    Sin la pausa, el puntero que sube desde Herramientas hasta un enlace de
+    «Aparece en» relevaba la cabecera en cada pieza que cruzaba, y el enlace
+    que se iba a pulsar desaparecia. Visto rojo contra main (sin pausa)."""
+    print("[8] cruzar una pieza de camino no la elige")
+    pagina.click('.cae-cred-pieza[data-pieza="React"]')
+    pagina.wait_for_timeout(300)
+    # El tiempo se mide DENTRO de la pagina (entrada del puntero -> relevo del
+    # nombre): leerlo desde Python a los 50 ms media la latencia de swiftshader,
+    # que ya pasaba de los 140 ms de la pausa. Umbral 120: el valor declarado
+    # menos un fotograma largo de margen.
+    pagina.evaluate(
+        """() => {
+          const b = document.querySelector('.cae-cred-pieza[data-pieza="Django"]');
+          const n = document.querySelector('.cae-cred-nombre');
+          window.__roce = {};
+          b.addEventListener('mouseenter', () => { window.__roce.entra = performance.now(); }, {once: true});
+          new MutationObserver((_, o) => { window.__roce.elige = performance.now(); o.disconnect(); })
+            .observe(n, {childList: true, characterData: true, subtree: true});
+        }"""
+    )
+    caja = pagina.locator('.cae-cred-pieza[data-pieza="Django"]').bounding_box()
+    pagina.mouse.move(caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2)
+    pagina.wait_for_timeout(600)
+    m = pagina.evaluate("() => window.__roce")
+    espera = (m.get("elige") or 0) - (m.get("entra") or 0)
+    check(espera >= 120, f"el relevo espera la pausa ({espera:.0f} ms, declarada 140)")
+    quieto = pagina.eval_on_selector(".cae-cred-nombre", "e=>e.textContent")
+    check(quieto == "Django", f"quieto sobre la pieza, la elige ({quieto})")
+
+
+# Posicion de cada obra en `caseStudies` (content.ts), que es el orden de las
+# tarjetas de Obra.
+ORDEN_OBRA = {"Parallax": 0, "Vela": 1, "TesisFar": 2, "HyprFinance": 3}
+
+
+def _abrir_desde_cruce(pagina, pieza: str, obra: str) -> dict:
+    pagina.click(f'.cae-cred-pieza[data-pieza="{pieza}"]')
+    pagina.wait_for_timeout(400)
+    enlaces = pagina.eval_on_selector_all(".cae-cred-obra", "es=>es.map(e=>e.textContent)")
+    if obra not in enlaces:
+        return {"enlaces": enlaces}
+    pagina.eval_on_selector_all(
+        ".cae-cred-obra", "(es,t)=>es.find(e=>e.textContent===t).click()", obra
+    )
+    pagina.wait_for_timeout(3000)
+    return pagina.evaluate(
+        """() => {
+          const ws = document.querySelector('[data-cae-ws="obra"]');
+          const h3 = document.querySelector('[data-cae-obra-h3]');
+          const sel = document.querySelector('.cae-obra-card.is-sel');
+          const cards = Array.from(document.querySelectorAll('.cae-obra-card'));
+          const pista = cards[0] && cards[0].parentElement;
+          let centrada = null;
+          if (pista && pista.scrollWidth > pista.clientWidth + 1 && sel) {
+            const p = pista.getBoundingClientRect(), r = sel.getBoundingClientRect();
+            centrada = Math.abs(r.left + r.width / 2 - (p.left + pista.clientWidth / 2));
+          }
+          const op = h3 ? Number(getComputedStyle(document.querySelector('.cae-obra-drawer')).opacity) : 0;
+          return {ws: ws && ws.getAttribute('aria-current'), h3: h3 && h3.textContent,
+                  sel: sel && cards.indexOf(sel), centrada, op};
+        }"""
+    )
+
+
+def gate_enlace_obra(pagina, base: str, ancho: int) -> None:
+    """«Aparece en» lleva a la ficha de esa obra en Obra, tanto la primera vez
+    (la caida de Obra aun no se ha jugado) como despues. En el carrusel de
+    movil, la tarjeta pedida queda centrada, que alli es lo que la elige."""
+    print(f"[9] «Aparece en» abre la obra en Obra ({ancho} px)")
+    for pieza, obra in (("Django", "Vela"), ("Next.js", "TesisFar")):
+        m = _abrir_desde_cruce(pagina, pieza, obra)
+        check(m.get("ws") == "true", f"{pieza} -> {obra}: Obra es el workspace activo ({m})")
+        check(m.get("h3") == obra, f"{pieza} -> {obra}: el cajon muestra {obra} ({m.get('h3')})")
+        check(m.get("sel") == ORDEN_OBRA[obra], f"{pieza} -> {obra}: su tarjeta es la elegida ({m.get('sel')})")
+        check(m.get("op", 0) > 0.99, f"{pieza} -> {obra}: el cajon esta visible ({m.get('op')})")
+        if m.get("centrada") is not None:
+            check(m["centrada"] < 4, f"{pieza} -> {obra}: centrada en el carrusel ({m['centrada']:.1f} px)")
+        abre_creditos(pagina)
+
+
+def abre_creditos(pagina) -> None:
+    pagina.eval_on_selector('[data-cae-ws="creditos"]', "b=>b.click()")
+    pagina.wait_for_timeout(2500)
 
 
 def gate_entrada_dispara(pagina, base: str) -> None:
@@ -251,10 +340,9 @@ def gate_entrada_dispara(pagina, base: str) -> None:
     )
     check(antes is False, f"sin 'data-cred-entrando' mientras el visitante sigue en Titulo ({antes})")
 
-    pagina.eval_on_selector_all(
-        ".cae-ws",
-        "bs=>{const b=bs.find(x=>/Cr..?ditos/.test(x.textContent)); if(b) b.click();}",
-    )
+    # Por el id, no por el rotulo: la pastilla paso de «Creditos» a «Stack» y la
+    # busqueda por texto dejaba el arnes en Titulo sin decir nada.
+    pagina.eval_on_selector('[data-cae-ws="creditos"]', "b=>b.click()")
     pagina.wait_for_timeout(150)
     tras = pagina.evaluate(
         """() => {
@@ -290,7 +378,7 @@ def gate_entrada(pagina, base: str) -> None:
                      }).length};
            }"""
     )
-    check(m["opacos"] == m["total"], f"con mov. reducido las 23 estan opacas ({m['opacos']}/{m['total']})")
+    check(m["opacos"] == m["total"], f"con mov. reducido las 25 estan opacas ({m['opacos']}/{m['total']})")
     check(m["sinEscala"] >= m["total"] - 1, f"y sin escala de entrada ({m['sinEscala']}/{m['total']})")
     contexto.close()
 
@@ -300,7 +388,7 @@ def gate_horas(pagina) -> None:
     los DOS estados de la ficha (con obra y sin ella).
 
     Los dos estados no son un extra: con solo uno, «Sin obra publicada» —7 de
-    las 23 piezas— no se mide nunca. El sabotaje lo demostro: la sonda daba
+    las 25 piezas— no se mide nunca. El sabotaje lo demostro: la sonda daba
     verde con ese par a 1,80:1, porque el nodo no existia mientras medía.
 
     Visto rojo con: el territorio en `--cae-outline` — rojo en las 24 horas.
@@ -325,7 +413,8 @@ def gate_horas(pagina) -> None:
         pagina.wait_for_timeout(220)
         for pieza in ("Git", "Tailwind CSS"):
             pagina.hover(f'.cae-cred-pieza[data-pieza="{pieza}"]')
-            pagina.wait_for_timeout(500)
+            # 500 de la transicion + 140 de la pausa del roce (PAUSA_ROCE).
+            pagina.wait_for_timeout(700)
             m = pagina.evaluate(_JS_CONTRASTE)
             if m["peor"] < peor[0]:
                 peor = (m["peor"], m["cual"], hora)
@@ -333,9 +422,9 @@ def gate_horas(pagina) -> None:
 
 
 def gate_foco(pagina) -> None:
-    """El anillo de foco de las 23 piezas tiene que llegar a 3:1 contra su
+    """El anillo de foco de las 25 piezas tiene que llegar a 3:1 contra su
     fondo (WCAG 2.2 SC 1.4.11, indicador de foco), en los DOS esquemas: es el
-    unico indicador visible en los 23 controles interactivos de la escena.
+    unico indicador visible en los 25 controles interactivos de la escena.
 
     Visto rojo con: `outline: 2px solid var(--cae-anchor)` contra
     `--cae-elev-1` da 1,38:1 a las 09:00 — invisible 13 de las 24 horas
@@ -382,7 +471,7 @@ def main() -> int:
 
     with sync_playwright() as p:
         navegador = p.chromium.launch(
-            headless=True, args=["--no-sandbox", "--use-gl=swiftshader"]
+            headless=True, executable_path="/usr/bin/google-chrome", args=["--no-sandbox", "--use-gl=swiftshader"]
         )
         pagina = navegador.new_page(viewport={"width": 1440, "height": 900})
         errores: list[str] = []
@@ -399,9 +488,17 @@ def main() -> int:
         gate_foco(pagina)
         gate_cruce(pagina)
         gate_seleccion(pagina)
+        gate_pausa_roce(pagina)
+        gate_enlace_obra(pagina, args.base, 1440)
         gate_entrada(pagina, args.base)
         gate_entrada_dispara(pagina, args.base)
         gate_horas(pagina)
+
+        movil = navegador.new_page(viewport={"width": 390, "height": 844}, has_touch=True)
+        movil.on("pageerror", lambda e: errores.append(str(e)))
+        abre(movil, args.base)
+        gate_enlace_obra(movil, args.base, 390)
+        movil.close()
 
         print("[0] consola")
         check(not errores, f"cero errores de consola ({errores[:3]})")

@@ -1,4 +1,4 @@
-import { caseStudies, skillGroups } from "../data/content";
+import { caseStudies, sceneIndex, skillGroups } from "../data/content";
 import { el, elFromMarkup } from "../utils/dom";
 import {
   FIGURA_CIRCULO,
@@ -24,6 +24,11 @@ interface Pieza {
  *  el canto superior llegaba a tocar el filete de la banda anterior. Medido:
  *  22,5 px de holgura en reposo, 19,2 rozando. */
 const LADO = 88;
+
+/** Lo que tiene que quedarse el puntero sobre una pieza para elegirla. Por
+ *  debajo de ~100 ms un barrido normal ya elige de camino; por encima de
+ *  ~200 ms el roce deja de sentirse inmediato. */
+const PAUSA_ROCE = 140;
 
 /**
  * El cruce contra las obras se hace contra `stack` Y `tooling`. Sin el segundo array, Git, GitHub y las
@@ -147,8 +152,35 @@ export async function mountCaelestiaCreditosBandeja(
     cruceLista.replaceChildren(
       ...(p.obras.length === 0
         ? [el("li", "is-vacia", ["Sin obra publicada"])]
-        : lineas.map((t) => el("li", "", [t]))),
+        : lineas.map((t) => el("li", "", [enlaceObra(t)]))),
     );
+  }
+
+  /**
+   * Cada titulo del cruce lleva a su ficha en Obra: la escena existe para unir
+   * «sabe X» con «lo uso en Y», y sin el enlace esa cadena se cortaba aqui. El
+   * resumen («Los cinco proyectos») no es un titulo y se queda en texto.
+   * Primero se pide la obra y despues se cambia de workspace: asi la Editorial
+   * la tiene elegida antes de jugar su entrada.
+   */
+  function enlaceObra(texto: string): HTMLElement | string {
+    const indiceObra = caseStudies.findIndex((c) => c.title === texto);
+    const indiceEscena = sceneIndex.findIndex((e) => e.id === "obra");
+    if (indiceObra < 0 || indiceEscena < 0) return texto;
+    const b = el("button", "cae-cred-obra", [texto]) as HTMLButtonElement;
+    b.type = "button";
+    b.addEventListener("click", () => {
+      root.dispatchEvent(
+        new CustomEvent("caelestia:obra", { detail: { index: indiceObra }, bubbles: true }),
+      );
+      root.dispatchEvent(
+        new CustomEvent("caelestia:workspace", {
+          detail: { index: indiceEscena, id: "obra" },
+          bubbles: true,
+        }),
+      );
+    });
+    return b;
   }
 
   pintarFicha(piezas[0]);
@@ -198,13 +230,26 @@ export async function mountCaelestiaCreditosBandeja(
   // Rozar elige: no hace falta pulsar. Clic y foco hacen lo mismo, para que el
   // teclado llegue adonde llega el raton.
   const escuchas: Array<() => void> = [];
+  let espera = 0;
   for (const b of botones) {
     const nombrePieza = b.dataset.pieza ?? "";
     const entrar = (): void => {
+      window.clearTimeout(espera);
       grid?.classList.add("is-tocando");
       elegir(nombrePieza);
     };
-    const salir = (): void => grid?.classList.remove("is-tocando");
+    // Rozar con el raton elige tras una pausa corta: para llegar a un enlace
+    // de «Aparece en» desde una banda de abajo, el puntero cruza otras piezas
+    // de camino, y sin la pausa cada una relevaba la cabecera y el enlace que
+    // se iba a pulsar desaparecia. Clic y foco siguen eligiendo al instante.
+    const rozar = (): void => {
+      window.clearTimeout(espera);
+      espera = window.setTimeout(entrar, PAUSA_ROCE);
+    };
+    const salir = (): void => {
+      window.clearTimeout(espera);
+      grid?.classList.remove("is-tocando");
+    };
     // B6 (spec 2026-09-07-caelestia-movil): en tactil no hay `mouseleave` tras
     // el `click` que dispara `entrar` (no hay puntero que "salga"), asi que
     // `is-tocando` se quedaba pegado hasta el siguiente toque en OTRA pieza.
@@ -212,14 +257,14 @@ export async function mountCaelestiaCreditosBandeja(
     const soltarToque = (ev: PointerEvent): void => {
       if (ev.pointerType === "touch") salir();
     };
-    b.addEventListener("mouseenter", entrar);
+    b.addEventListener("mouseenter", rozar);
     b.addEventListener("focus", entrar);
     b.addEventListener("click", entrar);
     b.addEventListener("blur", salir);
     b.addEventListener("mouseleave", salir);
     b.addEventListener("pointerup", soltarToque);
     escuchas.push(() => {
-      b.removeEventListener("mouseenter", entrar);
+      b.removeEventListener("mouseenter", rozar);
       b.removeEventListener("focus", entrar);
       b.removeEventListener("click", entrar);
       b.removeEventListener("blur", salir);
@@ -228,7 +273,7 @@ export async function mountCaelestiaCreditosBandeja(
     });
   }
 
-  // «La instalacion»: las 23 llegan como circulos identicos —paquetes sin
+  // «La instalacion»: las 25 llegan como circulos identicos —paquetes sin
   // abrir— y cada una morfa a su figura mientras crece y se endereza. La
   // onda va POR TERRITORIOS: cada familia arranca 190 ms detras de la
   // anterior, y dentro de cada una las piezas se escalonan 34 ms.
@@ -271,8 +316,8 @@ export async function mountCaelestiaCreditosBandeja(
     skillGroups.forEach((g, gi) => {
       g.items.forEach((_, i) => {
         const fig = botones[indice]?.querySelector<HTMLElement>(".cae-cred-fig");
-        // En banda compacta, una sola onda para las 23 (max 260 + 22*26 =
-        // 832ms < 900). En escritorio/banda media, la onda por territorios.
+        // En banda compacta, una sola onda para las 25 (max 260 + 24*26 =
+        // 884ms < 900). En escritorio/banda media, la onda por territorios.
         fig?.style.setProperty(
           "--retardo",
           apilada ? `${260 + indice * 26}ms` : `${260 + gi * 190 + i * 34}ms`,
@@ -303,6 +348,7 @@ export async function mountCaelestiaCreditosBandeja(
 
   return {
     destroy: () => {
+      window.clearTimeout(espera);
       for (const off of escuchas) off();
       for (const off of offEntrada) off();
       document.documentElement.removeEventListener("caelestia:workspace", alCambiarWorkspace);

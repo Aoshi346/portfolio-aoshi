@@ -384,6 +384,13 @@
   escena Obra, con lo que se pierde la cadena *«sabe X → lo uso en Y»*, que es lo unico que esta
   escena aporta. Movil fuera de alcance, igual que en B1 y B2 — hoy a 390 px la escena ya arrastra
   154 px de scroll interno, que B4 ni arregla ni empeora.
+  **2026-10-29 (`design/stack`):** cerrado el P1 del cruce. Cada titulo de «Aparece en» abre su
+  ficha en Obra (evento `caelestia:obra` antes del cambio de workspace; en el carrusel la tarjeta
+  se centra), y rozar elige tras 140 ms para que el puntero pueda subir hasta el enlace sin relevar
+  la cabecera por el camino. El del gesto se deja: React sale elegida al entrar y eso lo ensena.
+  Mismo dia: fuera Electron (sin obra tras retirar WatchDog), entran FastAPI, SQLAlchemy y
+  PostgreSQL (25 piezas), y Parallax y Vela llevan Vite y Tailwind CSS (y Vela GSAP), que usan de
+  verdad.
   **La leccion que mas costo vuelve a ser sobre los instrumentos:** la entrada se disparaba AL
   MONTAR y terminaba a los 2803 ms con la escena **4334 px fuera del viewport** — el gesto firmado
   de la fase no se veia ni una sola vez. Era una regresion contra un patron que el propio tema tenia

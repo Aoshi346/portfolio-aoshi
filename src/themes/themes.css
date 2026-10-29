@@ -2787,6 +2787,28 @@
   color: var(--cae-on-surface);
 }
 
+/* Cada título lleva a su ficha en Obra. Se dice con el subrayado, no con otra
+   tinta: el título conserva su contraste medido sobre la cabecera, y el
+   subrayado engorda al rozarlo. */
+:root[data-theme="caelestia"] .cae-cred-obra {
+  font: inherit;
+  font-variation-settings: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--cae-on-surface-variant);
+}
+
+:root[data-theme="caelestia"] .cae-cred-obra:hover {
+  text-decoration-thickness: 2px;
+  text-decoration-color: currentColor;
+}
+
 :root[data-theme="caelestia"] .cae-cred-cruce-lista li + li::before {
   content: "\00B7";
   padding: 0 7px 0 5px;
