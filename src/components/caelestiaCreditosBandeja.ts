@@ -26,8 +26,7 @@ interface Pieza {
 const LADO = 88;
 
 /**
- * El cruce contra las obras se hace contra `stack` Y `tooling`, que es el mismo
- * cruce que hace `credits.ts::toEntry`. Sin el segundo array, Git, GitHub y las
+ * El cruce contra las obras se hace contra `stack` Y `tooling`. Sin el segundo array, Git, GitHub y las
  * dos CLI saldrian como "sin obra publicada" siendo justo lo contrario: estan
  * en todos los proyectos, y no aparecen en `stack` porque `stack` se pinta
  * literal en la ficha de obra y ahi cuatro nombres repetidos no distinguen nada.
@@ -38,7 +37,7 @@ function obrasDe(name: string): string[] {
     .map((p) => p.title);
 }
 
-/** Mismo resumen que `credits.ts::textoCruce`, sin duplicar la decision: con
+/** Resumen del cruce: con
  *  cuatro o cinco obras no se listan los titulos porque no distinguen nada. */
 function cruceTexto(obras: readonly string[]): string[] {
   if (obras.length === 5) return ["Los cinco proyectos"];

@@ -4,7 +4,6 @@ import { caseStudies } from "./data/content";
 import { createAbout } from "./sections/about";
 import { createContacto } from "./sections/contacto";
 import { createHero } from "./sections/hero";
-import { createProjectScene } from "./sections/obra/projectScene";
 import { createSkills } from "./sections/skills";
 import { applyTheme } from "./themes";
 import { caelestiaTheme as theme } from "./themes/caelestia";
@@ -50,16 +49,12 @@ const noise = el("div", "bg-noise", []);
 noise.setAttribute("aria-hidden", "true");
 
 /*
- * Las obras van en un carril propio: la coreografia lo localiza por
- * `data-obra-rail` para montarlo como un workspace mas del shell.
+ * El carril de obra va vacio: la coreografia lo localiza por
+ * `data-obra-rail` para montarlo como un workspace mas del shell, y la
+ * Editorial (`caelestiaObraEditorial.ts`) le añade su fila de tarjetas y su
+ * cajon desde `caseStudies`.
  */
-const obraTrack = el(
-  "div",
-  "obra-track",
-  caseStudies.map((project, index) => createProjectScene(project, index)),
-);
-obraTrack.setAttribute("data-obra-track", "");
-const obraRail = el("div", "obra-rail", [obraTrack]);
+const obraRail = el("div", "obra-rail", []);
 obraRail.setAttribute("data-obra-rail", "");
 
 const main = el("main", "relative", [

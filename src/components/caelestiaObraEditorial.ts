@@ -13,10 +13,9 @@ const TILTS = [-5, 4, -3, 5, -4];
 /**
  * La Editorial: la fila de cinco tarjetas nunca se mueve (es la "lista
  * quieta" del eje compartido de Material 3) y el cajon que abre debajo es
- * lo unico que entra o cambia. Construye TODO desde `caseStudies`, no
- * desde el DOM generico de `projectScene.ts` — ese DOM sigue existiendo
- * para Vice/Hyprland pero `themes.css` lo oculta entero bajo Caelestia
- * (Task 1), asi que raspar su texto seria leer un arbol invisible.
+ * lo unico que entra o cambia. Construye TODO desde `caseStudies`
+ * y monta fila y cajon dentro del carril vacio `[data-obra-rail]` que crea
+ * `main.ts`: no hay otro arbol de obras en el DOM que leer.
  */
 export async function mountCaelestiaObraEditorial(
   root: HTMLElement,
