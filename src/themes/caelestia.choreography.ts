@@ -1,7 +1,8 @@
 import type { Choreography } from "./choreography";
+import { ajustarSvgsNombre } from "../sections/hero";
 import { montarFicha } from "./caelestia.ficha";
 import { montarFundido } from "./caelestia.fundido";
-import { montarEntrada, montarFiguraViva, montarRoce, montarTitulo } from "./caelestia.titulo";
+import { montarEntrada, montarRoce } from "./caelestia.titulo";
 
 /**
  * La coreografia de Caelestia: las cinco escenas dejan de apilarse en vertical
@@ -173,37 +174,24 @@ export const caelestiaChoreography: Choreography = ({ gsap, root }) => {
   aislarInactivos(0);
   anclarDocumento();
 
-  // El titular se justifica midiendo texto real, asi que necesita el DOM ya
-  // colocado. `root` ES el <main>: ver el docstring de arriba.
-  //
-  // Sin `titulo.destroy()`: esta coreografia no tiene mecanismo de limpieza
-  // propio (`Choreography` devuelve `void` — ver el docstring de
-  // hypr.choreography.ts, "ningun tema tiene destroy()") y ninguno de sus
-  // otros oyentes de `window`/`document` (scroll, focusin, resize, el evento
-  // de workspace) se retira tampoco: todos viven tanto como la pagina, igual
-  // que explica el comentario "Sin destroy() propio" al final de este
-  // fichero. El oyente de resize de `montarTitulo` sigue exactamente el mismo
-  // patron.
-  montarTitulo(root);
+  // El nombre se dibuja con SVG que hay que medir (getBBox) ya montado en el
+  // documento: createHero lo intenta en un rAF, pero si la seccion aun no
+  // estaba montada, se ajusta aqui. Idempotente.
+  const heroEscena = root.querySelector<HTMLElement>("#hero");
+  if (heroEscena) ajustarSvgsNombre(heroEscena);
 
   // El roce (tarea 7): el fondo se aparta y el elemento se levanta al pasar
-  // el raton por encima del widget, las cifras, las pastillas de la barra o
-  // el dock. Sin `destroy()` propio por el mismo motivo que el resto de esta
+  // el raton por encima de las pastillas de la barra o el dock. Sin
+  // `destroy()` propio por el mismo motivo que el resto de esta
   // coreografia — ver el comentario "Sin destroy() propio" al final del
   // fichero, y el docstring de `montarRoce` en caelestia.titulo.ts.
   montarRoce(gsap, root);
 
-  // La figura viva de la tarjeta "Ahora mismo" (spec 2026-09-05). Sin
-  // destroy() propio por el mismo motivo que montarRoce (ver el comentario
-  // "Sin destroy() propio" al final del fichero); el handle existe para la
-  // entrada (montarEntrada lo recibe) y para tests.
-  const figuraViva = montarFiguraViva(gsap, root);
-
-  // La entrada (tarea 6): terminal + trazo del nombre, aterrizando sobre
-  // `.cae-firma`. Sin `destroy()` propio por el mismo motivo que el resto de
-  // esta coreografia (ver el comentario "Sin destroy() propio" al final del
-  // fichero) — el handle que devuelve existe para tests/composicion futura.
-  montarEntrada(gsap, root, figuraViva);
+  // La entrada: el nombre se dibuja a trazo en su sitio y el rol se corta
+  // despues. Sin `destroy()` propio por el mismo motivo que el resto de esta
+  // coreografia (ver el comentario "Sin destroy() propio" al final del
+  // fichero) -- el handle que devuelve existe para tests/composicion futura.
+  montarEntrada(gsap, root);
 
   /*
    * Fase de CAPTURA: los eventos de scroll no burbujean, asi que un oyente en

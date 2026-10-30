@@ -654,441 +654,132 @@
   display: none;
 }
 
-:root[data-theme="caelestia"] .cae-head {
-  display: block;
-  margin-top: auto;
-  position: relative;
-  padding-right: 230px; /* el hueco de la columna de cifras (tarea 4) */
-}
-
-:root[data-theme="caelestia"] .cae-tit {
-  font-family: var(--font-display);
-  margin: 0;
-}
-
-:root[data-theme="caelestia"] .cae-tit .cae-ln {
-  display: block;
-  white-space: nowrap;
-  line-height: 0.9;
-  letter-spacing: -0.018em;
-  font-variation-settings: var(--cae-display-axes-cartel);
-}
-
-:root[data-theme="caelestia"] .cae-kicker {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  margin: 0 0 14px;
-}
-
-:root[data-theme="caelestia"] .cae-firma {
-  font-family: var(--font-display);
-  /* Los ejes del SHELL, no los del cartel: aqui se lee a 28,43px (`--t-4`).
-     Y `nowrap` porque esta linea es el destino del trazo de la entrada — si
-     partiera en dos, el aterrizaje no cuadraria. */
-  font-variation-settings: var(--cae-display-axes-texto);
-  font-size: var(--t-4);
-  line-height: 1;
-  letter-spacing: -0.015em;
-  white-space: nowrap;
-}
-
-:root[data-theme="caelestia"] .cae-regla {
-  display: block;
-  width: 46px;
-  height: 1px;
-  background: var(--cae-outline);
-  transform-origin: left center;
-}
-
-:root[data-theme="caelestia"] .cae-meta {
-  font-family: var(--font-mono);
-  font-size: var(--t-0);
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--cae-on-surface-variant);
-  white-space: nowrap;
-}
-
-:root[data-theme="caelestia"] .cae-statcol {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  display: grid;
-  gap: 14px;
-  text-align: right;
-}
-
-:root[data-theme="caelestia"] .cae-statcol > div {
-  border-top: 1px solid var(--cae-outline);
-  padding-top: 7px;
-  min-width: 168px;
-}
-
-:root[data-theme="caelestia"] .cae-v2 {
-  display: block;
-  font-family: var(--font-display);
-  font-variation-settings: var(--cae-display-axes-texto);
-  font-size: var(--t-4);
-  line-height: 1;
-  font-feature-settings: "tnum";
-}
-
-:root[data-theme="caelestia"] .cae-k {
-  display: block;
-  margin-top: 3px;
-  font-family: var(--font-mono);
-  font-size: var(--t-0);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--cae-on-surface-variant);
-}
-
 /*
- * La entrada de escena (tarea 6): una terminal falsa que teclea `whoami` y,
- * al terminar, el nombre trazado con los contornos reales de Fraunces
- * (`caelestia.firma.ts`) que aterriza sobre `.cae-firma`. Las dos piezas van
- * `position: fixed` — centradas en el VIEWPORT, no en `.hero` — porque el
- * aterrizaje de `montarEntrada` mide con `getBoundingClientRect()` y mueve
- * con un transform sin escalar (sin dividir por ningun `k`, a diferencia del
- * companion de brainstorming: aqui no hay bastidor con `scale()`).
+ * La escena Titulo (spec 2026-10-29-caelestia-titulo-nombre): el nombre, grande
+ * y en el centro, y debajo el rol. Nada mas. El nombre visible es el SVG
+ * (contornos reales de Fraunces en `caelestia.firma.ts`); el texto vive en
+ * `.cae-nombre-txt`, visualmente oculto, para lectores de pantalla.
  */
-:root[data-theme="caelestia"] .cae-term,
-:root[data-theme="caelestia"] .cae-trazo-stage {
+:root[data-theme="caelestia"] .cae-presenta {
   display: flex;
-  position: fixed;
-  inset: 0;
+  flex: 1;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  gap: 22px;
+  width: 100%;
+  min-height: 0;
+  text-align: center;
 }
 
-/*
- * Estado previo a la entrada de Titulo (tarea de repaso de interfaces): nada
- * ocultaba estas piezas antes de que llegara el chunk de coreografia (~2,9 s
- * en la sandbox), asi que el hero se veia ENTERO en su estado FINAL -- firma
- * a opacidad 1, lineas sin recorte, cifras a 1, terminal visible con
- * "$ _" vacio y el trazo mostrando el contorno completo del nombre -- y
- * saltaba de golpe al estado inicial cuando `montarEntrada` por fin corria.
- *
- * `visibility`, NO `display: none` ni `opacity`: `justificarTitular` mide el
- * texto con `Range` y el aterrizaje del trazo mide con
- * `getBoundingClientRect()`, y las dos necesitan el layout intacto (`display:
- * none` lo destruye). Y no `opacity` porque GSAP anima esa misma propiedad
- * inline en estas mismas piezas -- dos fuentes para el mismo valor es
- * exactamente el tipo de conflicto que el CLAUDE.md del proyecto prohibe
- * para `transform`, y aqui aplica igual.
- */
-:root[data-theme="caelestia"].js-cae-entrada .cae-term,
-:root[data-theme="caelestia"].js-cae-entrada .cae-trazo-stage,
-:root[data-theme="caelestia"].js-cae-entrada .cae-firma,
-:root[data-theme="caelestia"].js-cae-entrada .cae-regla,
-:root[data-theme="caelestia"].js-cae-entrada .cae-meta,
-:root[data-theme="caelestia"].js-cae-entrada .cae-tit .cae-ln,
-:root[data-theme="caelestia"].js-cae-entrada .cae-statcol > div,
-:root[data-theme="caelestia"].js-cae-entrada .cae-mv-linea,
-:root[data-theme="caelestia"].js-cae-entrada .cae-mv-cifra,
-:root[data-theme="caelestia"].js-cae-entrada .cae-mv-pie,
-:root[data-theme="caelestia"].js-cae-entrada .cae-widget {
+:root[data-theme="caelestia"] .cae-nombre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-variation-settings: var(--cae-display-axes-cartel);
+  font-size: var(--t-9);
+  line-height: 1;
+  color: var(--color-paper);
+}
+
+:root[data-theme="caelestia"] .cae-nombre-txt {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[data-theme="caelestia"] .cae-nombre-dib {
+  display: grid;
+  justify-items: center;
+  row-gap: 0.06em;
+}
+
+/* Solo durante la medida de `ajustarSvgsNombre` (sincrona, misma llamada):
+   maqueta los tres SVG para que getBBox no devuelva 0x0, sin pintar nada. */
+:root[data-theme="caelestia"] .cae-midiendo .cae-linea,
+:root[data-theme="caelestia"] .cae-midiendo .cae-linea-una {
+  display: block;
   visibility: hidden;
 }
 
+/* Un SVG por linea: el de una linea en escritorio y tableta, los dos de dos
+   lineas por debajo de 641px. Se ensenan unos u otros por ancho. */
+:root[data-theme="caelestia"] .cae-nombre-svg {
+  display: block;
+  overflow: visible;
+}
+
+:root[data-theme="caelestia"] .cae-linea {
+  display: none;
+}
+
+:root[data-theme="caelestia"] .cae-nombre-svg path {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.1;
+}
+
+:root[data-theme="caelestia"] .cae-rol {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--t-4);
+  line-height: 1.3;
+  color: var(--cae-on-surface-variant);
+  /* Por debajo de ~400 px el rol no cabe en una linea y se partia en
+     «Desarrollador full stack en / Caracas.», con la ciudad huerfana. Con
+     balance las dos lineas salen parejas; en una sola linea no cambia nada. */
+  text-wrap: balance;
+}
+
 /*
- * Cinturon de seguridad: si la clase llegara a quedar puesta con movimiento
- * reducido (main.ts roto, orden de carga distinto), el contenido no puede
- * depender de una animacion que nunca va a correr para revelarse -- mismo
- * patron que `style.css` hace con `.js-intro`. Sin `!important`: el selector
- * es IDENTICO al de arriba (misma especificidad) y esta regla va DESPUES en
- * el fichero, asi que gana por orden de cascada sola -- comprobado leyendo
- * `visibility` de `.cae-firma` con `prefers-reduced-motion: reduce` emulado
- * y la clase forzada a mano: sale `visible` sin necesidad de `!important`.
+ * Antes del primer pintado: oculta solo el dibujo del nombre y el rol hasta que
+ * la entrada (caelestia.titulo.ts) haya escrito sus estados iniciales y retire
+ * `js-cae-entrada`. `visibility`, no `display` ni `opacity`: la entrada mide el
+ * layout y GSAP anima la opacidad de estas mismas piezas.
  */
+:root[data-theme="caelestia"].js-cae-entrada .cae-nombre-dib,
+:root[data-theme="caelestia"].js-cae-entrada .cae-rol {
+  visibility: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  :root[data-theme="caelestia"].js-cae-entrada .cae-term,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-trazo-stage,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-firma,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-regla,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-meta,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-tit .cae-ln,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-statcol > div,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-mv-linea,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-mv-cifra,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-mv-pie,
-  :root[data-theme="caelestia"].js-cae-entrada .cae-widget {
+  :root[data-theme="caelestia"].js-cae-entrada .cae-nombre-dib,
+  :root[data-theme="caelestia"].js-cae-entrada .cae-rol {
     visibility: visible;
   }
 }
 
-:root[data-theme="caelestia"] .cae-term {
-  z-index: 60;
-}
-
-:root[data-theme="caelestia"] .cae-trazo-stage {
-  z-index: 55;
-}
-
-:root[data-theme="caelestia"] .cae-term-line {
-  margin: 0;
-  padding: 18px 28px;
-  border-radius: 10px;
-  background: var(--cae-elev-2);
-  border: 1px solid var(--cae-outline);
-  font-family: var(--font-mono);
-  font-size: var(--t-3);
-  letter-spacing: 0.01em;
-  color: var(--cae-on-surface);
-  box-shadow: 0 18px 48px rgb(0 0 0 / 0.22);
-}
-
-:root[data-theme="caelestia"] .cae-term-cursor {
-  display: inline-block;
-  margin-left: 2px;
-  color: var(--cae-primary);
-}
-
-:root[data-theme="caelestia"] .cae-trazo {
-  width: min(74vw, 820px);
-  height: auto;
-  overflow: visible;
-  fill: currentColor;
-  fill-opacity: 0;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  color: var(--cae-on-surface);
-}
-
-/*
- * La tarjeta "Ahora mismo" (spec 2026-09-05-caelestia-ahora-mismo): mismo
- * sitio y ancho que antes, pero superficie tonal SIN borde (el escalon de la
- * barra y el dock), un primero claro, dos columnas fechadas y la pastilla al
- * pie. Sombra por esquema: 0,22 calibrado contra surface-container-high
- * claro; 0,5 contra el oscuro (abajo).
- */
-:root[data-theme="caelestia"] .cae-widget {
-  display: block;
-  position: absolute;
-  top: 30px;
-  right: 48px;
-  width: 316px;
-  padding: 18px 22px 18px;
-  border-radius: 24px;
-  background: var(--cae-surface-container-high);
-  box-shadow: 0 14px 36px -20px rgb(0 0 0 / 0.22);
-  color: var(--cae-on-surface);
-}
-:root[data-theme="caelestia"][data-cae-esquema="noche"] .cae-widget {
-  box-shadow: 0 14px 36px -20px rgb(0 0 0 / 0.5);
-}
-/* Capa de estado M3 al rozar: 6 % del primario (M3 pide 8 %; aqui el fondo ya
-   es tonal y con 8 la tarjeta viraba de tono, medido en los dos esquemas). El
-   levantamiento y apartar el fondo ya los hace montarRoce: no se duplican. */
-:root[data-theme="caelestia"] .cae-widget::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--cae-primary);
-  opacity: 0;
-  transition: opacity 0.25s;
-  pointer-events: none;
-}
-:root[data-theme="caelestia"] .cae-widget:hover::after {
-  opacity: 0.06;
-}
-/* B6 (spec 2026-09-07-caelestia-movil): en escritorio la tarjeta manda, el
-   bloque de prosa movil no se enciende. Se activa dentro del @media de B6. */
-:root[data-theme="caelestia"] .cae-movil {
-  display: none;
-}
-:root[data-theme="caelestia"] .cae-wcab {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 40px;
-  margin-bottom: 6px;
-}
-:root[data-theme="caelestia"] .cae-whd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--t-0);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--cae-on-surface-variant);
-}
-/*
- * Repaso de interfaces 2026-09-06 (hallazgo B de Vera): `--cae-primary-container`
- * sobre la propia tarjeta (`surface-container-high`) da 1,08:1 de dia y
- * 1,21:1 de noche (medido con `scripts/measure-caelestia-titulo.py`,
- * `_ratio` sobre las dos superficies) -- la figura era pura decoracion
- * invisible, sobre todo de noche. `--cae-primary` a secas si resuelve
- * (5,25:1 / 6,42:1) pero es el mismo color que la pastilla del pie y a
- * bloque solido de 40px grita para ser un acento decorativo. `color-mix`
- * con la propia superficie da un tono intermedio, calibrado POR ESQUEMA
- * porque el mismo porcentaje no rinde igual en los dos (la superficie de
- * noche es mucho mas oscura que `--cae-primary` claro, asi que un mismo %
- * separa mas contraste alli): 55% de dia sobre `surface-container-high`
- * CLARO da el peor caso 2,39:1 (barrido 09:30/13:30/18:30); 45% de noche
- * sobre el OSCURO da 2,42:1 (21:30/01:30/05:30). Los dos con margen sobre
- * el piso de 2,0:1 pedido para un acento (no es texto: no aplica el piso
- * AA de 4,5:1).
- */
-:root[data-theme="caelestia"] .cae-wfig {
-  display: block;
-  width: 40px;
-  height: 40px;
-  background: color-mix(
-    in oklch,
-    var(--cae-primary) 55%,
-    var(--cae-surface-container-high)
-  );
-  /* la forma la pone montarFiguraViva con clip-path (240 vertices) */
-}
-:root[data-theme="caelestia"][data-cae-esquema="noche"] .cae-wfig {
-  background: color-mix(
-    in oklch,
-    var(--cae-primary) 45%,
-    var(--cae-surface-container-high)
-  );
-}
-:root[data-theme="caelestia"] .cae-wnow {
-  margin: 0;
-  font-family: var(--font-display);
-  font-variation-settings: var(--cae-display-axes-ficha);
-  font-size: var(--t-4);
-  line-height: 1;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-:root[data-theme="caelestia"] .cae-wsub {
-  margin: 5px 0 0;
-  font-size: var(--t-1);
-  color: var(--cae-on-surface-variant);
-}
-:root[data-theme="caelestia"] .cae-wdos {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid color-mix(in oklch, var(--cae-outline) 45%, transparent);
-}
-:root[data-theme="caelestia"] .cae-wfecha {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: var(--t-0);
-  letter-spacing: 0.04em;
-  color: var(--cae-on-surface-variant);
-  margin-bottom: 3px;
-  white-space: nowrap;
-}
-:root[data-theme="caelestia"] .cae-wnombre {
-  display: block;
-  font-weight: 500;
-  font-size: var(--t-1);
-  line-height: 1.25;
-}
-:root[data-theme="caelestia"] .cae-wpie {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid color-mix(in oklch, var(--cae-outline) 45%, transparent);
-}
-
-/*
- * Repaso de interfaces 2026-09-06 (hallazgo A de Vera): a 1366x768 la
- * tarjeta pisaba la columna de cifras -- `.cae-widget` acababa en bottom=366
- * y `.cae-statcol` empezaba en top=344 (22px de solape con "2021"). Mismo
- * patron que el cajon de Obra un poco mas arriba en este fichero
- * (`.cae-obra-prose p`): un `@media (max-height: 800px)` que aprieta
- * paddings y margenes entre filas SIN tocar `.cae-statcol` (es de B1) ni el
- * tamano del primero (`tarjeta_superficie` exige que sea el texto mas
- * grande de la tarjeta y `>= 26px`; bajarlo a 24 rompia ese gate, que corre
- * con la MISMA ventana de 748 de alto del resto del arnes -- esta media
- * query tambien se activa ahi, a proposito). Medido: bottom pasa de 366 a
- * 326, hueco con `.cae-statcol` de -22px a +18px.
- *
- * Task 6 (escala tipografica, 2026-09-07): `.cae-wnow` pasa de 27px a
- * `var(--t-4)` (28,43px), la tarjeta crece ~1,4px y el hueco baja de 18px a
- * 7px, bajo el piso de 8. Se recorta `.cae-wpie` (margin-top 8px -> 6px en
- * esta misma media query, la fila con mas aire de las cuatro) en vez de
- * tocar `.cae-wnow`: el tamano de esa linea no se toca, esta migrado.
- */
-@media (max-height: 800px) {
-  :root[data-theme="caelestia"] .cae-widget {
-    padding: 12px 22px 12px;
-  }
-  :root[data-theme="caelestia"] .cae-wcab {
-    margin-bottom: 4px;
-  }
-  :root[data-theme="caelestia"] .cae-wsub {
-    margin: 3px 0 0;
-  }
-  :root[data-theme="caelestia"] .cae-wdos {
-    margin-top: 8px;
-    padding-top: 8px;
-  }
-  :root[data-theme="caelestia"] .cae-wpie {
-    margin-top: 6px;
-    padding-top: 8px;
-  }
-  /* Escala tipografica (2026-09-08, fusion de --t-00 en --t-0): `.cae-k`
-     crece de 9,5 a 10,67px en las cuatro filas de la columna de cifras, que
-     cuelga de `bottom: 0` -- crecer empuja su `top` HACIA ARRIBA y comia el
-     hueco con `.cae-widget` (a 1366x768 bajo de 9 a 0px, gate `tarjeta_portatil`).
-     Medido donde estaba la holgura antes de tocar nada: `.cae-wdos` y
-     `.cae-wpie` ya estan en su limite (recortados en una ronda anterior, ver
-     el comentario de `.cae-wpie` arriba); el hueco mas generoso que quedaba
-     era el `gap` ENTRE filas de la columna de cifras (14px, sin tocar desde
-     que existe). Se recorta ahi, no en la tarjeta: 14 -> 10px devuelve el
-     hueco a >=8px con margen (12px medido). */
-  :root[data-theme="caelestia"] .cae-statcol {
-    gap: 10px;
+/* Escalones por ancho, siempre discretos (nunca clamp continuo). */
+@media (max-width: 1100px) {
+  :root[data-theme="caelestia"] .cae-nombre {
+    font-size: var(--t-8);
   }
 }
 
-:root[data-theme="caelestia"] .cae-pilla {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 28px;
-  padding: 0 12px 0 10px;
-  border-radius: 999px;
-  background: var(--cae-anchor);
-  color: var(--cae-on-anchor);
-  font-family: var(--font-mono);
-  font-size: var(--t-0);
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-:root[data-theme="caelestia"] .cae-wluz {
-  position: relative;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--cae-on-anchor);
-  display: block;
-}
-/* La luz respira: SOLO con movimiento. Es un ::after, asi que el `*` de la
-   guardia generica de reduced-motion no lo alcanzaria; por eso vive entero
-   dentro de no-preference y con reduce no existe. */
-@media (prefers-reduced-motion: no-preference) {
-  :root[data-theme="caelestia"] .cae-wluz::after {
-    content: "";
-    position: absolute;
-    inset: -5px;
-    border-radius: 50%;
-    border: 1.5px solid var(--cae-on-anchor);
-    animation: caeLuzRespira 2.4s ease-in-out infinite;
+@media (max-width: 900px) {
+  :root[data-theme="caelestia"] .cae-nombre {
+    font-size: var(--t-7);
   }
-  @keyframes caeLuzRespira {
-    0%,
-    100% {
-      transform: scale(0.6);
-      opacity: 0;
-    }
-    50% {
-      transform: scale(1);
-      opacity: 0.6;
-    }
+  :root[data-theme="caelestia"] .cae-rol {
+    font-size: var(--t-3);
+  }
+}
+
+@media (max-width: 640px) {
+  :root[data-theme="caelestia"] .cae-presenta {
+    gap: 14px;
+  }
+  :root[data-theme="caelestia"] .cae-nombre {
+    font-size: var(--t-6);
+  }
+  :root[data-theme="caelestia"] .cae-linea-una {
+    display: none;
+  }
+  :root[data-theme="caelestia"] .cae-linea {
+    display: block;
   }
 }
 
@@ -5022,102 +4713,13 @@
   /* El `.hero` compartido trae `py-24` de Tailwind (96px arriba y abajo,
      192px en total) pensado para un `min-h-screen` de escritorio. Bajo
      Caelestia la escena es el workspace de altura fija del carril (692px de
-     hueco a 390x844, medido): con el padding de escritorio puesto, cabecera
-     (283px) + bloque movil (225px) + 192px de padding suman 700, 8px por
-     encima del hueco -- el fallo real del gate "cabe entero". Se recorta
+     hueco a 390x844, medido): el padding de escritorio (192px) le quita al
+     nombre y al rol un aire que no necesitan. Se recorta
      solo aqui, no se toca `.hero` para los otros dos temas.
    */
   :root[data-theme="caelestia"] .hero {
     padding-top: 2rem;
     padding-bottom: 2rem;
-  }
-  :root[data-theme="caelestia"] .cae-widget,
-  :root[data-theme="caelestia"] .cae-statcol,
-  :root[data-theme="caelestia"] .cae-trazo-stage {
-    display: none;
-  }
-  :root[data-theme="caelestia"] .cae-movil {
-    display: block;
-    padding: 0 1.375rem 1.5rem;
-  }
-  :root[data-theme="caelestia"] .cae-head {
-    /* la cabecera deja de ser el bloque absoluto de 1080px: fluye */
-    position: static;
-    width: auto;
-    padding: 1.625rem 1.375rem 0;
-  }
-  :root[data-theme="caelestia"] .cae-kicker {
-    display: block;
-  }
-  :root[data-theme="caelestia"] .cae-firma {
-    font-size: var(--t-2);
-  }
-  :root[data-theme="caelestia"] .cae-regla {
-    display: none;
-  }
-  :root[data-theme="caelestia"] .cae-meta {
-    display: block;
-    margin-top: 0.375rem;
-    font-size: var(--t-0);
-  }
-  :root[data-theme="caelestia"] .cae-tit {
-    margin-top: 7.5rem; /* el titular a media altura: aire, no relleno */
-    text-align: left;
-  }
-  :root[data-theme="caelestia"] .cae-tit .cae-ln {
-    display: block;
-    white-space: nowrap;
-    /* Paso discreto de la escala, no clamp: dos moderadas y una grande. */
-    font-size: var(--t-3);
-    line-height: 1.02;
-  }
-  :root[data-theme="caelestia"] .cae-tit .cae-ln:last-child {
-    font-size: var(--t-7);
-    margin-top: 0.25rem;
-    line-height: 0.92;
-  }
-  :root[data-theme="caelestia"] .cae-mv-prosa {
-    margin: 1.625rem 0 0;
-    font-size: var(--t-1);
-    line-height: 1.7;
-    color: var(--cae-on-surface-variant);
-  }
-  :root[data-theme="caelestia"] .cae-mv-linea {
-    display: block;
-  }
-  :root[data-theme="caelestia"] .cae-mv-linea b {
-    font-weight: 600;
-    color: var(--cae-on-surface);
-  }
-  :root[data-theme="caelestia"] .cae-mv-cifras {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.25rem 1rem;
-    margin: 1.375rem 0 0;
-    font-family: var(--font-mono);
-    font-size: var(--t-0);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--cae-on-surface-variant);
-  }
-  :root[data-theme="caelestia"] .cae-mv-cifra b {
-    font-family: var(--font-display);
-    font-variation-settings: var(--cae-display-axes-ficha);
-    font-size: var(--t-2);
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--cae-on-surface);
-    margin-right: 0.25rem;
-  }
-  /* El `<small>` del rotulo hereda `font-size: var(--t-0)` de `.cae-mv-cifras`,
-     pero el navegador aplica su propio `smaller` encima (~80%): 10,67px caian
-     a 8,53px, fuera de la escala y sin ningun literal que la familia estatica
-     pudiera leer. `measure-escala-tipografica.py` (familia viva) lo caza. */
-  :root[data-theme="caelestia"] .cae-mv-cifras small {
-    font-size: inherit;
-  }
-  :root[data-theme="caelestia"] .cae-mv-pie {
-    margin-top: 1.375rem;
   }
 
   /*

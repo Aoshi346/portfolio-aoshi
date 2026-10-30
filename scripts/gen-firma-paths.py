@@ -4,8 +4,8 @@ Genera `src/themes/caelestia.firma.ts` — los contornos de Fraunces para el
 trazo del nombre de la escena Titulo.
 
 NO es una tipografia de imitacion: son los contornos reales de Fraunces
-instanciada en opsz 9 / wght 900 / SOFT 0 / WONK 1, los mismos ejes que usa la
-firma en reposo.
+instanciada en opsz 144 / wght 900 / SOFT 0 / WONK 1, los ejes del cartel
+(`--cae-display-axes-cartel`), no los de la firma del antetitulo.
 
 Se corre a mano cuando cambie `identity.name` o los ejes del display. El
 resultado se COMMITEA: no hay descarga en tiempo de ejecucion.
@@ -25,7 +25,7 @@ from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 
 TEXTO = "Aoshi Blanco Sanz"
-EJES = {"opsz": 9, "wght": 900, "SOFT": 0, "WONK": 1}
+EJES = {"opsz": 144, "wght": 900, "SOFT": 0, "WONK": 1}
 TAM = 100
 DESTINO = "src/themes/caelestia.firma.ts"
 

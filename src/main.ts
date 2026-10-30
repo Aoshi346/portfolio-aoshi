@@ -25,15 +25,14 @@ const prefersReducedMotion = window.matchMedia(
 ).matches;
 
 /*
- * Entrada de Titulo. Las piezas de `#hero` (terminal, trazo, firma, cifras,
- * widget) necesitan quedar ocultas ANTES del primer pintado -- si no, se ven
- * en su estado FINAL durante los ~2,9 s que tardan en llegar los tres
- * `import()` encadenados de la coreografia (reveal.ts -> gsap -> ScrollTrigger
- * -> caelestia.titulo.ts) y luego saltan de golpe a su estado inicial cuando
- * `montarEntrada` por fin corre. La via normal es esa misma funcion, que
- * retira la clase en cuanto ha escrito los estados iniciales con `gsap.set`
- * (sincrono, antes de construir la timeline); este timeout es solo el seguro
- * por si el chunk no llega nunca.
+ * Entrada de Titulo. El dibujo del nombre y el rol de `#hero` necesitan quedar
+ * ocultos ANTES del primer pintado -- si no, se ven en su estado FINAL durante
+ * los ~2,9 s que tardan en llegar los `import()` encadenados de la
+ * coreografia (reveal.ts -> gsap -> ScrollTrigger -> caelestia.titulo.ts) y
+ * luego saltan de golpe a su estado inicial cuando `montarEntrada` por fin
+ * corre. La via normal es esa misma funcion, que retira la clase en cuanto ha
+ * escrito los estados iniciales con `gsap.set` (sincrono, antes de construir
+ * la timeline); este timeout es solo el seguro por si el chunk no llega nunca.
  */
 if (!prefersReducedMotion) {
   document.documentElement.classList.add("js-cae-entrada");
