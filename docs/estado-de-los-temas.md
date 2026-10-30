@@ -298,6 +298,21 @@
   escala tipografica que recurre por 5ª vez en el proyecto, espaciado del widget fuera de la
   rejilla 4/8px, un eje de fuente repetido como literal) — el detalle completo esta en el
   "Registro de implementacion" y en la seccion "Gates de critica" del spec de B1.
+  **2026-10-29, sustituida (`2026-10-29-caelestia-titulo-nombre`, rama `design/titulo-nombre`):**
+  todo lo de arriba sobre la composicion y la entrada es historia. Por decision de Aoshi la escena
+  solo dice nombre y rol: «Aoshi Blanco Sanz» centrado (Fraunces de cartel, `--t-9` a `--t-6` por
+  escalones discretos, dos lineas a <=640 px) y «Desarrollador full stack en Caracas.» debajo.
+  Fuera el titular, el antetitulo con «Desde 2021», la columna de cifras, la tarjeta «Ahora
+  mismo», la terminal `whoami` y el aterrizaje de la firma. La entrada nueva (B · Trazo) dibuja
+  los 15 contornos reales del nombre en su sitio, los rellena y corta el rol (2,5 s; sin entrada
+  con movimiento reducido). El nombre visible es el SVG; el `<h1>` lleva el texto real oculto.
+  Gates: lidia 6,0/10 sin P0 (sus P1 son decisiones del dueño o cosas previas: el dock sin
+  texto, las pastillas con numero en movil, que la portada no pruebe el nivel); vera 7,4/10 sin
+  P0, un P1 (el rol dejaba «Caracas.» huerfana en movil) arreglado con `text-wrap: balance`.
+  Las otras cuatro escenas, iguales salvo diferencias de 1-8/255 por canal, deterministas.
+  Leccion de instrumento: `page.clock.set_fixed_time` congela `Date.now`, del que tira el
+  ticker de GSAP, y el carril de workspaces no se mueve; para la noche se usa
+  `window.__CAE_SET_MINUTOS__`.
 
 - **La fase B2 (Quien soy) de Caelestia: TERMINADA y fusionada** (`2026-09-02-caelestia-quien-soy`,
   la segunda de las cinco de dentro de la ventana). La escena `#about` deja de ser una ficha

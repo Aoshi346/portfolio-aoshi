@@ -1,7 +1,8 @@
 # Caelestia · Título: el nombre en el centro
 
 - **Fecha:** 2026-10-29
-- **Estado:** diseño, pendiente de aprobación
+- **Estado:** implementado (rama `design/titulo-nombre`, pendiente de fusionar)
+- **Plan:** `docs/superpowers/plans/2026-10-29-caelestia-titulo-nombre.md`
 - **Rama:** `design/titulo-nombre` (worktree `../portfolio-aoshi-titulo-nombre`)
 - **Maqueta aprobada:** variante **B · Trazo, sin pastilla**, en el visual companion
   (`.superpowers/brainstorm/2113111-1793308751/content/titulo-entradas-v4.html`; el generador está

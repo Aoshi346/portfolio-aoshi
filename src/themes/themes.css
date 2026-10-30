@@ -728,6 +728,10 @@
   font-size: var(--t-4);
   line-height: 1.3;
   color: var(--cae-on-surface-variant);
+  /* Por debajo de ~400 px el rol no cabe en una linea y se partia en
+     «Desarrollador full stack en / Caracas.», con la ciudad huerfana. Con
+     balance las dos lineas salen parejas; en una sola linea no cambia nada. */
+  text-wrap: balance;
 }
 
 /*
