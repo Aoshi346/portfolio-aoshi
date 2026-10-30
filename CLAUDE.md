@@ -31,7 +31,7 @@ captures are whole in the git tag `tres-temas`; their history stays in `docs/est
 **Before touching Caelestia, read its block there**: it says what is closed, what was measured, and
 what must not be re-done.
 - **Caelestia: design closed, not DONE.** Phases A, B1-B6, cursor and interface review merged.
-  Open: B3 needs the nine real project captures, B4 has two product P1s, and
+  Open: B3 needs the nine real project captures, B4 has one product P1 (the hover gesture, left as is), and
   `measure-caelestia-obra.py` fails three contrast assertions (its own instrument, not the CSS).
 - **Type scale: closed and gated** (`2026-09-07-escala-tipografica`).
 

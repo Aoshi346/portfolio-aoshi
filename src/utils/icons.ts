@@ -23,13 +23,15 @@ import nextdotjs from "simple-icons/icons/nextdotjs.svg?raw";
 import nodedotjs from "simple-icons/icons/nodedotjs.svg?raw";
 import gsap from "simple-icons/icons/gsap.svg?raw";
 import rxdb from "simple-icons/icons/rxdb.svg?raw";
-import electron from "simple-icons/icons/electron.svg?raw";
 import gtk from "simple-icons/icons/gtk.svg?raw";
 import git from "simple-icons/icons/git.svg?raw";
 import github from "simple-icons/icons/github.svg?raw";
 import n8n from "simple-icons/icons/n8n.svg?raw";
 import claude from "simple-icons/icons/claude.svg?raw";
 import googlegemini from "simple-icons/icons/googlegemini.svg?raw";
+import fastapi from "simple-icons/icons/fastapi.svg?raw";
+import sqlalchemy from "simple-icons/icons/sqlalchemy.svg?raw";
+import postgresql from "simple-icons/icons/postgresql.svg?raw";
 
 const icons: Record<string, string> = {
   react,
@@ -49,13 +51,15 @@ const icons: Record<string, string> = {
   nodedotjs,
   gsap,
   rxdb,
-  electron,
   gtk,
   git,
   github,
   n8n,
   claude,
   googlegemini,
+  fastapi,
+  sqlalchemy,
+  postgresql,
 };
 
 export function getIconMarkup(slug: string): string {

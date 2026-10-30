@@ -262,7 +262,7 @@ export async function mountCaelestiaObraEditorial(
    * caida tenga algo que animar la primera vez que el visitante navegue de
    * verdad a Obra, en vez de jugarse y asentarse mientras nadie mira.
    */
-  function prepararEstadoInicial(): void {
+  function prepararEstadoInicial(indice = 0): void {
     const carrusel = enCarrusel();
     cards.forEach((card, index) => {
       // B6: en el carrusel la inclinacion alterna no se pinta (spec Obra) --
@@ -272,9 +272,10 @@ export async function mountCaelestiaObraEditorial(
       gsap.set(card, { opacity: 0, y: -46, rotate: tilt, transformOrigin: "50% 0%" });
     });
 
-    seleccionado = 0;
-    cards[0]?.classList.add("is-sel");
-    poblarCajon(0);
+    cards[seleccionado]?.classList.remove("is-sel");
+    seleccionado = indice;
+    cards[indice]?.classList.add("is-sel");
+    poblarCajon(indice);
 
     const { h3, kick, lead, foot, preview, rows, blocks } = refsCajon();
 
@@ -347,6 +348,33 @@ export async function mountCaelestiaObraEditorial(
     jugarEntrada();
   };
 
+  /*
+   * El cruce «Aparece en» de Creditos pide una obra concreta con
+   * `caelestia:obra` ANTES de cambiar de workspace. Si la caida aun no se ha
+   * jugado, la obra pedida pasa a ser la de partida (la caida la revela en vez
+   * de la 0); si ya se jugo, es un relevo normal. En el carrusel, ademas, se
+   * centra su tarjeta: ahi la centrada es la elegida.
+   */
+  const alPedirObra = (evento: Event): void => {
+    if (!(evento instanceof CustomEvent)) return;
+    const detalle: unknown = evento.detail;
+    if (typeof detalle !== "object" || detalle === null || !("index" in detalle)) return;
+    const indice = Number((detalle as { index: unknown }).index);
+    const card = cards[indice];
+    if (!Number.isInteger(indice) || !card) return;
+    if (!entrado && !reduce) prepararEstadoInicial(indice);
+    else abrir(indice);
+    if (pista && enCarrusel()) {
+      const r = card.getBoundingClientRect();
+      const p = pista.getBoundingClientRect();
+      pista.scrollBy({
+        left: r.left + r.width / 2 - (p.left + pista.clientWidth / 2),
+        behavior: reduce ? "auto" : "smooth",
+      });
+    }
+  };
+  document.documentElement.addEventListener("caelestia:obra", alPedirObra);
+
   if (reduce) {
     abrir(0);
   } else {
@@ -361,6 +389,7 @@ export async function mountCaelestiaObraEditorial(
   return {
     destroy: () => {
       document.documentElement.removeEventListener("caelestia:workspace", alCambiarWorkspace);
+      document.documentElement.removeEventListener("caelestia:obra", alPedirObra);
       pista?.removeEventListener("scrollend", elegirCentrada);
       pista?.removeEventListener("scroll", alDesplazar);
       window.clearTimeout(reposo);
@@ -433,7 +462,7 @@ function buildFoot(project: CaseStudy): HTMLElement {
     foot.append(
       el("span", "cae-obra-foot-private", [
         el("i", "", []),
-        "Proyecto privado de empresa",
+        "Repositorio privado",
       ]),
     );
   }

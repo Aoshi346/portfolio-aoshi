@@ -85,7 +85,6 @@ DEF = [
     ("tailwindcss",  "galleta de 8",  "galleta", 8),
     ("vite",         "galleta de 9",  "galleta", 9),
     ("gsap",         "galleta de 10", "galleta", 10),
-    ("electron",     "galleta de 11", "galleta", 11),
     ("gtk",          "galleta de 12", "galleta", 12),
     # Backend y datos (5) — convexas de pocos lobulos
     ("python",       "trebol de 3",   "trebol", 3),
@@ -93,6 +92,9 @@ DEF = [
     ("nodedotjs",    "trebol de 5",   "trebol", 5),
     ("mysql",        "trebol de 6",   "trebol", 6),
     ("rxdb",         "trebol de 7",   "trebol", 7),
+    ("fastapi",      "trebol de 13",  "trebol", 13),
+    ("sqlalchemy",   "trebol de 14",  "trebol", 14),
+    ("postgresql",   "trebol de 15",  "trebol", 15),
     # Lenguajes base (5) — convexas de muchos lobulos
     ("javascript",   "flor de 8",     "trebol", 8),
     ("html5",        "flor de 9",     "trebol", 9),
@@ -127,8 +129,8 @@ CIRC = poly(encaja(puntos([1.0]*N))[0])
 
 # ---------- gates: ninguno se da por bueno sin haberlo visto dar rojo ----------
 d = lambda xs: (max(xs) - min(xs))/min(xs)
-assert len(FIG) == 23, f"faltan figuras: {len(FIG)}"
-assert len(set(FIG.values())) == 23, "hay figuras repetidas"
+assert len(FIG) == len(DEF), f"faltan figuras: {len(FIG)}"
+assert len(set(FIG.values())) == len(DEF), "hay figuras repetidas"
 assert all(v.count('%')//2 == N for v in list(FIG.values()) + list(SUAVE.values()) + [CIRC]), \
     "no todas tienen 240 vertices: con distinto numero un polygon() no morfa, corta de golpe"
 assert d(areas) < 0.005, f"areas distintas tras encajar: {d(areas)*100:.2f}%"

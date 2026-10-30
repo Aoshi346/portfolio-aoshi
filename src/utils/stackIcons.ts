@@ -16,13 +16,16 @@ const SLUGS: Record<string, string> = {
   JavaScript: "javascript",
   React: "react",
   Vite: "vite",
+  "Tailwind CSS": "tailwindcss",
   "Next.js": "nextdotjs",
   RxDB: "rxdb",
   GSAP: "gsap",
-  Electron: "electron",
   C: "c",
   GTK4: "gtk",
   Zustand: "zustand",
+  FastAPI: "fastapi",
+  SQLAlchemy: "sqlalchemy",
+  PostgreSQL: "postgresql",
 };
 
 export function slugDeStack(nombre: string): string | null {
