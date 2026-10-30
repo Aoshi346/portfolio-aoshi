@@ -337,9 +337,10 @@ def main() -> int:
         }""")
         print(f"       primer h1 {ejes['shell']} · nombre de la ficha {ejes['nombre']}")
         print(f"       tokens: shell {ejes['tokenShell']!r} · cartel {ejes['tokenCartel']!r}")
-        comprobar('"opsz" 9' in ejes["shell"],
-                  f"el primer h1 de la pagina (hoy, el del hero) sigue en opsz 9 "
-                  f"({ejes['shell']})")
+        # Ya no se exige opsz 9 al primer h1: desde 2026-10-29 es el nombre del
+        # Titulo, que va con los ejes de cartel (opsz 144) por su propio spec
+        # (2026-10-29-caelestia-titulo-nombre). Lo que importa aqui es que la
+        # ficha use el cartel y que los dos tokens sigan separados (abajo).
         comprobar('"opsz" 144' in ejes["nombre"],
                   f"el nombre de la ficha usa opsz 144 ({ejes['nombre']})")
         # La asercion robusta: dos tokens, nunca uno reutilizado. Si alguien

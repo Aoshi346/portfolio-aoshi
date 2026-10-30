@@ -184,7 +184,7 @@ def main():
 
     fallos = []
     with sync_playwright() as p:
-        nav = p.chromium.launch(headless=True, args=["--no-sandbox", "--use-gl=swiftshader"])
+        nav = p.chromium.launch(headless=True, executable_path="/usr/bin/google-chrome", args=["--no-sandbox", "--use-gl=swiftshader"])
 
         # ---- 1. barrido de las 24 horas, cada 20 minutos
         for minutos in range(0, 1440, 20):
@@ -367,14 +367,16 @@ def main():
         # montado" con "no existe".
         LEE_ESTADO = """() => {
             const t = document.querySelector('[data-cae-toast]');
-            const typed = document.querySelector('#hero .cae-term-typed');
-            const firma = document.querySelector('#hero .cae-firma');
-            const csFirma = firma ? getComputedStyle(firma) : null;
+            // Desde 2026-10-29 la entrada del Titulo dibuja el nombre y corta
+            // el rol (ya no hay terminal ni firma que aterrice): ha terminado
+            // cuando el rol esta entero y sin la clase de antes del pintado.
+            const rol = document.querySelector('#hero .cae-rol');
+            const csRol = rol ? getComputedStyle(rol) : null;
+            const sinClase = !document.documentElement.classList.contains('js-cae-entrada');
             return {
               toastExiste: !!t,
               toastOpen: t ? t.classList.contains('is-open') : false,
-              typed: typed ? typed.textContent : null,
-              firmaOp: csFirma ? parseFloat(csFirma.opacity) : null,
+              rolListo: !!csRol && sinClase && csRol.visibility === 'visible' && (csRol.clipPath === 'none' || /^inset\\(0(px|%)? 0(px|%)? 0(px|%)? 0(px|%)?\\)$/.test(csRol.clipPath)),
             };
         }"""
 
@@ -392,11 +394,7 @@ def main():
                     vistoToast = True
                 if m["toastOpen"]:
                     vistoAbiertoAntes = True
-                if (
-                    m["typed"] == "whoami"
-                    and m["firmaOp"] is not None
-                    and m["firmaOp"] >= 0.99
-                ):
+                if m["rolListo"]:
                     aterrizo = m
                     break
             page.wait_for_timeout(50)
@@ -589,9 +587,12 @@ def main():
                 page.wait_for_timeout(600)
             solape = page.evaluate(
                 """() => {
+                    // La firma de tema (la pastilla del sorteo) se retiro con
+                    // Vice e Hyprland el 2026-10-29: queda comprobar el dock.
                     const dock = document.querySelector('[data-cae-dock]');
                     const sig = document.querySelector('.theme-signature');
-                    if (!dock || !sig) return { ausente: true };
+                    if (!dock) return { ausente: true };
+                    if (!sig) return { oculta: true };
                     if (getComputedStyle(sig).display === 'none') return { oculta: true };
                     const dr = dock.getBoundingClientRect();
                     const sr = sig.getBoundingClientRect();
@@ -602,7 +603,7 @@ def main():
                 }"""
             )
             if solape.get("ausente"):
-                fallos.append("movil 390: dock o firma de tema ausentes (escena %d)" % indice)
+                fallos.append("movil 390: dock ausente (escena %d)" % indice)
             elif not solape.get("oculta") and solape.get("overlap"):
                 fallos.append(
                     "movil 390: el dock y la firma de tema se solapan en la escena %d "
