@@ -16,7 +16,8 @@ export interface Identity {
   /** Perfil de LinkedIn: para mucha gente de seleccion es la via de contacto
    *  por defecto, antes que el correo. */
   linkedin: string;
-  githubAvatar: string;
+  /** Retrato de la ficha de Quien soy: el mismo encuadre que la web de AIATech, a 576 px. */
+  photo: string;
   /** Estado visible en la ficha: la senal mas util para quien recluta. */
   availability: string;
   /** Situacion actual. No se deriva de `experience[0]`: la pasantia termino en
@@ -33,7 +34,7 @@ export interface Identity {
 
 export const identity: Identity = {
   name: "Aoshi Blanco Sanz",
-  role: "Desarrollador Full Stack",
+  role: "Desarrollador full stack",
   headline: "Construyo sistemas que aguantan producción, no demos.",
   subheadline: "Caracas. Full stack. Desde 2021.",
   location: "Caracas, Venezuela",
@@ -41,7 +42,7 @@ export const identity: Identity = {
   phone: "+58 424 228 1033",
   github: "https://github.com/Aoshi346",
   linkedin: "https://www.linkedin.com/in/aoshi-blanco-sanz-14119b2b7",
-  githubAvatar: "https://avatars.githubusercontent.com/u/137179835?v=4",
+  photo: "/media/aoshi.webp",
   availability: "Disponible para proyectos",
   now: "Full Stack Developer",
   since: "2021",
@@ -61,11 +62,6 @@ export const stats: Stat[] = [
   { value: "10", label: "Semestre" },
   { value: "5", label: "Proyectos" },
   { value: "1", label: "En producción" },
-];
-
-export const aboutCopy: string[] = [
-  "Llevo datos reales a interfaces que la gente usa todos los días.",
-  "La mayoría de mis repositorios son privados. Aquí están los públicos que mejor muestran cómo pienso y qué construyo.",
 ];
 
 export interface Education {
@@ -193,12 +189,16 @@ export interface FocusArea {
 /** Pares titulo/detalle de "En que me enfoco", especificos de Aoshi. */
 export const focusAreas: FocusArea[] = [
   {
-    title: "Datos a gran escala",
-    detail: "Que la consulta siga siendo rápida con volumen real",
+    title: "Plataformas web",
+    detail: "Desarrollo e implementación de punta a punta",
   },
   {
-    title: "Interfaces que aguantan",
-    detail: "Estado complejo sin romperse en producción",
+    title: "Sistemas ERP y empresariales",
+    detail: "Sistemas de gestión para la operación de una empresa",
+  },
+  {
+    title: "Integraciones de IA",
+    detail: "Atención al cliente y automatización de procesos",
   },
 ];
 

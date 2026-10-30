@@ -1,14 +1,5 @@
-import { aboutCopy, education, experience, focusAreas, identity, stats } from "../data/content";
+import { education, experience, focusAreas, identity, skillGroups, stackDestacado } from "../data/content";
 import { el } from "../utils/dom";
-
-/**
- * Valor de una cifra por su rotulo, no por su indice. `stats` es un literal de
- * este mismo repo y atarlo a `stats[0]` deja una rotura silenciosa la proxima
- * vez que alguien reordene el array.
- */
-function statValue(label: string): string {
-  return stats.find((stat) => stat.label === label)?.value ?? "";
-}
 
 /** Una fila clave/valor de la salida, con su detalle opcional debajo. */
 function fichaFila(clave: string, valor: string, detalle?: string): HTMLElement {
@@ -28,7 +19,7 @@ function fichaFila(clave: string, valor: string, detalle?: string): HTMLElement 
  */
 function createFicha(): HTMLElement {
   const foto = el("img", "ficha-foto");
-  foto.src = identity.githubAvatar;
+  foto.src = identity.photo;
   foto.alt = identity.name;
   foto.width = 288;
   foto.height = 288;
@@ -58,48 +49,39 @@ function createFicha(): HTMLElement {
   host.href = `mailto:${identity.email}`;
   host.setAttribute("data-ficha-host", "");
 
-  const punto = el("i", "ficha-punto", []);
-  const estado = el("span", "ficha-estado", [punto, identity.availability]);
-
-  const identidad = el("div", "ficha-id", [host, estado]);
+  // Rol y ciudad viven en la cabecera, junto al correo: las filas quedan
+  // para la sustancia (enfoque, stack, experiencia, formacion).
+  const rol = el("span", "ficha-rol", [`${identity.role} · ${identity.location}`]);
+  const identidad = el("div", "ficha-id", [host, rol]);
   identidad.setAttribute("data-ficha-grupo", "");
 
   const regla = el("div", "ficha-regla", []);
   regla.setAttribute("data-ficha-regla", "");
 
-  const frase = el("p", "ficha-frase", [aboutCopy[0] ?? ""]);
-  frase.setAttribute("data-ficha-frase", "");
-  const grupoFrase = el("div", "", [frase]);
-  grupoFrase.setAttribute("data-ficha-grupo", "");
+  // Cada area con su detalle justo debajo: con los titulos juntos en una linea
+  // y los detalles despues, no se leia que detalle era de que area.
+  const filaEnfoque = fichaFila("Enfoque", "");
+  filaEnfoque.querySelector(".ficha-v")?.replaceChildren(
+    ...focusAreas.map((area) =>
+      el("span", "ficha-area", [area.title, el("small", "ficha-s", [area.detail])]),
+    ),
+  );
 
-  /*
-   * `Desde` se lee por su ROTULO, no por su indice: `stats` es un literal de
-   * este mismo repo y atarlo a `stats[0]` deja una rotura silenciosa la
-   * proxima vez que alguien lo reordene. Misma precaucion que `statValue()`.
-   */
-  const desde = statValue("Desde");
-  const titulos = focusAreas.map((area) => area.title).join("  ·  ");
-  const primerEnfoque = focusAreas[0];
-  const segundoEnfoque = focusAreas[1];
-  const filaEnfoque = fichaFila("Enfoque", titulos, primerEnfoque?.detail ?? "");
-  if (segundoEnfoque) {
-    filaEnfoque.querySelector(".ficha-v")?.append(el("small", "ficha-s", [segundoEnfoque.detail]));
-  }
+  const conocidas = new Set(skillGroups.flatMap((grupo) => grupo.items.map((item) => item.name)));
+  const principales = stackDestacado.principal.filter((nombre) => conocidas.has(nombre));
 
   const trabajo = experience[0];
   const carrera = education[0];
   const filas = el("dl", "ficha-filas", [
-    fichaFila("Rol", identity.role),
-    fichaFila("Base", identity.location),
-    fichaFila("Ahora", identity.now, desde ? `Desde ${desde}` : undefined),
     filaEnfoque,
+    fichaFila("Stack", principales.join(" · "), stackDestacado.resto),
     fichaFila(
-      "Último puesto",
+      "Experiencia",
       `${trabajo?.role ?? ""} · ${trabajo?.organization ?? ""}`,
       trabajo?.period ?? "",
     ),
     fichaFila(
-      "Estudia",
+      "Formación",
       carrera?.degree ?? "",
       `${carrera?.institution ?? ""} · ${carrera?.period ?? ""}`,
     ),
@@ -143,7 +125,6 @@ function createFicha(): HTMLElement {
     grupoNombre,
     identidad,
     regla,
-    grupoFrase,
     filas,
     grupoTira,
   ]);

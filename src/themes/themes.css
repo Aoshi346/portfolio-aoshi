@@ -2241,6 +2241,17 @@
   flex-wrap: wrap;
 }
 
+/* Rol y ciudad junto al correo, separados por un filete: la segunda parada de
+   lectura de la cabecera. Sin pastilla, en el dialecto del sistema. */
+:root[data-theme="caelestia"] .ficha-rol {
+  padding-left: 0.9rem;
+  margin-left: 0.15rem;
+  border-left: 1px solid var(--cae-outline);
+  font-size: var(--t-1);
+  letter-spacing: 0.06em;
+  color: var(--cae-on-surface-variant);
+}
+
 /* La cabecera del comando es el correo, y es pulsable: la via de contacto
    principal y la unica parada de tabulador legitima de la escena. */
 :root[data-theme="caelestia"] .ficha-host {
@@ -2262,50 +2273,6 @@
   border-radius: 2px;
 }
 
-/* La disponibilidad se dice como la dice el sistema: punto de azufre y texto,
-   igual que `.cae-dot` en el aviso de la barra. Una pastilla rellena es un
-   dialecto distinto para la misma frase, y le pelea el primer plano al nombre.
-   Lo que la hace segunda parada de lectura es el SITIO, no el color. */
-:root[data-theme="caelestia"] .ficha-estado {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.42rem;
-  padding-left: 0.9rem;
-  margin-left: 0.15rem;
-  border-left: 1px solid var(--cae-outline);
-  font-size: var(--t-1);
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  color: var(--cae-on-surface-variant);
-  transition: color 0.2s ease;
-}
-
-:root[data-theme="caelestia"] .ficha-estado:hover {
-  color: var(--cae-on-surface);
-}
-
-/* El ancla no gira con la hora: una senal de estado tiene que decir lo mismo a
-   las 09:00 y a las 03:00. */
-:root[data-theme="caelestia"] .ficha-punto {
-  display: block;
-  flex: none;
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--cae-anchor);
-  animation: ficha-latir 2.4s ease-in-out infinite;
-}
-
-@keyframes ficha-latir {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
-  }
-}
-
 /* El ancho lo pone `caelestia.ficha.ts` midiendo el texto del correo con
    `Range`: neofetch imprime el filete del largo EXACTO de usuario@host. */
 :root[data-theme="caelestia"] .ficha-regla {
@@ -2315,16 +2282,13 @@
   background: var(--cae-outline);
 }
 
-/* La unica frase humana del contenido, y lo unico en la fuente de texto: entre
-   el nombre en Fraunces y los campos en monoespaciada, marca que esto lo dice
-   una persona y no el sistema. */
-:root[data-theme="caelestia"] .ficha-frase {
-  margin: 0 0 1.45rem;
-  max-width: 44rem;
-  font-family: "Hanken Grotesk", system-ui, sans-serif;
-  font-size: var(--t-2);
-  line-height: 1.5;
-  color: var(--cae-on-surface);
+/* Una area de Enfoque por linea, con su detalle debajo (about.ts). */
+:root[data-theme="caelestia"] .ficha-area {
+  display: block;
+}
+
+:root[data-theme="caelestia"] .ficha-area + .ficha-area {
+  margin-top: 0.45rem;
 }
 
 :root[data-theme="caelestia"] .ficha-filas {
@@ -2497,10 +2461,6 @@
      ::before/::after con transition o animation, hay que sumarlo aqui. */
   :root[data-theme="caelestia"] .ficha-k::before {
     transition: none;
-  }
-
-  :root[data-theme="caelestia"] .ficha-punto {
-    animation: none;
   }
 }
 
@@ -5209,6 +5169,12 @@
   :root[data-theme="caelestia"] .ficha-id {
     flex-wrap: wrap;
     row-gap: 0.5rem;
+  }
+  /* En una columna el rol baja bajo el correo: el filete ya no separa nada. */
+  :root[data-theme="caelestia"] .ficha-rol {
+    padding-left: 0;
+    margin-left: 0;
+    border-left: 0;
   }
   :root[data-theme="caelestia"] .ficha-filas {
     grid-template-columns: 1fr;
